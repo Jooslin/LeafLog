@@ -1,0 +1,71 @@
+name: 🚀 기능 개발
+description: 새로운 기능을 개발하기 위한 명세와 작업 목록을 작성합니다.
+title: "[FEAT] "
+labels: ["feature"]
+assignees: []
+body:
+  # 1. 안내 문구
+  - type: markdown
+    attributes:
+      value: |
+        ### 👋 기능 개발 요청
+        새로운 기능을 개발하기 위한 티켓입니다.
+
+  # 2. 기능 개요 (Summary)
+  - type: textarea
+    id: summary
+    attributes:
+      label: 📋 기능 개요
+      description: 개발하려는 기능이 무엇인지 간략하게 요약해주세요.
+      placeholder: 예시) 사용자 프로필 수정 화면에서 프로필 이미지를 변경하는 기능을 추가합니다.
+    validations:
+      required: true
+
+  # 3. 상세 명세 (Specification)
+  - type: textarea
+    id: specs
+    attributes:
+      label: 🛠 상세 명세
+      description: 구체적인 기술 요구사항이나 동작 방식을 적어주세요.
+      placeholder: |
+        예시)
+        - 이미지 피커(Image Picker)를 통해 갤러리 접근 권한 요청
+        - 선택한 이미지를 원형으로 크롭(Crop) 처리
+        - '저장' 버튼 클릭 시 서버로 멀티파트(Multipart) 전송
+      render: markdown
+    validations:
+      required: true
+
+  # 4. 할 일 목록 (Tasks)
+  - type: textarea
+    id: tasks
+    attributes:
+      label: ✅ 할 일 목록
+      description: 진행해야 할 세부 작업들을 체크박스 형태로 적어주세요.
+      placeholder: |
+        예시)
+        - UI 레이아웃 구성 (ProfileView)
+        - 권한 관리 로직 구현 (PermissionManager)
+        - 이미지 업로드 API 연동
+        - 예외 처리 (권한 거부, 용량 초과 등)
+      render: markdown
+    validations:
+      required: true
+
+  # 5. 예상 일정 (Schedule)
+  - type: input
+    id: schedule
+    attributes:
+      label: 📅 예상 일정
+      placeholder: 예시) 2026.03.15 까지
+    validations:
+      required: true
+
+  # 6. 참고 자료 (References)
+  - type: textarea
+    id: references
+    attributes:
+      label: 🔗 참고 자료
+      description: 디자인 시안, 관련 문서, 스크린샷 등이 있다면 첨부해주세요.
+    validations:
+      required: false

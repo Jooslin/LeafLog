@@ -1,0 +1,74 @@
+name: 🐞 버그 수정
+description: 발생한 에러나 버그를 수정하기 위한 티켓입니다.
+title: "[FIX] "
+labels: ["bug"]
+assignees: []
+body:
+  # 1. 안내 문구
+  - type: markdown
+    attributes:
+      value: |
+        ### 👋 버그 수정을 위한 티켓입니다.
+
+  # 2. 버그 현상 (Symptoms)
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: 🚨 버그 현상
+      description: 어떤 문제가 발생했는지 구체적으로 적어주세요.
+      placeholder: 예시) 회원가입 버튼을 눌렀을 때 앱이 강제 종료됩니다.
+    validations:
+      required: true
+
+  # 3. 재현 방법 (Steps to Reproduce)
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 🔄 재현 방법
+      description: 버그가 발생하는 순서를 단계별로 적어주세요.
+      placeholder: |
+        예시)
+        1. 로그인 화면 진입
+        2. 아이디 입력 없이 '로그인' 버튼 클릭
+        3. 크래시 발생
+      render: markdown
+    validations:
+      required: true
+
+  # 4. 환경 정보 (Environment)
+  - type: textarea
+    id: environment
+    attributes:
+      label: 💻 환경 정보
+      description: 테스트한 기기 및 버전 정보를 입력해주세요.
+      value: |
+        - OS: 
+        - Device: 
+        - Version: 
+      render: markdown
+    validations:
+      required: true
+
+  # 5. 예상 원인 (Optional)
+  - type: textarea
+    id: cause
+    attributes:
+      label: 🕵️ 예상 원인
+      description: 짐작 가는 코드 위치나 원인이 있다면 적어주세요.
+      placeholder: 예시) LoginViewController.swift 45번 라인에서 nil force unwrapping 문제로 보임
+    validations:
+      required: false
+
+  # 6. 할 일 목록 (Tasks)
+  - type: textarea
+    id: tasks
+    attributes:
+      label: ✅ 할 일 목록 (Tasks)
+      description: 해결을 위해 진행해야 할 작업들을 체크박스 형태로 적어주세요.
+      placeholder: |
+        예시)
+        - 원인 분석 및 재현 확인
+        - 핫픽스(Hotfix) 코드 작성
+        - 사이드 이펙트(Side Effect) 테스트
+    validations:
+      required: false

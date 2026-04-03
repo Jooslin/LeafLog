@@ -1,0 +1,5 @@
+blank_issues_enabled: false  # 템플릿 없이는 이슈 생성 불가하게 설정
+contact_links:
+  - name: ❓ 질문하기
+    url: https://kin.naver.com/
+    about: 단순 질문은 여기서 해주세요.

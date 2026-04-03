@@ -1,0 +1,62 @@
+name: 🛠️ 기타
+description: 빌드 설정, 패키지 업데이트, 문서 수정 등 비즈니스 로직과 무관한 작업을 수행합니다.
+title: "[CHORE] "
+labels: ["chore", "maintenance"]
+assignees: []
+body:
+  # 1. 안내 문구
+  - type: markdown
+    attributes:
+      value: |
+        ### 👋 기타 작업
+        코드 로직 변경이 없는 빌드 설정, 패키지 업데이트, 주석 정리 등의 작업용 티켓입니다.
+
+  # 2. 작업 종류 선택 (Dropdown) - Chore의 핵심!
+  - type: dropdown
+    id: category
+    attributes:
+      label: 📂 카테고리
+      description: 어떤 종류의 작업인지 선택해주세요.
+      options:
+        - 📦 의존성/라이브러리 업데이트 (Dependencies)
+        - ⚙️ 빌드 및 환경 설정 (Build/Config)
+        - 📝 문서 수정 (Documentation)
+        - 🎨 코드 포맷팅/스타일 (Formatting)
+        - 🚀 CI/CD 설정 (CI/CD)
+        - 🧹 불필요한 파일/주석 정리 (Cleanup)
+        - 👻 기타 (etc)
+    validations:
+      required: true
+
+  # 3. 작업 내용 (Summary)
+  - type: textarea
+    id: summary
+    attributes:
+      label: 💬 작업 내용
+      description: 무엇을 변경해야 하는지 간략하게 설명해주세요.
+      placeholder: 예시) Kingfisher 라이브러리 버전을 7.0에서 8.0으로 업데이트합니다.
+    validations:
+      required: true
+
+  # 4. 작업 배경 (Context)
+  - type: textarea
+    id: context
+    attributes:
+      label: 🧐 작업 배경
+      description: 이 작업이 왜 필요한지 적어주세요.
+      placeholder: 예시) 최신 iOS 버전 대응을 위해 라이브러리 업데이트가 필수적입니다.
+    validations:
+      required: true
+
+  # 5. 할 일 목록 (Tasks)
+  - type: textarea
+    id: tasks
+    attributes:
+      label: ✅ 할 일 목록 (Tasks)
+      description: 구체적인 작업 항목을 적어주세요.
+      placeholder: |
+        - Package.swift 버전 수정
+        - 라이브러리 업데이트 후 빌드 테스트
+        - Breaking Change 확인 및 코드 수정
+    validations:
+      required: false
