@@ -105,6 +105,7 @@
 				16AD0E292F7FAFE200C98732 /* Sources */,
 				16AD0E2A2F7FAFE200C98732 /* Frameworks */,
 				16AD0E2B2F7FAFE200C98732 /* Resources */,
+				16AD0E922F7FB2D800C98732 /* SwiftLint */,
 			);
 			buildRules = (
 			);
@@ -192,6 +193,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		16AD0E922F7FB2D800C98732 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# 1. mise가 설치될 수 있는 주요 경로들을 PATH에 한꺼번에 추가합니다.\nexport PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\n# 2. 이제 'which' 명령어로 mise가 어디 있든 찾아낼 수 있습니다.\nif which mise >/dev/null; then\n  eval \"$(mise activate bash)\"\n  # '--config' 오타 주의! (config 가 맞습니다)\n  mise exec -- swiftlint lint --config ${SRCROOT}/LeafLog/swiftlint.yml\nelse\n  # 만약 모든 경로를 뒤졌는데도 없다면 경고만 띄우고 빌드는 성공시킵니다.\n  echo \"warning: mise not installed. SwiftLint skipped.\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		16AD0E292F7FAFE200C98732 /* Sources */ = {
@@ -311,7 +334,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -374,7 +397,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

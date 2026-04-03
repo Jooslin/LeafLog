@@ -1,0 +1,59 @@
+only_rules:
+  - fatal_error_message
+  - implicitly_unwrapped_optional
+  - legacy_cggeometry_functions
+  - legacy_constant
+  - legacy_constructor
+  - legacy_nsgeometry_functions
+  - unused_optional_binding
+  - unowned_variable_capture
+  - superfluous_disable_command
+  - invalid_swiftlint_command
+  - custom_rules
+
+excluded:
+  - Carthage
+  - Pods
+  - .build
+
+indentation: 4
+
+custom_rules:
+  no_objcMembers:
+    name: "@objcMembers 사용 금지"
+    regex: "@objcMembers"
+    message: "@objcMembers 대신 Objective-C에 노출할 멤버에만 개별적으로 @objc를 사용하세요."
+    severity: error
+
+  no_direct_standard_out_logs:
+    name: "표준 출력 로그 사용 금지"
+    regex: "(\\bprint|\\bdebugPrint|\\bdump|Swift\\.print|Swift\\.debugPrint|Swift\\.dump|_printChanges)\\s*\\("
+    match_kinds:
+    - identifier
+    message: "print/debugPrint/dump/_printChanges는 release 환경에서 표준 출력으로 로그를 남깁니다. 전용 로깅 시스템을 사용하거나, 디버그 전용이라면 // swiftlint:disable:next no_direct_standard_out_logs 로 명시적으로 무시하세요."
+    severity: warning
+
+  no_file_literal:
+    name: "#file 사용 금지"
+    regex: "(\\b#file\\b)"
+    match_kinds:
+    - identifier
+    message: "#file 대신 #fileID를 사용하세요."
+    severity: error
+
+  no_filepath_literal:
+    name: "#filePath 사용 금지"
+    regex: "(\\b#filePath\\b)"
+    match_kinds:
+    - identifier
+    message: "#filePath 대신 #fileID를 사용하세요."
+    severity: error
+
+  no_unchecked_sendable:
+    name: "@unchecked Sendable 사용 지양"
+    regex: "@unchecked Sendable"
+    match_kinds:
+    - attribute.builtin
+    - typeidentifier
+    message: "@unchecked Sendable 대신 안전한 Sendable 준수 또는 @preconcurrency import 사용을 고려하세요. 반드시 사용해야 한다면, thread-safe한 이유와 함께 // swiftlint:disable:next no_unchecked_sendable 주석을 추가하세요. 자세한 내용은 https://github.com/airbnb/swift#unchecked-sendable 참고."
+    severity: error
