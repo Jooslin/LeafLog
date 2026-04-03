@@ -1,0 +1,599 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		16AD08082F7E83E300C98732 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08072F7E83E300C98732 /* SnapKit */; };
+		16AD080B2F7E83F200C98732 /* Then in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD080A2F7E83F200C98732 /* Then */; };
+		16AD080E2F7E841100C98732 /* TensorFlowLiteSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD080D2F7E841100C98732 /* TensorFlowLiteSwift */; };
+		16AD08112F7E842300C98732 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08102F7E842300C98732 /* Alamofire */; };
+		16AD08142F7E843D00C98732 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08132F7E843D00C98732 /* RxCocoa */; };
+		16AD08162F7E843D00C98732 /* RxRelay in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08152F7E843D00C98732 /* RxRelay */; };
+		16AD08192F7E844F00C98732 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08182F7E844F00C98732 /* Kingfisher */; };
+		16AD081C2F7E847900C98732 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD081B2F7E847900C98732 /* Dependencies */; };
+		16AD081E2F7E847900C98732 /* DependenciesMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD081D2F7E847900C98732 /* DependenciesMacros */; };
+		16AD08232F7E84A900C98732 /* ReactorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08222F7E84A900C98732 /* ReactorKit */; };
+		16AD08262F7E855000C98732 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08252F7E855000C98732 /* Auth */; };
+		16AD08282F7E855000C98732 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08272F7E855000C98732 /* Functions */; };
+		16AD082A2F7E855000C98732 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD08292F7E855000C98732 /* PostgREST */; };
+		16AD082C2F7E855000C98732 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD082B2F7E855000C98732 /* Realtime */; };
+		16AD082E2F7E855000C98732 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD082D2F7E855000C98732 /* Storage */; };
+		16AD08302F7E855000C98732 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD082F2F7E855000C98732 /* Supabase */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		16ED9EE72F7E6AA80058257D /* LeafLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LeafLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		16ED9EF92F7E6AA90058257D /* Exceptions for "LeafLog" folder in "LeafLog" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 16ED9EE62F7E6AA80058257D /* LeafLog */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		16ED9EE92F7E6AA80058257D /* LeafLog */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				16ED9EF92F7E6AA90058257D /* Exceptions for "LeafLog" folder in "LeafLog" target */,
+			);
+			path = LeafLog;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		16ED9EE42F7E6AA80058257D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16AD08282F7E855000C98732 /* Functions in Frameworks */,
+				16AD08162F7E843D00C98732 /* RxRelay in Frameworks */,
+				16AD082A2F7E855000C98732 /* PostgREST in Frameworks */,
+				16AD082C2F7E855000C98732 /* Realtime in Frameworks */,
+				16AD08082F7E83E300C98732 /* SnapKit in Frameworks */,
+				16AD08262F7E855000C98732 /* Auth in Frameworks */,
+				16AD08232F7E84A900C98732 /* ReactorKit in Frameworks */,
+				16AD08192F7E844F00C98732 /* Kingfisher in Frameworks */,
+				16AD081C2F7E847900C98732 /* Dependencies in Frameworks */,
+				16AD08112F7E842300C98732 /* Alamofire in Frameworks */,
+				16AD081E2F7E847900C98732 /* DependenciesMacros in Frameworks */,
+				16AD08302F7E855000C98732 /* Supabase in Frameworks */,
+				16AD08142F7E843D00C98732 /* RxCocoa in Frameworks */,
+				16AD082E2F7E855000C98732 /* Storage in Frameworks */,
+				16AD080E2F7E841100C98732 /* TensorFlowLiteSwift in Frameworks */,
+				16AD080B2F7E83F200C98732 /* Then in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		16ED9EDE2F7E6AA80058257D = {
+			isa = PBXGroup;
+			children = (
+				16ED9EE92F7E6AA80058257D /* LeafLog */,
+				16ED9EE82F7E6AA80058257D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		16ED9EE82F7E6AA80058257D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				16ED9EE72F7E6AA80058257D /* LeafLog.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		16ED9EE62F7E6AA80058257D /* LeafLog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 16ED9EFA2F7E6AA90058257D /* Build configuration list for PBXNativeTarget "LeafLog" */;
+			buildPhases = (
+				16ED9EE32F7E6AA80058257D /* Sources */,
+				16ED9EE42F7E6AA80058257D /* Frameworks */,
+				16ED9EE52F7E6AA80058257D /* Resources */,
+				16AD08312F7E925300C98732 /* SwiftLint */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				16ED9EE92F7E6AA80058257D /* LeafLog */,
+			);
+			name = LeafLog;
+			packageProductDependencies = (
+				16AD08072F7E83E300C98732 /* SnapKit */,
+				16AD080A2F7E83F200C98732 /* Then */,
+				16AD080D2F7E841100C98732 /* TensorFlowLiteSwift */,
+				16AD08102F7E842300C98732 /* Alamofire */,
+				16AD08132F7E843D00C98732 /* RxCocoa */,
+				16AD08152F7E843D00C98732 /* RxRelay */,
+				16AD08182F7E844F00C98732 /* Kingfisher */,
+				16AD081B2F7E847900C98732 /* Dependencies */,
+				16AD081D2F7E847900C98732 /* DependenciesMacros */,
+				16AD08222F7E84A900C98732 /* ReactorKit */,
+				16AD08252F7E855000C98732 /* Auth */,
+				16AD08272F7E855000C98732 /* Functions */,
+				16AD08292F7E855000C98732 /* PostgREST */,
+				16AD082B2F7E855000C98732 /* Realtime */,
+				16AD082D2F7E855000C98732 /* Storage */,
+				16AD082F2F7E855000C98732 /* Supabase */,
+			);
+			productName = LeafLog;
+			productReference = 16ED9EE72F7E6AA80058257D /* LeafLog.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		16ED9EDF2F7E6AA80058257D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2610;
+				LastUpgradeCheck = 2610;
+				TargetAttributes = {
+					16ED9EE62F7E6AA80058257D = {
+						CreatedOnToolsVersion = 26.1;
+					};
+				};
+			};
+			buildConfigurationList = 16ED9EE22F7E6AA80058257D /* Build configuration list for PBXProject "LeafLog" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 16ED9EDE2F7E6AA80058257D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				16AD08062F7E83E300C98732 /* XCRemoteSwiftPackageReference "SnapKit" */,
+				16AD08092F7E83F200C98732 /* XCRemoteSwiftPackageReference "Then" */,
+				16AD080C2F7E841100C98732 /* XCRemoteSwiftPackageReference "TensorFlowLiteSwift" */,
+				16AD080F2F7E842300C98732 /* XCRemoteSwiftPackageReference "Alamofire" */,
+				16AD08122F7E843D00C98732 /* XCRemoteSwiftPackageReference "RxSwift" */,
+				16AD08172F7E844F00C98732 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				16AD081A2F7E847900C98732 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
+				16AD08212F7E84A900C98732 /* XCRemoteSwiftPackageReference "ReactorKit" */,
+				16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 16ED9EE82F7E6AA80058257D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				16ED9EE62F7E6AA80058257D /* LeafLog */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		16ED9EE52F7E6AA80058257D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		16AD08312F7E925300C98732 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# 1. mise가 설치될 수 있는 주요 경로들을 PATH에 한꺼번에 추가합니다.\nexport PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\n# 2. 이제 'which' 명령어로 mise가 어디 있든 찾아낼 수 있습니다.\nif which mise >/dev/null; then\n  eval \"$(mise activate bash)\"\n  # '--config' 오타 주의! (config 가 맞습니다)\n  mise exec -- swiftlint lint --config ${SRCROOT}/LeafLog/swiftlint.yml\nelse\n  # 만약 모든 경로를 뒤졌는데도 없다면 경고만 띄우고 빌드는 성공시킵니다.\n  echo \"warning: mise not installed. SwiftLint skipped.\"\nfi\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		16ED9EE32F7E6AA80058257D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		16ED9EFB2F7E6AA90058257D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LeafLog/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = none.LeafLog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		16ED9EFC2F7E6AA90058257D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LeafLog/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = none.LeafLog;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		16ED9EFD2F7E6AA90058257D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		16ED9EFE2F7E6AA90058257D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		16ED9EE22F7E6AA80058257D /* Build configuration list for PBXProject "LeafLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				16ED9EFD2F7E6AA90058257D /* Debug */,
+				16ED9EFE2F7E6AA90058257D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		16ED9EFA2F7E6AA90058257D /* Build configuration list for PBXNativeTarget "LeafLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				16ED9EFB2F7E6AA90058257D /* Debug */,
+				16ED9EFC2F7E6AA90058257D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		16AD08062F7E83E300C98732 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
+		16AD08092F7E83F200C98732 /* XCRemoteSwiftPackageReference "Then" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/devxoul/Then";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+		16AD080C2F7E841100C98732 /* XCRemoteSwiftPackageReference "TensorFlowLiteSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Jaesung-Jung/TensorFlowLiteSwift";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		16AD080F2F7E842300C98732 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.11.1;
+			};
+		};
+		16AD08122F7E843D00C98732 /* XCRemoteSwiftPackageReference "RxSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ReactiveX/RxSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.10.2;
+			};
+		};
+		16AD08172F7E844F00C98732 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.8.1;
+			};
+		};
+		16AD081A2F7E847900C98732 /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.12.0;
+			};
+		};
+		16AD08212F7E84A900C98732 /* XCRemoteSwiftPackageReference "ReactorKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ReactorKit/ReactorKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.2.0;
+			};
+		};
+		16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		16AD08072F7E83E300C98732 /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08062F7E83E300C98732 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
+		};
+		16AD080A2F7E83F200C98732 /* Then */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08092F7E83F200C98732 /* XCRemoteSwiftPackageReference "Then" */;
+			productName = Then;
+		};
+		16AD080D2F7E841100C98732 /* TensorFlowLiteSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD080C2F7E841100C98732 /* XCRemoteSwiftPackageReference "TensorFlowLiteSwift" */;
+			productName = TensorFlowLiteSwift;
+		};
+		16AD08102F7E842300C98732 /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD080F2F7E842300C98732 /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+		16AD08132F7E843D00C98732 /* RxCocoa */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08122F7E843D00C98732 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxCocoa;
+		};
+		16AD08152F7E843D00C98732 /* RxRelay */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08122F7E843D00C98732 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxRelay;
+		};
+		16AD08182F7E844F00C98732 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08172F7E844F00C98732 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		16AD081B2F7E847900C98732 /* Dependencies */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD081A2F7E847900C98732 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = Dependencies;
+		};
+		16AD081D2F7E847900C98732 /* DependenciesMacros */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD081A2F7E847900C98732 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = DependenciesMacros;
+		};
+		16AD08222F7E84A900C98732 /* ReactorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08212F7E84A900C98732 /* XCRemoteSwiftPackageReference "ReactorKit" */;
+			productName = ReactorKit;
+		};
+		16AD08252F7E855000C98732 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		16AD08272F7E855000C98732 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		16AD08292F7E855000C98732 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		16AD082B2F7E855000C98732 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		16AD082D2F7E855000C98732 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		16AD082F2F7E855000C98732 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD08242F7E855000C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 16ED9EDF2F7E6AA80058257D /* Project object */;
+}
