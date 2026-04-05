@@ -64,3 +64,4 @@ fastlane/test_output
 
 # Configuration Files
 *.xcconfig
+GoogleService-Info.plist
