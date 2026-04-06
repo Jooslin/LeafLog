@@ -15,7 +15,7 @@ import RxSwift
  - Step: 각 Step은 '앱의 네비게이션 상태(state)'를 의미합니다.
     -> "이 화면으로 가고싶어"라는 뜻이라기 보다는, "누군가 혹은 어떤 것이 이 동작을 했다"라는 의미로 보는 것이 적절합니다.
     -> "누군가 혹은 어떤 것이 이 동작을 했다"라는 state가 전달되면, RxFlow는 현재의 네비게이션 Flow에 알맞은 화면을 선택합니다.
- - Stepper: Steps를 뱉어낼 수 있는(emit) 존재입니다. Stepper는 Flow의 모든 네비게이션 동작을 트리거합니다.
+ - Stepper: Steps를 방출할 수 있는(emit) 존재입니다. Stepper는 Flow의 모든 네비게이션 동작을 트리거합니다.
  - Presentable: 나타내질 수 있는 (presented) 추상적 존재를 의미합니다. UIViewController와 Flow는 Presentable입니다.
  
  - NextFlowItem: Reactive 메커니즘 내에서, '새로운 Step'을 생성해낼 존재가 무엇인지 Coordinator에게 알려줍니다.(tell)
@@ -50,11 +50,11 @@ final class AppFlow: Flow {
         switch step {
         case .main:
             let plantTabFlow = PlantTabFlow()
-            let calendarTabFlow = PlantTabFlow()
-            let myInfoTabFlow = PlantTabFlow()
+            let calendarTabFlow = CalendarTabFlow()
+            let myInfoTabFlow = MyInfoTabFlow()
             
             // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
-            Flows.use(plantTabFlow, calendarTabFlow, myInfoTabFlow, when: .ready) { plant, calendar, my in
+            Flows.use(plantTabFlow, calendarTabFlow, myInfoTabFlow, when: .created) { plant, calendar, my in
                 plant.tabBarItem = UITabBarItem(
                     title: "식물",
                     image: UIImage(systemName: "leaf"),
