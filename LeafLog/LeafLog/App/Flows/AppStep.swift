@@ -9,5 +9,9 @@ import RxFlow
 
 enum AppStep: Step {
     case root
+    case main
     
+    case plantTab
+    case calendarTab
+    case myInfoTab
 }

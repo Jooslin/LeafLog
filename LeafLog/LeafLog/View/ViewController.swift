@@ -6,8 +6,12 @@
 //
 
 import UIKit
+import RxFlow
+import RxRelay
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, Stepper {
+    let steps = PublishRelay<Step>()
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
