@@ -9,27 +9,17 @@ import Foundation
 import Supabase
 
 final class SupabaseManager {
-    
     static let shared = SupabaseManager()
-    
-    private enum InfoKeys {
-        static let url = "SUPABASE_URL"
-        static let anonKey = "SUPABASE_ANON_KEY"
-    }
-    
     private init() {}
     
     let client: SupabaseClient = {
-        let baseURL = getSecret(for: InfoKeys.url)
-        let anonKey = getSecret(for: InfoKeys.anonKey)
-
-        guard let supabaseURL = URL(string: "https://\(baseURL)") else {
+        guard let supabaseURL = URL(string: "https://\(AppSecrets.supabaseURL)") else {
             fatalError("유효하지 않은 Supabase URL입니다.")
         }
 
         return SupabaseClient(
             supabaseURL: supabaseURL,
-            supabaseKey: anonKey,
+            supabaseKey: AppSecrets.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: .init(
                     emitLocalSessionAsInitialSession: true
@@ -37,12 +27,4 @@ final class SupabaseManager {
             )
         )
     }()
-
-    private static func getSecret(for key: String) -> String {
-        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
-              !value.isEmpty else {
-            fatalError("\(key)를 Info.plist에서 찾을 수 없습니다.")
-        }
-        return value
-    }
 }
