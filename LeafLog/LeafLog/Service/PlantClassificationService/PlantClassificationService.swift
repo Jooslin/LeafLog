@@ -27,11 +27,17 @@ class PlantClassificationService {
     private let inputHeight = 224
     
     func analyzeImage(image: UIImage) {
-        guard let mediaPath = model.modelPath else {
+        guard let modelPath = model.modelPath else {
             print("모델 파일을 찾을 수 없습니다.")
             return
         }
         
-        
+        do {
+            let interpreter = try Interpreter(modelPath: modelPath)
+            try interpreter.allocateTensors()
+            
+        } catch {
+            print("Interpreter 생성 실패")
+        }
     }
 }
