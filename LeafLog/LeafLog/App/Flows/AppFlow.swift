@@ -54,7 +54,7 @@ final class AppFlow: Flow {
             let myInfoTabFlow = MyInfoTabFlow()
             
             // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
-            Flows.use(plantTabFlow, calendarTabFlow, myInfoTabFlow, when: .created) { plant, calendar, my in
+            Flows.use(plantTabFlow, calendarTabFlow, myInfoTabFlow, when: .created) { [weak self] plant, calendar, my in
                 plant.tabBarItem = UITabBarItem(
                     title: "식물",
                     image: UIImage(systemName: "leaf"),
@@ -73,7 +73,7 @@ final class AppFlow: Flow {
                     tag: 2
                 )
                 
-                self.tabBarController.setViewControllers([plant, calendar, my], animated: true)
+                self?.tabBarController.setViewControllers([plant, calendar, my], animated: true)
             }
             
             return .multiple(flowContributors: [
