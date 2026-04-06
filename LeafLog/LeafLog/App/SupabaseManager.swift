@@ -11,11 +11,17 @@ import Supabase
 final class SupabaseManager {
     
     static let shared = SupabaseManager()
+    
+    private enum InfoKeys {
+        static let url = "SUPABASE_URL"
+        static let anonKey = "SUPABASE_ANON_KEY"
+    }
+    
     private init() {}
     
     let client: SupabaseClient = {
-        let baseURL = getSecret(for: "SUPABASE_URL")
-        let anonKey = getSecret(for: "SUPABASE_ANON_KEY")
+        let baseURL = getSecret(for: InfoKeys.url)
+        let anonKey = getSecret(for: InfoKeys.anonKey)
 
         guard let supabaseURL = URL(string: "https://\(baseURL)") else {
             fatalError("유효하지 않은 Supabase URL입니다.")
