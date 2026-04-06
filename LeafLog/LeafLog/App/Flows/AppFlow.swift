@@ -82,10 +82,27 @@ final class AppFlow: Flow {
                 .contribute(withNextPresentable: myInfoTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.myInfoTab))
             ])
             
+        case .alert(let title, let message):
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            let action = UIAlertAction(title: "확인", style: .default, handler: nil)
+            alert.addAction(action)
+            tabBarController.selectedViewController?.present(alert, animated: true)
+            return .none
+            
         default:
             return .none
         }
     }
     
+    func navigate(to viewController: UIViewController, animated: Bool) {
+        if let navigationController = tabBarController.selectedViewController as? UINavigationController {
+            navigationController.pushViewController(viewController, animated: animated)
+        } else {
+            tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
+        }
+    }
     
+    private func present(_ viewController: UIViewController, animated: Bool) {
+        tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
+    }
 }
