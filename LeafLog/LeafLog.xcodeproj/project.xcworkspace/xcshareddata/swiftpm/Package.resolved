@@ -1,5 +1,5 @@
 {
-  "originHash" : "ec345e48ce69cac71905af5b6d043fcfbc6280e5eae970e10624f4293d161a53",
+  "originHash" : "5c47e456b168d4b8448a69403485589aeea0b66e713babc1a746f600cd23f726",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -49,7 +49,7 @@
     {
       "identity" : "rxswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ReactiveX/RxSwift.git",
+      "location" : "https://github.com/ReactiveX/RxSwift",
       "state" : {
         "revision" : "132aea4f236ccadc51590b38af0357a331d51fa2",
         "version" : "6.10.2"
@@ -179,6 +179,15 @@
       "state" : {
         "revision" : "dfd70507def84cb5fb821278448a262c6ff2bbad",
         "version" : "1.9.0"
+      }
+    },
+    {
+      "identity" : "xmlcoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoreOffice/XMLCoder.git",
+      "state" : {
+        "revision" : "5e1ada828d2618ecb79c974e03f79c8f4df90b71",
+        "version" : "0.18.0"
       }
     }
   ],
