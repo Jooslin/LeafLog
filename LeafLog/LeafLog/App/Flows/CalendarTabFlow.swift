@@ -1,14 +1,14 @@
 //
-//  PlantTabFlow.swift
+//  CalendarTabFlow.swift
 //  LeafLog
 //
-//  Created by t2025-m0143 on 4/5/26.
+//  Created by t2025-m0143 on 4/6/26.
 //
 
 import UIKit
 import RxFlow
 
-final class PlantTabFlow: Flow {
+final class CalendarTabFlow: Flow {
     let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
@@ -19,7 +19,7 @@ final class PlantTabFlow: Flow {
         }
         
         switch step {
-        case .plantTab:
+        case .calendarTab:
             let viewController = ViewController()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
