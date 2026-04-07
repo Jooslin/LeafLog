@@ -7,7 +7,7 @@
 
 import Foundation
 
-// 공통 XML 래퍼
+// 검색용 API 모델
 struct PlantListResponse: Decodable {
     let header: PlantResponseHeader
     let body: PlantListBody
@@ -29,7 +29,9 @@ struct PlantListItems: Decodable {
         case pageNo
         case totalCount
     }
-
+    
+    // 기본 디코더 대신 사용 할 것이기 때문에 init
+    // XML은 item으로 올 수도 있고 [item]올 수도 있어서 이렇게 처리함
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
@@ -40,13 +42,14 @@ struct PlantListItems: Decodable {
         } else {
             item = []
         }
-
+        
         numOfRows = try? container.decode(String.self, forKey: .numOfRows)
         pageNo = try? container.decode(String.self, forKey: .pageNo)
         totalCount = try? container.decode(String.self, forKey: .totalCount)
     }
 }
 
+// 디테일 API 응답
 struct PlantDetailResponse: Decodable {
     let header: PlantResponseHeader
     let body: PlantDetailBody?
