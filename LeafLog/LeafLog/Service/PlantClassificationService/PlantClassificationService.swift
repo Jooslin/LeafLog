@@ -36,15 +36,30 @@ class PlantClassificationService {
         }
     }
     
+    enum ClassificationError: Error {
+        case modelNotFound
+        case preprocessingFailed
+        case interpreterCreationFailed
+        
+        var title: String { "Error" }
+        var message: String {
+            switch self {
+            case .modelNotFound: "모델을 찾을 수 없습니다"
+            case .preprocessingFailed: "이미지 전처리 실패"
+            case .interpreterCreationFailed: "Interpreter 생성 실패"
+            }
+        }
+    }
+    
     let model = Model.aiyPlantsV1
     
     // 분석 대상의 필요 이미지 크기
     private let inputWidth = 224
     private let inputHeight = 224
     
-    func analyzeImage(image: UIImage) -> String {
+    func analyzeImage(image: UIImage) throws -> (Confidence, String) {
         guard let modelPath = model.modelPath else {
-            return "모델 파일을 찾을 수 없습니다."
+            throw ClassificationError.modelNotFound
         }
         
         do {
@@ -52,7 +67,7 @@ class PlantClassificationService {
             try interpreter.allocateTensors()
             
             guard let rgbData = preprocessImage(image, width: inputWidth, height: inputHeight) else {
-                return "이미지 전처리 실패"
+                throw ClassificationError.preprocessingFailed
             }
             
             try interpreter.copy(rgbData, toInputAt: 0) // 데이터를 interpreter에 전달(복사)
@@ -67,14 +82,13 @@ class PlantClassificationService {
                 let grade = Confidence.from(value: max)
                 let plantName = "\(maxIndex)"
                 
-                return "\(grade.rawValue): \(confidence)% 확률로 \(plantName)입니다."
+                return (grade, plantName)
+            } else {
+                return (.low, "Unknown")
             }
         } catch {
-            print("TFLite Error: \(error.localizedDescription)")
-            print("Interpreter 생성 실패")
+            throw ClassificationError.interpreterCreationFailed
         }
-        
-        return ""
     }
 }
 
