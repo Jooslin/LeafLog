@@ -37,7 +37,10 @@ class LoginViewController: UIViewController, View {
     
     private func bindAction(reactor: LoginReactor) {
         loginView.googleLoginButton.rx.tap
-            .map { LoginReactor.Action.googleLoginTapped }
+            .compactMap { [weak self] in
+                guard let self else { return nil }
+                return LoginReactor.Action.googleLoginTapped(self)
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         

@@ -18,26 +18,14 @@ final class AuthService {
     private let googleProvider = GoogleAuthProvider()
     private let kakaoProvider = KakaoAuthProvider()
 
-    @MainActor
-    private var rootViewController: UIViewController? {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first(where: { $0.activationState == .foregroundActive })?
-            .keyWindow?
-            .rootViewController
-    }
-
     
     // MARK: - Initialization
     private init() {}
 
     
     // MARK: - Google Login
-    func startGoogleNativeLogin() async throws -> Supabase.User {
-        guard let rootVC = rootViewController else {
-            throw AuthError.loginFailed("rootViewController를 찾을 수 없습니다.")
-        }
-        let credential = try await googleProvider.fetchCredential(presentingViewController: rootVC)
+    func startGoogleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
+        let credential = try await googleProvider.fetchCredential(presentingViewController: presentingViewController)
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .google, idToken: credential.idToken, nonce: credential.rawNonce)
         )
