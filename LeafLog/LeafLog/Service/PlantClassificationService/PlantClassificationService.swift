@@ -20,6 +20,22 @@ class PlantClassificationService {
         }
     }
     
+    enum Confidence: String {
+        case extremeHigh = "매우 높음"
+        case high = "높음"
+        case normal = "보통"
+        case low = "낮음"
+        
+        static func from(value: UInt8) -> Confidence {
+            switch value {
+            case 150...255: .extremeHigh // 59% 이상 - 모델이 강하게 확신
+            case 80..<150: .high // 31~58% - 명확히 구분됨 (몬스테라 120 해당)
+            case 40..<80: .normal // 16~31% - 비슷한 종이 여럿 있음
+            default: .low // 15% 이하 - 불확실, 재촬영 권장
+            }
+        }
+    }
+    
     let model = Model.aiyPlantsV1
     
     // 이미지 크기
@@ -43,16 +59,18 @@ class PlantClassificationService {
             try interpreter.invoke() // interpreter 실행
             
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
-            let results = output.data.toArray(type: Float32.self) // 추론 결과를 Float 배열로 변환 - '해당 식물일 확률'의 배열
+            let results = output.data.toArray(type: UInt8.self) // 추론 결과를 Int8 배열로 변환 - '해당 식물일 확률'의 배열
             
             if let max = results.max(),
                let maxIndex = results.firstIndex(of: max) {
-                let confidence = Int(max * 100)
+                let confidence = Int((Float(max) / 255.0) * 100)
+                let grade = Confidence.from(value: max)
                 let plantName = "\(maxIndex)"
                 
-                return "\(confidence)% 확률로 \(plantName)입니다."
+                return "\(grade.rawValue): \(confidence)% 확률로 \(plantName)입니다."
             }
         } catch {
+            print("TFLite Error: \(error.localizedDescription)")
             print("Interpreter 생성 실패")
         }
         
@@ -114,9 +132,9 @@ extension PlantClassificationService {
         for i in 0..<(width * height) {
             let offset = i * 4
             // RGB 값을 차례로 추가
-            inputData.append(pointer[offset + 1]) // R
-            inputData.append(pointer[offset + 2]) // G
-            inputData.append(pointer[offset + 3]) // B
+            inputData.append(pointer[offset + 0]) // R
+            inputData.append(pointer[offset + 1]) // G
+            inputData.append(pointer[offset + 2]) // B
         }
         return inputData
     }
