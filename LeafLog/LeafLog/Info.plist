@@ -17,7 +17,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>leaflog</string>
+				<string>com.jooslin.leaflog</string>
 			</array>
 		</dict>
 		<dict>
