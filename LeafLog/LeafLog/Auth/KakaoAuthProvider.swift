@@ -17,8 +17,8 @@ final class KakaoAuthProvider {
     @MainActor
     func fetchIDToken() async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
-            let handler: (OAuthToken?, Error?) -> Void = { [weak self] oauthToken, error in
-                self?.handleResult(oauthToken: oauthToken, error: error, continuation: continuation)
+            let handler: (OAuthToken?, Error?) -> Void = { oauthToken, error in
+                self.handleResult(oauthToken: oauthToken, error: error, continuation: continuation)
             }
 
             if UserApi.isKakaoTalkLoginAvailable() {
