@@ -43,9 +43,9 @@ struct PlantListItems: Decodable {
             item = []
         }
         
-        numOfRows = try? container.decode(String.self, forKey: .numOfRows)
-        pageNo = try? container.decode(String.self, forKey: .pageNo)
-        totalCount = try? container.decode(String.self, forKey: .totalCount)
+        numOfRows = try container.decodeIfPresent(String.self, forKey: .numOfRows)
+        pageNo = try container.decodeIfPresent(String.self, forKey: .pageNo)
+        totalCount = try container.decodeIfPresent(String.self, forKey: .totalCount)
     }
 }
 
