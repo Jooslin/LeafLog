@@ -54,10 +54,20 @@ class LoginViewController: UIViewController, View {
     private func bindState(reactor: LoginReactor) {
         let state = reactor.state.asDriver(onErrorJustReturn: LoginReactor.State())
         
+        state
+            .map { !$0.isLoading }
+            .distinctUntilChanged()
+            .drive(onNext: { [weak self] isEnabled in
+                self?.loginView.googleLoginButton.isEnabled = isEnabled
+                self?.loginView.kakaoLoginButton.isEnabled = isEnabled
+            })
+            .disposed(by: disposeBag)
+
+        
         reactor.pulse(\.$loginSuccess)
             .filter { $0 == true }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] _ in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] _ in
                 self?.transitionToMain()
             })
             .disposed(by: disposeBag)
@@ -65,8 +75,8 @@ class LoginViewController: UIViewController, View {
         
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] message in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] message in
                 self?.showAlert(message: message)
             })
             .disposed(by: disposeBag)
