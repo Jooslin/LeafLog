@@ -7,6 +7,7 @@
 
 import TensorFlowLite
 import UIKit
+import Dependencies
 
 class PlantClassificationService {
     //MARK: Type Deifinition
@@ -197,5 +198,19 @@ extension Data {
         return self.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: T.self))
         }
+    }
+}
+
+//MARK: Dependencies
+extension PlantClassificationService: DependencyKey {
+    static var liveValue: PlantClassificationService {
+        PlantClassificationService()
+    }
+}
+
+extension DependencyValues {
+    var plantClassificationService: PlantClassificationService {
+        get { self[PlantClassificationService.self] }
+        set { self[PlantClassificationService.self] = newValue }
     }
 }

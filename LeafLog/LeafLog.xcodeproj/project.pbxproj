@@ -24,6 +24,7 @@
 		16AD0E702F7FB17000C98732 /* Then in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E6F2F7FB17000C98732 /* Then */; };
 		16AD0E732F7FB17D00C98732 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E722F7FB17D00C98732 /* SnapKit */; };
 		16AD0E782F7FB1E600C98732 /* RxFlow in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E772F7FB1E600C98732 /* RxFlow */; };
+		16BE7CC22F853B3A00F6C98B /* DependenciesMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 16BE7CC12F853B3A00F6C98B /* DependenciesMacros */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 				16AD0E612F7FB0FF00C98732 /* RxCocoa in Frameworks */,
 				16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */,
 				16AD0E632F7FB0FF00C98732 /* RxRelay in Frameworks */,
+				16BE7CC22F853B3A00F6C98B /* DependenciesMacros in Frameworks */,
 				16AD0E5E2F7FB0E000C98732 /* Kingfisher in Frameworks */,
 				16AD0E4F2F7FB0BB00C98732 /* Storage in Frameworks */,
 				16AD0E4D2F7FB0BB00C98732 /* Realtime in Frameworks */,
@@ -83,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				16AD0E2F2F7FAFE200C98732 /* LeafLog */,
+				16BE7CC02F853B3A00F6C98B /* Frameworks */,
 				16AD0E2E2F7FAFE200C98732 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,6 +96,13 @@
 				16AD0E2D2F7FAFE200C98732 /* LeafLog.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		16BE7CC02F853B3A00F6C98B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -133,6 +143,7 @@
 				16AD0E6F2F7FB17000C98732 /* Then */,
 				16AD0E722F7FB17D00C98732 /* SnapKit */,
 				16AD0E772F7FB1E600C98732 /* RxFlow */,
+				16BE7CC12F853B3A00F6C98B /* DependenciesMacros */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -607,6 +618,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 16AD0E762F7FB1E600C98732 /* XCRemoteSwiftPackageReference "RxFlow" */;
 			productName = RxFlow;
+		};
+		16BE7CC12F853B3A00F6C98B /* DependenciesMacros */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16AD0E552F7FB0D500C98732 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = DependenciesMacros;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
