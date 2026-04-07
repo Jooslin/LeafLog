@@ -8,26 +8,43 @@
 import Foundation
 
 // 공통 XML 래퍼
-struct PlantListEnvelope: Decodable {
-    let response: PlantListResponse
-}
-
 struct PlantListResponse: Decodable {
     let header: PlantResponseHeader
-    let body: PlantListBody?
+    let body: PlantListBody
 }
 
 struct PlantListBody: Decodable {
-    let items: PlantListItems?
+    let items: PlantListItems
 }
 
-// item이 여러개일 때 처리해주는 경우
 struct PlantListItems: Decodable {
-    let item: SingleOrArray<PlantSummary>?
-}
+    let item: [PlantSummary]
+    let numOfRows: String?
+    let pageNo: String?
+    let totalCount: String?
 
-struct PlantDetailEnvelope: Decodable {
-    let response: PlantDetailResponse
+    private enum CodingKeys: String, CodingKey {
+        case item
+        case numOfRows
+        case pageNo
+        case totalCount
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if let items = try? container.decode([PlantSummary].self, forKey: .item) {
+            item = items
+        } else if let singleItem = try? container.decode(PlantSummary.self, forKey: .item) {
+            item = [singleItem]
+        } else {
+            item = []
+        }
+
+        numOfRows = try? container.decode(String.self, forKey: .numOfRows)
+        pageNo = try? container.decode(String.self, forKey: .pageNo)
+        totalCount = try? container.decode(String.self, forKey: .totalCount)
+    }
 }
 
 struct PlantDetailResponse: Decodable {
@@ -118,26 +135,5 @@ struct PlantDetail: Decodable {
         case functionality = "fncltyInfo"
         case lightDemand = "lighttdemanddoCodeNm"
         case placement = "postngplaceCodeNm"
-    }
-}
-
-
-struct SingleOrArray<Element: Decodable>: Decodable {
-    let values: [Element]
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        if let array = try? container.decode([Element].self) {
-            values = array
-            return
-        }
-
-        if let single = try? container.decode(Element.self) {
-            values = [single]
-            return
-        }
-
-        values = []
     }
 }
