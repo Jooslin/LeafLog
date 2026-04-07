@@ -41,3 +41,65 @@ class PlantClassificationService {
         }
     }
 }
+
+extension PlantClassificationService {
+    // 이미지 전처리 함수
+    private func preprocessImage(_ image: UIImage, width: Int, height: Int) -> Data? {
+        // 1. 비율에 맞춰 리사이징 할 크기 계산 (Aspect Fill 방식)
+        let size = image.size
+        let widthRatio  = CGFloat(width) / size.width
+        let heightRatio = CGFloat(height) / size.height
+        
+        // 더 큰 비율을 선택하여 빈 공간이 생기지 않도록 함
+        let scale = max(widthRatio, heightRatio)
+        let newWidth  = size.width * scale
+        let newHeight = size.height * scale
+        
+        // 2. 중앙 배치를 위한 좌표(Offset) 계산
+        let x = (CGFloat(width) - newWidth) / 2.0
+        let y = (CGFloat(height) - newHeight) / 2.0
+        let renderRect = CGRect(x: x, y: y, width: newWidth, height: newHeight)
+        
+        // 3. 224x224 고정 크기의 컨텍스트 생성
+        UIGraphicsBeginImageContextWithOptions(CGSize(width: width, height: height), true, 1.0)
+        // 중앙에 맞춰서 이미지를 다시 그림 (넘치는 부분은 자동으로 잘림)
+        image.draw(in: renderRect)
+        
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+        let resized = renderer.image { context in
+            image.draw(in: renderRect)
+        }
+        
+        guard let cgImage = resized.cgImage else {
+            return nil
+        }
+        
+        // 4. 리사이징된 이미지에서 다시 한번 비트맵 데이터 추출 (CGContext 사용)
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        ) else {
+            return nil
+        }
+        
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let imageData = context.data else { return nil }
+        
+        var inputData = Data()
+        let pointer = imageData.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        
+        for i in 0..<(width * height) {
+            let offset = i * 4
+            // RGB 값을 차례로 추가
+            inputData.append(pointer[offset + 1]) // R
+            inputData.append(pointer[offset + 2]) // G
+            inputData.append(pointer[offset + 3]) // B
+        }
+        return inputData
+    }
+}
