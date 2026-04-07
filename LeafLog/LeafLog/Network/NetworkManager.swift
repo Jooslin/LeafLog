@@ -22,11 +22,11 @@ final class NetworkManager {
         self.decoder.shouldProcessNamespaces = false
     }
 
-    func fetchPlantList(apiKey: String, keyword: String, pageNo: Int = 1, numOfRows: Int = 10) async throws -> [PlantSummary] {
+    func fetchPlantList(keyword: String, pageNo: Int = 1, numOfRows: Int = 10) async throws -> [PlantSummary] {
         let response: PlantListResponse = try await request(
             path: "gardenList",
             parameters: [
-                "apiKey": apiKey,
+                "apiKey": AppConfig.apiKey,
                 "sType": "sCntntsSj",
                 "sText": keyword,
                 "pageNo": String(pageNo),
@@ -39,11 +39,11 @@ final class NetworkManager {
         return response.body.items.item
     }
 
-    func fetchPlantDetail(apiKey: String, contentNumber: String) async throws -> PlantDetail {
+    func fetchPlantDetail(contentNumber: String) async throws -> PlantDetail {
         let response: PlantDetailResponse = try await request(
             path: "gardenDtl",
             parameters: [
-                "apiKey": apiKey,
+                "apiKey": AppConfig.apiKey,
                 "cntntsNo": contentNumber // 목록 조회에서 받은 걸 여기 넣어서 상세 호출
             ]
         )
