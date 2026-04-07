@@ -18,7 +18,7 @@ enum AppConfig {
 
     private static func value(for key: String) -> String {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
-            value.isEmpty == false
+              !value.isEmpty
         else {
             fatalError("\(key)를 info.plist에서 찾을 수 없습니다.")
         }
