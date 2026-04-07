@@ -112,18 +112,14 @@ extension PlantClassificationService {
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
             let results = output.data.toArray(type: UInt8.self) // 추론 결과를 Int8 배열로 변환 - '해당 식물일 확률'의 배열
             
-            if let max = results.max(),
-               let maxIndex = results.firstIndex(of: max) {
-                let grade = Confidence.from(value: max)
-                
-                guard maxIndex < labels.count else {
-                    return (.low, "Unknown")
-                }
-                
-                return (grade, labels[maxIndex])
-            } else {
+            guard let max = results.max(),
+                  let maxIndex = results.firstIndex(of: max),
+                  maxIndex < labels.count else {
                 return (.low, "Unknown")
             }
+            
+            let grade = Confidence.from(value: max)
+            return (grade, labels[maxIndex])
         } catch {
             throw ClassificationError.inferenceFailed
         }
