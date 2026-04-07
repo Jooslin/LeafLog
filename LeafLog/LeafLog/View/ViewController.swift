@@ -16,6 +16,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
+        view.backgroundColor = .white
         let imageView = UIImageView(image: .monstera)
         let button = UIButton(configuration: .plain())
         button.setTitle("analyze", for: .normal)
@@ -46,7 +47,12 @@ class ViewController: UIViewController {
                 return
             }
             
-            print(self.plantService.analyzeImage(image: image))
+            do {
+                let result = try self.plantService.analyzeImage(image: image)
+                resultLabel.text = "정확도 \(result.0), 식물 이름: \(result.1)"
+            } catch {
+                resultLabel.text = "분석 실패, 원인:\(error.localizedDescription)"
+            }
         }, for: .touchUpInside)
     }
 

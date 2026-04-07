@@ -9,13 +9,20 @@ import TensorFlowLite
 import UIKit
 
 class PlantClassificationService {
-    enum Model {
-        case aiyPlantsV1
+    enum Model: String {
+        case aiyPlantsV1 = "aiy_plants_V1"
         
         var modelPath: String? {
             switch self {
             case .aiyPlantsV1:
-                return Bundle.main.path(forResource: "3", ofType: "tflite")
+                Bundle.main.path(forResource: "3", ofType: "tflite")
+            }
+        }
+        
+        var labelPath: String? {
+            switch self {
+            case .aiyPlantsV1:
+                Bundle.main.path(forResource: "aiy_plants_V1_labels", ofType: "txt")
             }
         }
     }
@@ -37,21 +44,20 @@ class PlantClassificationService {
     }
     
     enum ClassificationError: Error {
-        case modelNotFound
         case preprocessingFailed
         case interpreterCreationFailed
         
         var title: String { "Error" }
         var message: String {
             switch self {
-            case .modelNotFound: "모델을 찾을 수 없습니다"
             case .preprocessingFailed: "이미지 전처리 실패"
             case .interpreterCreationFailed: "Interpreter 생성 실패"
             }
         }
     }
     
-    let model = Model.aiyPlantsV1
+    private let model = Model.aiyPlantsV1
+    private var labels = [String]()
     
     // 분석 대상의 필요 이미지 크기
     private let inputWidth = 224
@@ -59,7 +65,7 @@ class PlantClassificationService {
     
     func analyzeImage(image: UIImage) throws -> (Confidence, String) {
         guard let modelPath = model.modelPath else {
-            throw ClassificationError.modelNotFound
+            fatalError("\(model.rawValue) 모델을 불러오는 데 실패하였습니다.")
         }
         
         do {
@@ -76,18 +82,36 @@ class PlantClassificationService {
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
             let results = output.data.toArray(type: UInt8.self) // 추론 결과를 Int8 배열로 변환 - '해당 식물일 확률'의 배열
             
+            loadLabel()
+            
             if let max = results.max(),
                let maxIndex = results.firstIndex(of: max) {
                 let confidence = Int((Float(max) / 255.0) * 100)
                 let grade = Confidence.from(value: max)
-                let plantName = "\(maxIndex)"
                 
-                return (grade, plantName)
+                guard maxIndex < labels.count else {
+                    return (.low, "Unknown")
+                }
+                
+                return (grade, labels[maxIndex])
             } else {
                 return (.low, "Unknown")
             }
         } catch {
             throw ClassificationError.interpreterCreationFailed
+        }
+    }
+    
+    private func loadLabel() {
+        guard let labelPath = model.labelPath else {
+            return
+        }
+        
+        do {
+            let content = try String(contentsOfFile: labelPath, encoding: .utf8)
+            labels = content.components(separatedBy: .newlines)
+        } catch {
+            fatalError("\(model.rawValue) 모델의 레이블 파일을 읽을 수 없습니다.")
         }
     }
 }
