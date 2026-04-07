@@ -9,6 +9,7 @@ import TensorFlowLite
 import UIKit
 
 class PlantClassificationService {
+    //MARK: Type Deifinition
     enum Model: String {
         case aiyPlantsV1 = "aiy_plants_V1"
         
@@ -45,33 +46,61 @@ class PlantClassificationService {
     
     enum ClassificationError: Error {
         case preprocessingFailed
-        case interpreterCreationFailed
+        case inferenceFailed
         
         var title: String { "Error" }
         var message: String {
             switch self {
             case .preprocessingFailed: "이미지 전처리 실패"
-            case .interpreterCreationFailed: "Interpreter 생성 실패"
+            case .inferenceFailed: "모델 실행 실패"
             }
         }
     }
     
+    //MARK: Properties
+    private lazy var interpreter: Interpreter = createInterpreter()
     private let model = Model.aiyPlantsV1
-    private var labels = [String]()
+    private lazy var labels = loadLabels()
     
     // 분석 대상의 필요 이미지 크기
     private let inputWidth = 224
     private let inputHeight = 224
     
-    func analyzeImage(image: UIImage) throws -> (Confidence, String) {
+    //MARK: Initial Setting Functions
+    // interpreter 생성 함수
+    private func createInterpreter() -> Interpreter {
         guard let modelPath = model.modelPath else {
             fatalError("\(model.rawValue) 모델을 불러오는 데 실패하였습니다.")
         }
-        
         do {
             let interpreter = try Interpreter(modelPath: modelPath)
             try interpreter.allocateTensors()
-            
+            return interpreter
+        } catch {
+            fatalError("Interpreter 생성에 실패하였습니다.\nError: \(error.localizedDescription)")
+        }
+    }
+    
+    // labels를 가져오는 함수
+    private func loadLabels() -> [String] {
+        guard let labelPath = model.labelPath else {
+            return []
+        }
+        
+        do {
+            let content = try String(contentsOfFile: labelPath, encoding: .utf8)
+            return content.components(separatedBy: .newlines)
+        } catch {
+            fatalError("\(model.rawValue) 모델의 레이블 파일을 읽을 수 없습니다.")
+        }
+    }
+}
+
+//MARK: Run Model
+extension PlantClassificationService {
+    // 이미지 분석 함수
+    func analyzeImage(image: UIImage) throws -> (Confidence, String) {
+        do {
             guard let rgbData = preprocessImage(image, width: inputWidth, height: inputHeight) else {
                 throw ClassificationError.preprocessingFailed
             }
@@ -82,11 +111,8 @@ class PlantClassificationService {
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
             let results = output.data.toArray(type: UInt8.self) // 추론 결과를 Int8 배열로 변환 - '해당 식물일 확률'의 배열
             
-            loadLabel()
-            
             if let max = results.max(),
                let maxIndex = results.firstIndex(of: max) {
-                let confidence = Int((Float(max) / 255.0) * 100)
                 let grade = Confidence.from(value: max)
                 
                 guard maxIndex < labels.count else {
@@ -98,24 +124,12 @@ class PlantClassificationService {
                 return (.low, "Unknown")
             }
         } catch {
-            throw ClassificationError.interpreterCreationFailed
-        }
-    }
-    
-    private func loadLabel() {
-        guard let labelPath = model.labelPath else {
-            return
-        }
-        
-        do {
-            let content = try String(contentsOfFile: labelPath, encoding: .utf8)
-            labels = content.components(separatedBy: .newlines)
-        } catch {
-            fatalError("\(model.rawValue) 모델의 레이블 파일을 읽을 수 없습니다.")
+            throw ClassificationError.inferenceFailed
         }
     }
 }
 
+//MARK: Preprocess to run model
 extension PlantClassificationService {
     // 이미지 전처리 함수
     private func preprocessImage(_ image: UIImage, width: Int, height: Int) -> Data? {
