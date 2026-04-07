@@ -26,19 +26,37 @@ class PlantClassificationService {
     private let inputWidth = 224
     private let inputHeight = 224
     
-    func analyzeImage(image: UIImage) {
+    func analyzeImage(image: UIImage) -> String {
         guard let modelPath = model.modelPath else {
-            print("모델 파일을 찾을 수 없습니다.")
-            return
+            return "모델 파일을 찾을 수 없습니다."
         }
         
         do {
             let interpreter = try Interpreter(modelPath: modelPath)
             try interpreter.allocateTensors()
             
+            guard let rgbData = preprocessImage(image, width: inputWidth, height: inputHeight) else {
+                return "이미지 전처리 실패"
+            }
+            
+            try interpreter.copy(rgbData, toInputAt: 0) // 데이터를 interpreter에 전달(복사)
+            try interpreter.invoke() // interpreter 실행
+            
+            let output = try interpreter.output(at: 0) // 추론 결과 가져오기
+            let results = output.data.toArray(type: Float32.self) // 추론 결과를 Float 배열로 변환 - '해당 식물일 확률'의 배열
+            
+            if let max = results.max(),
+               let maxIndex = results.firstIndex(of: max) {
+                let confidence = Int(max * 100)
+                let plantName = "\(maxIndex)"
+                
+                return "\(confidence)% 확률로 \(plantName)입니다."
+            }
         } catch {
             print("Interpreter 생성 실패")
         }
+        
+        return ""
     }
 }
 
@@ -101,5 +119,14 @@ extension PlantClassificationService {
             inputData.append(pointer[offset + 3]) // B
         }
         return inputData
+    }
+}
+
+//MARK: Data 변환 익스텐션
+extension Data {
+    func toArray<T>(type: T.Type) -> [T] {
+        return self.withUnsafeBytes { pointer in
+            Array(pointer.bindMemory(to: T.self))
+        }
     }
 }
