@@ -14,7 +14,7 @@ final class NetworkManager {
 
     private let session: Session
     private let decoder: XMLDecoder //XML 데이터용
-    private let baseURL = "http://api.nongsaro.go.kr/service/garden"
+    private let baseURL = AppConfig.baseURL
 
     init(session: Session = .default) {
         self.session = session
@@ -23,7 +23,7 @@ final class NetworkManager {
     }
 
     func fetchPlantList(apiKey: String, keyword: String, pageNo: Int = 1, numOfRows: Int = 10) async throws -> [PlantSummary] {
-        let response: PlantListEnvelope = try await request(
+        let response: PlantListResponse = try await request(
             path: "gardenList",
             parameters: [
                 "apiKey": apiKey,
@@ -34,13 +34,13 @@ final class NetworkManager {
             ]
         )
         // HTTP 요청이 아닌 농사로 자체 API 확인(내부 resultCode 확인)
-        try validate(header: response.response.header)
-        // 검색 결과가 없으면 빈값 리턴
-        return response.response.body?.items?.item?.values ?? []
+        try validate(header: response.header)
+
+        return response.body.items.item
     }
 
     func fetchPlantDetail(apiKey: String, contentNumber: String) async throws -> PlantDetail {
-        let response: PlantDetailEnvelope = try await request(
+        let response: PlantDetailResponse = try await request(
             path: "gardenDtl",
             parameters: [
                 "apiKey": apiKey,
@@ -48,9 +48,9 @@ final class NetworkManager {
             ]
         )
         // 성공여부 검사
-        try validate(header: response.response.header)
+        try validate(header: response.header)
         // 상세는 배열이 아니고 item 하나라서 에러 던짐
-        guard let detail = response.response.body?.item else {
+        guard let detail = response.body?.item else {
             throw NetworkError.emptyResult
         }
 
@@ -58,13 +58,12 @@ final class NetworkManager {
     }
     
     // 공통 메서드
-    // T가 PlantListEnvelope일 수도 있고 PlantDetailEnvelope일 수도 있음
     private func request<T: Decodable>(path: String, parameters: Parameters) async throws -> T {
         let url = "\(baseURL)/\(path)"
+        let request = session.request(url, method: .get, parameters: parameters, encoding: URLEncoding.default)
 
         do {
-            let data = try await session
-                .request(url, method: .get, parameters: parameters, encoding: URLEncoding.default) // GET 생성
+            let data = try await request // GET 생성
                 .validate(statusCode: 200 ..< 300) // HTTP 상태코드
                 .serializingData().value
             
