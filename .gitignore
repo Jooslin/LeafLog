@@ -63,5 +63,5 @@ fastlane/test_output
 .gitmessage.txt
 
 # Configuration Files
-LeafLog/LeafLog/Config/Secrets.xcconfig
+LeafLog/Config/Secrets.xcconfig
 LeafLog/LeafLog/GoogleService-Info.plist
