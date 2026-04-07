@@ -28,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		16AD0E2D2F7FAFE200C98732 /* LeafLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LeafLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -81,9 +82,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0AE5212A2F8529EB0075F8D6 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		16AD0E242F7FAFE200C98732 = {
 			isa = PBXGroup;
 			children = (
+				0AE5212A2F8529EB0075F8D6 /* Config */,
 				16AD0E2F2F7FAFE200C98732 /* LeafLog */,
 				16AD0E2E2F7FAFE200C98732 /* Products */,
 			);
@@ -305,6 +315,7 @@
 		};
 		16AD0E432F7FAFE400C98732 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -368,6 +379,7 @@
 		};
 		16AD0E442F7FAFE400C98732 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
