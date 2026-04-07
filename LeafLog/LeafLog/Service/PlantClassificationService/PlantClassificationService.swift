@@ -38,7 +38,7 @@ class PlantClassificationService {
     
     let model = Model.aiyPlantsV1
     
-    // 이미지 크기
+    // 분석 대상의 필요 이미지 크기
     private let inputWidth = 224
     private let inputHeight = 224
     
@@ -96,14 +96,10 @@ extension PlantClassificationService {
         let y = (CGFloat(height) - newHeight) / 2.0
         let renderRect = CGRect(x: x, y: y, width: newWidth, height: newHeight)
         
-        // 3. 224x224 고정 크기의 컨텍스트 생성
-        UIGraphicsBeginImageContextWithOptions(CGSize(width: width, height: height), true, 1.0)
-        // 중앙에 맞춰서 이미지를 다시 그림 (넘치는 부분은 자동으로 잘림)
-        image.draw(in: renderRect)
-        
+        // 3. 224x224 고정 크기의 이미지 생성
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
         let resized = renderer.image { context in
-            image.draw(in: renderRect)
+            image.draw(in: renderRect) // 중앙에 맞춰서 이미지를 다시 그림 (224x224 크기에서 넘치는 부분은 자동으로 잘림)
         }
         
         guard let cgImage = resized.cgImage else {
@@ -111,12 +107,13 @@ extension PlantClassificationService {
         }
         
         // 4. 리사이징된 이미지에서 다시 한번 비트맵 데이터 추출 (CGContext 사용)
+        // UIImage는 많은 정보를 담고 있어서 RGB 데이터만 가져올 수 없음 - CGContext를 활용하여 RGB값만을 추출
         guard let context = CGContext(
             data: nil,
             width: width,
             height: height,
             bitsPerComponent: 8,
-            bytesPerRow: width * 4,
+            bytesPerRow: width * 4, // 1 픽셀을 나타낼 때 4바이트를 사용
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
         ) else {
@@ -126,16 +123,18 @@ extension PlantClassificationService {
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         guard let imageData = context.data else { return nil }
         
-        var inputData = Data()
-        let pointer = imageData.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        let pointer = imageData.bindMemory(to: UInt8.self, capacity: width * height * 4) // imageData를 1바이트 단위로 나누기
         
-        for i in 0..<(width * height) {
-            let offset = i * 4
-            // RGB 값을 차례로 추가
-            inputData.append(pointer[offset + 0]) // R
-            inputData.append(pointer[offset + 1]) // G
-            inputData.append(pointer[offset + 2]) // B
+        // R, G, B, R, G, B ... 순서의 데이터 배열 만들기
+        let inputData = (0..<(width * height)).reduce(into: Data()) { data, i in
+            let offset = i * 4 // CGContext 는 1픽셀을 나타낼 때 4바이트를 사용 - RGBA 순서
+            
+            // RGB 값을 차례로 추가 - Alpha값은 없으므로 offset + 3은 사용하지 않음
+            data.append(pointer[offset + 0]) // R
+            data.append(pointer[offset + 1]) // G
+            data.append(pointer[offset + 2]) // B
         }
+        
         return inputData
     }
 }
