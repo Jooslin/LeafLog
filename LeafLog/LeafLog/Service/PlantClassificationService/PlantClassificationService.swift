@@ -110,7 +110,7 @@ extension PlantClassificationService {
             try interpreter.invoke() // interpreter 실행
             
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
-            let results = output.data.toArray(type: UInt8.self) // 추론 결과를 Int8 배열로 변환 - '해당 식물일 확률'의 배열
+            let results = output.data.toArray(type: UInt8.self) // 추론 결과를 UInt8 배열로 변환 - '해당 식물일 확률'을 UInt8 타입으로 나타낸 배열
             
             guard let max = results.max(),
                   let maxIndex = results.firstIndex(of: max),
@@ -174,17 +174,20 @@ extension PlantClassificationService {
         
         let pointer = imageData.bindMemory(to: UInt8.self, capacity: width * height * 4) // imageData를 1바이트 단위로 나누기
         
+        var rgbValues: [UInt8] = []
+        rgbValues.reserveCapacity(width * height * 3) // 메모리 공간 예약
+        
         // R, G, B, R, G, B ... 순서의 데이터 배열 만들기
-        let inputData = (0..<(width * height)).reduce(into: Data()) { data, i in
+        for i in 0..<(width * height) {
             let offset = i * 4 // CGContext 는 1픽셀을 나타낼 때 4바이트를 사용 - RGBA 순서
             
             // RGB 값을 차례로 추가 - Alpha값은 없으므로 offset + 3은 사용하지 않음
-            data.append(pointer[offset + 0]) // R
-            data.append(pointer[offset + 1]) // G
-            data.append(pointer[offset + 2]) // B
+            rgbValues.append(pointer[offset + 0]) // R
+            rgbValues.append(pointer[offset + 1]) // G
+            rgbValues.append(pointer[offset + 2]) // B
         }
         
-        return inputData
+        return Data(rgbValues)
     }
 }
 
