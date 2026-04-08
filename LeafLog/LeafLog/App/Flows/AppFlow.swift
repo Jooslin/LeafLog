@@ -50,11 +50,25 @@ final class AppFlow: Flow {
         }
         
         switch step {
+        case .splash:
+            let viewController = SplashViewController()
+            
+            loginNavigationController.setViewControllers([viewController], animated: false)
+            window.rootViewController = loginNavigationController
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: viewController
+                )
+            )
+            
         case .login:
             let viewController = LoginViewController()
             viewController.reactor = LoginReactor()
 
             loginNavigationController.setViewControllers([viewController], animated: false)
+            window.rootViewController = loginNavigationController // 다시 로그인 화면으로 돌아왔을때도 화면 교체
 
             return .one(
                 flowContributor: .contribute(
