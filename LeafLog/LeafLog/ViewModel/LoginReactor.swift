@@ -13,6 +13,7 @@ import Supabase
 final class LoginReactor: Reactor {
     
     enum Action {
+        case appleLoginTapped(UIViewController)
         case googleLoginTapped(UIViewController)
         case kakaoLoginTapped
     }
@@ -33,6 +34,13 @@ final class LoginReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
+        case .appleLoginTapped(let presentingViewController):
+            return loginFlow {
+                try await AuthService.shared.startAppleNativeLogin(
+                    presentingViewController: presentingViewController
+                )
+            }
+
         case .googleLoginTapped(let presentingViewController):
             return loginFlow {
                 try await AuthService.shared.startGoogleNativeLogin(
