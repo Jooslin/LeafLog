@@ -10,9 +10,7 @@ import ReactorKit
 import RxSwift
 import RxCocoa
 
-class LoginViewController: UIViewController, View {
-    
-    var disposeBag = DisposeBag()
+class LoginViewController: BaseViewController, View {
     
     private let loginView = LoginView()
     
@@ -36,6 +34,14 @@ class LoginViewController: UIViewController, View {
     
     
     private func bindAction(reactor: LoginReactor) {
+        loginView.appleLoginButton.rx.tap
+            .compactMap { [weak self] in
+                guard let self else { return nil }
+                return LoginReactor.Action.appleLoginTapped(self)
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         loginView.googleLoginButton.rx.tap
             .compactMap { [weak self] in
                 guard let self else { return nil }
@@ -58,6 +64,7 @@ class LoginViewController: UIViewController, View {
             .map { !$0.isLoading }
             .distinctUntilChanged()
             .drive(onNext: { [weak self] isEnabled in
+                self?.loginView.appleLoginButton.isEnabled = isEnabled
                 self?.loginView.googleLoginButton.isEnabled = isEnabled
                 self?.loginView.kakaoLoginButton.isEnabled = isEnabled
             })
@@ -68,7 +75,7 @@ class LoginViewController: UIViewController, View {
             .filter { $0 == true }
             .asDriver(onErrorDriveWith: .empty())
             .drive(onNext: { [weak self] _ in
-                self?.transitionToMain()
+                self?.steps.accept(AppStep.main)
             })
             .disposed(by: disposeBag)
 
@@ -80,9 +87,5 @@ class LoginViewController: UIViewController, View {
                 self?.showAlert(message: message)
             })
             .disposed(by: disposeBag)
-    }
-
-    private func transitionToMain() {
-        // TODO: 실제 메인 뷰 컨트롤러로 넘어가는 코드 작성
     }
 }
