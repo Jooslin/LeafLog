@@ -20,7 +20,16 @@ final class AuthService {
     private let kakaoProvider: KakaoAuthProvider
     private let kakaoTokenExchanger: any KakaoTokenExchanging
 
-    
+    // 세션 여부 확인
+    func resolveInitialStep() async -> AppStep {
+        do {
+            _ = try await supabase.auth.session
+            return .main
+        } catch {
+            return .login
+        }
+    }
+
     // MARK: - Initialization
     init(
         appleProvider: AppleAuthProvider = AppleAuthProvider(),
