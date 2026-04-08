@@ -55,7 +55,7 @@ final class GoogleAuthProvider {
     }
 
     
-    // MARK: - Login
+    // MARK: - Logout
     func signOut() {
         GIDSignIn.sharedInstance.signOut()
     }
