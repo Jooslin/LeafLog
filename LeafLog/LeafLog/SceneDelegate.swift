@@ -12,6 +12,8 @@ import ReactorKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    let coordinator = FlowCoordinator()
+    
     var window: UIWindow?
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
@@ -34,14 +36,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        window = UIWindow(windowScene: windowScene)
         
-        // 로그인 화면 실행
-        let vc = LoginViewController()
-        vc.reactor = LoginReactor()
+        let appFlow = AppFlow(windowScene: windowScene)
+        window = appFlow.window
         
-        window?.rootViewController = UINavigationController(rootViewController: vc)
-        window?.makeKeyAndVisible()
+        coordinator.coordinate(flow: appFlow, with: OneStepper(withSingleStep: AppStep.main))
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
