@@ -8,8 +8,12 @@
 import Alamofire
 import Foundation
 
+protocol KakaoTokenExchanging {
+    func exchange(idToken: String) async throws -> (accessToken: String, refreshToken: String)
+}
+
 // 카카오 토큰을 Supabase와 교환해 유저정보 받아오기
-struct KakaoSupabaseTokenExchanger {
+struct KakaoSupabaseTokenExchanger: KakaoTokenExchanging {
     private struct TokenExchangeResponse: Decodable {
         let accessToken: String
         let refreshToken: String

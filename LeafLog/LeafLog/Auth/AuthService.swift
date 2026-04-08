@@ -15,12 +15,24 @@ final class AuthService {
     // MARK: - Properties
     let supabase = SupabaseManager.shared.client
 
-    private let googleProvider = GoogleAuthProvider()
-    private let kakaoProvider = KakaoAuthProvider()
+    private let googleProvider: GoogleAuthProvider
+    private let kakaoProvider: KakaoAuthProvider
+    private let kakaoTokenExchanger: any KakaoTokenExchanging
 
     
     // MARK: - Initialization
-    private init() {}
+    init(
+        googleProvider: GoogleAuthProvider = GoogleAuthProvider(),
+        kakaoProvider: KakaoAuthProvider = KakaoAuthProvider(),
+        kakaoTokenExchanger: any KakaoTokenExchanging = KakaoSupabaseTokenExchanger(
+            supabaseURL: AppSecrets.supabaseURL,
+            anonKey: AppSecrets.supabaseAnonKey
+        )
+    ) {
+        self.googleProvider = googleProvider
+        self.kakaoProvider = kakaoProvider
+        self.kakaoTokenExchanger = kakaoTokenExchanger
+    }
 
     
     // MARK: - Google Login
@@ -42,11 +54,7 @@ final class AuthService {
     
     // MARK: - Exchange Kakao Token With Supabase
     private func exchangeKakaoTokenWithSupabase(idToken: String) async throws -> Supabase.User {
-        let exchanger = KakaoSupabaseTokenExchanger(
-            supabaseURL: AppSecrets.supabaseURL,
-            anonKey: AppSecrets.supabaseAnonKey
-        )
-        let tokens = try await exchanger.exchange(idToken: idToken)
+        let tokens = try await kakaoTokenExchanger.exchange(idToken: idToken)
         try await supabase.auth.setSession(accessToken: tokens.accessToken, refreshToken: tokens.refreshToken)
         return try await supabase.auth.user()
     }
