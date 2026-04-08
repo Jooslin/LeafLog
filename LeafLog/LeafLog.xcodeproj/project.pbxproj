@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0AE522C22F85FECF0075F8D6 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = 0AE522C12F85FECF0075F8D6 /* XMLCoder */; };
+		0AE522C42F8600A50075F8D6 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */; };
 		16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E462F7FB0BB00C98732 /* Auth */; };
 		16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E482F7FB0BB00C98732 /* Functions */; };
 		16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E4A2F7FB0BB00C98732 /* PostgREST */; };
@@ -34,6 +36,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		16AD0E2D2F7FAFE200C98732 /* LeafLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LeafLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -65,6 +68,7 @@
 			files = (
 				16AD0E6D2F7FB16000C98732 /* TensorFlowLiteSwift in Frameworks */,
 				16AD0E702F7FB17000C98732 /* Then in Frameworks */,
+				0AE522C22F85FECF0075F8D6 /* XMLCoder in Frameworks */,
 				16AD0E682F7FB10B00C98732 /* Alamofire in Frameworks */,
 				B986A1892F85FC4200EE5265 /* GoogleSignIn in Frameworks */,
 				16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */,
@@ -99,6 +103,7 @@
 				16AD0E2F2F7FAFE200C98732 /* LeafLog */,
 				16BE7CC02F853B3A00F6C98B /* Frameworks */,
 				16AD0E2E2F7FAFE200C98732 /* Products */,
+				0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -162,6 +167,7 @@
 				B986A18F2F85FC7E00EE5265 /* KakaoSDKAuth */,
 				B986A1912F85FC7E00EE5265 /* KakaoSDKCommon */,
 				B986A1932F85FC7E00EE5265 /* KakaoSDKUser */,
+				0AE522C12F85FECF0075F8D6 /* XMLCoder */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -204,6 +210,7 @@
 				16AD0E762F7FB1E600C98732 /* XCRemoteSwiftPackageReference "RxFlow" */,
 				B986A1872F85FC4200EE5265 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B986A18C2F85FC7E00EE5265 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16AD0E2E2F7FAFE200C98732 /* Products */;
@@ -220,6 +227,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0AE522C42F8600A50075F8D6 /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +268,7 @@
 /* Begin XCBuildConfiguration section */
 		16AD0E412F7FAFE400C98732 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -295,6 +304,7 @@
 		};
 		16AD0E422F7FAFE400C98732 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -330,6 +340,7 @@
 		};
 		16AD0E432F7FAFE400C98732 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -393,6 +404,7 @@
 		};
 		16AD0E442F7FAFE400C98732 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -471,6 +483,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/CoreOffice/XMLCoder.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.18.0;
+			};
+		};
 		16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -570,6 +590,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0AE522C12F85FECF0075F8D6 /* XMLCoder */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */;
+			productName = XMLCoder;
+		};
 		16AD0E462F7FB0BB00C98732 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
