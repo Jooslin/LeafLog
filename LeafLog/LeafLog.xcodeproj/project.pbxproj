@@ -24,6 +24,11 @@
 		16AD0E702F7FB17000C98732 /* Then in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E6F2F7FB17000C98732 /* Then */; };
 		16AD0E732F7FB17D00C98732 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E722F7FB17D00C98732 /* SnapKit */; };
 		16AD0E782F7FB1E600C98732 /* RxFlow in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E772F7FB1E600C98732 /* RxFlow */; };
+		B9ED7F362F80EB59005CD3CB /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = B9ED7F352F80EB59005CD3CB /* KakaoSDKAuth */; };
+		B9ED7F382F80EB59005CD3CB /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = B9ED7F372F80EB59005CD3CB /* KakaoSDKCommon */; };
+		B9ED7F3A2F80EB59005CD3CB /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = B9ED7F392F80EB59005CD3CB /* KakaoSDKUser */; };
+		B9ED7F3D2F80FD9B005CD3CB /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = B9ED7F3C2F80FD9B005CD3CB /* GoogleSignIn */; };
+		B9ED7F3F2F80FD9B005CD3CB /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B9ED7F3E2F80FD9B005CD3CB /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,8 +66,10 @@
 				16AD0E682F7FB10B00C98732 /* Alamofire in Frameworks */,
 				16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */,
 				16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */,
+				B9ED7F382F80EB59005CD3CB /* KakaoSDKCommon in Frameworks */,
 				16AD0E542F7FB0C700C98732 /* ReactorKit in Frameworks */,
 				16AD0E782F7FB1E600C98732 /* RxFlow in Frameworks */,
+				B9ED7F3A2F80EB59005CD3CB /* KakaoSDKUser in Frameworks */,
 				16AD0E572F7FB0D500C98732 /* Dependencies in Frameworks */,
 				16AD0E732F7FB17D00C98732 /* SnapKit in Frameworks */,
 				16AD0E512F7FB0BB00C98732 /* Supabase in Frameworks */,
@@ -73,6 +80,9 @@
 				16AD0E5E2F7FB0E000C98732 /* Kingfisher in Frameworks */,
 				16AD0E4F2F7FB0BB00C98732 /* Storage in Frameworks */,
 				16AD0E4D2F7FB0BB00C98732 /* Realtime in Frameworks */,
+				B9ED7F362F80EB59005CD3CB /* KakaoSDKAuth in Frameworks */,
+				B9ED7F3D2F80FD9B005CD3CB /* GoogleSignIn in Frameworks */,
+				B9ED7F3F2F80FD9B005CD3CB /* GoogleSignInSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +143,11 @@
 				16AD0E6F2F7FB17000C98732 /* Then */,
 				16AD0E722F7FB17D00C98732 /* SnapKit */,
 				16AD0E772F7FB1E600C98732 /* RxFlow */,
+				B9ED7F352F80EB59005CD3CB /* KakaoSDKAuth */,
+				B9ED7F372F80EB59005CD3CB /* KakaoSDKCommon */,
+				B9ED7F392F80EB59005CD3CB /* KakaoSDKUser */,
+				B9ED7F3C2F80FD9B005CD3CB /* GoogleSignIn */,
+				B9ED7F3E2F80FD9B005CD3CB /* GoogleSignInSwift */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -146,7 +161,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					16AD0E2C2F7FAFE200C98732 = {
 						CreatedOnToolsVersion = 26.1;
@@ -173,6 +188,8 @@
 				16AD0E6E2F7FB17000C98732 /* XCRemoteSwiftPackageReference "Then" */,
 				16AD0E712F7FB17D00C98732 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				16AD0E762F7FB1E600C98732 /* XCRemoteSwiftPackageReference "RxFlow" */,
+				B9ED7F342F80EB59005CD3CB /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				B9ED7F3B2F80FD9B005CD3CB /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16AD0E2E2F7FAFE200C98732 /* Products */;
@@ -229,6 +246,8 @@
 /* Begin XCBuildConfiguration section */
 		16AD0E412F7FAFE400C98732 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 16AD0E2F2F7FAFE200C98732 /* LeafLog */;
+			baseConfigurationReferenceRelativePath = Configuration/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -265,6 +284,8 @@
 		};
 		16AD0E422F7FAFE400C98732 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 16AD0E2F2F7FAFE200C98732 /* LeafLog */;
+			baseConfigurationReferenceRelativePath = Configuration/Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -301,6 +322,8 @@
 		};
 		16AD0E432F7FAFE400C98732 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 16AD0E2F2F7FAFE200C98732 /* LeafLog */;
+			baseConfigurationReferenceRelativePath = Configuration/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -334,6 +357,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = YSBKYH9JX6;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -357,6 +381,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -364,6 +389,8 @@
 		};
 		16AD0E442F7FAFE400C98732 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 16AD0E2F2F7FAFE200C98732 /* LeafLog */;
+			baseConfigurationReferenceRelativePath = Configuration/Config.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -397,6 +424,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YSBKYH9JX6;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -413,6 +441,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -522,6 +551,22 @@
 				minimumVersion = 2.13.2;
 			};
 		};
+		B9ED7F342F80EB59005CD3CB /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kakao/kakao-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.27.2;
+			};
+		};
+		B9ED7F3B2F80FD9B005CD3CB /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -609,6 +654,31 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 16AD0E762F7FB1E600C98732 /* XCRemoteSwiftPackageReference "RxFlow" */;
 			productName = RxFlow;
+		};
+		B9ED7F352F80EB59005CD3CB /* KakaoSDKAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9ED7F342F80EB59005CD3CB /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKAuth;
+		};
+		B9ED7F372F80EB59005CD3CB /* KakaoSDKCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9ED7F342F80EB59005CD3CB /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCommon;
+		};
+		B9ED7F392F80EB59005CD3CB /* KakaoSDKUser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9ED7F342F80EB59005CD3CB /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKUser;
+		};
+		B9ED7F3C2F80FD9B005CD3CB /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9ED7F3B2F80FD9B005CD3CB /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		B9ED7F3E2F80FD9B005CD3CB /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9ED7F3B2F80FD9B005CD3CB /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
