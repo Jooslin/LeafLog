@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		0AE522C22F85FECF0075F8D6 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = 0AE522C12F85FECF0075F8D6 /* XMLCoder */; };
 		0AE522C42F8600A50075F8D6 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */; };
+		1641F0E62F866C1C008F237A /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1641F0E52F866C1C008F237A /* FirebaseAnalytics */; };
+		1641F0E82F866C1C008F237A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1641F0E72F866C1C008F237A /* FirebaseMessaging */; };
 		16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E462F7FB0BB00C98732 /* Auth */; };
 		16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E482F7FB0BB00C98732 /* Functions */; };
 		16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E4A2F7FB0BB00C98732 /* PostgREST */; };
@@ -66,10 +68,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1641F0E82F866C1C008F237A /* FirebaseMessaging in Frameworks */,
 				16AD0E6D2F7FB16000C98732 /* TensorFlowLiteSwift in Frameworks */,
 				16AD0E702F7FB17000C98732 /* Then in Frameworks */,
 				0AE522C22F85FECF0075F8D6 /* XMLCoder in Frameworks */,
 				16AD0E682F7FB10B00C98732 /* Alamofire in Frameworks */,
+				1641F0E62F866C1C008F237A /* FirebaseAnalytics in Frameworks */,
 				B986A1892F85FC4200EE5265 /* GoogleSignIn in Frameworks */,
 				16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */,
 				16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */,
@@ -168,6 +172,8 @@
 				B986A1912F85FC7E00EE5265 /* KakaoSDKCommon */,
 				B986A1932F85FC7E00EE5265 /* KakaoSDKUser */,
 				0AE522C12F85FECF0075F8D6 /* XMLCoder */,
+				1641F0E52F866C1C008F237A /* FirebaseAnalytics */,
+				1641F0E72F866C1C008F237A /* FirebaseMessaging */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -211,6 +217,7 @@
 				B986A1872F85FC4200EE5265 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B986A18C2F85FC7E00EE5265 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 				0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */,
+				1641F0E42F866C1C008F237A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16AD0E2E2F7FAFE200C98732 /* Products */;
@@ -503,6 +510,14 @@
 				minimumVersion = 0.18.0;
 			};
 		};
+		1641F0E42F866C1C008F237A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.12.0;
+			};
+		};
 		16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -606,6 +621,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
+		};
+		1641F0E52F866C1C008F237A /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1641F0E42F866C1C008F237A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		1641F0E72F866C1C008F237A /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1641F0E42F866C1C008F237A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		16AD0E462F7FB0BB00C98732 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
