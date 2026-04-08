@@ -12,5 +12,5 @@ import UIKit
 
 class BaseViewController: UIViewController, Stepper {
     let steps = PublishRelay<Step>()
-    let disposeBag = DisposeBag()
+    var disposeBag = DisposeBag()
 }
