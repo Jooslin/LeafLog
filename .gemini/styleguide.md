@@ -48,3 +48,4 @@ Minor coordination logic or common MVC-style controller behavior should not auto
 
 ## Exceptions
 - You should not review about below codes:
+    1) Do not review about 'Fatal Error'. most of them are written on purpose
