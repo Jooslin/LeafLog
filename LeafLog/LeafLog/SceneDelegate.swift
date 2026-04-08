@@ -6,14 +6,31 @@
 //
 
 import UIKit
-import RxFlow
+import KakaoSDKAuth
+import GoogleSignIn
+import ReactorKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     let coordinator = FlowCoordinator()
     
     var window: UIWindow?
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
 
+        // 카카오 처리
+        if AuthApi.isKakaoTalkLoginUrl(url) {
+            _ = AuthController.handleOpenUrl(url: url)
+            return
+        }
+        
+        // 구글 처리
+        if GIDSignIn.sharedInstance.handle(url) {
+            return
+        }
+    }
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
