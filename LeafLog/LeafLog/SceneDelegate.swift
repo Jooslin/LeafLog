@@ -6,9 +6,12 @@
 //
 
 import UIKit
+import RxFlow
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    let coordinator = FlowCoordinator()
+    
     var window: UIWindow?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
@@ -16,10 +19,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        window = UIWindow(windowScene: windowScene)
         
-        window?.rootViewController = UINavigationController(rootViewController: ViewController())
-        window?.makeKeyAndVisible()
+        let appFlow = AppFlow(windowScene: windowScene)
+        window = appFlow.window
+        
+        coordinator.coordinate(flow: appFlow, with: OneStepper(withSingleStep: AppStep.main))
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

@@ -1,0 +1,16 @@
+//
+//  BaseViewController.swift
+//  LeafLog
+//
+//  Created by t2025-m0143 on 4/6/26.
+//
+
+import RxFlow
+import RxRelay
+import RxSwift
+import UIKit
+
+class BaseViewController: UIViewController, Stepper {
+    let steps = PublishRelay<Step>()
+    let disposeBag = DisposeBag()
+}
