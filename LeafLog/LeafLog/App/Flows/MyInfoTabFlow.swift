@@ -20,8 +20,7 @@ final class MyInfoTabFlow: Flow {
         
         switch step {
         case .myInfoTab:
-            //TODO: 내 정보 VC 생성 시 아래 ViewController()부분을 바꾸시면 됩니다!
-            let viewController = ViewController()
+            let viewController = MyPageViewController()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
