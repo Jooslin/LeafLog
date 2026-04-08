@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0AE51FC02F8399E90075F8D6 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = 0AE51FBF2F8399E90075F8D6 /* XMLCoder */; };
 		16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E462F7FB0BB00C98732 /* Auth */; };
 		16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E482F7FB0BB00C98732 /* Functions */; };
 		16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E4A2F7FB0BB00C98732 /* PostgREST */; };
@@ -32,6 +33,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		16AD0E2D2F7FAFE200C98732 /* LeafLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LeafLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -75,6 +77,7 @@
 				16AD0E512F7FB0BB00C98732 /* Supabase in Frameworks */,
 				16AD0E652F7FB0FF00C98732 /* RxSwift in Frameworks */,
 				16AD0E612F7FB0FF00C98732 /* RxCocoa in Frameworks */,
+				0AE51FC02F8399E90075F8D6 /* XMLCoder in Frameworks */,
 				16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */,
 				16AD0E632F7FB0FF00C98732 /* RxRelay in Frameworks */,
 				16BE7CC22F853B3A00F6C98B /* DependenciesMacros in Frameworks */,
@@ -90,9 +93,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0AE5212A2F8529EB0075F8D6 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				0AE521292F8529EB0075F8D6 /* Secrets.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		16AD0E242F7FAFE200C98732 = {
 			isa = PBXGroup;
 			children = (
+				0AE5212A2F8529EB0075F8D6 /* Config */,
 				16AD0E2F2F7FAFE200C98732 /* LeafLog */,
 				16BE7CC02F853B3A00F6C98B /* Frameworks */,
 				16AD0E2E2F7FAFE200C98732 /* Products */,
@@ -480,6 +492,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0AE51FBE2F8399E90075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/CoreOffice/XMLCoder.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.18.0;
+			};
+		};
 		16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -579,6 +599,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0AE51FBF2F8399E90075F8D6 /* XMLCoder */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0AE51FBE2F8399E90075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */;
+			productName = XMLCoder;
+		};
 		16AD0E462F7FB0BB00C98732 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */;
