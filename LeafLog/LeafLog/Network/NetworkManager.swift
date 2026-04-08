@@ -6,6 +6,7 @@
 //
 
 import Alamofire
+import Dependencies
 import Foundation
 import XMLCoder
 
@@ -102,5 +103,18 @@ extension NetworkManager {
                 return "네트워크 요청에 실패했습니다. \(error.localizedDescription)"
             }
         }
+    }
+}
+
+extension NetworkManager: DependencyKey {
+    static var liveValue: NetworkManager {
+        .shared
+    }
+}
+
+extension DependencyValues {
+    var networkManager: NetworkManager {
+        get { self[NetworkManager.self] }
+        set { self[NetworkManager.self] = newValue }
     }
 }
