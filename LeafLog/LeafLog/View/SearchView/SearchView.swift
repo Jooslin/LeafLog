@@ -13,6 +13,10 @@ import UIKit
 import Then
 
 final class SearchView: BaseViewController, View {
+    private let searchTypeControl = UISegmentedControl(items: PlantSearchType.allCases.map(\.title)).then {
+        $0.selectedSegmentIndex = 0
+    }
+
     private let searchTextField = UITextField().then {
         $0.borderStyle = .roundedRect
         $0.placeholder = "검색어를 입력해 주세요"
@@ -53,6 +57,12 @@ final class SearchView: BaseViewController, View {
     
     // 입출력 연결
     func bind(reactor: SearchReactor) {
+        searchTypeControl.rx.selectedSegmentIndex
+            .compactMap { PlantSearchType.allCases[safe: $0] }
+            .map(SearchReactor.Action.updateSearchType)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         // 텍스트 필드에서 흐르는거 계속 받음
         searchTextField.rx.text.orEmpty
             .debounce(.milliseconds(400), scheduler: MainScheduler.instance)
@@ -81,14 +91,20 @@ final class SearchView: BaseViewController, View {
     }
 
     private func configureLayout() {
+        view.addSubview(searchTypeControl)
         view.addSubview(searchTextField)
         view.addSubview(loadingLabel)
         view.addSubview(resultLabel)
 
-        searchTextField.snp.makeConstraints {
+        searchTypeControl.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide).offset(24)
             $0.horizontalEdges.equalToSuperview().inset(20)
-            $0.height.equalTo(44)
+        }
+
+        searchTextField.snp.makeConstraints {
+            $0.top.equalTo(searchTypeControl.snp.bottom).offset(16)
+            $0.horizontalEdges.equalTo(searchTypeControl)
+            $0.height.equalTo(50)
         }
 
         loadingLabel.snp.makeConstraints {
@@ -100,5 +116,15 @@ final class SearchView: BaseViewController, View {
             $0.top.equalTo(loadingLabel.snp.bottom).offset(16)
             $0.horizontalEdges.equalTo(searchTextField)
         }
+    }
+}
+
+// 안전하게 배열 접근할 수 있도록 확장(인덱스 벗어나서 접근해도 크래시 나지 않도록)
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        // 범위 벗어나면 nil
+        guard indices.contains(index) else { return nil }
+        // 해당인덱스가 있을떄만 접근
+        return self[index]
     }
 }

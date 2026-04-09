@@ -15,16 +15,19 @@ final class SearchReactor: Reactor {
     // 사용자가 한 행동
     enum Action {
         case updateQuery(String) // 검색어 생김
+        case updateSearchType(PlantSearchType) // 식물 이름 어떤식으로 검색하는지
     }
     
     // 상태를 어떻게 바꿀지에 대한 변화
     enum Mutation {
         case setLoading(Bool) // 검색 전후
+        case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
         case setResultText(String) // 결과가 나올때
     }
     
     // 화면이 어떤 상태인지 표현(처음 상태)
     struct State {
+        var searchType: PlantSearchType = .name
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
     }
@@ -53,9 +56,12 @@ final class SearchReactor: Reactor {
             // 로딩 시작 - 네트워크 검색 - 로딩 종료
             return .concat([
                 .just(.setLoading(true)),
-                search(query: query),
+                search(query: query, searchType: currentState.searchType),
                 .just(.setLoading(false))
             ])
+
+        case .updateSearchType(let searchType):
+            return .just(.setSearchType(searchType))
         }
     }
     
@@ -67,6 +73,8 @@ final class SearchReactor: Reactor {
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
+        case .setSearchType(let searchType):
+            newState.searchType = searchType
         case .setResultText(let resultText):
             newState.resultText = resultText
         }
@@ -75,12 +83,13 @@ final class SearchReactor: Reactor {
     }
     
     
-    private func search(query: String) -> Observable<Mutation> {
+    private func search(query: String, searchType: PlantSearchType) -> Observable<Mutation> {
         Observable.create { [networkManager] observer in
             let task = Task {
                 do {
                     let plants = try await networkManager.fetchPlantList(
                         keyword: query,
+                        searchType: searchType,
                         pageNo: 1,
                         numOfRows: 10
                     )
@@ -93,6 +102,7 @@ final class SearchReactor: Reactor {
                         // 검색 결과가 있으면 앞의 세개만 보여줌
                         let names = plants.prefix(10).map { $0.name }.joined(separator: "\n")
                         message = """
+                        검색 기준: \(searchType.title)
                         검색어: \(query)
                         결과 수: \(plants.count)
 
