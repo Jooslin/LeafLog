@@ -19,4 +19,7 @@ enum AuthError: Error {
     
     /// 로그인은 성공했지만 Supabase 서버에 세션을 만들거나 유저 정보를 가져오는데 실패했을 때
     case sessionFailed(String)
+
+    /// 로그인은 성공했지만 사용자 프로필을 준비하지 못했을 때
+    case profileFailed(String)
 }
