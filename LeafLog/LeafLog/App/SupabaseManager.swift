@@ -7,9 +7,9 @@
 
 import Foundation
 import Supabase
+import Dependencies
 
 final class SupabaseManager {
-    static let shared = SupabaseManager()
     private init() {}
     
     let client: SupabaseClient = {
@@ -27,4 +27,18 @@ final class SupabaseManager {
             )
         )
     }()
+}
+
+//MARK: Dependencies
+extension SupabaseManager: DependencyKey {
+    static var liveValue: SupabaseManager {
+        SupabaseManager()
+    }
+}
+
+extension DependencyValues {
+    var supabaseManager: SupabaseManager {
+        get { self[SupabaseManager.self] }
+        set { self[SupabaseManager.self] = newValue }
+    }
 }

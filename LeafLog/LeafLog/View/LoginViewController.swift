@@ -10,9 +10,9 @@ import ReactorKit
 import RxSwift
 import RxCocoa
 
-class LoginViewController: BaseViewController, View {
+class LoginViewController: UIViewController, View {
     
-//    var disposeBag = DisposeBag()
+    var disposeBag = DisposeBag()
     
     private let loginView = LoginView()
     

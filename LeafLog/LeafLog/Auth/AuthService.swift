@@ -7,14 +7,16 @@
 
 import UIKit
 import Supabase
+import Dependencies
 
 final class AuthService {
     static let shared = AuthService()
 
     
     // MARK: - Properties
-    let supabase = SupabaseManager.shared.client
-
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private lazy var supabase = supabaseManager.client
+    
     private let googleProvider: GoogleAuthProvider
     private let kakaoProvider: KakaoAuthProvider
     private let kakaoTokenExchanger: any KakaoTokenExchanging
