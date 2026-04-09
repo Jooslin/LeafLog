@@ -18,6 +18,8 @@ final class NotificationManager {
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         
         center.requestAuthorization(options: authOptions) { [weak self] granted, error in
+            //TODO: 에러 처리 함수 필요
+            
             // 앱 알림 권한 요청 결과에 따라 supabase에 알림 허용 여부 업데이트
             self?.supabaseManager.updateIsNotificationEnabled(granted)
         }
