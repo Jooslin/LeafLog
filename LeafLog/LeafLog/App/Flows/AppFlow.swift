@@ -116,10 +116,18 @@ final class AppFlow: Flow {
             
         case .alert(let title, let message):
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            let action = UIAlertAction(title: "확인", style: .default, handler: nil)
-            alert.addAction(action)
-            tabBarController.selectedViewController?.present(alert, animated: true)
+            alert.addAction(UIAlertAction(title: "확인", style: .default))
+
+            let presenter: UIViewController?
+            if let selected = tabBarController.selectedViewController {
+                presenter = selected
+            } else {
+                presenter = window.rootViewController
+            }
+
+            presenter?.present(alert, animated: true)
             return .none
+
             
         default:
             return .none
