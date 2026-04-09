@@ -63,6 +63,40 @@ final class NetworkManager {
         return detail
     }
     
+    // 필터 코드 목록 하나 보내는 거 분리
+    func fetchFilterOptions(kind: PlantFilterKind) async throws -> [PlantFilterOption] {
+        let response: PlantFilterListResponse = try await request(
+            path: kind.listPath,
+            parameters: [
+                "apiKey": AppConfig.apiKey
+            ]
+        )
+
+        try validate(header: response.header)
+        return response.body?.items?.item ?? []
+    }
+    
+    //필터 오래걸리니까 병렬로 보내기
+    func fetchAllFilterOptions() async throws -> [PlantFilterKind: [PlantFilterOption]] {
+        // withThrowingTaskGroup 이용해서 병렬 호출
+        try await withThrowingTaskGroup(of: (PlantFilterKind, [PlantFilterOption]).self) { group in
+            // 케이스 돌면서 작업 등록
+            for kind in PlantFilterKind.allCases {
+                group.addTask { [self] in
+                    (kind, try await fetchFilterOptions(kind: kind))
+                }
+            }
+
+            var results: [PlantFilterKind: [PlantFilterOption]] = [:]
+            
+            // 모이면 여기에 딕셔너리에 모음(어떤 버튼에 어떤 옵션인지 붙이기 쉽게)
+            for try await (kind, options) in group {
+                results[kind] = options
+            }
+            return results
+        }
+    }
+    
     // 공통 메서드
     private func request<T: Decodable>(path: String, parameters: Parameters) async throws -> T {
         let url = "\(baseURL)/\(path)"
