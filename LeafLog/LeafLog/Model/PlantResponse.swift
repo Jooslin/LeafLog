@@ -8,13 +8,13 @@
 import Foundation
 
 enum PlantSearchType: String, CaseIterable {
-    case name = "sCntntsSj"
+    case plantName = "sCntntsSj"
     case botanicalName = "sPlntbneNm"
     case englishName = "sPlntzrNm"
 
     var title: String {
         switch self {
-        case .name:
+        case .plantName:
             return "식물명"
         case .botanicalName:
             return "학명"

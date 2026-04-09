@@ -25,7 +25,7 @@ final class NetworkManager {
 
     func fetchPlantList(
         keyword: String,
-        searchType: PlantSearchType = .name,
+        searchType: PlantSearchType = .plantName,
         filterState: PlantFilterState = .init(),
         pageNo: Int = 1,
         numOfRows: Int = 10
