@@ -15,6 +15,7 @@ import Dependencies
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     let coordinator = FlowCoordinator()
+    @Dependency(\.fcmManager) private var fcmManager
     
     var window: UIWindow?
     
@@ -57,7 +58,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
         
         //Foreground에 진입할 때마다 알림 허용 권한 업데이트
-        @Dependency(\.fcmManager) var fcmManager
         fcmManager.updateIsNotificationEnabled()
     }
 
