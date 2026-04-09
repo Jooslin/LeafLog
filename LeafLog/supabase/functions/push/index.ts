@@ -15,10 +15,15 @@ interface WebhookPayload {
   schema: 'public'
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-)
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.');
+  throw new Error('Configuration error: Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 Deno.serve(async (req) => {
   const payload: WebhookPayload = await req.json()
@@ -89,10 +94,14 @@ const getAccessToken = ({
     })
     jwtClient.authorize((err, tokens) => {
       if (err) {
-        reject(err)
-        return
+        reject(err);
+        return;
       }
-      resolve(tokens!.access_token!)
+      if (!tokens || !tokens.access_token) {
+        reject(new Error('Failed to retrieve access token: Token is missing or invalid.'));
+        return;
+      }
+      resolve(tokens.access_token);
     })
   })
 }
