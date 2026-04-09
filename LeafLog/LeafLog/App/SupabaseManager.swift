@@ -36,8 +36,7 @@ extension SupabaseManager {
         Task {
             do {
                 // 현재 로그인된 유저의 정보(세션)를 가져옴
-                let session = try await client.auth.session
-                let currentUserId = session.user.id
+                let currentUserId = client.auth.currentUser?.id
                 
                 // profiles 테이블에서 현재 유저의 행을 찾아 fcm_token 값을 덮어씌움
                 try await client
@@ -60,8 +59,7 @@ extension SupabaseManager {
         Task {
             do {
                 // 현재 로그인된 유저의 정보(세션)를 가져옴
-                let session = try await client.auth.session
-                let currentUserId = session.user.id
+                let currentUserId = client.auth.currentUser?.id
                 
                 // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
                 try await client
