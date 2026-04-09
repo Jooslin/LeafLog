@@ -14,20 +14,28 @@ final class SearchReactor: Reactor {
     
     // 사용자가 한 행동
     enum Action {
+        case viewDidLoad
         case updateQuery(String) // 검색어 생김
         case updateSearchType(PlantSearchType) // 식물 이름 어떤식으로 검색하는지
+        case updateFilter(PlantFilterKind, PlantFilterOption?) // 필터 바꿈
     }
     
     // 상태를 어떻게 바꿀지에 대한 변화
     enum Mutation {
         case setLoading(Bool) // 검색 전후
+        case setQuery(String) // 검색어 저장
         case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
+        case setFilterOptions([PlantFilterKind: [PlantFilterOption]]) // 옵션 전체
+        case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
         case setResultText(String) // 결과가 나올때
     }
     
     // 화면이 어떤 상태인지 표현(처음 상태)
     struct State {
-        var searchType: PlantSearchType = .name
+        var query: String = ""
+        var searchType: PlantSearchType = .plantName // 어떤걸 기준으로 검색할지
+        var filterOptions: [PlantFilterKind: [PlantFilterOption]] = [:]
+        var filterState = PlantFilterState()
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
     }
@@ -41,6 +49,13 @@ final class SearchReactor: Reactor {
     // Action을 받아서 어떤 Mutation을 만들지 결정
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
+        case .viewDidLoad:
+            return .concat([
+                .just(.setLoading(true)),
+                loadFilterOptions(), // 서버에서 필터 목록가져오기
+                .just(.setLoading(false))
+            ])
+
             // 사용자가 텍스트 입력시 실행
         case .updateQuery(let rawQuery):
             let query = cleanQuery(rawQuery)
@@ -55,13 +70,60 @@ final class SearchReactor: Reactor {
             
             // 로딩 시작 - 네트워크 검색 - 로딩 종료
             return .concat([
+                .just(.setQuery(query)),
                 .just(.setLoading(true)),
-                search(query: query, searchType: currentState.searchType),
+                search(
+                    query: query,
+                    searchType: currentState.searchType,
+                    filterState: currentState.filterState
+                ),
                 .just(.setLoading(false))
             ])
-
+            
+            
+            // 검색타입 바꿀때
         case .updateSearchType(let searchType):
-            return .just(.setSearchType(searchType))
+            let currentQuery = currentState.query
+            
+            // 검색어 없으면 그냥 바꾸기만
+            guard !currentQuery.isEmpty else {
+                return .just(.setSearchType(searchType))
+            }
+            
+            // 검색어 있으면 검색해줌
+            return .concat([
+                .just(.setSearchType(searchType)),
+                .just(.setLoading(true)),
+                search(
+                    query: currentQuery,
+                    searchType: searchType,
+                    filterState: currentState.filterState
+                ),
+                .just(.setLoading(false))
+            ])
+            
+            
+            // 필터 업데이트 할 때
+        case let .updateFilter(kind, option):
+            let nextFilterState = currentState.filterState.applyOption(option, for: kind)
+            let currentQuery = currentState.query
+            
+            // 검색어 없으면 그냥 필터 바꿈
+            guard !currentQuery.isEmpty else {
+                return .just(.setFilter(kind, option))
+            }
+            
+            // 필터 적용해서 다시 검색
+            return .concat([
+                .just(.setFilter(kind, option)),
+                .just(.setLoading(true)),
+                search(
+                    query: currentQuery,
+                    searchType: currentState.searchType,
+                    filterState: nextFilterState
+                ),
+                .just(.setLoading(false))
+            ])
         }
     }
     
@@ -73,8 +135,14 @@ final class SearchReactor: Reactor {
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
-        case .setSearchType(let searchType):
+        case .setQuery(let query): // 검색어
+            newState.query = query
+        case .setSearchType(let searchType): // 검색 타입(결과)
             newState.searchType = searchType
+        case .setFilterOptions(let filterOptions):
+            newState.filterOptions = filterOptions
+        case let .setFilter(kind, option):
+            newState.filterState = newState.filterState.applyOption(option, for: kind)
         case .setResultText(let resultText):
             newState.resultText = resultText
         }
@@ -82,14 +150,39 @@ final class SearchReactor: Reactor {
         return newState
     }
     
+    // 서버에서 필터 목록을 가져와서 Mutation으로 바꿔주는 역할
+    private func loadFilterOptions() -> Observable<Mutation> {
+        Observable.create { [networkManager] observer in
+            let task = Task {
+                do {
+                    let options = try await networkManager.fetchAllFilterOptions()
+                    observer.onNext(.setFilterOptions(options))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setResultText("필터 옵션 로드 실패: \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
     
-    private func search(query: String, searchType: PlantSearchType) -> Observable<Mutation> {
+    
+    private func search(
+        query: String,
+        searchType: PlantSearchType,
+        filterState: PlantFilterState
+    ) -> Observable<Mutation> {
         Observable.create { [networkManager] observer in
             let task = Task {
                 do {
                     let plants = try await networkManager.fetchPlantList(
                         keyword: query,
                         searchType: searchType,
+                        filterState: filterState,
                         pageNo: 1,
                         numOfRows: 10
                     )
@@ -101,9 +194,11 @@ final class SearchReactor: Reactor {
                     } else {
                         // 검색 결과가 있으면 앞의 세개만 보여줌
                         let names = plants.prefix(10).map { $0.name }.joined(separator: "\n")
+                        let lightFilterText = filterState.option(for: .light)?.name ?? "없음"
                         message = """
                         검색 기준: \(searchType.title)
                         검색어: \(query)
+                        광도요구: \(lightFilterText)
                         결과 수: \(plants.count)
 
                         \(names)

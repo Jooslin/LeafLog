@@ -17,6 +17,14 @@ final class SearchView: BaseViewController, View {
         $0.selectedSegmentIndex = 0
     }
 
+    private let lightFilterButton = UIButton(configuration: .filled()).then {
+        $0.configuration?.cornerStyle = .capsule
+        $0.configuration?.baseBackgroundColor = .secondarySystemBackground
+        $0.configuration?.baseForegroundColor = .label
+        $0.configuration?.title = "광도요구"
+        $0.showsMenuAsPrimaryAction = true
+    }
+
     private let searchTextField = UITextField().then {
         $0.borderStyle = .roundedRect
         $0.placeholder = "검색어를 입력해 주세요"
@@ -57,6 +65,10 @@ final class SearchView: BaseViewController, View {
     
     // 입출력 연결
     func bind(reactor: SearchReactor) {
+        Observable.just(SearchReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         searchTypeControl.rx.selectedSegmentIndex
             .compactMap { PlantSearchType.allCases[safe: $0] }
             .map(SearchReactor.Action.updateSearchType)
@@ -88,10 +100,19 @@ final class SearchView: BaseViewController, View {
             .map { !$0 }
             .bind(to: loadingLabel.rx.isHidden)
             .disposed(by: disposeBag)
+        
+        // 필터 메뉴 선택 바꿔줌
+        reactor.state
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] state in
+                self?.updateLightFilterMenu(state: state, reactor: reactor)
+            })
+            .disposed(by: disposeBag)
     }
 
     private func configureLayout() {
         view.addSubview(searchTypeControl)
+        view.addSubview(lightFilterButton)
         view.addSubview(searchTextField)
         view.addSubview(loadingLabel)
         view.addSubview(resultLabel)
@@ -101,8 +122,13 @@ final class SearchView: BaseViewController, View {
             $0.horizontalEdges.equalToSuperview().inset(20)
         }
 
-        searchTextField.snp.makeConstraints {
+        lightFilterButton.snp.makeConstraints {
             $0.top.equalTo(searchTypeControl.snp.bottom).offset(16)
+            $0.leading.equalTo(searchTypeControl)
+        }
+
+        searchTextField.snp.makeConstraints {
+            $0.top.equalTo(lightFilterButton.snp.bottom).offset(16)
             $0.horizontalEdges.equalTo(searchTypeControl)
             $0.height.equalTo(50)
         }
@@ -116,6 +142,31 @@ final class SearchView: BaseViewController, View {
             $0.top.equalTo(loadingLabel.snp.bottom).offset(16)
             $0.horizontalEdges.equalTo(searchTextField)
         }
+    }
+
+    private func updateLightFilterMenu(state: SearchReactor.State, reactor: SearchReactor) {
+        let options = state.filterOptions[.light] ?? []
+        let selectedOption = state.filterState.option(for: .light)
+
+        var configuration = lightFilterButton.configuration ?? .filled()
+        configuration.title = selectedOption?.name ?? "광도요구"
+        configuration.baseBackgroundColor = selectedOption == nil ? .secondarySystemBackground : .systemGreen
+        configuration.baseForegroundColor = selectedOption == nil ? .label : .white
+        lightFilterButton.configuration = configuration
+        
+        // 옵션 하나 선택시 액션을 보냄(선택됨을 알림)
+        let actions = options.map { option in
+            UIAction(title: option.name) { _ in
+                reactor.action.onNext(.updateFilter(.light, option))
+            }
+        }
+        
+        // 전체를 누르면 다 nil
+        let clearAction = UIAction(title: "전체") { _ in
+            reactor.action.onNext(.updateFilter(.light, nil))
+        }
+
+        lightFilterButton.menu = UIMenu(children: [clearAction] + actions)
     }
 }
 
