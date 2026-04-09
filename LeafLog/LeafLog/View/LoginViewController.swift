@@ -84,7 +84,7 @@ class LoginViewController: BaseViewController, View {
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive(onNext: { [weak self] message in
-                self?.showAlert(message: message)
+                self?.steps.accept(AppStep.alert("에러", message))
             })
             .disposed(by: disposeBag)
     }
