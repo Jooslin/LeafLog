@@ -29,6 +29,33 @@ final class SupabaseManager {
     }()
 }
 
+extension SupabaseManager {
+    // 유저 fcm 토큰 업데이트
+    func updateFCMToken(_ validToken: String) {
+        // Supabase 서버로 토큰 쏴주기
+        Task {
+            do {
+                // 현재 로그인된 유저의 정보(세션)를 가져옴
+                let session = try await client.auth.session
+                let currentUserId = session.user.id
+                
+                // profiles 테이블에서 현재 유저의 행을 찾아 fcm_token 값을 덮어씌움
+                try await client
+                    .from("profiles")
+                    .update(["fcm_token": validToken])
+                    .eq("id", value: currentUserId)
+                    .execute()
+                
+                print("✅ Supabase DB에 FCM 토큰이 성공적으로 저장되었습니다.")
+                
+            } catch {
+                // 앱을 처음 켜서 아직 로그인이 안 된 경우 - 앱을 멈추거나 유저에게 에러를 알릴 필요가 없으므로 print문으로만 출력
+                print("⚠️ FCM 토큰 저장 보류 (로그인 전이거나 네트워크 에러): \(error.localizedDescription)")
+            }
+        }
+    }
+}
+
 //MARK: Dependencies
 extension SupabaseManager: DependencyKey {
     static var liveValue: SupabaseManager {

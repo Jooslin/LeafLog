@@ -84,6 +84,5 @@ class LoginViewController: UIViewController, View {
 
     private func transitionToMain() {
         // TODO: 실제 메인 뷰 컨트롤러로 넘어가는 코드 작성
-//        steps.accept(AppStep.main)
     }
 }

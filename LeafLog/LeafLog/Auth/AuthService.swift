@@ -12,7 +12,6 @@ import Dependencies
 final class AuthService {
     static let shared = AuthService()
 
-    
     // MARK: - Properties
     @Dependency(\.supabaseManager) private var supabaseManager
     private lazy var supabase = supabaseManager.client

@@ -36,13 +36,9 @@ final class AppFlow: Flow {
     
     var root: any RxFlow.Presentable { tabBarController }
     
-    let loginNavigationController = UINavigationController()
-//    var root: any RxFlow.Presentable { loginNavigationController }
-    
     init(windowScene: UIWindowScene) {
         self.window = UIWindow(windowScene: windowScene)
         self.window.rootViewController = tabBarController
-//        self.window.rootViewController = loginNavigationController
         self.window.makeKeyAndVisible()
     }
     
@@ -53,19 +49,6 @@ final class AppFlow: Flow {
         }
         
         switch step {
-//
-//        case .root:
-//            let viewController = LoginViewController()
-//            viewController.reactor = LoginReactor()
-//            
-//            loginNavigationController.setViewControllers([viewController], animated: false)
-//            
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: viewController,
-//                    withNextStepper: viewController // 다음 Step 신호는 loginVC가 쏠거다
-//                )
-//            )
         case .main:
             let plantTabFlow = PlantTabFlow()
             let calendarTabFlow = CalendarTabFlow()
