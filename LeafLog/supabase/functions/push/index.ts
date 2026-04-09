@@ -25,11 +25,19 @@ Deno.serve(async (req) => {
 
   const { data } = await supabase
     .from('profiles')
-    .select('fcm_token')
+    .select('fcm_token, is_notification_enabled')
     .eq('id', payload.record.user_id)
     .single()
 
-  const fcmToken = data!.fcm_token as string
+  // 알림이 비활성화되어 있거나 토큰이 없는 경우 스킵
+  if (!data?.is_notification_enabled || !data?.fcm_token) {
+    const reason = !data?.is_notification_enabled ? 'User disabled notifications' : 'Missing FCM token';
+    return new Response(JSON.stringify({ message: `Notification skipped: ${reason}` }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const fcmToken = data.fcm_token as string
 
   const accessToken = await getAccessToken({
     clientEmail: serviceAccount.client_email,

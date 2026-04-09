@@ -10,6 +10,7 @@ import KakaoSDKAuth
 import GoogleSignIn
 import ReactorKit
 import RxFlow
+import Dependencies
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -54,6 +55,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        
+        //Foreground에 진입할 때마다 알림 허용 권한 업데이트
+        @Dependency(\.fcmManager) var fcmManager
+        fcmManager.updateIsNotificationEnabled()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
