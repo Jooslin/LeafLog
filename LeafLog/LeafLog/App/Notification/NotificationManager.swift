@@ -9,6 +9,7 @@ import UserNotifications
 import Dependencies
 
 final class NotificationManager {
+    @Dependency(\.supabaseManager)private var supabaseManager
     let center = UNUserNotificationCenter.current()
     
     // 앱 알림 권한 요청 함수
@@ -16,14 +17,14 @@ final class NotificationManager {
         // 앱 실행 시 사용자에게 알림 허용 권한 받기
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         
-        center.requestAuthorization(
-            options: authOptions,
-            completionHandler: { _, _ in }
-        )
+        center.requestAuthorization(options: authOptions) { [weak self] granted, error in
+            // 앱 알림 권한 요청 결과에 따라 supabase에 알림 허용 여부 업데이트
+            self?.supabaseManager.updateIsNotificationEnabled(granted)
+        }
     }
     
-    // 앱 알림 허용 여부 확인 함수
-    func checkNotificationEnabled() async -> Bool {
+    // 앱 알림 권한 허용 여부 확인 함수
+    private func checkNotificationEnabled() async -> Bool {
         let settings = await center.notificationSettings()
         
         switch settings.authorizationStatus {
@@ -31,6 +32,14 @@ final class NotificationManager {
             return true
         default:
             return false
+        }
+    }
+    
+    //TODO: 마이페이지 알림 허용 여부와 비교하여 업데이트하는 로직 필요
+    func updateIsNotificationEnabled() {
+        Task {
+            let isEnabled = await checkNotificationEnabled()
+            supabaseManager.updateIsNotificationEnabled(isEnabled)
         }
     }
 }

@@ -17,17 +17,9 @@ final class FCMManager: NSObject {
     @Dependency(\.supabaseManager) private var supabaseManager
     
     func setConfigs() {
-        notificationManager.requestNotificationAuthorization()
+        notificationManager.requestNotificationAuthorization() //TODO: 로그인 성공 시 실행하도록 위치 변경 필요
         notificationManager.center.delegate = self
         Messaging.messaging().delegate = self
-    }
-    
-    //TODO: 로그인 성공 시 실행 필요, 추후 마이페이지 알림 허용 여부와 비교하여 업데이트하는 로직 필요
-    func updateIsNotificationEnabled() {
-        Task {
-            let isEnabled = await notificationManager.checkNotificationEnabled()
-            supabaseManager.updateIsNotificationEnabled(isEnabled)
-        }
     }
 }
 
