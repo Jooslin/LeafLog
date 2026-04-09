@@ -194,11 +194,15 @@ final class SearchReactor: Reactor {
                     } else {
                         // 검색 결과가 있으면 앞의 세개만 보여줌
                         let names = plants.prefix(10).map { $0.name }.joined(separator: "\n")
-                        let lightFilterText = filterState.option(for: .light)?.name ?? "없음"
+                        let selectedFilters = filterState.selectedOptions
+                            .sorted { $0.key.title < $1.key.title }
+                            .map { "\($0.key.title): \($0.value.name)" }
+                            .joined(separator: ", ")
+                        let filterDescription = selectedFilters.isEmpty ? "없음" : selectedFilters
                         message = """
                         검색 기준: \(searchType.title)
                         검색어: \(query)
-                        광도요구: \(lightFilterText)
+                        적용 필터: \(filterDescription)
                         결과 수: \(plants.count)
 
                         \(names)

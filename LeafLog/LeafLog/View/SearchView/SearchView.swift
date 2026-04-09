@@ -12,17 +12,22 @@ import SnapKit
 import UIKit
 import Then
 
+
+// TODO: 오류 처리
 final class SearchView: BaseViewController, View {
     private let searchTypeControl = UISegmentedControl(items: PlantSearchType.allCases.map(\.title)).then {
         $0.selectedSegmentIndex = 0
     }
 
-    private let lightFilterButton = UIButton(configuration: .filled()).then {
-        $0.configuration?.cornerStyle = .capsule
-        $0.configuration?.baseBackgroundColor = .secondarySystemBackground
-        $0.configuration?.baseForegroundColor = .label
-        $0.configuration?.title = "광도요구"
-        $0.showsMenuAsPrimaryAction = true
+    private let filterScrollView = UIScrollView().then {
+        $0.showsHorizontalScrollIndicator = false
+    }
+
+    private let filterStackView = UIStackView().then {
+        $0.axis = .horizontal
+        $0.spacing = 8
+        $0.alignment = .fill
+        $0.distribution = .fillProportionally
     }
 
     private let searchTextField = UITextField().then {
@@ -45,6 +50,8 @@ final class SearchView: BaseViewController, View {
         $0.text = "검색 중"
         $0.isHidden = true
     }
+
+    private var filterButtons: [PlantFilterKind: UIButton] = [:]
     
     // 테스트 용으로 생성될 떄 SearchReactor()해서 그냥 생성 가능하게
     // self.reactor = reactor 하는 순간 bind 메서드 호출
@@ -60,6 +67,7 @@ final class SearchView: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        configureFilterButtons()
         configureLayout()
     }
     
@@ -105,14 +113,15 @@ final class SearchView: BaseViewController, View {
         reactor.state
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] state in
-                self?.updateLightFilterMenu(state: state, reactor: reactor)
+                self?.updateFilterMenus(state: state, reactor: reactor)
             })
             .disposed(by: disposeBag)
     }
 
     private func configureLayout() {
         view.addSubview(searchTypeControl)
-        view.addSubview(lightFilterButton)
+        view.addSubview(filterScrollView)
+        filterScrollView.addSubview(filterStackView)
         view.addSubview(searchTextField)
         view.addSubview(loadingLabel)
         view.addSubview(resultLabel)
@@ -122,13 +131,19 @@ final class SearchView: BaseViewController, View {
             $0.horizontalEdges.equalToSuperview().inset(20)
         }
 
-        lightFilterButton.snp.makeConstraints {
+        filterScrollView.snp.makeConstraints {
             $0.top.equalTo(searchTypeControl.snp.bottom).offset(16)
-            $0.leading.equalTo(searchTypeControl)
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(40)
+        }
+
+        filterStackView.snp.makeConstraints {
+            $0.edges.equalToSuperview().inset(UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20))
+            $0.height.equalToSuperview()
         }
 
         searchTextField.snp.makeConstraints {
-            $0.top.equalTo(lightFilterButton.snp.bottom).offset(16)
+            $0.top.equalTo(filterScrollView.snp.bottom).offset(16)
             $0.horizontalEdges.equalTo(searchTypeControl)
             $0.height.equalTo(50)
         }
@@ -144,29 +159,50 @@ final class SearchView: BaseViewController, View {
         }
     }
 
-    private func updateLightFilterMenu(state: SearchReactor.State, reactor: SearchReactor) {
-        let options = state.filterOptions[.light] ?? []
-        let selectedOption = state.filterState.option(for: .light)
+    private func configureFilterButtons() {
+        PlantFilterKind.allCases.forEach { kind in
+            var configuration = UIButton.Configuration.filled()
+            configuration.cornerStyle = .capsule
+            configuration.baseBackgroundColor = .secondarySystemBackground
+            configuration.baseForegroundColor = .label
+            configuration.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+            configuration.title = kind.title
 
-        var configuration = lightFilterButton.configuration ?? .filled()
-        configuration.title = selectedOption?.name ?? "광도요구"
-        configuration.baseBackgroundColor = selectedOption == nil ? .secondarySystemBackground : .systemGreen
-        configuration.baseForegroundColor = selectedOption == nil ? .label : .white
-        lightFilterButton.configuration = configuration
-        
-        // 옵션 하나 선택시 액션을 보냄(선택됨을 알림)
-        let actions = options.map { option in
-            UIAction(title: option.name) { _ in
-                reactor.action.onNext(.updateFilter(.light, option))
+            let button = UIButton(configuration: configuration)
+            button.showsMenuAsPrimaryAction = true
+            filterButtons[kind] = button
+            filterStackView.addArrangedSubview(button)
+        }
+    }
+    
+    // 버튼 상태 업데이트
+    private func updateFilterMenus(state: SearchReactor.State, reactor: SearchReactor) {
+        for kind in PlantFilterKind.allCases {
+            guard let button = filterButtons[kind] else { continue }
+
+            let options = state.filterOptions[kind] ?? []
+            let selectedOption = state.filterState.option(for: kind)
+
+            var configuration = button.configuration ?? .filled()
+            configuration.title = selectedOption?.name ?? kind.title
+            configuration.baseBackgroundColor = selectedOption == nil ? .secondarySystemBackground : .systemGreen
+            configuration.baseForegroundColor = selectedOption == nil ? .label : .white
+            button.configuration = configuration
+            
+            // 옵션 하나 선택시 액션을 보냄(선택됨을 알림)
+            let actions = options.map { option in
+                UIAction(title: option.name) { _ in
+                    reactor.action.onNext(.updateFilter(kind, option))
+                }
             }
-        }
-        
-        // 전체를 누르면 다 nil
-        let clearAction = UIAction(title: "전체") { _ in
-            reactor.action.onNext(.updateFilter(.light, nil))
-        }
+            
+            // 전체를 누르면 다 nil
+            let clearAction = UIAction(title: "전체") { _ in
+                reactor.action.onNext(.updateFilter(kind, nil))
+            }
 
-        lightFilterButton.menu = UIMenu(children: [clearAction] + actions)
+            button.menu = UIMenu(children: [clearAction] + actions)
+        }
     }
 }
 
