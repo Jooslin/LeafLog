@@ -26,18 +26,25 @@ final class NetworkManager {
     func fetchPlantList(
         keyword: String,
         searchType: PlantSearchType = .name,
+        filterState: PlantFilterState = .init(),
         pageNo: Int = 1,
         numOfRows: Int = 10
     ) async throws -> [PlantSummary] {
+        var parameters: Parameters = [
+            "apiKey": AppConfig.apiKey,
+            "sType": searchType.rawValue,
+            "sText": keyword,
+            "pageNo": String(pageNo),
+            "numOfRows": String(numOfRows)
+        ]
+
+        for (kind, option) in filterState.selectedOptions {
+            parameters[kind.requestParameterName] = option.code
+        }
+
         let response: PlantListResponse = try await request(
             path: "gardenList",
-            parameters: [
-                "apiKey": AppConfig.apiKey,
-                "sType": searchType.rawValue,
-                "sText": keyword,
-                "pageNo": String(pageNo),
-                "numOfRows": String(numOfRows)
-            ]
+            parameters: parameters
         )
         // HTTP 요청이 아닌 농사로 자체 API 확인(내부 resultCode 확인)
         try validate(header: response.header)
