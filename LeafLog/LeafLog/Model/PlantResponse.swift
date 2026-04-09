@@ -120,6 +120,28 @@ struct PlantFilterOption: Decodable, Equatable {
     }
 }
 
+// 고른 필터로 상태
+struct PlantFilterState {
+    var selectedOptions: [PlantFilterKind: PlantFilterOption] = [:]
+
+    var isEmpty: Bool {
+        selectedOptions.isEmpty
+    }
+
+    func option(for kind: PlantFilterKind) -> PlantFilterOption? {
+        selectedOptions[kind]
+    }
+
+    func applyOption(_ option: PlantFilterOption?, for kind: PlantFilterKind) -> PlantFilterState {
+        var next = self
+        next.selectedOptions[kind] = option
+        if option == nil {
+            next.selectedOptions.removeValue(forKey: kind)
+        }
+        return next
+    }
+}
+
 // 검색용 API 모델
 struct PlantListResponse: Decodable {
     let header: PlantResponseHeader
