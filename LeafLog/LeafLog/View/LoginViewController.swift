@@ -10,9 +10,9 @@ import ReactorKit
 import RxSwift
 import RxCocoa
 
-class LoginViewController: UIViewController, View {
+class LoginViewController: BaseViewController, View {
     
-    var disposeBag = DisposeBag()
+//    var disposeBag = DisposeBag()
     
     private let loginView = LoginView()
     
@@ -84,5 +84,6 @@ class LoginViewController: UIViewController, View {
 
     private func transitionToMain() {
         // TODO: 실제 메인 뷰 컨트롤러로 넘어가는 코드 작성
+//        steps.accept(AppStep.main)
     }
 }

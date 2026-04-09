@@ -9,6 +9,8 @@ import UIKit
 import KakaoSDKCommon
 import GoogleSignIn
 import Firebase
+import Auth
+import Supabase
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -56,7 +58,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
     
-    
 }
 
 extension AppDelegate {
@@ -79,11 +80,29 @@ extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         print("Firebase registration token: \(String(describing: fcmToken))")
         
-        let dataDict: [String: String] = ["token": fcmToken ?? ""]
-        NotificationCenter.default.post(
-            name: Notification.Name("FCMToken"),
-            object: nil,
-            userInfo: dataDict
-        )
+        // 전달받은 토큰이 정상적으로 있는지 확인
+        guard let validToken = fcmToken else { return }
+        
+        // Supabase 서버로 토큰 쏴주기
+        Task {
+            do {
+                // 현재 로그인된 유저의 정보(세션)를 가져옴
+                let session = try await SupabaseManager.shared.client.auth.session
+                let currentUserId = session.user.id
+                
+                // profiles 테이블에서 현재 유저의 행을 찾아 fcm_token 값을 덮어씌움
+                try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .update(["fcm_token": validToken])
+                    .eq("id", value: currentUserId)
+                    .execute()
+                
+                print("✅ Supabase DB에 FCM 토큰이 성공적으로 저장되었습니다.")
+                
+            } catch {
+                // 앱을 처음 켜서 아직 로그인이 안 된 경우
+                print("⚠️ FCM 토큰 저장 보류 (로그인 전이거나 네트워크 에러): \(error.localizedDescription)")
+            }
+        }
     }
 }
