@@ -23,12 +23,17 @@ final class NetworkManager {
         self.decoder.shouldProcessNamespaces = false
     }
 
-    func fetchPlantList(keyword: String, pageNo: Int = 1, numOfRows: Int = 10) async throws -> [PlantSummary] {
+    func fetchPlantList(
+        keyword: String,
+        searchType: PlantSearchType = .name,
+        pageNo: Int = 1,
+        numOfRows: Int = 10
+    ) async throws -> [PlantSummary] {
         let response: PlantListResponse = try await request(
             path: "gardenList",
             parameters: [
                 "apiKey": AppConfig.apiKey,
-                "sType": "sCntntsSj",
+                "sType": searchType.rawValue,
                 "sText": keyword,
                 "pageNo": String(pageNo),
                 "numOfRows": String(numOfRows)

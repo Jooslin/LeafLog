@@ -7,6 +7,23 @@
 
 import Foundation
 
+enum PlantSearchType: String, CaseIterable {
+    case name = "sCntntsSj"
+    case botanicalName = "sPlntbneNm"
+    case englishName = "sPlntzrNm"
+
+    var title: String {
+        switch self {
+        case .name:
+            return "식물명"
+        case .botanicalName:
+            return "학명"
+        case .englishName:
+            return "영명"
+        }
+    }
+}
+
 // 검색용 API 모델
 struct PlantListResponse: Decodable {
     let header: PlantResponseHeader
