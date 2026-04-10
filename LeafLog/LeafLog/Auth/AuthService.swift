@@ -18,6 +18,7 @@ final class AuthService {
     private let googleProvider: GoogleAuthProvider
     private let kakaoProvider: KakaoAuthProvider
     private let kakaoTokenExchanger: any KakaoTokenExchanging
+    private let profileDBManager: ProfileDBManager
 
     
     // MARK: - Initialization
@@ -27,11 +28,13 @@ final class AuthService {
         kakaoTokenExchanger: any KakaoTokenExchanging = KakaoSupabaseTokenExchanger(
             supabaseURL: AppSecrets.supabaseURL,
             anonKey: AppSecrets.supabaseAnonKey
-        )
+        ),
+        profileDBManager: ProfileDBManager = ProfileDBManager.shared
     ) {
         self.googleProvider = googleProvider
         self.kakaoProvider = kakaoProvider
         self.kakaoTokenExchanger = kakaoTokenExchanger
+        self.profileDBManager = profileDBManager
     }
 
     
@@ -41,7 +44,9 @@ final class AuthService {
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .google, idToken: credential.idToken, nonce: credential.rawNonce)
         )
-        return try await supabase.auth.user()
+        let user = try await supabase.auth.user()
+        try await ensureProfileExists()
+        return user
     }
 
     
@@ -56,7 +61,28 @@ final class AuthService {
     private func exchangeKakaoTokenWithSupabase(idToken: String) async throws -> Supabase.User {
         let tokens = try await kakaoTokenExchanger.exchange(idToken: idToken)
         try await supabase.auth.setSession(accessToken: tokens.accessToken, refreshToken: tokens.refreshToken)
-        return try await supabase.auth.user()
+        let user = try await supabase.auth.user()
+        try await ensureProfileExists()
+        return user
+    }
+
+    
+    // MARK: - 로그인 성공 후 profiles 테이블에 사용자 프로필 row가 존재하도록 보장
+    private func ensureProfileExists() async throws {
+        do {
+            _ = try await profileDBManager.createProfileIfNeeded()
+        } catch let error as AuthError {
+            await rollbackSession()
+            throw error
+        } catch {
+            await rollbackSession()
+            throw AuthError.profileFailed("사용자 프로필을 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+    }
+
+    private func rollbackSession() async {
+        try? await supabase.auth.signOut()
+        googleProvider.signOut()
     }
     
     
