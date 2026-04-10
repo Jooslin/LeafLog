@@ -30,6 +30,7 @@ final class SupabaseManager {
 }
 
 extension SupabaseManager {
+    //TODO: ProfileDBManager 병합 시 이관 필요
     // 유저 fcm 토큰 업데이트
     func updateFCMToken(_ validToken: String) {
         // Supabase 서버로 토큰 쏴주기

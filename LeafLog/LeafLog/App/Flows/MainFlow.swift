@@ -11,7 +11,7 @@ import ReactorKit
 
 final class MainFlow: Flow {
     let window: UIWindow
-    let tabBarController = UITabBarController()
+    let tabBarController = MainViewController()
     
     var root: any Presentable { tabBarController }
     
