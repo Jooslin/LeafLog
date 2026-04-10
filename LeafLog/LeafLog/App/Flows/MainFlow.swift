@@ -56,8 +56,6 @@ extension MainFlow {
         let plantTabFlow = PlantTabFlow()
         let calendarTabFlow = CalendarTabFlow()
         let myInfoTabFlow = MyInfoTabFlow()
-
-        window.rootViewController = tabBarController
         
         // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
         // Flow.use는 내부에서 Single 이벤트를 drive로 구독을 소비하므로 소비 완료 후 자동으로 구독이 해제되어 메모리 누수가 발생하지 않음
