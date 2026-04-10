@@ -48,7 +48,7 @@ class MyPageViewController: BaseViewController {
             do {
                 try await authService.signOut()
                 await MainActor.run {
-                    self.steps.accept(AppStep.login)
+                    self.steps.accept(AppStep.loginRequired)
                 }
             } catch {
                 await MainActor.run {

@@ -35,11 +35,10 @@ final class AppFlow: Flow {
     let tabBarController = UITabBarController()
     let loginNavigationController = UINavigationController()
     
-    var root: any RxFlow.Presentable { loginNavigationController }
+    var root: any RxFlow.Presentable { window }
     
     init(windowScene: UIWindowScene) {
         self.window = UIWindow(windowScene: windowScene)
-        self.window.rootViewController = loginNavigationController
         self.window.makeKeyAndVisible()
     }
     
@@ -51,30 +50,40 @@ final class AppFlow: Flow {
         
         switch step {
         case .splash:
-            let viewController = SplashViewController()
-            
-            loginNavigationController.setViewControllers([viewController], animated: false)
-            window.rootViewController = loginNavigationController
+            let splashViewController = SplashViewController()
+            window.rootViewController = splashViewController
             
             return .one(
                 flowContributor: .contribute(
-                    withNextPresentable: viewController,
-                    withNextStepper: viewController
+                    withNextPresentable: splashViewController,
+                    withNextStepper: splashViewController
                 )
             )
             
-        case .login:
+        case .loginRequired:
+            let loginFlow = LoginFlow(window: self.window)
             let viewController = LoginViewController()
             viewController.reactor = LoginReactor()
 
-            loginNavigationController.setViewControllers([viewController], animated: false)
-            window.rootViewController = loginNavigationController // 다시 로그인 화면으로 돌아왔을때도 화면 교체
+//            loginNavigationController.setViewControllers([viewController], animated: false)
+//            window.rootViewController = loginNavigationController // 다시 로그인 화면으로 돌아왔을때도 화면 교체
 
+//            return .one(
+//                flowContributor: .contribute(
+//                    withNextPresentable: viewController,
+//                    withNextStepper: viewController // 다음 Step 신호는 loginVC가 쏠거다
+//                )
+//            )
+            Flows.use(loginFlow, when: .created) { login in
+                guard let nav = login as? UINavigationController else { return }
+                
+                nav.setViewControllers([viewController], animated: true)
+            }
+            
             return .one(
                 flowContributor: .contribute(
-                    withNextPresentable: viewController,
-                    withNextStepper: viewController // 다음 Step 신호는 loginVC가 쏠거다
-                )
+                    withNextPresentable: loginFlow,
+                    withNextStepper: viewController)
             )
 
         case .main:
@@ -131,6 +140,14 @@ final class AppFlow: Flow {
             
         default:
             return .none
+        }
+    }
+    
+    func navigate(from navigationController: UIViewController, to viewController: UIViewController, animated: Bool) {
+        if let navigationController = navigationController as? UINavigationController {
+            navigationController.pushViewController(viewController, animated: true)
+        } else {
+            
         }
     }
     
