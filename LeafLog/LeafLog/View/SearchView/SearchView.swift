@@ -15,10 +15,6 @@ import Then
 
 // TODO: 오류 처리
 final class SearchView: BaseViewController, View {
-    private let searchTypeControl = UISegmentedControl(items: PlantSearchType.allCases.map(\.title)).then {
-        $0.selectedSegmentIndex = 0
-    }
-
     private let filterScrollView = UIScrollView().then {
         $0.showsHorizontalScrollIndicator = false
     }
@@ -77,12 +73,6 @@ final class SearchView: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        searchTypeControl.rx.selectedSegmentIndex
-            .compactMap { PlantSearchType.allCases[safe: $0] }
-            .map(SearchReactor.Action.updateSearchType)
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-
         // 텍스트 필드에서 흐르는거 계속 받음
         searchTextField.rx.text.orEmpty
             .debounce(.milliseconds(400), scheduler: MainScheduler.instance)
@@ -119,20 +109,14 @@ final class SearchView: BaseViewController, View {
     }
 
     private func configureLayout() {
-        view.addSubview(searchTypeControl)
         view.addSubview(filterScrollView)
         filterScrollView.addSubview(filterStackView)
         view.addSubview(searchTextField)
         view.addSubview(loadingLabel)
         view.addSubview(resultLabel)
 
-        searchTypeControl.snp.makeConstraints {
-            $0.top.equalTo(view.safeAreaLayoutGuide).offset(24)
-            $0.horizontalEdges.equalToSuperview().inset(20)
-        }
-
         filterScrollView.snp.makeConstraints {
-            $0.top.equalTo(searchTypeControl.snp.bottom).offset(16)
+            $0.top.equalTo(view.safeAreaLayoutGuide).offset(24)
             $0.horizontalEdges.equalToSuperview()
             $0.height.equalTo(40)
         }
@@ -144,7 +128,7 @@ final class SearchView: BaseViewController, View {
 
         searchTextField.snp.makeConstraints {
             $0.top.equalTo(filterScrollView.snp.bottom).offset(16)
-            $0.horizontalEdges.equalTo(searchTypeControl)
+            $0.horizontalEdges.equalToSuperview().inset(20)
             $0.height.equalTo(50)
         }
 
@@ -160,7 +144,7 @@ final class SearchView: BaseViewController, View {
     }
 
     private func configureFilterButtons() {
-        PlantFilterKind.allCases.forEach { kind in
+        PlantFilterKind.allCases.filter { $0 != .searchType }.forEach { kind in // 검색 타입 제외 
             var configuration = UIButton.Configuration.filled()
             configuration.cornerStyle = .capsule
             configuration.baseBackgroundColor = .secondarySystemBackground
@@ -177,13 +161,13 @@ final class SearchView: BaseViewController, View {
     
     // 버튼 상태 업데이트
     private func updateFilterMenus(state: SearchReactor.State, reactor: SearchReactor) {
-        for kind in PlantFilterKind.allCases {
+        for kind in PlantFilterKind.allCases where kind != .searchType { // 검색 타입 제외
             guard let button = filterButtons[kind] else { continue }
 
             let options = state.filterOptions[kind] ?? []
             let selectedOption = state.filterState.option(for: kind)
-
             var configuration = button.configuration ?? .filled()
+
             configuration.title = selectedOption?.name ?? kind.title
             configuration.baseBackgroundColor = selectedOption == nil ? .secondarySystemBackground : .systemGreen
             configuration.baseForegroundColor = selectedOption == nil ? .label : .white
@@ -203,15 +187,5 @@ final class SearchView: BaseViewController, View {
 
             button.menu = UIMenu(children: [clearAction] + actions)
         }
-    }
-}
-
-// 안전하게 배열 접근할 수 있도록 확장(인덱스 벗어나서 접근해도 크래시 나지 않도록)
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        // 범위 벗어나면 nil
-        guard indices.contains(index) else { return nil }
-        // 해당인덱스가 있을떄만 접근
-        return self[index]
     }
 }

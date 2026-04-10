@@ -88,7 +88,7 @@ final class NetworkManager {
         // withThrowingTaskGroup 이용해서 병렬 호출
         try await withThrowingTaskGroup(of: (PlantFilterKind, [PlantFilterOption]).self) { group in
             // 케이스 돌면서 작업 등록
-            for kind in PlantFilterKind.allCases {
+            for kind in PlantFilterKind.allCases where kind.usesServerProvidedOptions {
                 group.addTask { [self] in
                     (kind, try await fetchFilterOptions(kind: kind))
                 }

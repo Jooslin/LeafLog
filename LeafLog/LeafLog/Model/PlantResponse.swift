@@ -26,6 +26,7 @@ enum PlantSearchType: String, CaseIterable {
 
 // 필터링 검색을 위한 이넘 정의
 enum PlantFilterKind: CaseIterable, Hashable {
+    case searchType
     case light
     case growthStyle
     case leafColor
@@ -39,6 +40,8 @@ enum PlantFilterKind: CaseIterable, Hashable {
     // UI 표시형
     var title: String {
         switch self {
+        case .searchType:
+            return "검색기준"
         case .light:
             return "광도요구"
         case .growthStyle:
@@ -63,6 +66,8 @@ enum PlantFilterKind: CaseIterable, Hashable {
     // API 요청path
     var listPath: String {
         switch self {
+        case .searchType: // 검색 타입 제외
+            return ""
         case .light:
             return "lightList"
         case .growthStyle:
@@ -87,6 +92,8 @@ enum PlantFilterKind: CaseIterable, Hashable {
     // 파라미터
     var requestParameterName: String {
         switch self {
+        case .searchType: // 검색 타입 제외
+            return ""
         case .light:
             return "lightChkVal"
         case .growthStyle:
@@ -106,6 +113,11 @@ enum PlantFilterKind: CaseIterable, Hashable {
         case .waterCycle:
             return "waterCycleSel"
         }
+    }
+    
+    //
+    var usesServerProvidedOptions: Bool {
+        self != .searchType
     }
 }
 
