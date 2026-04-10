@@ -46,15 +46,7 @@ final class AppFlow: Flow {
         
         switch step {
         case .splash:
-            let splashViewController = SplashViewController()
-            window.rootViewController = splashViewController
-            
-            return .one(
-                flowContributor: .contribute(
-                    withNextPresentable: splashViewController,
-                    withNextStepper: splashViewController
-                )
-            )
+            return navigateToSplash()
             
         case .loginRequired:
             return navigateToLogin()
@@ -69,6 +61,18 @@ final class AppFlow: Flow {
 }
 
 extension AppFlow {
+    private func navigateToSplash() -> FlowContributors {
+        let splashViewController = SplashViewController()
+        window.rootViewController = splashViewController
+        
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: splashViewController,
+                withNextStepper: splashViewController
+            )
+        )
+    }
+    
     private func navigateToLogin() -> FlowContributors {
         let loginFlow = LoginFlow(window: window)
         return .one(flowContributor: .contribute(
