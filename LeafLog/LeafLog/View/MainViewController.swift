@@ -17,7 +17,11 @@ final class MainViewController: UITabBarController {
         notificationManager.requestNotificationAuthorization()
         
         Task {
-            try await Messaging.messaging().token()
+            do {
+                try await Messaging.messaging().token()
+            } catch {
+                print("FCM 토큰 가져오기 실패: \(error.localizedDescription)")
+            }
         }
     }
 }
