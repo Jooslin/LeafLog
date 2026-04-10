@@ -10,8 +10,8 @@ import RxFlow
 import ReactorKit
 
 final class LoginFlow: Flow {
-    let window: UIWindow
-    let navigationController = UINavigationController()
+    private let window: UIWindow
+    private let navigationController = UINavigationController()
     
     var root: any Presentable { navigationController }
     

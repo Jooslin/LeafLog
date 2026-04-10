@@ -10,8 +10,8 @@ import RxFlow
 import ReactorKit
 
 final class MainFlow: Flow {
-    let window: UIWindow
-    let tabBarController = MainViewController()
+    private let window: UIWindow
+    private let tabBarController = MainViewController()
     
     var root: any Presentable { tabBarController }
     
