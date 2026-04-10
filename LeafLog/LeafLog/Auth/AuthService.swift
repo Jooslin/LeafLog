@@ -11,6 +11,8 @@ import Dependencies
 
 final class AuthService {
     
+    @Dependency(\.profileDBManager) private var profileDBManager
+    
     // MARK: - Properties
     let supabase = SupabaseManager.shared.client
 
@@ -18,7 +20,6 @@ final class AuthService {
     private let googleProvider: GoogleAuthProvider
     private let kakaoProvider: KakaoAuthProvider
     private let kakaoTokenExchanger: any KakaoTokenExchanging
-    private let profileDBManager: ProfileDBManager
 
     // 세션 여부 확인
     func resolveInitialStep() async -> AppStep {
@@ -39,13 +40,11 @@ final class AuthService {
             supabaseURL: AppSecrets.supabaseURL,
             anonKey: AppSecrets.supabaseAnonKey
         ),
-        profileDBManager: ProfileDBManager = ProfileDBManager.shared
     ) {
         self.appleProvider = appleProvider
         self.googleProvider = googleProvider
         self.kakaoProvider = kakaoProvider
         self.kakaoTokenExchanger = kakaoTokenExchanger
-        self.profileDBManager = profileDBManager
     }
 
     

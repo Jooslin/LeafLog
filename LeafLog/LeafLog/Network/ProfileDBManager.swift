@@ -7,10 +7,11 @@
 
 import Foundation
 import Supabase
+import Dependencies
 
 // MARK: - profiles 테이블 전용 DB 매니저
 final class ProfileDBManager {
-    static let shared = ProfileDBManager()
+
     private static let defaultNickname = "익명의 식물 집사"
 
     private let client = SupabaseManager.shared.client
@@ -157,5 +158,19 @@ private struct UserProfileUpdatePayload: Encodable {
     enum CodingKeys: String, CodingKey {
         case nickname
         case profileImageURL = "profile_image_url"
+    }
+}
+
+//MARK: Dependencies
+extension ProfileDBManager: DependencyKey {
+    static var liveValue: ProfileDBManager {
+        ProfileDBManager()
+    }
+}
+
+extension DependencyValues {
+    var profileDBManager: ProfileDBManager {
+        get { self[ProfileDBManager.self] }
+        set { self[ProfileDBManager.self] = newValue }
     }
 }
