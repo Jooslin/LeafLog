@@ -17,9 +17,14 @@ extension UILabel {
         self.numberOfLines = lines ?? config.lines
     }
     
-    convenience init(text: String = "", config: LabelConfiguration) {
+    convenience init(
+        text: String = "",
+        config: LabelConfiguration,
+        color: UIColor? = nil,
+        lines: Int? = nil
+    ) {
         self.init()
         self.text = text
-        apply(config)
+        apply(config, color: color, lines: lines)
     }
 }
