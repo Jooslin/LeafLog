@@ -30,11 +30,7 @@ final class MainFlow: Flow {
             return navigateToMain()
             
         case .alert(let title, let message):
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "확인", style: .default))
-            
-            present(alert, animated: true)
-            return .none
+            return presentAlert(title: title, message: message)
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
@@ -92,5 +88,13 @@ extension MainFlow {
             .contribute(withNextPresentable: calendarTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.calendarTab)),
             .contribute(withNextPresentable: myInfoTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.myInfoTab))
         ])
+    }
+    
+    private func presentAlert(title: String, message: String) -> FlowContributors {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        
+        present(alert, animated: true)
+        return .none
     }
 }
