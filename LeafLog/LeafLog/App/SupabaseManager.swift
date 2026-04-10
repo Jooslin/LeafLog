@@ -35,8 +35,8 @@ extension SupabaseManager {
         // Supabase 서버로 토큰 쏴주기
         Task {
             do {
-                // 현재 로그인된 유저의 정보(세션)를 가져옴
-                let currentUserId = client.auth.currentUser?.id
+                // 현재 로그인된 유저의 정보 가져오기
+                guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
                 
                 // profiles 테이블에서 현재 유저의 행을 찾아 fcm_token 값을 덮어씌움
                 try await client
@@ -59,7 +59,7 @@ extension SupabaseManager {
         Task {
             do {
                 // 현재 로그인된 유저의 정보(세션)를 가져옴
-                let currentUserId = client.auth.currentUser?.id
+                guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
                 
                 // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
                 try await client
