@@ -8,6 +8,7 @@
 import UIKit
 import RxFlow
 import RxSwift
+import ReactorKit
 
 /*
  RxFlow에서는 다음과 같은 용어들을 사용합니다.
@@ -32,12 +33,13 @@ final class AppFlow: Flow {
     
     let window: UIWindow
     let tabBarController = UITabBarController()
+    let loginNavigationController = UINavigationController()
     
-    var root: any RxFlow.Presentable { tabBarController }
+    var root: any RxFlow.Presentable { loginNavigationController }
     
     init(windowScene: UIWindowScene) {
         self.window = UIWindow(windowScene: windowScene)
-        self.window.rootViewController = tabBarController
+        self.window.rootViewController = loginNavigationController
         self.window.makeKeyAndVisible()
     }
     
@@ -48,10 +50,39 @@ final class AppFlow: Flow {
         }
         
         switch step {
+        case .splash:
+            let viewController = SplashViewController()
+            
+            loginNavigationController.setViewControllers([viewController], animated: false)
+            window.rootViewController = loginNavigationController
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: viewController
+                )
+            )
+            
+        case .login:
+            let viewController = LoginViewController()
+            viewController.reactor = LoginReactor()
+
+            loginNavigationController.setViewControllers([viewController], animated: false)
+            window.rootViewController = loginNavigationController // 다시 로그인 화면으로 돌아왔을때도 화면 교체
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: viewController // 다음 Step 신호는 loginVC가 쏠거다
+                )
+            )
+
         case .main:
             let plantTabFlow = PlantTabFlow()
             let calendarTabFlow = CalendarTabFlow()
             let myInfoTabFlow = MyInfoTabFlow()
+
+            window.rootViewController = tabBarController
             
             // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
             // Flow.use는 내부에서 Single 이벤트를 drive로 구독을 소비하므로 소비 완료 후 자동으로 구독이 해제되어 메모리 누수가 발생하지 않음
@@ -85,10 +116,18 @@ final class AppFlow: Flow {
             
         case .alert(let title, let message):
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            let action = UIAlertAction(title: "확인", style: .default, handler: nil)
-            alert.addAction(action)
-            tabBarController.selectedViewController?.present(alert, animated: true)
+            alert.addAction(UIAlertAction(title: "확인", style: .default))
+
+            let presenter: UIViewController?
+            if let selected = tabBarController.selectedViewController {
+                presenter = selected
+            } else {
+                presenter = window.rootViewController
+            }
+
+            presenter?.present(alert, animated: true)
             return .none
+
             
         default:
             return .none

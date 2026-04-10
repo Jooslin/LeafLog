@@ -19,6 +19,8 @@ import RxFlow
 enum AppStep: Step {
     // Main
     case root
+    case splash
+    case login
     case main
     
     // Tab

@@ -7,21 +7,31 @@
 
 import UIKit
 import Supabase
+import Dependencies
 
 final class AuthService {
-    static let shared = AuthService()
-
     
     // MARK: - Properties
     let supabase = SupabaseManager.shared.client
 
+    private let appleProvider: AppleAuthProvider
     private let googleProvider: GoogleAuthProvider
     private let kakaoProvider: KakaoAuthProvider
     private let kakaoTokenExchanger: any KakaoTokenExchanging
 
-    
+    // 세션 여부 확인
+    func resolveInitialStep() async -> AppStep {
+        do {
+            _ = try await supabase.auth.session
+            return .main
+        } catch {
+            return .login
+        }
+    }
+
     // MARK: - Initialization
     init(
+        appleProvider: AppleAuthProvider = AppleAuthProvider(),
         googleProvider: GoogleAuthProvider = GoogleAuthProvider(),
         kakaoProvider: KakaoAuthProvider = KakaoAuthProvider(),
         kakaoTokenExchanger: any KakaoTokenExchanging = KakaoSupabaseTokenExchanger(
@@ -29,9 +39,20 @@ final class AuthService {
             anonKey: AppSecrets.supabaseAnonKey
         )
     ) {
+        self.appleProvider = appleProvider
         self.googleProvider = googleProvider
         self.kakaoProvider = kakaoProvider
         self.kakaoTokenExchanger = kakaoTokenExchanger
+    }
+
+    
+    // MARK: - Apple Login
+    func startAppleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
+        let credential = try await appleProvider.fetchCredential(presentingViewController: presentingViewController)
+        try await supabase.auth.signInWithIdToken(
+            credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
+        )
+        return try await supabase.auth.user()
     }
 
     
@@ -64,5 +85,19 @@ final class AuthService {
     func signOut() async throws {
         try await supabase.auth.signOut()
         googleProvider.signOut()
+    }
+}
+
+//MARK: Dependencies
+extension AuthService: DependencyKey {
+    static var liveValue: AuthService {
+        AuthService()
+    }
+}
+
+extension DependencyValues {
+    var authService: AuthService {
+        get { self[AuthService.self] }
+        set { self[AuthService.self] = newValue }
     }
 }
