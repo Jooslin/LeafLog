@@ -13,7 +13,7 @@ import RxFlow
 import Dependencies
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
+    
     let coordinator = FlowCoordinator()
     @Dependency(\.notificationManager) private var notificationManager
     
@@ -21,7 +21,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
-
+        
         // 카카오 처리
         if AuthApi.isKakaoTalkLoginUrl(url) {
             _ = AuthController.handleOpenUrl(url: url)
@@ -43,16 +43,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let appFlow = AppFlow(windowScene: windowScene)
         window = appFlow.window
         
-        coordinator.coordinate(flow: appFlow, with: OneStepper(withSingleStep: AppStep.main))
+        coordinator.coordinate(flow: appFlow, with: OneStepper(withSingleStep: AppStep.splash))
     }
-
+    
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
         // This occurs shortly after the scene enters the background, or when its session is discarded.
         // Release any resources associated with this scene that can be re-created the next time the scene connects.
         // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
     }
-
+    
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
@@ -60,23 +60,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         //Foreground에 진입할 때마다 알림 허용 권한 업데이트
         notificationManager.updateIsNotificationEnabled()
     }
-
+    
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
     }
-
+    
     func sceneWillEnterForeground(_ scene: UIScene) {
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
     }
-
+    
     func sceneDidEnterBackground(_ scene: UIScene) {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+        
     }
-
-
 }
-
