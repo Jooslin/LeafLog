@@ -29,6 +29,9 @@ final class MainFlow: Flow {
         case .main:
             return navigateToMain()
             
+        case .loginRequired:
+            return .end(forwardToParentFlowWithStep: step)
+            
         case .alert(let title, let message):
             return presentAlert(title: title, message: message)
             

@@ -29,7 +29,7 @@ final class LoginFlow: Flow {
         case .loginRequired:
             return navigateToLogin()
         case .main:
-            return navigateToMain()
+            return .end(forwardToParentFlowWithStep: step)
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -41,21 +41,11 @@ extension LoginFlow {
         let viewController = LoginViewController()
         viewController.reactor = LoginReactor()
 
-        navigationController.pushViewController(viewController, animated: true)
-        
+        navigationController.setViewControllers([viewController], animated: false)
         return .one(
             flowContributor: .contribute(
                 withNextPresentable: viewController,
                 withNextStepper: viewController)
         )
-    }
-    
-    private func navigateToMain() -> FlowContributors {
-        let mainFlow = MainFlow(window: window)
-        return .one(
-            flowContributor: .contribute(
-                withNextPresentable: mainFlow,
-                withNextStepper: OneStepper(withSingleStep: AppStep.main))
-            )
     }
 }
