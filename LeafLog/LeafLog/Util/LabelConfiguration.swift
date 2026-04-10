@@ -31,7 +31,7 @@ extension LabelConfiguration {
         size: CGFloat,
         weight: UIFont.Weight,
         color: UIColor = .label,
-        lines: Int = 1
+        lines: Int = 0
     ) -> LabelConfiguration {
         LabelConfiguration(
             font: .systemFont(ofSize: size, weight: weight),
