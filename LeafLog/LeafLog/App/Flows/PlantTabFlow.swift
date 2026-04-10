@@ -15,7 +15,7 @@ import RxFlow
  */
 
 final class PlantTabFlow: Flow {
-    let navigationController = UINavigationController()
+    private let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
     

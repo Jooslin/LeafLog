@@ -9,7 +9,7 @@ import UIKit
 import RxFlow
 
 final class MyInfoTabFlow: Flow {
-    let navigationController = UINavigationController()
+    private let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
     
