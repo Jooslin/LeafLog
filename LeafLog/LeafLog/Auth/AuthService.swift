@@ -12,9 +12,10 @@ import Dependencies
 final class AuthService {
     
     @Dependency(\.profileDBManager) private var profileDBManager
-    
+
     // MARK: - Properties
-    let supabase = SupabaseManager.shared.client
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private lazy var supabase = supabaseManager.client
 
     private let appleProvider: AppleAuthProvider
     private let googleProvider: GoogleAuthProvider

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0AE522C22F85FECF0075F8D6 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = 0AE522C12F85FECF0075F8D6 /* XMLCoder */; };
 		0AE522C42F8600A50075F8D6 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0AE522C32F8600A50075F8D6 /* Secrets.xcconfig */; };
+		1666DE962F88B6BF00811FBB /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1666DE952F88B6BF00811FBB /* FirebaseMessaging */; };
 		16AD0E472F7FB0BB00C98732 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E462F7FB0BB00C98732 /* Auth */; };
 		16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E482F7FB0BB00C98732 /* Functions */; };
 		16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 16AD0E4A2F7FB0BB00C98732 /* PostgREST */; };
@@ -74,6 +75,7 @@
 				16AD0E4B2F7FB0BB00C98732 /* PostgREST in Frameworks */,
 				16AD0E492F7FB0BB00C98732 /* Functions in Frameworks */,
 				16AD0E542F7FB0C700C98732 /* ReactorKit in Frameworks */,
+				1666DE962F88B6BF00811FBB /* FirebaseMessaging in Frameworks */,
 				16AD0E782F7FB1E600C98732 /* RxFlow in Frameworks */,
 				16AD0E572F7FB0D500C98732 /* Dependencies in Frameworks */,
 				16AD0E732F7FB17D00C98732 /* SnapKit in Frameworks */,
@@ -168,6 +170,7 @@
 				B986A1912F85FC7E00EE5265 /* KakaoSDKCommon */,
 				B986A1932F85FC7E00EE5265 /* KakaoSDKUser */,
 				0AE522C12F85FECF0075F8D6 /* XMLCoder */,
+				1666DE952F88B6BF00811FBB /* FirebaseMessaging */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -211,6 +214,7 @@
 				B986A1872F85FC4200EE5265 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B986A18C2F85FC7E00EE5265 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 				0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */,
+				1666DE942F88B6BF00811FBB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16AD0E2E2F7FAFE200C98732 /* Products */;
@@ -491,6 +495,14 @@
 				minimumVersion = 0.18.0;
 			};
 		};
+		1666DE942F88B6BF00811FBB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.12.0;
+			};
+		};
 		16AD0E452F7FB0BB00C98732 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -594,6 +606,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
+		};
+		1666DE952F88B6BF00811FBB /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1666DE942F88B6BF00811FBB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		16AD0E462F7FB0BB00C98732 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
