@@ -9,9 +9,12 @@ import SnapKit
 import Then
 import UIKit
 import RxRelay
+import Dependencies
 
 final class SplashViewController: BaseViewController {
 
+    @Dependency(\.authService) private var authService
+    
     private var didStartSessionCheck = false
 
     override func viewDidLoad() {
@@ -31,7 +34,7 @@ final class SplashViewController: BaseViewController {
     // 로그인 세션 확인
     private func validateSession() {
         Task {
-            let nextStep = await AuthService.shared.resolveInitialStep()
+            let nextStep = await authService.resolveInitialStep()
 
             await MainActor.run {
                 self.steps.accept(nextStep)

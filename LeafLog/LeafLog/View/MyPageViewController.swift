@@ -10,8 +10,11 @@ import SnapKit
 import Then
 import Supabase
 import RxRelay
+import Dependencies
 
 class MyPageViewController: BaseViewController {
+    
+    @Dependency(\.authService) private var authService
     
     private lazy var signOutButton = UIButton().then {
         $0.setTitle("로그아웃", for: .normal)
@@ -43,7 +46,7 @@ class MyPageViewController: BaseViewController {
     @objc private func logoutButtonTapped() {
         Task {
             do {
-                try await AuthService.shared.signOut()
+                try await authService.signOut()
                 await MainActor.run {
                     self.steps.accept(AppStep.login)
                 }

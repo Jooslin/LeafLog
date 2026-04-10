@@ -7,10 +7,9 @@
 
 import UIKit
 import Supabase
+import Dependencies
 
 final class AuthService {
-    static let shared = AuthService()
-
     
     // MARK: - Properties
     let supabase = SupabaseManager.shared.client
@@ -86,5 +85,19 @@ final class AuthService {
     func signOut() async throws {
         try await supabase.auth.signOut()
         googleProvider.signOut()
+    }
+}
+
+//MARK: Dependencies
+extension AuthService: DependencyKey {
+    static var liveValue: AuthService {
+        AuthService()
+    }
+}
+
+extension DependencyValues {
+    var authService: AuthService {
+        get { self[AuthService.self] }
+        set { self[AuthService.self] = newValue }
     }
 }
