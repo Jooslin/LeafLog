@@ -76,7 +76,8 @@ final class LoginReactor: Reactor {
                         // 취소는 조용히 로딩만 해제
                         observer.onNext(.setLoading(false))
                     case .loginFailed(let message),
-                         .sessionFailed(let message):
+                         .sessionFailed(let message),
+                         .profileFailed(let message):
                         observer.onNext(.setError(message))
                     case .invalidCallbackURL:
                         observer.onNext(.setError("잘못된 로그인 URL입니다."))
