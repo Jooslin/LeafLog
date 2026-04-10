@@ -6,6 +6,7 @@
 //
 
 import Alamofire
+import Dependencies
 import Foundation
 import XMLCoder
 
@@ -22,16 +23,28 @@ final class NetworkManager {
         self.decoder.shouldProcessNamespaces = false
     }
 
-    func fetchPlantList(keyword: String, pageNo: Int = 1, numOfRows: Int = 10) async throws -> [PlantSummary] {
+    func fetchPlantList(
+        keyword: String,
+        searchType: PlantSearchType = .plantName,
+        filterState: PlantFilterState = .init(),
+        pageNo: Int = 1,
+        numOfRows: Int = 10
+    ) async throws -> [PlantSummary] {
+        var parameters: Parameters = [
+            "apiKey": AppConfig.apiKey,
+            "sType": searchType.rawValue,
+            "sText": keyword,
+            "pageNo": String(pageNo),
+            "numOfRows": String(numOfRows)
+        ]
+
+        for (kind, option) in filterState.selectedOptions {
+            parameters[kind.requestParameterName] = option.code
+        }
+
         let response: PlantListResponse = try await request(
             path: "gardenList",
-            parameters: [
-                "apiKey": AppConfig.apiKey,
-                "sType": "sCntntsSj",
-                "sText": keyword,
-                "pageNo": String(pageNo),
-                "numOfRows": String(numOfRows)
-            ]
+            parameters: parameters
         )
         // HTTP 요청이 아닌 농사로 자체 API 확인(내부 resultCode 확인)
         try validate(header: response.header)
@@ -55,6 +68,40 @@ final class NetworkManager {
         }
 
         return detail
+    }
+    
+    // 필터 코드 목록 하나 보내는 거 분리
+    func fetchFilterOptions(kind: PlantFilterKind) async throws -> [PlantFilterOption] {
+        let response: PlantFilterListResponse = try await request(
+            path: kind.listPath,
+            parameters: [
+                "apiKey": AppConfig.apiKey
+            ]
+        )
+
+        try validate(header: response.header)
+        return response.body?.items?.item ?? []
+    }
+    
+    //필터 오래걸리니까 병렬로 보내기
+    func fetchAllFilterOptions() async throws -> [PlantFilterKind: [PlantFilterOption]] {
+        // withThrowingTaskGroup 이용해서 병렬 호출
+        try await withThrowingTaskGroup(of: (PlantFilterKind, [PlantFilterOption]).self) { group in
+            // 케이스 돌면서 작업 등록
+            for kind in PlantFilterKind.allCases where kind.usesServerProvidedOptions {
+                group.addTask { [self] in
+                    (kind, try await fetchFilterOptions(kind: kind))
+                }
+            }
+
+            var results: [PlantFilterKind: [PlantFilterOption]] = [:]
+            
+            // 모이면 여기에 딕셔너리에 모음(어떤 버튼에 어떤 옵션인지 붙이기 쉽게)
+            for try await (kind, options) in group {
+                results[kind] = options
+            }
+            return results
+        }
     }
     
     // 공통 메서드
@@ -102,5 +149,18 @@ extension NetworkManager {
                 return "네트워크 요청에 실패했습니다. \(error.localizedDescription)"
             }
         }
+    }
+}
+
+extension NetworkManager: DependencyKey {
+    static var liveValue: NetworkManager {
+        .shared
+    }
+}
+
+extension DependencyValues {
+    var networkManager: NetworkManager {
+        get { self[NetworkManager.self] }
+        set { self[NetworkManager.self] = newValue }
     }
 }
