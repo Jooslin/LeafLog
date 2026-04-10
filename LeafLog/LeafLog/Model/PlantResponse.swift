@@ -182,12 +182,19 @@ struct PlantListItems: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        if let items = try? container.decode([PlantSummary].self, forKey: .item) {
-            item = items
-        } else if let singleItem = try? container.decode(PlantSummary.self, forKey: .item) {
+        do {
+            item = try container.decode([PlantSummary].self, forKey: .item)
+        } catch DecodingError.typeMismatch {
+            // 배열 디코딩 실패 시 단일 객체로 시도
+            let singleItem = try container.decode(PlantSummary.self, forKey: .item)
             item = [singleItem]
-        } else {
-            item = []
+        } catch let error as DecodingError {
+            switch error {
+            case .keyNotFound, .valueNotFound:
+                item = []
+            default:
+                throw error
+            }
         }
         
         numOfRows = try container.decodeIfPresent(String.self, forKey: .numOfRows)
@@ -227,12 +234,18 @@ struct PlantFilterItems: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        if let items = try? container.decode([PlantFilterOption].self, forKey: .item) {
-            item = items
-        } else if let singleItem = try? container.decode(PlantFilterOption.self, forKey: .item) {
+        do {
+            item = try container.decode([PlantFilterOption].self, forKey: .item)
+        } catch DecodingError.typeMismatch {
+            let singleItem = try container.decode(PlantFilterOption.self, forKey: .item)
             item = [singleItem]
-        } else {
-            item = []
+        } catch let error as DecodingError {
+            switch error {
+            case .keyNotFound, .valueNotFound:
+                item = []
+            default:
+                throw error
+            }
         }
     }
 }
