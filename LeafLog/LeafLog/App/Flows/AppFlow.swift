@@ -101,20 +101,10 @@ final class AppFlow: Flow {
 
 extension AppFlow {
     private func navigateToLogin() -> FlowContributors {
-        let loginFlow = LoginFlow(window: self.window)
-        let viewController = LoginViewController()
-        viewController.reactor = LoginReactor()
-
-        Flows.use(loginFlow, when: .created) { login in
-            guard let nav = login as? UINavigationController else { return }
-            
-            nav.setViewControllers([viewController], animated: true)
-        }
-        
-        return .one(
-            flowContributor: .contribute(
-                withNextPresentable: loginFlow,
-                withNextStepper: viewController)
+        let loginFlow = LoginFlow(window: window)
+        return .one(flowContributor: .contribute(
+            withNextPresentable: loginFlow,
+            withNextStepper: OneStepper(withSingleStep: AppStep.loginRequired))
         )
     }
     

@@ -26,6 +26,8 @@ final class LoginFlow: Flow {
         }
         
         switch step {
+        case .loginRequired:
+            return navigateToLogin()
         case .main:
             return navigateToMain()
         default:
@@ -35,6 +37,19 @@ final class LoginFlow: Flow {
 }
 
 extension LoginFlow {
+    private func navigateToLogin() -> FlowContributors {
+        let viewController = LoginViewController()
+        viewController.reactor = LoginReactor()
+
+        navigationController.pushViewController(viewController, animated: true)
+        
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController)
+        )
+    }
+    
     private func navigateToMain() -> FlowContributors {
         let mainFlow = MainFlow(window: window)
         return .one(
