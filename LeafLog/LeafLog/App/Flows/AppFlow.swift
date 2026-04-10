@@ -30,11 +30,7 @@ import ReactorKit
  */
 
 final class AppFlow: Flow {
-    
     let window: UIWindow
-    let tabBarController = UITabBarController()
-    let loginNavigationController = UINavigationController()
-    
     var root: any RxFlow.Presentable { window }
     
     init(windowScene: UIWindowScene) {
@@ -66,36 +62,9 @@ final class AppFlow: Flow {
         case .main:
             return navigateToMain()
             
-        case .alert(let title, let message):
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "확인", style: .default))
-
-            let presenter: UIViewController?
-            if let selected = tabBarController.selectedViewController {
-                presenter = selected
-            } else {
-                presenter = window.rootViewController
-            }
-
-            presenter?.present(alert, animated: true)
-            return .none
-
-            
         default:
             return .none
         }
-    }
-    
-    func navigate(to viewController: UIViewController, animated: Bool) {
-        if let navigationController = tabBarController.selectedViewController as? UINavigationController {
-            navigationController.pushViewController(viewController, animated: animated)
-        } else {
-            tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
-        }
-    }
-    
-    private func present(_ viewController: UIViewController, animated: Bool) {
-        tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
     }
 }
 

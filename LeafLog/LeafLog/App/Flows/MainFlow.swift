@@ -28,15 +28,34 @@ final class MainFlow: Flow {
         switch step {
         case .main:
             return navigateToMain()
+            
+        case .alert(let title, let message):
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "확인", style: .default))
+            
+            present(alert, animated: true)
+            return .none
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
+    }
+    
+    private func navigate(to viewController: UIViewController, animated: Bool) {
+        if let navigationController = tabBarController.selectedViewController as? UINavigationController {
+            navigationController.pushViewController(viewController, animated: animated)
+        } else {
+            tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
+        }
+    }
+    
+    private func present(_ viewController: UIViewController, animated: Bool) {
+        tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
     }
 }
 
 extension MainFlow {
     private func navigateToMain() -> FlowContributors {
-        let tabBarController = UITabBarController()
         
         let plantTabFlow = PlantTabFlow()
         let calendarTabFlow = CalendarTabFlow()
@@ -65,7 +84,7 @@ extension MainFlow {
                 tag: 2
             )
             
-            tabBarController.setViewControllers([plant, calendar, my], animated: true)
+            self.tabBarController.setViewControllers([plant, calendar, my], animated: true)
         }
         
         return .multiple(flowContributors: [
