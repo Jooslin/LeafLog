@@ -65,3 +65,5 @@ fastlane/test_output
 # Configuration Files
 *.xcconfig
 LeafLog/LeafLog/Configuration/GoogleService-Info.plist
+service-account.json
+LeafLog/supabase/.temp/
