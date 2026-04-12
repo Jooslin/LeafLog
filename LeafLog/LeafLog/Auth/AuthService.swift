@@ -66,7 +66,7 @@ final class AuthService {
             credentials: .init(provider: .google, idToken: credential.idToken, nonce: credential.rawNonce)
         )
         let user = try await supabase.auth.user()
-        try await ensureProfileExists()
+        try await ensureProfileExists(for: user)
         return user
     }
 
@@ -83,34 +83,46 @@ final class AuthService {
         let tokens = try await kakaoTokenExchanger.exchange(idToken: idToken)
         try await supabase.auth.setSession(accessToken: tokens.accessToken, refreshToken: tokens.refreshToken)
         let user = try await supabase.auth.user()
-        try await ensureProfileExists()
+        try await ensureProfileExists(for: user)
         return user
     }
 
     
     // MARK: - 로그인 성공 후 profiles 테이블에 사용자 프로필 row가 존재하도록 보장
-    private func ensureProfileExists() async throws {
+    private func ensureProfileExists(for user: Supabase.User) async throws {
         do {
             _ = try await profileDBManager.createProfileIfNeeded()
         } catch let error as AuthError {
-            await rollbackSession()
+            await rollbackSession(for: user)
             throw error
         } catch {
-            await rollbackSession()
+            await rollbackSession(for: user)
             throw AuthError.profileFailed("사용자 프로필을 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }
 
-    private func rollbackSession() async {
+    private func rollbackSession(for user: Supabase.User) async {
+        await signOutProvider(for: user)
         try? await supabase.auth.signOut()
-        googleProvider.signOut()
     }
     
     
     // MARK: - Sign Out
     func signOut() async throws {
+        let user = try await supabase.auth.user()
         try await supabase.auth.signOut()
-        googleProvider.signOut()
+        await signOutProvider(for: user)
+    }
+
+    private func signOutProvider(for user: Supabase.User) async {
+        switch user.appMetadata["provider"]?.stringValue {
+        case "google":
+            googleProvider.signOut()
+        case "kakao":
+            await kakaoProvider.signOut()
+        default:
+            break
+        }
     }
 }
 
