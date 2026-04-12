@@ -25,7 +25,7 @@ final class CalendarView: UIView {
     struct ManageInfoByDate: Hashable {
         let currentMonth: Bool // 표시되는 달 여부
         let day: Int
-        let badge: [Badge]
+        let badge: Set<Badge>
     }
     
     //MARK: properties
@@ -34,7 +34,7 @@ final class CalendarView: UIView {
     
     init() {
         super.init(frame: .zero)
-        self.setLayout()
+        setLayout()
     }
     
     required init?(coder: NSCoder) {
