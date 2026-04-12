@@ -22,4 +22,7 @@ enum AuthError: Error {
 
     /// 로그인은 성공했지만 사용자 프로필을 준비하지 못했을 때
     case profileFailed(String)
+
+    /// 회원탈퇴 처리 중 실패했을 때
+    case withdrawalFailed(String)
 }
