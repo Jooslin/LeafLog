@@ -114,6 +114,25 @@ final class AuthService {
         await signOutProvider(for: user)
     }
 
+    // MARK: - 회원 탈퇴
+    func withdrawAccount() async throws {
+        let user = try await supabase.auth.user()
+
+        do {
+            try await supabase.functions.invoke(
+                "delete-user", // DB에서 유저 데이터 삭제
+                options: .init(method: .post)
+            )
+        } catch {
+            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+
+        // 로그아웃
+        try? await supabase.auth.signOut(scope: .local)
+        await signOutProvider(for: user)
+    }
+
+    
     private func signOutProvider(for user: Supabase.User) async {
         switch user.appMetadata["provider"]?.stringValue {
         case "google":
