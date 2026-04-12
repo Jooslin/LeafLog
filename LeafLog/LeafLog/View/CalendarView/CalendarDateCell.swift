@@ -49,6 +49,7 @@ extension CalendarDateCell {
         badgeStack.snp.makeConstraints {
             $0.top.equalTo(dateLabel.snp.bottom)
             $0.horizontalEdges.equalToSuperview().inset(3)
+            //TODO: bottom inset 간격 확인 필요
             $0.bottom.equalToSuperview().inset(8)
         }
     }
@@ -63,6 +64,7 @@ extension CalendarDateCell {
             $0.spacing = 4
         }
         
+        //TODO: vertical 간격 확인 필요
         let stackView = UIStackView(arrangedSubviews: [horizontal1, horizontal2]).then {
             $0.axis = .vertical
             $0.spacing = 4
