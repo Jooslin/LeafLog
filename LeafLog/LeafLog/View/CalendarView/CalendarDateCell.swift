@@ -18,10 +18,17 @@ final class CalendarDateCell: UICollectionViewCell {
         $0.text = "0"
     }
     
-    private let badgeImage1 = UIImageView(image: nil)
-    private let badgeImage2 = UIImageView(image: nil)
-    private let badgeImage3 = UIImageView(image: nil)
-    private let badgeImage4 = UIImageView(image: nil)
+    private let badges = [
+        UIImageView(image: nil),
+        UIImageView(image: nil),
+        UIImageView(image: nil),
+        UIImageView(image: nil)
+    ]
+    
+//    private let badgeImage1 = UIImageView(image: nil)
+//    private let badgeImage2 = UIImageView(image: nil)
+//    private let badgeImage3 = UIImageView(image: nil)
+//    private let badgeImage4 = UIImageView(image: nil)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -56,11 +63,11 @@ extension CalendarDateCell {
     }
     
     private func generateBadgeStack() -> UIStackView {
-        let horizontal1 = UIStackView(arrangedSubviews: [badgeImage1, badgeImage2]).then {
+        let horizontal1 = UIStackView(arrangedSubviews: [badges[0], badges[1]]).then {
             $0.axis = .horizontal
             $0.spacing = 4
         }
-        let horizontal2 = UIStackView(arrangedSubviews: [badgeImage3, badgeImage4]).then {
+        let horizontal2 = UIStackView(arrangedSubviews: [badges[2], badges[3]]).then {
             $0.axis = .horizontal
             $0.spacing = 4
         }
@@ -72,5 +79,14 @@ extension CalendarDateCell {
         }
         
         return stackView
+    }
+}
+
+extension CalendarDateCell {
+    func configure(_ data: CalendarView.manageInfoByDate) {
+        dateLabel.text = "\(data.day)"
+        data.badge.enumerated().forEach {
+            badges[$0.offset].image = UIImage(named: $0.element.rawValue)
+        }
     }
 }
