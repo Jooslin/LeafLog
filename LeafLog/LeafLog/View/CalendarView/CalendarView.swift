@@ -17,6 +17,11 @@ final class CalendarView: UIView {
         case treat = "badgeTreat"
     }
     
+    enum Section: Int {
+        case calendar = 0
+    }
+    
+    nonisolated
     struct manageInfoByDate: Hashable {
         let currentMonth: Bool // 표시되는 달 여부
         let day: Int
@@ -24,7 +29,8 @@ final class CalendarView: UIView {
     }
     
     //MARK: properties
-    let collectionView = CalendarCollectionView()
+    private let collectionView = CalendarCollectionView()
+    private lazy var dataSource = makeCollectionViewDiffableDataSource()
     
     init() {
         super.init(frame: .zero)
@@ -43,5 +49,25 @@ extension CalendarView {
         collectionView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
+    }
+}
+
+//MARK: CollectionView
+extension CalendarView {
+    private func makeCollectionViewDiffableDataSource() -> UICollectionViewDiffableDataSource<Section, manageInfoByDate> {
+        let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, manageInfoByDate> { cell,indexPath,item in
+            cell.configure(item)
+        }
+        
+        let dataSource = UICollectionViewDiffableDataSource<Section, manageInfoByDate>(collectionView: collectionView) { collectionView, indexPath, item in
+            switch Section(rawValue: indexPath.section) {
+            case .calendar:
+                collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
+            default:
+                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+            }
+        }
+        
+        return dataSource
     }
 }
