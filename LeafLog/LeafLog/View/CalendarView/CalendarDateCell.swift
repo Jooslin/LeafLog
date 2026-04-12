@@ -25,11 +25,6 @@ final class CalendarDateCell: UICollectionViewCell {
         UIImageView(image: nil)
     ]
     
-//    private let badgeImage1 = UIImageView(image: nil)
-//    private let badgeImage2 = UIImageView(image: nil)
-//    private let badgeImage3 = UIImageView(image: nil)
-//    private let badgeImage4 = UIImageView(image: nil)
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setLayout()
