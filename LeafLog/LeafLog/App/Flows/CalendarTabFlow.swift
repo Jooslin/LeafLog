@@ -20,7 +20,7 @@ final class CalendarTabFlow: Flow {
         
         switch step {
         case .calendarTab:
-            let viewController = ViewController()
+            let viewController = CalendarViewController()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             

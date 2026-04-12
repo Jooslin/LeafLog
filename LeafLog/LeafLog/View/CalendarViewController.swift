@@ -11,5 +11,7 @@ import ReactorKit
 import Then
 
 class CalendarViewController: BaseViewController {
-    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
 }
