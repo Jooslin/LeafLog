@@ -24,6 +24,10 @@ final class ProfileDBManager {
     // MARK: - DB에서 프로필 조회
     func fetchMyProfile() async throws -> UserProfileModel? {
         let user = try await client.auth.user() // 현재 로그인 한 유저
+        return try await fetchMyProfile(user: user)
+    }
+
+    private func fetchMyProfile(user: User) async throws -> UserProfileModel? {
         let profiles: [StoredUserProfile] = try await client
             .from("profiles")
             .select() // 조회
@@ -44,7 +48,7 @@ final class ProfileDBManager {
         let user = try await client.auth.user()
 
         // 프로필 없음과 조회 실패를 구분하여 프로필이 존재할때는 그대로 return
-        if let profile = try await fetchMyProfile() {
+        if let profile = try await fetchMyProfile(user: user) {
             return profile
         }
         
