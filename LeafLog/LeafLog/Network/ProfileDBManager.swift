@@ -12,23 +12,27 @@ import Dependencies
 // MARK: - profiles 테이블 전용 DB 매니저
 final class ProfileDBManager {
 
+    @Dependency(\.supabaseManager) private var supabaseManager
+    
     private static let defaultNickname = "익명의 식물 집사"
 
-    private let client = SupabaseManager.shared.client
+    private lazy var client = supabaseManager.client
 
     private init() {}
 
     
     // MARK: - DB에서 프로필 조회
-    func fetchMyProfile() async throws -> UserProfileModel {
+    func fetchMyProfile() async throws -> UserProfileModel? {
         let user = try await client.auth.user() // 현재 로그인 한 유저
-        let profile: StoredUserProfile = try await client
+        let profiles: [StoredUserProfile] = try await client
             .from("profiles")
             .select() // 조회
             .eq("id", value: user.id)
-            .single()
+            .limit(1)
             .execute()
             .value
+
+        guard let profile = profiles.first else { return nil }
 
         // 앱 모델로 변환
         return try makeProfile(from: profile, user: user)
@@ -39,8 +43,8 @@ final class ProfileDBManager {
     func createProfileIfNeeded() async throws -> UserProfileModel {
         let user = try await client.auth.user()
 
-        // 프로필이 존재하면 fetch
-        if let profile = try? await fetchMyProfile() {
+        // 프로필 없음과 조회 실패를 구분하여 프로필이 존재할때는 그대로 return
+        if let profile = try await fetchMyProfile() {
             return profile
         }
         
@@ -63,7 +67,7 @@ final class ProfileDBManager {
 
         return try makeProfile(from: profile, user: user)
     }
-
+    
     
     // MARK: - 프로필 업데이트(닉네임, 프사)
     func updateMyProfile(
