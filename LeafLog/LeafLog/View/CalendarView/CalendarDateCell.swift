@@ -83,7 +83,7 @@ extension CalendarDateCell {
 }
 
 extension CalendarDateCell {
-    func configure(_ data: CalendarView.manageInfoByDate) {
+    func configure(_ data: CalendarView.ManageInfoByDate) {
         dateLabel.text = "\(data.day)"
         data.badge.enumerated().forEach {
             badges[$0.offset].image = UIImage(named: $0.element.rawValue)

@@ -22,7 +22,7 @@ final class CalendarView: UIView {
     }
     
     nonisolated
-    struct manageInfoByDate: Hashable {
+    struct ManageInfoByDate: Hashable {
         let currentMonth: Bool // 표시되는 달 여부
         let day: Int
         let badge: [Badge]
@@ -54,12 +54,12 @@ extension CalendarView {
 
 //MARK: CollectionView
 extension CalendarView {
-    private func makeCollectionViewDiffableDataSource() -> UICollectionViewDiffableDataSource<Section, manageInfoByDate> {
-        let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, manageInfoByDate> { cell,indexPath,item in
+    private func makeCollectionViewDiffableDataSource() -> UICollectionViewDiffableDataSource<Section, ManageInfoByDate> {
+        let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, ManageInfoByDate> { cell,indexPath,item in
             cell.configure(item)
         }
         
-        let dataSource = UICollectionViewDiffableDataSource<Section, manageInfoByDate>(collectionView: collectionView) { collectionView, indexPath, item in
+        let dataSource = UICollectionViewDiffableDataSource<Section, ManageInfoByDate>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
@@ -69,5 +69,14 @@ extension CalendarView {
         }
         
         return dataSource
+    }
+    
+    func setSnapshot(_ data: [ManageInfoByDate]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, ManageInfoByDate>()
+        snapshot.appendSections([.calendar])
+        
+        snapshot.appendItems(data, toSection: .calendar)
+        
+        dataSource.apply(snapshot, animatingDifferences: true)
     }
 }
