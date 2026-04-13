@@ -16,6 +16,7 @@ final class CalendarDateCell: UICollectionViewCell {
     private let dateLabel = UILabel().then {
         $0.font = .systemFont(ofSize: 16, weight: .medium)
         $0.text = "0"
+        $0.textAlignment = .center
     }
     
     private let badges = [
