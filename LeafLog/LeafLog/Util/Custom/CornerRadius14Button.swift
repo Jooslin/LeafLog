@@ -16,21 +16,34 @@ import UIKit
  */
 
 class CornerRadius14Button: UIButton {
-    init(title: String) {
+    enum BackgroundColor {
+        case gray
+        case lightGreen
+
+        fileprivate var color: UIColor {
+            switch self {
+            case .gray:
+                return UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1)
+            case .lightGreen:
+                return UIColor(red: 0.908, green: 0.955, blue: 0.745, alpha: 1)
+            }
+        }
+    }
+
+    init(title: String, backgroundColor: BackgroundColor = .lightGreen) {
         super.init(frame: .zero)
-        apply(title: title)
+        apply(title: title, backgroundColor: backgroundColor)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(title: String) {
+    func apply(title: String, backgroundColor: BackgroundColor = .lightGreen) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
-        // TODO: 색 확정시 수정 요망
         configuration.baseForegroundColor = UIColor.darkGray
-        configuration.background.backgroundColor = UIColor(red: 0.908, green: 0.955, blue: 0.745, alpha: 1)
+        configuration.background.backgroundColor = backgroundColor.color
         configuration.background.cornerRadius = 8
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
         
@@ -45,4 +58,3 @@ class CornerRadius14Button: UIButton {
         titleLabel?.adjustsFontForContentSizeCategory = true
     }
 }
-
