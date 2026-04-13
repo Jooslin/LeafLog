@@ -87,6 +87,10 @@ extension CalendarDateCell {
 extension CalendarDateCell {
     func configure(_ data: CalendarView.ManageInfoByDate) {
         dateLabel.text = "\(data.day)"
+        dateLabel.textColor =
+        data.currentMonth ? dateLabel.textColor
+        : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+        
         data.badge.enumerated().forEach {
             badges[$0.offset].image = UIImage(named: $0.element.rawValue)
         }
