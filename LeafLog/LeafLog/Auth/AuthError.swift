@@ -19,4 +19,26 @@ enum AuthError: Error {
     
     /// 로그인은 성공했지만 Supabase 서버에 세션을 만들거나 유저 정보를 가져오는데 실패했을 때
     case sessionFailed(String)
+
+    /// 로그인은 성공했지만 사용자 프로필을 준비하지 못했을 때
+    case profileFailed(String)
+
+    /// 회원탈퇴 처리 중 실패했을 때
+    case withdrawalFailed(String)
+}
+
+extension AuthError {
+    var userMessage: String {
+        switch self {
+        case .loginFailed(let message),
+             .sessionFailed(let message),
+             .profileFailed(let message),
+             .withdrawalFailed(let message):
+            return message
+        case .cancelled:
+            return "작업이 취소되었습니다."
+        case .invalidCallbackURL:
+            return "잘못된 로그인 URL입니다."
+        }
+    }
 }

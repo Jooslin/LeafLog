@@ -29,6 +29,15 @@ final class KakaoAuthProvider {
         }
     }
 
+    // MARK: - Logout
+    func signOut() async {
+        await withCheckedContinuation { continuation in
+            UserApi.shared.logout { _ in
+                continuation.resume()
+            }
+        }
+    }
+
     
     // MARK: - Private
     private func handleResult(

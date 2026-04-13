@@ -82,15 +82,11 @@ final class LoginReactor: Reactor {
                     observer.onNext(.setLoginSuccess)
                     observer.onCompleted()
                 } catch let error as AuthError {
-                    switch error {
-                    case .cancelled:
+                    if case .cancelled = error {
                         // 취소는 조용히 로딩만 해제
                         observer.onNext(.setLoading(false))
-                    case .loginFailed(let message),
-                         .sessionFailed(let message):
-                        observer.onNext(.setError(message))
-                    case .invalidCallbackURL:
-                        observer.onNext(.setError("잘못된 로그인 URL입니다."))
+                    } else {
+                        observer.onNext(.setError(error.userMessage))
                     }
                     observer.onCompleted()
                 } catch {
