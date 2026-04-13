@@ -30,8 +30,8 @@ class CornerRadius14Button: UIButton {
         configuration.title = title
         // TODO: 색 확정시 수정 요망
         configuration.baseForegroundColor = UIColor.darkGray
-        configuration.background.backgroundColor = UIColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1)
-        configuration.background.cornerRadius = 12
+        configuration.background.backgroundColor = UIColor(red: 0.908, green: 0.955, blue: 0.745, alpha: 1)
+        configuration.background.cornerRadius = 8
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
         
         // 다이나믹 폰트 설정
