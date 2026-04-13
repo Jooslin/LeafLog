@@ -13,6 +13,9 @@ class CalendarDetailHeaderView: UICollectionReusableView {
     
     private let badge = UIImageView().then {
         $0.image = .badgeWaterBig
+        $0.snp.makeConstraints {
+            $0.width.height.equalTo(24)
+        }
     }
     
     //TODO: LabelConfiguration 적용 시 주석 해제
@@ -69,8 +72,13 @@ extension CalendarDetailHeaderView {
         }
         
         manageLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        manageLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        manageLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         
+        badge.setContentHuggingPriority(.required, for: .horizontal)
+        badge.setContentCompressionResistancePriority(.required, for: .horizontal)
+        
+        completeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        completeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         return stackView
     }
 }
