@@ -43,7 +43,7 @@ extension CalendarDetailCell {
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.verticalEdges.equalToSuperview().inset(12)
+            $0.centerY.equalToSuperview()
         }
     }
     

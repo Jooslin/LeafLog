@@ -163,8 +163,6 @@ extension CalendarView {
             default:
                 return UICollectionReusableView()
             }
-            
-            
         }
 
         return dataSource
@@ -172,7 +170,7 @@ extension CalendarView {
     
     func setSnapshot(_ data: [[Item]]) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
-        snapshot.appendSections([.calendar])
+        snapshot.appendSections([.calendar, .water, .grow, .sprout, .treat])
         
         snapshot.appendItems(data[Section.calendar.rawValue], toSection: .calendar)
         snapshot.appendItems(data[Section.water.rawValue], toSection: .water)

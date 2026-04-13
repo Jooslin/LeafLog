@@ -25,10 +25,19 @@ extension CalendarCollectionView {
         configuration.contentInsetsReference = .layoutMargins
         
         let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
-            let headerItem = NSCollectionLayoutBoundarySupplementaryItem(
+            let calendarHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
                     heightDimension: .absolute(50)
+                ),
+                elementKind: "headerKind",
+                alignment: .top
+            )
+            
+            let detailHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(57)
                 ),
                 elementKind: "headerKind",
                 alignment: .top
@@ -46,12 +55,21 @@ extension CalendarCollectionView {
             let backgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
             backgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
             
-            let section = self?.calendarSectionLayout(environment: environment)
-            section?.boundarySupplementaryItems = [headerItem, footerItem]
-            section?.decorationItems = [backgroundItem]
-            section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
+            switch CalendarView.Section(rawValue: sectionIndex) {
+            case .calendar:
+                let section = self?.calendarSectionLayout(environment: environment)
+                section?.boundarySupplementaryItems = [calendarHeaderItem, footerItem]
+                section?.decorationItems = [backgroundItem]
+                section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
+                
+                return section
+            default:
+                let section = self?.detailSectionLayout(environment: environment)
+                section?.boundarySupplementaryItems = [detailHeaderItem]
+                
+                return section
+            }
             
-            return section
         }, configuration: configuration)
         
         layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "calendarBackground")
@@ -79,6 +97,23 @@ extension CalendarCollectionView {
         
         let section = NSCollectionLayoutSection(group: group)
         
+        return section
+    }
+    
+    private func detailSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(44))
+            )
+        
+        let group = NSCollectionLayoutGroup.vertical(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(44)),
+            subitems: [item])
+        
+        let section = NSCollectionLayoutSection(group: group)
         return section
     }
 }
