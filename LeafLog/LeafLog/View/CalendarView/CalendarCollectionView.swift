@@ -12,6 +12,7 @@ final class CalendarCollectionView: UICollectionView {
         super.init(frame: frame, collectionViewLayout: UICollectionViewLayout())
         collectionViewLayout = makeCompositionalLayout()
         layoutMargins = .init(top: 0, left: 16, bottom: 0, right: 16)
+        contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     
     required init?(coder: NSCoder) {
