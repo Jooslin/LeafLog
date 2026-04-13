@@ -23,7 +23,6 @@ extension CalendarCollectionView {
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.contentInsetsReference = .layoutMargins
-        configuration.interSectionSpacing = 24
         
         let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
             let calendarHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
@@ -38,7 +37,7 @@ extension CalendarCollectionView {
             let detailHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(57)
+                    heightDimension: .absolute(81)
                 ),
                 elementKind: "headerKind",
                 alignment: .top
@@ -57,6 +56,7 @@ extension CalendarCollectionView {
             calendarBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
             
             let detailBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "detailBackground")
+            detailBackgroundItem.contentInsets = .init(top: 24, leading: 0, bottom: 0, trailing: 0)
             
             switch CalendarView.Section(rawValue: sectionIndex) {
             case .calendar:
@@ -70,6 +70,7 @@ extension CalendarCollectionView {
                 let section = self?.detailSectionLayout(environment: environment)
                 section?.boundarySupplementaryItems = [detailHeaderItem]
                 section?.decorationItems = [detailBackgroundItem]
+//                section?.contentInsets = .init(top: 24, leading: 0, bottom: 0, trailing: 0)
                 
                 return section
             }

@@ -54,12 +54,12 @@ extension CalendarDetailHeaderView {
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.top.equalToSuperview().offset(12)
+            $0.top.equalToSuperview().offset(38)
         }
         
         separateBar.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
-            $0.top.equalTo(stackView.snp.bottom).offset(12)
+            $0.top.equalTo(stackView.snp.bottom).offset(14)
             $0.bottom.equalToSuperview()
         }
     }

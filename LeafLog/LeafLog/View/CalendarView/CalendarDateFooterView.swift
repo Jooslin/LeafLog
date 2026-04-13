@@ -22,9 +22,10 @@ class CalendarDateFooterView: UICollectionReusableView {
         addSubview(label)
         
         label.snp.makeConstraints {
-            $0.horizontalEdges.equalToSuperview()
+
+            $0.leading.equalToSuperview().offset(-24)
             $0.top.equalToSuperview().offset(44)
-            $0.bottom.equalToSuperview().inset(12)
+            $0.bottom.equalToSuperview().inset(4)
         }
     }
     
