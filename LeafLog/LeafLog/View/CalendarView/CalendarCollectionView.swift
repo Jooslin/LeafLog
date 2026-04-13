@@ -22,28 +22,32 @@ extension CalendarCollectionView {
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         
-        return UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
+        return UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
             
-            let width = environment.container.effectiveContentSize.width
-            let itemWidth = width / 7
-            let item = NSCollectionLayoutItem(
-                layoutSize: NSCollectionLayoutSize(
-                    widthDimension: .absolute(width / 7),
-                    heightDimension: .absolute(itemWidth * 1.7))
-            )
-            
-            let group = NSCollectionLayoutGroup.horizontal(
-                layoutSize: NSCollectionLayoutSize(
-                    widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(itemWidth * 1.7)
-                ),
-                repeatingSubitem: item,
-                count: 7
-            )
-            
-            let section = NSCollectionLayoutSection(group: group)
-            
-            return section
+            return self?.calendarSectionLayout(environment: environment)
         }, configuration: configuration)
+    }
+    
+    private func calendarSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        let width = environment.container.effectiveContentSize.width
+        let itemWidth = width / 7
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .absolute(width / 7),
+                heightDimension: .absolute(itemWidth * 1.7))
+        )
+        
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(itemWidth * 1.7)
+            ),
+            repeatingSubitem: item,
+            count: 7
+        )
+        
+        let section = NSCollectionLayoutSection(group: group)
+        
+        return section
     }
 }
