@@ -28,6 +28,7 @@ final class MyInfoTabFlow: Flow {
 
         case .profileEdit:
             let viewController = ProfileEditViewController()
+            viewController.reactor = ProfileEditReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
