@@ -1,0 +1,111 @@
+//
+//  MyPlant.swift
+//  LeafLog
+//
+//  Created by OpenAI Codex on 4/13/26.
+//
+
+import Foundation
+
+// 식물 카테고리
+enum PlantCategory: String, Codable, CaseIterable {
+    case upright = "직립형"
+    case shrub = "관목형"
+    case vine = "덩굴성"
+    case grass = "풀모양"
+    case rosette = "로제트형"
+    case succulent = "다육형"
+
+    // 카테고리 별 식물 기본 이미지
+    var defaultImageAssetName: String {
+        switch self {
+        case .upright:
+            return "plantCategoryUpright"
+        case .shrub:
+            return "plantCategoryShrub"
+        case .vine:
+            return "plantCategoryVine"
+        case .grass:
+            return "plantCategoryGrass"
+        case .rosette:
+            return "plantCategoryRosette"
+        case .succulent:
+            return "plantCategorySucculent"
+        }
+    }
+}
+
+// 식물 위치
+enum PlantLocation: String, Codable, CaseIterable {
+    case livingRoom = "거실"
+    case bedroom = "침실"
+    case kitchen = "주방"
+    case veranda = "베란다"
+    case bathroom = "화장실"
+    case entrance = "현관"
+}
+
+// 사용자가 입력한 값 묶음
+struct PlantCreateInput {
+    let id: UUID
+    let category: PlantCategory
+    let location: PlantLocation
+    let speciesName: String?
+    let speciesContentNumber: String?
+    let imagePath: String?
+    let wateringIntervalDays: Int?
+    let lastWateredAt: Date?
+
+    init(
+        id: UUID = UUID(),
+        category: PlantCategory,
+        location: PlantLocation,
+        speciesName: String?,
+        speciesContentNumber: String?,
+        imagePath: String?,
+        wateringIntervalDays: Int?,
+        lastWateredAt: Date?
+    ) {
+        self.id = id
+        self.category = category
+        self.location = location
+        self.speciesName = speciesName
+        self.speciesContentNumber = speciesContentNumber
+        self.imagePath = imagePath
+        self.wateringIntervalDays = wateringIntervalDays
+        self.lastWateredAt = lastWateredAt
+    }
+}
+
+// 내 식물 모델
+struct MyPlant: Codable {
+    let id: UUID // 식물 자체 고유 ID
+    let userID: UUID
+    let category: PlantCategory
+    let location: PlantLocation
+    let speciesName: String
+    let speciesContentNumber: String? // 검색 API와 연결되는 식물 식별 값
+    let imagePath: String?
+    let wateringIntervalDays: Int?
+    let lastWateredAt: Date?
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    var defaultImageAssetName: String {
+        category.defaultImageAssetName // 기본 이미지
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userID = "user_id"
+        case category
+        case location
+        case speciesName = "species_name"
+        case speciesContentNumber = "species_content_number"
+        case imagePath = "image_path"
+        case wateringIntervalDays = "watering_interval_days"
+        case lastWateredAt = "last_watered_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
