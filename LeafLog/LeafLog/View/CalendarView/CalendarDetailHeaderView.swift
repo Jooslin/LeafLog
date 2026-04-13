@@ -12,7 +12,7 @@ import Then
 class CalendarDetailHeaderView: UICollectionReusableView {
     
     private let badge = UIImageView().then {
-        $0.image = .badgeWater
+        $0.image = .badgeWaterBig
     }
     
     //TODO: LabelConfiguration 적용 시 주석 해제
@@ -78,7 +78,7 @@ extension CalendarDetailHeaderView {
 extension CalendarDetailHeaderView {
     //TODO: Badge 열거형 및 configure 함수 수정 필요
     func configure(_ manageCategory: CalendarView.Badge) {
-        badge.image = UIImage(named: manageCategory.rawValue)
+        badge.image = UIImage(named: manageCategory.bigImage)
         manageLabel.text = manageCategory.rawValue
     }
 }

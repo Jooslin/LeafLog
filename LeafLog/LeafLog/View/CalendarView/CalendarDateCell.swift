@@ -92,7 +92,7 @@ extension CalendarDateCell {
         : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
         
         data.badge.enumerated().forEach {
-            badges[$0.offset].image = UIImage(named: $0.element.rawValue)
+            badges[$0.offset].image = UIImage(named: $0.element.smallImage)
         }
     }
 }

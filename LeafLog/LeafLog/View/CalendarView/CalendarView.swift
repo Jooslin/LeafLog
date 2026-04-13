@@ -11,10 +11,28 @@ import Then
 
 final class CalendarView: UIView {
     enum Badge: String {
-        case grow = "badgeGrow"
-        case sprout = "badgeSprout"
-        case water = "badgeWater"
-        case treat = "badgeTreat"
+        case grow = "분갈이"
+        case sprout = "비료"
+        case water = "물주기"
+        case treat = "치료"
+        
+        var smallImage: String {
+            switch self {
+            case .grow: "badgeGrowSmall"
+            case .sprout: "badgeSproutSmall"
+            case .water: "badgeWaterSmall"
+            case .treat: "badgeTreatSmall"
+            }
+        }
+        
+        var bigImage: String {
+            switch self {
+            case .grow: "badgeGrowBig"
+            case .sprout: "badgeSproutBig"
+            case .water: "badgeWaterBig"
+            case .treat: "badgeTreatBig"
+            }
+        }
     }
     
     enum Section: Int {
