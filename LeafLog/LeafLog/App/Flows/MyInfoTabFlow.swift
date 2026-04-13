@@ -7,6 +7,7 @@
 
 import UIKit
 import RxFlow
+import ReactorKit
 
 final class MyInfoTabFlow: Flow {
     private let navigationController = UINavigationController()
@@ -21,6 +22,13 @@ final class MyInfoTabFlow: Flow {
         switch step {
         case .myInfoTab:
             let viewController = MyPageViewController()
+            viewController.reactor = MyPageReactor()
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .profileEdit:
+            let viewController = ProfileEditViewController()
+            viewController.reactor = ProfileEditReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
