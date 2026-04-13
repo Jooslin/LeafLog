@@ -17,7 +17,6 @@ final class FCMManager: NSObject {
     @Dependency(\.supabaseManager) private var supabaseManager
     
     func setConfigs() {
-        notificationManager.requestNotificationAuthorization() //TODO: 로그인 성공 시 실행하도록 위치 변경 필요
         notificationManager.center.delegate = self
         Messaging.messaging().delegate = self
     }
@@ -30,13 +29,11 @@ extension FCMManager: UNUserNotificationCenterDelegate {
     }
 }
 
-//TODO: 로그인 성공 시 토큰 업데이트 함수 실행 필요 - Messaging.messaging().token()
 extension FCMManager: MessagingDelegate {
     // 파이어베이스 MessagingDelegate 설정 - 앱 시작 시, 혹은 토큰이 갱신되었을 때 호출되는 함수
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         // 전달받은 토큰이 정상적으로 있는지 확인
         guard let validToken = fcmToken else { return }
-        
         supabaseManager.updateFCMToken(validToken)
     }
 }

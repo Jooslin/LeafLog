@@ -32,7 +32,7 @@ final class AuthService {
             _ = try await supabase.auth.session
             return .main
         } catch {
-            return .login
+            return .loginRequired
         }
     }
 
