@@ -27,6 +27,8 @@ class TitleHeaderView: UIView {
     
     init(text: String, hasBackButton: Bool, rightButtonImage: String? = nil) {
         super.init(frame: .zero)
+        configure(text: text, hasBackButton: hasBackButton, rightButtonImage: rightButtonImage)
+        setLayout()
     }
     
     required init?(coder: NSCoder) {
@@ -48,8 +50,8 @@ extension TitleHeaderView {
     }
     
     private func setLayout() {
-        addSubview(backButton)
         addSubview(titleLabel)
+        addSubview(backButton)
         addSubview(rightButton)
         
         backButton.snp.makeConstraints {

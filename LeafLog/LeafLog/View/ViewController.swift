@@ -24,19 +24,51 @@ final class ViewController: BaseViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        let pushButton = UIButton(configuration: .plain())
-        pushButton.setTitle("push", for: .normal)
+//        let pushButton = UIButton(configuration: .plain())
+//        pushButton.setTitle("push", for: .normal)
+//        
+//        view.addSubview(pushButton)
+//        
+//        pushButton.snp.makeConstraints {
+//            $0.center.equalToSuperview()
+//        }
+//        
+//        pushButton.rx.tap
+//            .map { _ in AppStep.pushButtonTapped } // push Step으로 변환
+//            .bind(to: steps) // VC의 steps와 바인딩 -> 버튼을 누를 때마다 'push' 스텝이 방출
+//            .disposed(by: disposeBag)
         
-        view.addSubview(pushButton)
+        let title1 = TitleHeaderView(text: "", hasBackButton: true) // 백버튼만
+        let title2 = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell") // 오른쪽 버튼만
+        let title3 = TitleHeaderView(text: "타이틀", hasBackButton: false) // 타이틀만
+        let title4 = TitleHeaderView(text: "타이틀", hasBackButton: true) // 타이틀, 백버튼
+        let title5 = TitleHeaderView(text: "타이틀", hasBackButton: true, rightButtonImage: "bell") // 다
         
-        pushButton.snp.makeConstraints {
-            $0.center.equalToSuperview()
+        [title1, title2, title3, title4, title5].forEach {
+            view.addSubview($0)
         }
         
-        pushButton.rx.tap
-            .map { _ in AppStep.pushButtonTapped } // push Step으로 변환
-            .bind(to: steps) // VC의 steps와 바인딩 -> 버튼을 누를 때마다 'push' 스텝이 방출
-            .disposed(by: disposeBag)
+        title1.snp.makeConstraints {
+            $0.top.equalTo(view.safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        
+        title2.snp.makeConstraints {
+            $0.top.equalTo(title1.snp.bottom).offset(5)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        title3.snp.makeConstraints {
+            $0.top.equalTo(title2.snp.bottom).offset(5)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        title4.snp.makeConstraints {
+            $0.top.equalTo(title3.snp.bottom).offset(5)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        title5.snp.makeConstraints {
+            $0.top.equalTo(title4.snp.bottom).offset(5)
+            $0.horizontalEdges.equalToSuperview()
+        }
     }
 }
 
