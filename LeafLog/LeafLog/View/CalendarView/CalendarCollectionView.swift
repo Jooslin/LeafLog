@@ -23,6 +23,7 @@ extension CalendarCollectionView {
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.contentInsetsReference = .layoutMargins
+        configuration.interSectionSpacing = 24
         
         let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
             let calendarHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
@@ -52,20 +53,23 @@ extension CalendarCollectionView {
                 alignment: .bottom
             )
   
-            let backgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
-            backgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
+            let calendarBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
+            calendarBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
+            
+            let detailBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "detailBackground")
             
             switch CalendarView.Section(rawValue: sectionIndex) {
             case .calendar:
                 let section = self?.calendarSectionLayout(environment: environment)
                 section?.boundarySupplementaryItems = [calendarHeaderItem, footerItem]
-                section?.decorationItems = [backgroundItem]
+                section?.decorationItems = [calendarBackgroundItem]
                 section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
                 
                 return section
             default:
                 let section = self?.detailSectionLayout(environment: environment)
                 section?.boundarySupplementaryItems = [detailHeaderItem]
+                section?.decorationItems = [detailBackgroundItem]
                 
                 return section
             }
@@ -73,6 +77,7 @@ extension CalendarCollectionView {
         }, configuration: configuration)
         
         layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "calendarBackground")
+        layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "detailBackground")
         return layout
     }
     
