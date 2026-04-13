@@ -25,7 +25,7 @@ class TitleHeaderView: UIView {
     
     let rightButton = UIButton(configuration: .plain())
     
-    init(text: String, hasBackButton: Bool, rightButton: String? = nil) {
+    init(text: String, hasBackButton: Bool, rightButtonImage: String? = nil) {
         super.init(frame: .zero)
     }
     
@@ -35,6 +35,18 @@ class TitleHeaderView: UIView {
 }
 
 extension TitleHeaderView {
+    private func configure(text: String, hasBackButton: Bool, rightButtonImage: String? = nil) {
+        titleLabel.text = text
+        backButton.isHidden = !hasBackButton
+        
+        guard let imageName = rightButtonImage else {
+            rightButton.isHidden = true
+            return
+        }
+        
+        rightButton.setImage(UIImage(named: imageName), for: .normal)
+    }
+    
     private func setLayout() {
         addSubview(backButton)
         addSubview(titleLabel)
