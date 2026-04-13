@@ -26,7 +26,7 @@ final class NetworkManager {
     func fetchPlantList(
         keyword: String,
         searchType: PlantSearchType = .plantName,
-        filterState: PlantFilterState = .init(),
+        filterState: PlantFilterState,
         pageNo: Int = 1,
         numOfRows: Int = 10
     ) async throws -> [PlantSummary] {
