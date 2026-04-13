@@ -35,15 +35,27 @@ final class CalendarView: UIView {
         }
     }
     
-    enum Section: Int {
-        case calendar = 0
-    }
-    
     nonisolated
     struct ManageInfoByDate: Hashable {
         let currentMonth: Bool // 표시되는 달 여부
         let day: Int
         let badge: Set<Badge>
+    }
+    
+    nonisolated
+    struct DetailManageInfo: Hashable {
+        let id: UUID // 식물의 uuid
+        let name: String // 식물의 이름(별명)
+    }
+    
+    enum Section: Int {
+        case calendar = 0
+        case detail
+    }
+    
+    enum Item {
+        case calendar(ManageInfoByDate)
+        case detail(DetailManageInfo)
     }
     
     //MARK: properties
