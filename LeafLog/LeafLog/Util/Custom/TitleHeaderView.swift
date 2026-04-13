@@ -45,8 +45,10 @@ extension TitleHeaderView {
             rightButton.isHidden = true
             return
         }
-        
         rightButton.setImage(UIImage(named: imageName), for: .normal)
+        
+        backButton.configuration?.baseForegroundColor = .black
+        rightButton.configuration?.baseForegroundColor = .black
     }
     
     private func setLayout() {
@@ -68,5 +70,14 @@ extension TitleHeaderView {
             $0.verticalEdges.equalToSuperview().inset(12)
             $0.trailing.equalToSuperview().inset(16)
         }
+    }
+}
+
+extension TitleHeaderView {
+    // 색상 반전 메서드(white)
+    func invertColors() {
+        titleLabel.textColor = .white
+        backButton.configuration?.baseForegroundColor = .white
+        rightButton.configuration?.baseForegroundColor = .white
     }
 }

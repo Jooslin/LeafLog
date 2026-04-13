@@ -44,6 +44,8 @@ final class ViewController: BaseViewController {
         let title4 = TitleHeaderView(text: "타이틀", hasBackButton: true) // 타이틀, 백버튼
         let title5 = TitleHeaderView(text: "타이틀", hasBackButton: true, rightButtonImage: "bell") // 다
         
+        title4.invertColors()
+        
         [title1, title2, title3, title4, title5].forEach {
             view.addSubview($0)
         }
