@@ -16,6 +16,7 @@ class TitleHeaderView: UIView {
     private let titleLabel = UILabel().then {
         $0.text = ""
         $0.font = .systemFont(ofSize: 18, weight: .bold)
+        $0.textAlignment = .center
     }
     
     let backButton = UIButton(configuration: .plain()).then {
@@ -35,6 +36,23 @@ class TitleHeaderView: UIView {
 
 extension TitleHeaderView {
     private func setLayout() {
+        addSubview(backButton)
+        addSubview(titleLabel)
+        addSubview(rightButton)
         
+        backButton.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(12)
+            $0.leading.equalToSuperview().inset(16)
+        }
+        
+        titleLabel.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(11)
+            $0.horizontalEdges.equalToSuperview().inset(40)
+        }
+        
+        rightButton.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(12)
+            $0.trailing.equalToSuperview().inset(16)
+        }
     }
 }
