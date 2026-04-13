@@ -1,0 +1,40 @@
+//
+//  CalendarDateFooterView.swift
+//  LeafLog
+//
+//  Created by t2025-m0143 on 4/13/26.
+//
+
+import UIKit
+import SnapKit
+import Then
+
+class CalendarDateFooterView: UICollectionReusableView {
+    let label = UILabel().then {
+        $0.text = ""
+    }
+    
+//    let label = UILabel(text: $1, config: .label14)
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        addSubview(label)
+        
+        label.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview()
+            $0.top.equalToSuperview().offset(44)
+            $0.bottom.equalToSuperview().inset(12)
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension CalendarDateFooterView {
+    func configure(_ dateString: String) {
+        label.text = dateString
+    }
+}
