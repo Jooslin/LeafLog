@@ -30,7 +30,7 @@ final class CalendarView: UIView {
     
     //MARK: properties
     private let collectionView = CalendarCollectionView()
-    private lazy var dataSource = makeCollectionViewDiffableDataSource()
+    private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     init() {
         super.init(frame: .zero)
@@ -54,7 +54,11 @@ extension CalendarView {
 
 //MARK: CollectionView
 extension CalendarView {
-    private func makeCollectionViewDiffableDataSource() -> UICollectionViewDiffableDataSource<Section, ManageInfoByDate> {
+    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, ManageInfoByDate> {
+        let calendarHeaderViewRegistration = UICollectionView.SupplementaryRegistration<CalendarWeekdayHeaderView>(elementKind: "headerKind") { supplementaryView, elementKind, indexPath in
+            
+        }
+        
         let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, ManageInfoByDate> { cell,indexPath,item in
             cell.configure(item)
         }
@@ -66,6 +70,10 @@ extension CalendarView {
             default:
                 fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
+        }
+        
+        dataSource.supplementaryViewProvider = {
+            collectionView.dequeueConfiguredReusableSupplementary(using: calendarHeaderViewRegistration, for: $2)
         }
         
         return dataSource

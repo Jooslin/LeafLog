@@ -21,10 +21,23 @@ final class CalendarCollectionView: UICollectionView {
 extension CalendarCollectionView {
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
+//        configuration.contentInsetsReference = .layoutMargins
         
         return UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
+            let headerItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(18)
+                ),
+                elementKind: "headerKind",
+                alignment: .top
+            )
             
-            return self?.calendarSectionLayout(environment: environment)
+            let section = self?.calendarSectionLayout(environment: environment)
+            section?.boundarySupplementaryItems = [headerItem]
+//            section?.contentInsets = .init(top: 0, leading: 24, bottom: 0, trailing: 24)
+            
+            return section
         }, configuration: configuration)
     }
     
