@@ -36,11 +36,39 @@ final class CalendarDateCell: UICollectionViewCell {
 }
 
 extension CalendarDateCell {
+//    private func setLayout() {
+//        let badgeStack = generateBadgeStack()
+//        
+//        contentView.addSubview(dateLabel)
+//        contentView.addSubview(badgeStack)
+//        
+//        dateLabel.snp.makeConstraints {
+//            $0.top.equalToSuperview().inset(8)
+//            $0.centerX.equalToSuperview()
+//            $0.width.equalTo(17)
+//            $0.height.equalTo(22)
+//        }
+//        
+//        badgeStack.snp.makeConstraints {
+//            $0.top.equalTo(dateLabel.snp.bottom)
+//            $0.horizontalEdges.equalToSuperview().inset(3)
+//            //TODO: bottom inset 간격 확인 필요
+//            $0.bottom.equalToSuperview().inset(8)
+//        }
+//    }
+    
     private func setLayout() {
-        let badgeStack = generateBadgeStack()
+        badges.enumerated().forEach { badge in
+            badge.element.snp.makeConstraints {
+                $0.height.equalTo(badges[badge.offset].snp.width)
+            }
+        }
         
         contentView.addSubview(dateLabel)
-        contentView.addSubview(badgeStack)
+//        contentView.addSubview(badgeStack)
+        badges.forEach {
+            contentView.addSubview($0)
+        }
         
         dateLabel.snp.makeConstraints {
             $0.top.equalToSuperview().inset(8)
@@ -49,10 +77,27 @@ extension CalendarDateCell {
             $0.height.equalTo(22)
         }
         
-        badgeStack.snp.makeConstraints {
+        badges[0].snp.makeConstraints {
             $0.top.equalTo(dateLabel.snp.bottom)
-            $0.horizontalEdges.equalToSuperview().inset(3)
-            //TODO: bottom inset 간격 확인 필요
+            $0.leading.equalToSuperview().inset(3)
+        }
+        
+        badges[1].snp.makeConstraints {
+            $0.top.equalTo(dateLabel.snp.bottom)
+            $0.leading.equalTo(badges[0].snp.trailing).offset(4)
+            $0.trailing.equalToSuperview().inset(3)
+        }
+        
+        badges[2].snp.makeConstraints {
+            $0.top.equalTo(badges[0].snp.bottom).offset(4)
+            $0.leading.equalToSuperview().inset(3)
+            $0.bottom.equalToSuperview().inset(8)
+        }
+        
+        badges[3].snp.makeConstraints {
+            $0.top.equalTo(badges[1].snp.bottom).offset(4)
+            $0.leading.equalTo(badges[2].snp.trailing).offset(4)
+            $0.trailing.equalToSuperview().inset(3)
             $0.bottom.equalToSuperview().inset(8)
         }
     }
