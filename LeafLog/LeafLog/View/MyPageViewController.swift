@@ -9,9 +9,11 @@ import UIKit
 import ReactorKit
 import RxSwift
 import RxCocoa
+import Dependencies
 
 final class MyPageViewController: BaseViewController, View {
 
+    @Dependency(\.supabaseManager) private var supabaseManager
     private let myPageView = MyPageView()
     private var imageLoadTask: Task<Void, Never>?
 
@@ -120,24 +122,19 @@ final class MyPageViewController: BaseViewController, View {
     }
 
     // 프로필 사진 불러오기
-    private func loadProfileImage(from urlString: String?) {
+    private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
         myPageView.profileImageView.image = UIImage(named: "userEmpty") ?? UIImage(systemName: "person.crop.circle.fill")
-
-        guard
-            let urlString,
-            !urlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-            let url = URL(string: urlString),
-            !url.isFileURL
-        else {
-            return
-        }
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
 
             do {
-                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(from: storedValue) else {
+                    return
+                }
+
+                let (data, _) = try await URLSession.shared.data(from: resolvedURL)
                 guard !Task.isCancelled, let image = UIImage(data: data) else { return }
 
                 await MainActor.run {
