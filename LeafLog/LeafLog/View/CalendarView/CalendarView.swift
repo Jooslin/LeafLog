@@ -59,6 +59,11 @@ extension CalendarView {
             
         }
         
+        let calendarFooterViewRegistration = UICollectionView.SupplementaryRegistration<CalendarDateFooterView>(elementKind: "footerKind") { supplementaryView, elementKind, indexPath in
+            //TODO: 수정 필요
+            supplementaryView.configure("4월 13일 월요일")
+        }
+        
         let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, ManageInfoByDate> { cell,indexPath,item in
             cell.configure(item)
         }
@@ -72,8 +77,17 @@ extension CalendarView {
             }
         }
         
-        dataSource.supplementaryViewProvider = {
-            collectionView.dequeueConfiguredReusableSupplementary(using: calendarHeaderViewRegistration, for: $2)
+        dataSource.supplementaryViewProvider = { _, kind, indexPath in
+            switch kind {
+            case "headerKind":
+                return collectionView.dequeueConfiguredReusableSupplementary(using: calendarHeaderViewRegistration, for: indexPath)
+            case "footerKind":
+                return collectionView.dequeueConfiguredReusableSupplementary(using: calendarFooterViewRegistration, for: indexPath)
+            default:
+                return UICollectionReusableView()
+            }
+            
+            
         }
 
         return dataSource

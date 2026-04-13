@@ -33,13 +33,24 @@ extension CalendarCollectionView {
                 elementKind: "headerKind",
                 alignment: .top
             )
+            
+            let footerItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(70)
+                ),
+                elementKind: "footerKind",
+                alignment: .bottom
+            )
   
             let backgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
+            backgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
             
             let section = self?.calendarSectionLayout(environment: environment)
-            section?.boundarySupplementaryItems = [headerItem]
+            section?.boundarySupplementaryItems = [headerItem, footerItem]
             section?.decorationItems = [backgroundItem]
             section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
+            
             return section
         }, configuration: configuration)
         
