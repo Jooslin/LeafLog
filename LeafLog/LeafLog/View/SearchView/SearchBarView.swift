@@ -66,7 +66,7 @@ final class SearchBarView: UIView {
         cameraButton.snp.makeConstraints {
             $0.trailing.equalToSuperview().inset(12)
             $0.centerY.equalToSuperview()
-            $0.size.equalTo(24)
+            $0.size.equalTo(30)
         }
 
         dividerView.snp.makeConstraints {
