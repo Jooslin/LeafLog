@@ -25,6 +25,11 @@ final class MyInfoTabFlow: Flow {
             viewController.reactor = MyPageReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .profileEdit:
+            let viewController = ProfileEditViewController()
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
