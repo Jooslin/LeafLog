@@ -33,18 +33,54 @@ final class SupabaseManager {
 extension SupabaseManager {
     private enum StorageBucket {
         static let profileImages = "profile-images"
+        static let plantImages = "plant-images"
     }
 
-    /// 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장한다.
+    // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
+        let objectPath = "users/\(userID.uuidString)/profile.jpg"
+        return try await uploadImage(
+            image,
+            bucket: StorageBucket.profileImages,
+            objectPath: objectPath,
+            conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요.")
+        )
+    }
+
+    // 식물 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
+    func uploadPlantImage(_ image: UIImage, userID: UUID, plantID: UUID) async throws -> String {
+        let objectPath = "users/\(userID.uuidString)/plants/\(plantID.uuidString)/main.jpg"
+        return try await uploadImage(
+            image,
+            bucket: StorageBucket.plantImages,
+            objectPath: objectPath,
+            conversionError: .plantFailed("식물 이미지를 변환하지 못했어요.")
+        )
+    }
+
+    // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
+    // private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용
+    func resolveProfileImageURL(from storedValue: String?) async throws -> URL? {
+        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.profileImages)
+    }
+
+    // DB에 저장된 식물 이미지 값을 실제 접근 가능한 URL로 변환
+    func resolvePlantImageURL(from storedValue: String?) async throws -> URL? {
+        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
+    }
+
+    private func uploadImage(
+        _ image: UIImage,
+        bucket: String,
+        objectPath: String,
+        conversionError: AuthError
+    ) async throws -> String {
         guard let fileData = image.jpegData(compressionQuality: 0.8) else {
-            throw AuthError.profileFailed("프로필 이미지를 변환하지 못했어요.")
+            throw conversionError
         }
 
-        let objectPath = "users/\(userID.uuidString)/profile.jpg"
-
         _ = try await client.storage
-            .from(StorageBucket.profileImages)
+            .from(bucket)
             .upload(
                 path: objectPath,
                 file: fileData,
@@ -58,9 +94,7 @@ extension SupabaseManager {
         return objectPath
     }
 
-    /// DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환한다.
-    /// private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용한다.
-    func resolveProfileImageURL(from storedValue: String?) async throws -> URL? {
+    private func resolveStoredImageURL(from storedValue: String?, bucket: String) async throws -> URL? {
         guard let storedValue, !storedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -70,7 +104,7 @@ extension SupabaseManager {
         }
 
         return try await client.storage
-            .from(StorageBucket.profileImages)
+            .from(bucket)
             .createSignedURL(path: storedValue, expiresIn: 60 * 60)
     }
 
