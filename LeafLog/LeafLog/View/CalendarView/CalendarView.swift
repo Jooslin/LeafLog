@@ -99,8 +99,10 @@ extension CalendarView {
             
         }
         
-        let detailHeaderViewRegistration = UICollectionView.SupplementaryRegistration<CalendarDetailHeaderView>(elementKind: "headerKind") { supplementaryView, elementKind, indexPath in
-            switch Section(rawValue: indexPath.section) {
+        let detailHeaderViewRegistration = UICollectionView.SupplementaryRegistration<CalendarDetailHeaderView>(elementKind: "headerKind") { [weak self] supplementaryView, elementKind, indexPath in
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else { return }
+            
+            switch section {
             case .water:
                 supplementaryView.configure(.water)
             case .grow:
@@ -148,10 +150,14 @@ extension CalendarView {
             }
         }
         
-        dataSource.supplementaryViewProvider = { _, kind, indexPath in
+        dataSource.supplementaryViewProvider = { [weak self] _, kind, indexPath in
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                return UICollectionReusableView()
+            }
+            
             switch kind {
             case "headerKind":
-                switch Section(rawValue: indexPath.section) {
+                switch section {
                 case .calendar:
                     return collectionView.dequeueConfiguredReusableSupplementary(using: calendarHeaderViewRegistration, for: indexPath)
                 default:
@@ -160,6 +166,7 @@ extension CalendarView {
                
             case "footerKind":
                 return collectionView.dequeueConfiguredReusableSupplementary(using: calendarFooterViewRegistration, for: indexPath)
+                
             default:
                 return UICollectionReusableView()
             }
@@ -170,13 +177,18 @@ extension CalendarView {
     
     func setSnapshot(_ data: [[Item]]) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
-        snapshot.appendSections([.calendar, .water, .grow, .sprout, .treat])
         
-        snapshot.appendItems(data[Section.calendar.rawValue], toSection: .calendar)
-        snapshot.appendItems(data[Section.water.rawValue], toSection: .water)
-        snapshot.appendItems(data[Section.grow.rawValue], toSection: .grow)
-        snapshot.appendItems(data[Section.sprout.rawValue], toSection: .sprout)
-        snapshot.appendItems(data[Section.treat.rawValue], toSection: .treat)
+        let sections: [Section] = [.calendar, .water, .grow, .sprout, .treat]
+        
+        for section in sections {
+            let items = data[section.rawValue]
+            
+            // 데이터가 있는 경우에만 섹션과 아이템 추가
+            if !items.isEmpty {
+                snapshot.appendSections([section])
+                snapshot.appendItems(items, toSection: section)
+            }
+        }
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }

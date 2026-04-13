@@ -31,9 +31,9 @@ extension CalendarViewController {
         }
 
         // 1. Water 아이템 예시 (물을 준 식물 정보)
-        let waterItem: [CalendarView.Item] = [
-            .water(CalendarView.DetailManageInfo(id: UUID(), name: "행운목", badge: .water)),
-            .water(CalendarView.DetailManageInfo(id: UUID(), name: "스투키", badge: .water)),
+        let treatItem: [CalendarView.Item] = [
+            .water(CalendarView.DetailManageInfo(id: UUID(), name: "행운목", badge: .treat)),
+            .water(CalendarView.DetailManageInfo(id: UUID(), name: "스투키", badge: .treat)),
         ]
 
         // 2. Grow 아이템 예시 (성장 기록이 있는 식물 정보)
@@ -41,7 +41,7 @@ extension CalendarViewController {
             .grow(CalendarView.DetailManageInfo(id: UUID(), name: "선인장", badge: .grow)),
             .grow(CalendarView.DetailManageInfo(id: UUID(), name: "다육이", badge: .grow))
         ]
-        calendarView.setSnapshot([calendarData, waterItem, growItem, [], []])
+        calendarView.setSnapshot([calendarData, [], growItem, [], treatItem])
     }
 }
 
