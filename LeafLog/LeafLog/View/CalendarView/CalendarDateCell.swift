@@ -46,15 +46,20 @@ extension CalendarDateCell {
         dateLabel.snp.makeConstraints {
             $0.top.equalToSuperview().inset(8)
             $0.centerX.equalToSuperview()
-            $0.width.equalTo(17)
             $0.height.equalTo(22)
         }
         
         badgeStack.snp.makeConstraints {
             $0.top.equalTo(dateLabel.snp.bottom)
             $0.horizontalEdges.equalToSuperview().inset(3)
-            //TODO: bottom inset 간격 확인 필요
-            $0.bottom.equalToSuperview().inset(8)
+//            $0.bottom.equalToSuperview().inset(8)
+        }
+        
+        // badge 크기 비율 1:1
+        badges.forEach { badge in
+            badge.snp.makeConstraints {
+                $0.height.equalTo(badge.snp.width)
+            }
         }
     }
     
