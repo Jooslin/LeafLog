@@ -60,3 +60,10 @@ extension CalendarDetailCell {
         return stackView
     }
 }
+
+extension CalendarDetailCell {
+    func configure(_ data: CalendarView.DetailManageInfo) {
+        colorChip.backgroundColor = UIColor.blue //TODO: 수정 필요
+        nameLabel.text = data.name
+    }
+}

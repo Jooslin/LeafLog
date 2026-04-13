@@ -76,7 +76,6 @@ extension CalendarDetailHeaderView {
 }
 
 extension CalendarDetailHeaderView {
-    //TODO: Badge 열거형 및 configure 함수 수정 필요
     func configure(_ manageCategory: CalendarView.Badge) {
         badge.image = UIImage(named: manageCategory.bigImage)
         manageLabel.text = manageCategory.rawValue
