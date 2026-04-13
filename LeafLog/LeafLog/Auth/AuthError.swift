@@ -26,3 +26,19 @@ enum AuthError: Error {
     /// 회원탈퇴 처리 중 실패했을 때
     case withdrawalFailed(String)
 }
+
+extension AuthError {
+    var userMessage: String {
+        switch self {
+        case .loginFailed(let message),
+             .sessionFailed(let message),
+             .profileFailed(let message),
+             .withdrawalFailed(let message):
+            return message
+        case .cancelled:
+            return "작업이 취소되었습니다."
+        case .invalidCallbackURL:
+            return "잘못된 로그인 URL입니다."
+        }
+    }
+}
