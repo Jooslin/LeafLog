@@ -23,24 +23,19 @@ extension CalendarCollectionView {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         
         return UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
-//            let item = NSCollectionLayoutItem(
-//                layoutSize: NSCollectionLayoutSize(
-//                    widthDimension: .absolute(42),
-//                    heightDimension: .absolute(74)
-//                ))
             
             let width = environment.container.effectiveContentSize.width
             let itemWidth = width / 7
             let item = NSCollectionLayoutItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .absolute(width / 7),
-                    heightDimension: .absolute(itemWidth * 1.76))
+                    heightDimension: .absolute(itemWidth * 1.7))
             )
             
             let group = NSCollectionLayoutGroup.horizontal(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(itemWidth * 1.76)
+                    heightDimension: .absolute(itemWidth * 1.7)
                 ),
                 repeatingSubitem: item,
                 count: 7
