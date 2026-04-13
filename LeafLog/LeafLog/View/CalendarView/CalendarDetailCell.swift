@@ -10,13 +10,8 @@ import SnapKit
 import Then
 
 final class CalendarDetailCell: UICollectionViewCell {
-    
-    //TODO: LabelConfiguration 적용 시 주석 해제
-//    private let nameLabel = UILabel(text: "몬스테라", config: .body14)
-    private let nameLabel = UILabel().then {
-        $0.font = .systemFont(ofSize: 14, weight: .medium)
-        $0.text = "0"
-    }
+
+    private let nameLabel = UILabel(text: "몬스테라", config: .body14)
     
     private let colorChip = UIView().then {
         $0.layer.cornerRadius = 4

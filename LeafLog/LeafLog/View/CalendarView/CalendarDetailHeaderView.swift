@@ -18,13 +18,7 @@ class CalendarDetailHeaderView: UICollectionReusableView {
         }
     }
     
-    //TODO: LabelConfiguration 적용 시 주석 해제
-//    private let nameLabel = UILabel(text: "물주기", config: .title14)
-    private let manageLabel = UILabel().then {
-        $0.text = "물주기"
-        $0.font = .systemFont(ofSize: 14, weight: .bold)
-        $0.textAlignment = .left
-    }
+    private let manageLabel = UILabel(text: "물주기", config: .title14)
     
     //TODO: 추후 colorchip label로 교체 필요
     private let completeLabel = UILabel().then {

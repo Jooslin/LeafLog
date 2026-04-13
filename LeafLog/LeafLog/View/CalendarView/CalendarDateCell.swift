@@ -11,11 +11,7 @@ import Then
 
 final class CalendarDateCell: UICollectionViewCell {
     
-    //TODO: LabelConfiguration 적용 시 주석 해제
-//    private let dateLabel = UILabel(text: "0", config: .label16)
-    private let dateLabel = UILabel().then {
-        $0.font = .systemFont(ofSize: 16, weight: .medium)
-        $0.text = "0"
+    private let dateLabel = UILabel(text: "0", config: .label16).then {
         $0.textAlignment = .center
     }
     
