@@ -68,7 +68,7 @@ final class MatchStatusBadgeLabel: UILabel {
         backgroundColor = style.backgroundColor
     }
     
-    // 내부 패딩을 위한 override 메서드 - 안쪽으로 인셋이 나오고 가운데에 글자가 나올 수 있도록 해줌
+    // 내부 패딩을 위한 override 메서드 - 안쪽으로 인셋을 확보하고 가운데에 글자가 들어갈 수 있도록 해줌
     override func drawText(in rect: CGRect) {
         let insets = UIEdgeInsets(
             top: verticalPadding,
