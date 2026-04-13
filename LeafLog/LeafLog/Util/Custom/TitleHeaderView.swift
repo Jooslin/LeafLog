@@ -10,12 +10,7 @@ import SnapKit
 import Then
 
 class TitleHeaderView: UIView {
-    //TODO: LabelConfiguration 적용 시 주석 해제
-//    private let titleLabel = UILabel(text: "", config: .title18)
-    
-    private let titleLabel = UILabel().then {
-        $0.text = ""
-        $0.font = .systemFont(ofSize: 18, weight: .bold)
+    private let titleLabel = UILabel(text: "", config: .title18).then {
         $0.textAlignment = .center
     }
     
