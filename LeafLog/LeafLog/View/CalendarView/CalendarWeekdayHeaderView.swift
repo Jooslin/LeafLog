@@ -32,14 +32,9 @@ class CalendarWeekdayHeaderView: UICollectionReusableView {
 extension CalendarWeekdayHeaderView {
     private func generateLabelStack() -> UIStackView {
         let labels = ["월", "화", "수", "목", "금", "토", "일"].reduce([UILabel]()) {
-//            let label = UILabel(text: $1, config: .body12).then {
-//            $0.textAlignment = .center
-//        }
-            let label = UILabel()
-            label.text = $1
-            label.font = .systemFont(ofSize: 12)
-            label.textAlignment = .center
-            
+            let label = UILabel(text: $1, config: .body12).then {
+                $0.textAlignment = .center
+            }
             return $0 + [label]
         }
         
