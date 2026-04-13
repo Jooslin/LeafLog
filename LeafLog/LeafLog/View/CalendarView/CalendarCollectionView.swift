@@ -11,6 +11,7 @@ final class CalendarCollectionView: UICollectionView {
     override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: UICollectionViewLayout())
         collectionViewLayout = makeCompositionalLayout()
+        layoutMargins = .init(top: 0, left: 16, bottom: 0, right: 16)
     }
     
     required init?(coder: NSCoder) {
@@ -21,7 +22,7 @@ final class CalendarCollectionView: UICollectionView {
 extension CalendarCollectionView {
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
-//        configuration.contentInsetsReference = .layoutMargins
+        configuration.contentInsetsReference = .layoutMargins
         
         return UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
             let headerItem = NSCollectionLayoutBoundarySupplementaryItem(
@@ -35,7 +36,6 @@ extension CalendarCollectionView {
             
             let section = self?.calendarSectionLayout(environment: environment)
             section?.boundarySupplementaryItems = [headerItem]
-//            section?.contentInsets = .init(top: 0, leading: 24, bottom: 0, trailing: 24)
             
             return section
         }, configuration: configuration)
