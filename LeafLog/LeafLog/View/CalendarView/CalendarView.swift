@@ -50,12 +50,19 @@ final class CalendarView: UIView {
     
     enum Section: Int {
         case calendar = 0
-        case detail
+        case water
+        case grow
+        case sprout
+        case treat
     }
     
-    enum Item {
+    nonisolated
+    enum Item: Hashable {
         case calendar(ManageInfoByDate)
-        case detail(DetailManageInfo)
+        case water(DetailManageInfo)
+        case grow(DetailManageInfo)
+        case sprout(DetailManageInfo)
+        case treat(DetailManageInfo)
     }
     
     //MARK: properties
@@ -84,7 +91,7 @@ extension CalendarView {
 
 //MARK: CollectionView
 extension CalendarView {
-    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, ManageInfoByDate> {
+    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, Item> {
         let calendarHeaderViewRegistration = UICollectionView.SupplementaryRegistration<CalendarWeekdayHeaderView>(elementKind: "headerKind") { supplementaryView, elementKind, indexPath in
             
         }
@@ -94,11 +101,16 @@ extension CalendarView {
             supplementaryView.configure("4월 13일 월요일")
         }
         
-        let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, ManageInfoByDate> { cell,indexPath,item in
-            cell.configure(item)
+        let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, Item> { cell,indexPath,item in
+            switch item {
+            case .calendar(let info):
+                cell.configure(info)
+            default:
+                break
+            }
         }
         
-        let dataSource = UICollectionViewDiffableDataSource<Section, ManageInfoByDate>(collectionView: collectionView) { collectionView, indexPath, item in
+        let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
