@@ -11,30 +11,37 @@ import Then
 
 final class CalendarView: UIView {
     enum Badge: String {
+        case water = "물주기"
         case grow = "분갈이"
         case sprout = "비료"
-        case water = "물주기"
         case treat = "치료"
         
         var smallImage: String {
             switch self {
+            case .water: "badgeWaterSmall"
             case .grow: "badgeGrowSmall"
             case .sprout: "badgeSproutSmall"
-            case .water: "badgeWaterSmall"
             case .treat: "badgeTreatSmall"
             }
         }
         
         var bigImage: String {
             switch self {
+            case .water: "badgeWaterBig"
             case .grow: "badgeGrowBig"
             case .sprout: "badgeSproutBig"
-            case .water: "badgeWaterBig"
             case .treat: "badgeTreatBig"
             }
         }
         
-        //TODO: Color 추가 필요
+        var color: UIColor {
+            switch self {
+            case .water: .subBlue
+            case .grow: .subBrown
+            case .sprout: .primary600
+            case .treat: .subRed
+            }
+        }
     }
     
     nonisolated
