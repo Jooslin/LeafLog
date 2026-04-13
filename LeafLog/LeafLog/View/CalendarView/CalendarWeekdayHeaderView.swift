@@ -19,7 +19,8 @@ class CalendarWeekdayHeaderView: UICollectionReusableView {
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
-            $0.verticalEdges.equalToSuperview()
+            $0.top.equalToSuperview().offset(32)
+            $0.bottom.equalToSuperview()
         }
     }
     

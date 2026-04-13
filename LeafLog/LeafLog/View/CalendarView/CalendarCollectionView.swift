@@ -24,29 +24,36 @@ extension CalendarCollectionView {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.contentInsetsReference = .layoutMargins
         
-        return UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
+        let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
             let headerItem = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(18)
+                    heightDimension: .absolute(50)
                 ),
                 elementKind: "headerKind",
                 alignment: .top
             )
+  
+            let backgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
             
             let section = self?.calendarSectionLayout(environment: environment)
             section?.boundarySupplementaryItems = [headerItem]
-            
+            section?.decorationItems = [backgroundItem]
+            section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
             return section
         }, configuration: configuration)
+        
+        layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "calendarBackground")
+        return layout
     }
     
     private func calendarSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
-        let width = environment.container.effectiveContentSize.width
+        let width = environment.container.effectiveContentSize.width - 48
         let itemWidth = width / 7
+        
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(
-                widthDimension: .absolute(width / 7),
+                widthDimension: .absolute(itemWidth),
                 heightDimension: .absolute(itemWidth * 1.7))
         )
         

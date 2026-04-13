@@ -75,7 +75,7 @@ extension CalendarView {
         dataSource.supplementaryViewProvider = {
             collectionView.dequeueConfiguredReusableSupplementary(using: calendarHeaderViewRegistration, for: $2)
         }
-        
+
         return dataSource
     }
     
