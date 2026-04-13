@@ -79,6 +79,8 @@ final class CalendarView: UIView {
     private let collectionView = CalendarCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
+    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
+    
     init() {
         super.init(frame: .zero)
         setLayout()
@@ -91,10 +93,17 @@ final class CalendarView: UIView {
 
 extension CalendarView {
     private func setLayout() {
+        self.addSubview(titleView)
         self.addSubview(collectionView)
         
+        titleView.snp.makeConstraints {
+            $0.top.equalTo(safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        
         collectionView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
+            $0.top.equalTo(titleView.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
 }

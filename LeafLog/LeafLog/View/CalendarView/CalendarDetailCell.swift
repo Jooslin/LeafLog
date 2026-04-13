@@ -58,7 +58,7 @@ extension CalendarDetailCell {
 
 extension CalendarDetailCell {
     func configure(_ data: CalendarView.DetailManageInfo) {
-        colorChip.backgroundColor = UIColor.blue //TODO: 수정 필요
+        colorChip.backgroundColor = data.badge.color
         nameLabel.text = data.name
     }
 }
