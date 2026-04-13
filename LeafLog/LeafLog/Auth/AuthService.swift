@@ -10,6 +10,10 @@ import Supabase
 import Dependencies
 
 final class AuthService {
+
+    private struct WithdrawResponse: Decodable {
+        let success: Bool
+    }
     
     @Dependency(\.profileDBManager) private var profileDBManager
 
@@ -117,14 +121,23 @@ final class AuthService {
     // MARK: - 회원 탈퇴
     func withdrawAccount() async throws {
         let user = try await supabase.auth.user()
+        let session = try await supabase.auth.session
 
         do {
-            try await supabase.functions.invoke(
+            let _: WithdrawResponse = try await supabase.functions.invoke(
                 "delete-user", // DB에서 유저 데이터 삭제
-                options: .init(method: .post)
+                options: .init(
+                    method: .post,
+                    headers: [
+                        "Authorization": "Bearer \(session.accessToken)"
+                    ]
+                )
             )
+        } catch FunctionsError.httpError(_, let data) {
+            let body = String(data: data, encoding: .utf8) ?? "응답 본문을 읽을 수 없어요."
+            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(body)")
         } catch {
-            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해주세요.")
+            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(error.localizedDescription)")
         }
 
         // 로그아웃
