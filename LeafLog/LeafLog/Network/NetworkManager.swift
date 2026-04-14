@@ -86,7 +86,7 @@ final class NetworkManager {
 
         return (response.body?.items?.item ?? [])
             .filter(\.isImage)
-            .sorted { ($0.fileSequence ?? "") < ($1.fileSequence ?? "") }
+            .sorted { (Int($0.fileSequence ?? "") ?? 0) < (Int($1.fileSequence ?? "") ?? 0) }
     }
     
     // 필터 코드 목록 하나 보내는 거 분리
