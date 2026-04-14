@@ -34,7 +34,7 @@ class LoginViewController: BaseViewController, View {
     
     
     private func bindAction(reactor: LoginReactor) {
-        loginView.appleLoginButton.rx.tap
+        loginView.appleLoginButton.rx.controlEvent(.touchUpInside)
             .compactMap { [weak self] in
                 guard let self else { return nil }
                 return LoginReactor.Action.appleLoginTapped(self)
