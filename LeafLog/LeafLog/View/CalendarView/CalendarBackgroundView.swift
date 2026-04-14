@@ -10,7 +10,7 @@ import UIKit
 class CalendarBackgroundView: UICollectionReusableView {
     override init(frame: CGRect) {
         super.init(frame: frame)
-        self.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1.00) // HEX #F7F7F7
+        self.backgroundColor = .grayScale50
         self.layer.cornerRadius = 12
     }
     

@@ -13,7 +13,7 @@ class BaseCardView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1.00) // HEX #F7F7F7
+        backgroundColor = .grayScale50
         layer.cornerRadius = 8
         clipsToBounds = true
     }
