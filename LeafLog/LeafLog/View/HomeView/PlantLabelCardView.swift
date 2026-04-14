@@ -23,7 +23,7 @@ final class PlantLabelCardView: BaseCardView {
         }
     }
     
-    init(image: String, text: String) {
+    init() {
 //        super.init(cornerRadius: 12)
         super.init(frame: .zero)
         
