@@ -10,7 +10,7 @@ import SnapKit
 import Then
 
 final class CalendarTitleCell: UICollectionViewCell {
-    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
+    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell", isCollectionView: true)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -18,6 +18,7 @@ final class CalendarTitleCell: UICollectionViewCell {
         titleView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
+
     }
     
     required init?(coder: NSCoder) {

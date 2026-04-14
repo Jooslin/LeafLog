@@ -14,9 +14,6 @@ final class CalendarView: UIView {
     private let collectionView = CalendarCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
-    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
-    private let calendarHeaderView = CalendarHeaderView()
-    
     init() {
         super.init(frame: .zero)
         setLayout()
@@ -29,23 +26,10 @@ final class CalendarView: UIView {
 
 extension CalendarView {
     private func setLayout() {
-        self.addSubview(titleView)
-        self.addSubview(calendarHeaderView)
         self.addSubview(collectionView)
         
-        titleView.snp.makeConstraints {
-            $0.top.equalTo(safeAreaLayoutGuide)
-            $0.horizontalEdges.equalToSuperview()
-        }
-        
-        calendarHeaderView.snp.makeConstraints {
-            $0.top.equalTo(titleView.snp.bottom)
-            $0.horizontalEdges.equalToSuperview()
-        }
-        
         collectionView.snp.makeConstraints {
-            $0.top.equalTo(calendarHeaderView.snp.bottom)
-            $0.horizontalEdges.bottom.equalToSuperview()
+            $0.edges.equalToSuperview()
         }
     }
 }
@@ -83,10 +67,28 @@ extension CalendarView {
             
         }
         
+        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
+            switch item {
+            case .header(let date):
+                cell.configure(date)
+            default:
+                break
+            }
+        }
+        
         let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, Item> { cell,indexPath,item in
             switch item {
             case .calendar(let info):
                 cell.configure(info)
+            default:
+                break
+            }
+        }
+        
+        let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { cell, indexPath, item in
+            switch item {
+            case .filter(let texts):
+                cell.configure(texts)
             default:
                 break
             }
@@ -103,8 +105,12 @@ extension CalendarView {
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
-            case .title, .header, .filter:
+            case .title:
                 collectionView.dequeueConfiguredReusableCell(using: titleCellRegistration, for: indexPath, item: item)
+            case .header:
+                collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: item)
+            case .filter:
+                collectionView.dequeueConfiguredReusableCell(using: filterCellRegistartion, for: indexPath, item: item)
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
@@ -147,11 +153,11 @@ extension CalendarView {
         snapshot.appendSections([.title, .header, .filter])
         
         snapshot.appendItems([Item.title], toSection: .title)
-        snapshot.appendItems([Item.title], toSection: .header)
-        snapshot.appendItems([Item.title], toSection: .filter)
+        snapshot.appendItems(data[0], toSection: .header)
+        snapshot.appendItems([Item.filter(["전체", "물주기", "분갈이", "비료", "치료"])], toSection: .filter)
         
         for section in sections {
-            let index = section.rawValue - 3
+            let index = section.rawValue - 2
             let items = data[index]
             
             // 데이터가 있는 경우에만 섹션과 아이템 추가
@@ -219,7 +225,7 @@ extension CalendarView {
     enum Item: Hashable {
         case title
         case header(String)
-        case filter(String)
+        case filter([String])
         case calendar(ManageInfoByDate)
         case water(DetailManageInfo)
         case grow(DetailManageInfo)

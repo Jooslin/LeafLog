@@ -41,7 +41,7 @@ extension CalendarViewController {
             .grow(CalendarView.DetailManageInfo(id: UUID(), name: "선인장", badge: .grow)),
             .grow(CalendarView.DetailManageInfo(id: UUID(), name: "다육이", badge: .grow))
         ]
-        calendarView.setSnapshot([calendarData, [], growItem, [], treatItem])
+        calendarView.setSnapshot([[CalendarView.Item.header("2026년 4월")], calendarData, [], growItem, [], treatItem])
     }
 }
 
