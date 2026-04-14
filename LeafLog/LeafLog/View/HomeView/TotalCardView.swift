@@ -15,7 +15,11 @@ final class TotalCardView: BaseCardView {
 //    $0.backgroundColor = .white
 //}
     
-    private let imageView = UIImageView()
+    private let imageView = UIImageView().then {
+        $0.snp.makeConstraints {
+            $0.width.height.equalTo(32)
+        }
+    }
     let label = UILabel(text: "", config: .label14)
     
     init(image: String, text: String) {
