@@ -12,12 +12,6 @@ final class PlantDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     private static let defaultSpeciesName = "익명의 식물"
     
-    // 날짜를 "2026-04-13" 같은 문자열로 바꿔주는 포매터
-    private static let dateOnlyFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
     
     private init() {}
     
@@ -44,7 +38,7 @@ final class PlantDBManager {
             speciesName: speciesName,
             imagePath: imagePath,
             wateringIntervalDays: input.wateringIntervalDays,
-            lastWateredAt: Self.dateOnlyFormatter.string(from: input.lastWateredAt)
+            lastWateredAt: input.lastWateredAt
         )
         
         // Supabase Insert 실행 후 생성된 데이터를 모델로 바로 디코딩
@@ -75,7 +69,7 @@ final class PlantDBManager {
         let speciesName: String
         let imagePath: String?
         let wateringIntervalDays: Int
-        let lastWateredAt: String // DB 컬럼이 'date' 타입이므로 yyyy-MM-dd 문자열로 전달
+        let lastWateredAt: Date
         
         enum CodingKeys: String, CodingKey {
             case id

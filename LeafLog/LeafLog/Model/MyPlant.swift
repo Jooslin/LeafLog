@@ -76,7 +76,7 @@ struct MyPlant: Codable {
     let speciesName: String
     let imagePath: String?
     let wateringIntervalDays: Int
-    let lastWateredAt: String
+    let lastWateredAt: Date
     let healthStatus: String
     let guideEnabled: Bool
     let createdAt: Date
