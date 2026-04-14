@@ -20,8 +20,8 @@ final class LoginView: UIView {
     
     let googleLoginButton = UIButton().then {
         var config = UIButton.Configuration.plain()
-        var titleAttr = AttributedString("Google로 시작하기")
-        titleAttr.font = .systemFont(ofSize: 16, weight: .semibold)
+        var titleAttr = AttributedString("Google로 로그인")
+        titleAttr.font = .systemFont(ofSize: 18, weight: .semibold)
         config.attributedTitle = titleAttr
         config.baseForegroundColor = UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1)
         config.image = UIImage(named: "google")
@@ -37,8 +37,8 @@ final class LoginView: UIView {
 
     let kakaoLoginButton = UIButton().then {
         var config = UIButton.Configuration.filled() // 배경색이 있는 스타일
-        var titleAttr = AttributedString("카카오로 시작하기")
-        titleAttr.font = .systemFont(ofSize: 16, weight: .semibold)
+        var titleAttr = AttributedString("카카오로 로그인")
+        titleAttr.font = .systemFont(ofSize: 18, weight: .semibold)
         config.attributedTitle = titleAttr
         config.baseForegroundColor = UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1)
         config.image = UIImage(named: "kakao")
@@ -49,7 +49,7 @@ final class LoginView: UIView {
         $0.configuration = config
     }
     
-    let appleLoginButton = ASAuthorizationAppleIDButton(authorizationButtonType: .signUp, authorizationButtonStyle: .black)
+    let appleLoginButton = ASAuthorizationAppleIDButton(authorizationButtonType: .signIn, authorizationButtonStyle: .black)
     
     let privacyLabel = UILabel(text: "시작하면 이용약관 및 개인정보처리방침에 동의하게 됩니다.", config: .label12, color: UIColor(named: "#303030"))
     
