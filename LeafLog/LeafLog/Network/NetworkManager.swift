@@ -22,11 +22,12 @@ final class NetworkManager {
         self.decoder = XMLDecoder()
         self.decoder.shouldProcessNamespaces = false
     }
-
+    
+    // 검색결과 간략하게
     func fetchPlantList(
         keyword: String,
         searchType: PlantSearchType = .plantName,
-        filterState: PlantFilterState = .init(),
+        filterState: PlantFilterState,
         pageNo: Int = 1,
         numOfRows: Int = 10
     ) async throws -> [PlantSummary] {
@@ -51,7 +52,8 @@ final class NetworkManager {
 
         return response.body.items.item
     }
-
+    
+    // 검색 결과 세부사항
     func fetchPlantDetail(contentNumber: String) async throws -> PlantDetail {
         let response: PlantDetailResponse = try await request(
             path: "gardenDtl",
@@ -68,6 +70,23 @@ final class NetworkManager {
         }
 
         return detail
+    }
+    
+    // 관련 이미지 파일
+    func fetchPlantFiles(contentNumber: String) async throws -> [PlantFileItem] {
+        let response: PlantFileResponse = try await request(
+            path: "gardenFileList",
+            parameters: [
+                "apiKey": AppConfig.apiKey,
+                "cntntsNo": contentNumber
+            ]
+        )
+
+        try validate(header: response.header)
+
+        return (response.body?.items?.item ?? [])
+            .filter(\.isImage)
+            .sorted { (Int($0.fileSequence ?? "") ?? 0) < (Int($1.fileSequence ?? "") ?? 0) }
     }
     
     // 필터 코드 목록 하나 보내는 거 분리
@@ -152,6 +171,7 @@ extension NetworkManager {
     }
 }
 
+// swift Dependencies 적용
 extension NetworkManager: DependencyKey {
     static var liveValue: NetworkManager {
         .shared
