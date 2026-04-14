@@ -14,7 +14,7 @@ final class SearchBottomGuideView: UICollectionReusableView {
 
     private let titleLabel = UILabel(text: "찾으시는 결과가 없으신가요?", config: .title16)
 
-    let actionButton = CornerRadius14Button(title: "기타로 등록하기", backgroundColor: .gray)
+    let actionButton = CornerRadius8Button(title: "기타로 등록하기", backgroundColor: .gray)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
