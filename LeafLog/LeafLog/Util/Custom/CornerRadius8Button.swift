@@ -8,8 +8,9 @@
 import UIKit
 
 /*
- 생성 시
+ 생성 시 (색 설정 안하면 자동으로 회색 적용됩니다.)
  let button = CornerRadius14Button(title: "선택")
+ let button = CornerRadius14Button(title: "선택", backgroundColor: .lightGreen)
  
  이름 변경시
  button.apply(title: "완료")
@@ -30,7 +31,7 @@ class CornerRadius8Button: UIButton {
         }
     }
 
-    init(title: String, backgroundColor: BackgroundColor = .lightGreen) {
+    init(title: String, backgroundColor: BackgroundColor = .gray) {
         super.init(frame: .zero)
         apply(title: title, backgroundColor: backgroundColor)
     }
