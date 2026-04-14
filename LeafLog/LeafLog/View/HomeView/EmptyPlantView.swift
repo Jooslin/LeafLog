@@ -24,6 +24,7 @@ final class EmptyPlantView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        backgroundColor = .grayScale50
         setLayout()
     }
     

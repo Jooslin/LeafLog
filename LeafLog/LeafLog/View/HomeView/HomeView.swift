@@ -15,6 +15,8 @@ final class HomeView: UIView {
     let totalPlant = TotalCardView(image: "badgeSproutBig", text: "내 식물 N개")
     let totalWater = TotalCardView(image: "badgeWaterBig", text: "물 준 식물 N개")
     
+    let emptyView = EmptyPlantView()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .grayScale50
@@ -31,6 +33,7 @@ extension HomeView {
         addSubview(titleView)
         addSubview(totalPlant)
         addSubview(totalWater)
+        addSubview(emptyView)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -49,6 +52,12 @@ extension HomeView {
             $0.leading.equalTo(totalPlant.snp.trailing).offset(16)
             $0.height.equalTo(48)
             $0.width.equalTo(150)
+        }
+        
+        emptyView.snp.makeConstraints {
+            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.horizontalEdges.equalToSuperview()
+            $0.bottom.equalTo(safeAreaLayoutGuide)
         }
     }
 }
