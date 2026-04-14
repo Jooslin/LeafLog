@@ -10,13 +10,13 @@ import SnapKit
 import Then
 
 class PlantShelfCell: UICollectionViewCell {
-    let plants = [
+    private let plants = [
         UIImageView(),
         UIImageView(),
         UIImageView()
     ]
     
-    let cards = [
+    private let cards = [
         PlantLabelCardView(),
         PlantLabelCardView(),
         PlantLabelCardView()
