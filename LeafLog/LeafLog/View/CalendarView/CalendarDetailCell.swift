@@ -21,6 +21,8 @@ final class CalendarDetailCell: UICollectionViewCell {
         }
     }
     
+    private let separateBar = SeparateBar()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setLayout()
@@ -34,11 +36,16 @@ final class CalendarDetailCell: UICollectionViewCell {
 extension CalendarDetailCell {
     private func setLayout() {
         let stackView = generateStackView()
+        addSubview(separateBar)
         contentView.addSubview(stackView)
+        
+        separateBar.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview()
+        }
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview().offset(1)
         }
     }
     

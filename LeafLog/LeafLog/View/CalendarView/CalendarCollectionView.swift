@@ -38,7 +38,7 @@ extension CalendarCollectionView {
             let detailHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(81)
+                    heightDimension: .absolute(80)
                 ),
                 elementKind: "headerKind",
                 alignment: .top
@@ -64,14 +64,13 @@ extension CalendarCollectionView {
                 let section = self?.calendarSectionLayout(environment: environment)
                 section?.boundarySupplementaryItems = [calendarHeaderItem, footerItem]
                 section?.decorationItems = [calendarBackgroundItem]
-                section?.contentInsets = .init(top: 0, leading: 24, bottom: 32, trailing: 24)
+                section?.contentInsets = .init(top: 0, leading: 24, bottom: 24, trailing: 24)
                 
                 return section
             default:
                 let section = self?.detailSectionLayout(environment: environment)
                 section?.boundarySupplementaryItems = [detailHeaderItem]
                 section?.decorationItems = [detailBackgroundItem]
-//                section?.contentInsets = .init(top: 24, leading: 0, bottom: 0, trailing: 0)
                 
                 return section
             }
@@ -111,13 +110,13 @@ extension CalendarCollectionView {
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1),
-                heightDimension: .absolute(44))
+                heightDimension: .absolute(45))
             )
         
         let group = NSCollectionLayoutGroup.vertical(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1),
-                heightDimension: .absolute(44)),
+                heightDimension: .absolute(45)),
             subitems: [item])
         
         let section = NSCollectionLayoutSection(group: group)

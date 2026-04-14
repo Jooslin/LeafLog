@@ -283,7 +283,6 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = Q7HGK38S83;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LeafLog/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -325,7 +324,6 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = Q7HGK38S83;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LeafLog/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

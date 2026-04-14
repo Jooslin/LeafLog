@@ -27,8 +27,6 @@ class CalendarDetailHeaderView: UICollectionReusableView {
         $0.layer.cornerRadius = 8
     }
     
-    private let separateBar = SeparateBar()
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setLayout()
@@ -44,17 +42,10 @@ extension CalendarDetailHeaderView {
         let stackView = generateStackView()
         
         addSubview(stackView)
-        addSubview(separateBar)
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.top.equalToSuperview().offset(38)
-        }
-        
-        separateBar.snp.makeConstraints {
-            $0.horizontalEdges.equalToSuperview()
-            $0.top.equalTo(stackView.snp.bottom).offset(14)
-            $0.bottom.equalToSuperview()
+            $0.top.equalToSuperview().offset(39)
         }
     }
     
