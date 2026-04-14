@@ -12,7 +12,7 @@ import Then
 final class CalendarHeaderCell: UICollectionViewCell {
     let previousButton = UIButton(configuration: .plain())
     let nextButton = UIButton(configuration: .plain())
-    let dateLabel = UILabel(text: "2026년 4월", config: .label16)
+    let dateLabel = UILabel(text: "", config: .label16)
     
     override init(frame: CGRect) {
         super.init(frame: frame)

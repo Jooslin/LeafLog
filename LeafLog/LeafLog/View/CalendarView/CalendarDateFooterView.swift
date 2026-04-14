@@ -9,12 +9,8 @@ import UIKit
 import SnapKit
 import Then
 
-class CalendarDateFooterView: UICollectionReusableView {
-    let label = UILabel().then {
-        $0.text = ""
-    }
-    
-//    let label = UILabel(text: $1, config: .label14)
+class CalendarDateFooterView: UICollectionReusableView {    
+    let label = UILabel(text: "", config: .label14)
     
     override init(frame: CGRect) {
         super.init(frame: frame)

@@ -18,7 +18,6 @@ final class CalendarTitleCell: UICollectionViewCell {
         titleView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
-
     }
     
     required init?(coder: NSCoder) {

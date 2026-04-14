@@ -11,6 +11,7 @@ import Then
 
 final class CalendarFilterCell: UICollectionViewCell {
     
+    //TODO: 추후 component 교체 필요
     private let buttons = [
         UIButton(configuration: .plain()),
         UIButton(configuration: .plain()),
