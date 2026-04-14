@@ -92,8 +92,8 @@ final class SearchRootView: UIView {
         }
 
         emptyLabel.snp.makeConstraints {
-            $0.centerX.equalTo(collectionView)
-            $0.centerY.equalTo(collectionView).offset(-40)
+            $0.top.equalTo(filterScrollView.snp.bottom).offset(24)
+            $0.centerX.equalToSuperview()
             $0.horizontalEdges.equalToSuperview().inset(32)
         }
     }
