@@ -1,5 +1,5 @@
 //
-//  CornerRadius14Button.swift
+//  CornerRadius8Button.swift
 //  LeafLog
 //
 //  Created by Yeseul Jang on 4/13/26.
@@ -9,8 +9,8 @@ import UIKit
 
 /*
  생성 시 (색 설정 안하면 자동으로 회색 적용됩니다.)
- let button = CornerRadius14Button(title: "선택")
- let button = CornerRadius14Button(title: "선택", backgroundColor: .lightGreen)
+ let button = CornerRadius8Button(title: "선택")
+ let button = CornerRadius8Button(title: "선택", backgroundColor: .lightGreen)
  
  이름 변경시
  button.apply(title: "완료")
@@ -40,7 +40,7 @@ class CornerRadius8Button: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(title: String, backgroundColor: BackgroundColor = .lightGreen) {
+    func apply(title: String, backgroundColor: BackgroundColor = .gray) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
         configuration.baseForegroundColor = UIColor.darkGray

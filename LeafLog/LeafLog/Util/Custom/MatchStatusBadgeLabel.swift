@@ -39,7 +39,7 @@ final class MatchStatusBadgeLabel: UILabel {
             case .high:
                 return UIColor(red: 0.169, green: 0.498, blue: 1, alpha: 0.1)
             case .medium:
-                return UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1)
+                return .grayScale50
             case .low:
                 return UIColor(red: 0.941, green: 0.416, blue: 0.416, alpha: 0.1)
             }
