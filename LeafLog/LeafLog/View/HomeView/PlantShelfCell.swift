@@ -76,20 +76,20 @@ extension PlantShelfCell {
 }
 
 extension PlantShelfCell {
-    func configure(_ data: [HomeView.ShelfPlant]) {
+    func configure(_ data: [HomeView.ShelfPlant?]) {
         data.enumerated().forEach {
             let index = $0.offset
             let plant = $0.element
             
-            if $0.element.isEmpty {
-                plants[index].image = .plantAdd
-                cards[index].isHidden = true
-            } else {
+            if let plant {
                 plants[index].image = UIImage(named: plant.category.defaultImageAssetName)
                 cards[index].nameLabel.text = plant.name
                 cards[index].recentDayLabel.text = "\(String(describing: plant.daysFromLastWatering))일 전"
                 cards[index].nextDayLabel.text = "\(String(describing: plant.daysToNextWatering))일"
                 cards[index].waterButton.isSelected = plant.didWater
+            } else {
+                plants[index].image = .plantAdd
+                cards[index].isHidden = true
             }
         }
     }
