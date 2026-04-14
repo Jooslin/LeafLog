@@ -22,19 +22,23 @@ final class SearchBarView: UIView {
     let cameraButton = UIButton(type: .system).then {
         var configuration = UIButton.Configuration.plain()
         configuration.image = UIImage(systemName: "camera")
-        configuration.baseForegroundColor = UIColor(red: 0.39, green: 0.39, blue: 0.39, alpha: 1)
+        configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(
+            pointSize: 16,
+            weight: .regular
+        )
+        configuration.baseForegroundColor = .grayScale600
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         $0.configuration = configuration
     }
 
     private let searchIconImageView = UIImageView().then {
         $0.image = UIImage(systemName: "magnifyingglass")
-        $0.tintColor = UIColor(red: 0.79, green: 0.79, blue: 0.79, alpha: 1)
+        $0.tintColor = .grayScale300
         $0.contentMode = .scaleAspectFit
     }
 
     private let dividerView = UIView().then {
-        $0.backgroundColor = UIColor(red: 0.79, green: 0.79, blue: 0.79, alpha: 1)
+        $0.backgroundColor = .grayScale300
     }
 
     override init(frame: CGRect) {
