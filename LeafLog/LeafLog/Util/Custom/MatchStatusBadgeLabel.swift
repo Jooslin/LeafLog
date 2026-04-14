@@ -6,6 +6,17 @@
 //
 import UIKit
 
+/*
+ 검색 결과의 일치율/상태 값을 배지 형태로 보여줄 때 사용하는 라벨입니다.
+
+ 생성 시
+ let badgeLabel = MatchStatusBadgeLabel()
+
+ 다른 스타일 적용 시 - 아무것도 안적으면 "일치율" 자동 적용
+ badgeLabel.apply(style: .high)
+ badgeLabel.apply(style: .medium, prefix: "온도") // 온도: 보통
+ */
+
 final class MatchStatusBadgeLabel: UILabel {
     enum Style {
         case high
