@@ -77,6 +77,8 @@ extension PlantShelfCell {
 
 extension PlantShelfCell {
     func configure(_ data: [HomeView.ShelfPlant?]) {
+        guard data.count == 3 else { return } // 데이터는 3개씩 들어와야함
+        
         data.enumerated().forEach {
             let index = $0.offset
             let plant = $0.element
