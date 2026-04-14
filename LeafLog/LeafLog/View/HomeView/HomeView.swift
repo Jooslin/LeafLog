@@ -19,7 +19,9 @@ final class HomeView: UIView {
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
     let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
-    let emptyView = EmptyPlantView()
+    let emptyView = EmptyPlantView().then {
+        $0.isHidden = true
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,6 +40,7 @@ extension HomeView {
         addSubview(totalPlant)
         addSubview(totalWater)
         addSubview(emptyView)
+        addSubview(collectionView)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -63,14 +66,22 @@ extension HomeView {
             $0.horizontalEdges.equalToSuperview()
             $0.bottom.equalTo(safeAreaLayoutGuide)
         }
+        
+        collectionView.snp.makeConstraints {
+            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
     }
 }
 
 //MARK: CollectionView
 extension HomeView {
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, Item> {
-        let shelfCellRegistration = UICollectionView.CellRegistration<PlantShelfCell, Item> { cell,indexPath,item in
-            
+        let shelfCellRegistration = UICollectionView.CellRegistration<PlantShelfCell, Item> { cell, indexPath, item in
+            switch item {
+            case .plant(let plants):
+                cell.configure(plants)
+            }
         }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in

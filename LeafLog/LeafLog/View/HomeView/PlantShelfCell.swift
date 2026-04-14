@@ -30,6 +30,7 @@ class PlantShelfCell: UICollectionViewCell {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        setAttributes()
         setLayout()
     }
     
@@ -39,6 +40,14 @@ class PlantShelfCell: UICollectionViewCell {
 }
 
 extension PlantShelfCell {
+    private func setAttributes() {
+        plants.forEach {
+            $0.snp.makeConstraints {
+                $0.width.height.equalTo(96)
+            }
+        }
+    }
+    
     private func generateHorizontalStack(views: [UIView]) -> UIStackView {
         let stackView = UIStackView(arrangedSubviews: views).then {
             $0.axis = .horizontal

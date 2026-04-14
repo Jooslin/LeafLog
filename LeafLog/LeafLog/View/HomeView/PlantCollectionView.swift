@@ -11,6 +11,7 @@ final class PlantCollectionView: UICollectionView {
     override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: UICollectionViewLayout())
         
+        backgroundColor = .grayScale50
         collectionViewLayout = makeCompositionalLayout()
         showsVerticalScrollIndicator = false
     }
@@ -39,7 +40,7 @@ extension PlantCollectionView {
             )
             
             let section = NSCollectionLayoutSection(group: group)
-            section.orthogonalScrollingBehavior = .groupPaging
+//            section.orthogonalScrollingBehavior = .groupPaging
             
             return section
         }, configuration: configuration)
