@@ -11,7 +11,7 @@ import UIKit
 
 final class SearchBarView: UIView {
     let textField = UITextField().then {
-        $0.placeholder = "place holder"
+        $0.placeholder = "식물의 이름을 검색해주세요"
         $0.borderStyle = .none
         $0.autocapitalizationType = .none
         $0.returnKeyType = .search
@@ -21,11 +21,7 @@ final class SearchBarView: UIView {
 
     let cameraButton = UIButton(type: .system).then {
         var configuration = UIButton.Configuration.plain()
-        configuration.image = UIImage(systemName: "camera")
-        configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(
-            pointSize: 16,
-            weight: .regular
-        )
+        configuration.image = UIImage(named: "camera")
         configuration.baseForegroundColor = .grayScale600
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         $0.configuration = configuration
