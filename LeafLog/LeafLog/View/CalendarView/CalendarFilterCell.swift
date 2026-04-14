@@ -63,7 +63,11 @@ extension CalendarFilterCell {
 extension CalendarFilterCell {
     func configure(_ data: [String]) {
         buttons.forEach {
-            $0.setTitle(data[$0.tag], for: .normal)
+            if $0.tag < data.count {
+                $0.setTitle(data[$0.tag], for: .normal)
+            } else {
+                $0.isHidden = true
+            }
         }
     }
 }
