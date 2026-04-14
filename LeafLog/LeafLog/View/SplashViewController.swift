@@ -17,7 +17,7 @@ final class SplashViewController: BaseViewController {
     
     private var didStartSessionCheck = false
     
-    private let logoImageView = UIImageView(image: UIImage(named: "launch_logo"))
+    private let logoImageView = UIImageView(image: .launchLogo)
 
     override func viewDidLoad() {
         super.viewDidLoad()
