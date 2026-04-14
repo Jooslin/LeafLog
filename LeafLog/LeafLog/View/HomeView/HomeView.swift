@@ -88,12 +88,8 @@ extension HomeView {
     func setSnapshot(_ data: [Section: [Item]]) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
-        for target in data.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
-            if !target.value.isEmpty {
-                snapshot.appendSections([target.key])
-                snapshot.appendItems(target.value, toSection: target.key)
-            }
-        }
+        snapshot.appendSections([.plant])
+        snapshot.appendItems(data[.plant] ?? [], toSection: .plant)
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }
