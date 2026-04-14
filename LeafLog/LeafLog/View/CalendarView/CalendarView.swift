@@ -145,25 +145,13 @@ extension CalendarView {
         return dataSource
     }
     
-    func setSnapshot(_ data: [[Item]]) {
+    func setSnapshot(_ data: [Section: [Item]]) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
-        let sections: [Section] = [.calendar, .water, .grow, .sprout, .treat]
-        
-        snapshot.appendSections([.title, .header, .filter])
-        
-        snapshot.appendItems([Item.title], toSection: .title)
-        snapshot.appendItems(data[0], toSection: .header)
-        snapshot.appendItems([Item.filter(["전체", "물주기", "분갈이", "비료", "치료"])], toSection: .filter)
-        
-        for section in sections {
-            let index = section.rawValue - 2
-            let items = data[index]
-            
-            // 데이터가 있는 경우에만 섹션과 아이템 추가
-            if !items.isEmpty {
-                snapshot.appendSections([section])
-                snapshot.appendItems(items, toSection: section)
+        for target in data.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            if !target.value.isEmpty {
+                snapshot.appendSections([target.key])
+                snapshot.appendItems(target.value, toSection: target.key)
             }
         }
         
