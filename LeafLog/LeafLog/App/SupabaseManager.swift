@@ -38,7 +38,8 @@ extension SupabaseManager {
 
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
-        let objectPath = "users/\(userID.uuidString)/profile.jpg"
+        let normalizedUserID = userID.uuidString.lowercased()
+        let objectPath = "users/\(normalizedUserID)/profile.jpg"
         return try await uploadImage(
             image,
             bucket: StorageBucket.profileImages,
@@ -49,7 +50,9 @@ extension SupabaseManager {
 
     // 식물 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadPlantImage(_ image: UIImage, userID: UUID, plantID: UUID) async throws -> String {
-        let objectPath = "users/\(userID.uuidString)/plants/\(plantID.uuidString)/main.jpg"
+        let normalizedUserID = userID.uuidString.lowercased()
+        let normalizedPlantID = plantID.uuidString.lowercased()
+        let objectPath = "users/\(normalizedUserID)/plants/\(normalizedPlantID)/main.jpg"
         return try await uploadImage(
             image,
             bucket: StorageBucket.plantImages,
