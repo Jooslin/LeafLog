@@ -48,17 +48,17 @@ extension CalendarCollectionView {
             let footerItem = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(70)
+                    heightDimension: .absolute(52)
                 ),
                 elementKind: "footerKind",
                 alignment: .bottom
             )
   
             let calendarBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
-            calendarBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 70, trailing: 0)
+            calendarBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 52, trailing: 0)
             
             let detailBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "detailBackground")
-            detailBackgroundItem.contentInsets = .init(top: 24, leading: 0, bottom: 0, trailing: 0)
+            detailBackgroundItem.contentInsets = .init(top: 16, leading: 0, bottom: 8, trailing: 0)
             
             switch CalendarView.Section(rawValue: sectionIndex) {
             case .title, .header, .filter:
@@ -143,6 +143,7 @@ extension CalendarCollectionView {
             subitems: [item])
         
         let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = .init(top: 0, leading: 0, bottom: 8, trailing: 0)
         return section
     }
 }
