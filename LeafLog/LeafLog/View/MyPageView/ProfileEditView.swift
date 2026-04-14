@@ -2,7 +2,7 @@
 //  ProfileEditView.swift
 //  LeafLog
 //
-//  Created by OpenAI Codex on 4/13/26.
+//  Created by 김주희 on 4/13/26.
 //
 
 import UIKit
