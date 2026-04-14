@@ -30,6 +30,14 @@ final class CalendarDateCell: UICollectionViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        // 이미지 초기화
+        badges.forEach {
+            $0.image = nil
+        }
+    }
 }
 
 extension CalendarDateCell {
@@ -87,7 +95,7 @@ extension CalendarDateCell {
         data.currentMonth ? dateLabel.textColor
         : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
         
-        data.badge.enumerated().forEach {
+        data.badge.prefix(badges.count).enumerated().forEach {
             badges[$0.offset].image = UIImage(named: $0.element.smallImage)
         }
     }
