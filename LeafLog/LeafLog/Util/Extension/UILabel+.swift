@@ -12,7 +12,8 @@ extension UILabel {
         color: UIColor? = nil,
         lines: Int? = nil
     ) {
-        self.font = config.font
+        self.font = UIFontMetrics(forTextStyle: config.textStyle).scaledFont(for: config.font)
+        self.adjustsFontForContentSizeCategory = true
         self.textColor = color ?? config.color
         self.numberOfLines = lines ?? config.lines
     }
