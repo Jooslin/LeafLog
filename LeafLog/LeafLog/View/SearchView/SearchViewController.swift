@@ -62,7 +62,6 @@ final class SearchViewController: BaseViewController, View {
         bindState(reactor: reactor)
     }
     
-    //
     private func bindAction(reactor: SearchReactor) {
         Observable.just(SearchReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
@@ -139,6 +138,14 @@ final class SearchViewController: BaseViewController, View {
             button.menu = UIMenu(children: [clearAction] + actions)
         }
     }
+    
+    // 이미지 파일 가공
+    private func firstImageURL(from rawValue: String?) -> String? {
+        rawValue?
+            .components(separatedBy: "|")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty })
+    }
 }
 
 // 데이터 소스 부분 구현 부
@@ -178,7 +185,8 @@ extension SearchViewController: UICollectionViewDataSource {
             plantName: item.name,
             statusStyle: .high,
             statusPrefix: "검색결과",
-            showsStatusBadge: false
+            showsStatusBadge: false,
+            thumbnailURLString: firstImageURL(from: item.thumbnailURL) ?? firstImageURL(from: item.imageURL)
         )
         return cell
     }

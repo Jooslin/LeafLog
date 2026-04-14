@@ -5,6 +5,7 @@
 //  Created by Yeseul Jang on 4/13/26.
 //
 
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -61,6 +62,7 @@ final class SearchResultCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        thumbnailImageView.kf.cancelDownloadTask()
         thumbnailImageView.image = nil
         statusLabel.isHidden = false
         statusLabel.apply(style: .high)
@@ -72,12 +74,23 @@ final class SearchResultCell: UICollectionViewCell {
         statusStyle: MatchStatusBadgeLabel.Style,
         statusPrefix: String = "일치율",
         showsStatusBadge: Bool = true,
-        image: UIImage? = nil
+        thumbnailURLString: String? = nil
     ) {
         plantNameLabel.text = plantName
         statusLabel.isHidden = !showsStatusBadge
         statusLabel.apply(style: statusStyle, prefix: statusPrefix)
-        thumbnailImageView.image = image
+
+        let placeholderImage = UIImage(systemName: "photo")
+        guard let thumbnailURLString,
+              let url = URL(string: thumbnailURLString) else {
+            thumbnailImageView.image = placeholderImage
+            return
+        }
+
+        thumbnailImageView.kf.setImage(
+            with: url,
+            placeholder: placeholderImage
+        )
     }
 
     private func setupUI() {
