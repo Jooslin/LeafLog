@@ -22,6 +22,8 @@ final class SearchRootView: UIView {
         $0.textField.placeholder = "식물 이름을 검색해 주세요"
     }
 
+    let titleHeaderView = TitleHeaderView(text: "식물 검색", hasBackButton: true, rightButtonImage: "info")
+
     let filterScrollView = UIScrollView().then {
         $0.showsHorizontalScrollIndicator = false
     }
@@ -63,14 +65,20 @@ final class SearchRootView: UIView {
     }
 
     private func setupUI() {
+        addSubview(titleHeaderView)
         addSubview(searchBarView)
         addSubview(filterScrollView)
         filterScrollView.addSubview(filterStackView)
         addSubview(collectionView)
         addSubview(emptyLabel)
 
+        titleHeaderView.snp.makeConstraints {
+            $0.top.equalTo(safeAreaLayoutGuide).offset(8)
+            $0.horizontalEdges.equalToSuperview()
+        }
+
         searchBarView.snp.makeConstraints {
-            $0.top.equalTo(safeAreaLayoutGuide).offset(24)
+            $0.top.equalTo(titleHeaderView.snp.bottom).offset(16)
             $0.horizontalEdges.equalToSuperview().inset(16)
             $0.height.equalTo(48)
         }

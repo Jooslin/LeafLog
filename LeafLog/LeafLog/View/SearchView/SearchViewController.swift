@@ -31,9 +31,18 @@ final class SearchViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "식물 검색"
         configureFilters()
         configureCollectionView()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
     // 상단 필터 버튼 구현
