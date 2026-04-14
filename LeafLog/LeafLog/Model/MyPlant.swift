@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 // MARK: - 식물 카테고리 Enum
 enum PlantCategory: String, Codable, CaseIterable {
@@ -51,55 +52,37 @@ enum PlantLocation: String, Codable, CaseIterable {
 }
 
 
-// MARK: - 사용자 Input Mocel
+// MARK: - 사용자 Input Model
 // VC에서 PlantRegistrationService로 전달할 때 사용
 struct PlantCreateInput {
-    let id: UUID
+    let id: UUID = UUID()
     let category: PlantCategory
-    let location: PlantLocation
+    let location: PlantLocation?
     let nickname: String?
     let speciesName: String?
-    let imagePath: String?
-    let wateringIntervalDays: Int?
-    let lastWateredAt: Date?
-
-    init(
-        id: UUID = UUID(),
-        category: PlantCategory,
-        location: PlantLocation,
-        nickname: String?,
-        speciesName: String?,
-        imagePath: String?,
-        wateringIntervalDays: Int,
-        lastWateredAt: Date
-    ) {
-        self.id = id
-        self.category = category
-        self.location = location
-        self.nickname = nickname
-        self.speciesName = speciesName
-        self.imagePath = imagePath
-        self.wateringIntervalDays = wateringIntervalDays
-        self.lastWateredAt = lastWateredAt
-    }
+    let image: UIImage?
+    let wateringIntervalDays: Int
+    let lastWateredAt: Date
 }
+
 
 // MARK: - 앱 내에서 전반적으로 사용할 내 식물 모델
 struct MyPlant: Codable {
     let id: UUID // 식물 자체 고유 ID
     let userID: UUID
     let category: PlantCategory
-    let location: PlantLocation
+    let location: PlantLocation?
     let nickname: String?
-    let speciesName: String?
+    let speciesName: String
     let imagePath: String?
     let wateringIntervalDays: Int
-    let lastWateredAt: Date
+    let lastWateredAt: String
     let healthStatus: String
     let guideEnabled: Bool
     let createdAt: Date
     let updatedAt: Date
 
+    // 기본 이미지
     var defaultImageAssetName: String {
         category.defaultImageAssetName // 기본 이미지
     }
