@@ -79,8 +79,8 @@ final class SearchViewController: BaseViewController, View {
     private func bindState(reactor: SearchReactor) {
         reactor.state // 식물 목록
             .map(\.plants)
-            .distinctUntilChanged { lhs, rhs in
-                lhs.map(\.contentNumber) == rhs.map(\.contentNumber)
+            .distinctUntilChanged { previousPlants, currentPlants in
+                previousPlants.map(\.contentNumber) == currentPlants.map(\.contentNumber)
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] plants in
