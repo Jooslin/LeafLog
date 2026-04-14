@@ -40,7 +40,7 @@ class CornerRadius8Button: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(title: String, backgroundColor: BackgroundColor = .lightGreen) {
+    func apply(title: String, backgroundColor: BackgroundColor = .gray) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
         configuration.baseForegroundColor = UIColor.darkGray
