@@ -60,15 +60,19 @@ extension CalendarCollectionView {
             detailBackgroundItem.contentInsets = .init(top: 24, leading: 0, bottom: 0, trailing: 0)
             
             switch CalendarView.Section(rawValue: sectionIndex) {
+            case .title, .header, .filter:
+                let section = self?.singleItemSectionLayout()
+                return section
+                
             case .calendar:
-                let section = self?.calendarSectionLayout(environment: environment)
+                let section = self?.calendarSectionLayout(environment)
                 section?.boundarySupplementaryItems = [calendarHeaderItem, footerItem]
                 section?.decorationItems = [calendarBackgroundItem]
                 section?.contentInsets = .init(top: 0, leading: 24, bottom: 24, trailing: 24)
                 
                 return section
             default:
-                let section = self?.detailSectionLayout(environment: environment)
+                let section = self?.detailSectionLayout()
                 section?.boundarySupplementaryItems = [detailHeaderItem]
                 section?.decorationItems = [detailBackgroundItem]
                 
@@ -82,7 +86,25 @@ extension CalendarCollectionView {
         return layout
     }
     
-    private func calendarSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+    private func singleItemSectionLayout() -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(48)
+            ))
+        
+        let group = NSCollectionLayoutGroup.vertical(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(48)),
+            subitems: [item]
+        )
+        
+        let section = NSCollectionLayoutSection(group: group)
+        return section
+    }
+    
+    private func calendarSectionLayout(_ environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
         let width = environment.container.effectiveContentSize.width - 48
         let itemWidth = width / 7
         
@@ -106,7 +128,7 @@ extension CalendarCollectionView {
         return section
     }
     
-    private func detailSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+    private func detailSectionLayout() -> NSCollectionLayoutSection {
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1),

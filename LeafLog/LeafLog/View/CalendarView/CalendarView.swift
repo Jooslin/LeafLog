@@ -79,6 +79,10 @@ extension CalendarView {
             supplementaryView.configure("4월 13일 월요일")
         }
         
+        let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { cell,indexPath,item in
+            
+        }
+        
         let dateCellRegistration = UICollectionView.CellRegistration<CalendarDateCell, Item> { cell,indexPath,item in
             switch item {
             case .calendar(let info):
@@ -99,6 +103,8 @@ extension CalendarView {
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
+            case .title, .header, .filter:
+                collectionView.dequeueConfiguredReusableCell(using: titleCellRegistration, for: indexPath, item: item)
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
@@ -138,8 +144,15 @@ extension CalendarView {
         
         let sections: [Section] = [.calendar, .water, .grow, .sprout, .treat]
         
+        snapshot.appendSections([.title, .header, .filter])
+        
+        snapshot.appendItems([Item.title], toSection: .title)
+        snapshot.appendItems([Item.title], toSection: .header)
+        snapshot.appendItems([Item.title], toSection: .filter)
+        
         for section in sections {
-            let items = data[section.rawValue]
+            let index = section.rawValue - 3
+            let items = data[index]
             
             // 데이터가 있는 경우에만 섹션과 아이템 추가
             if !items.isEmpty {
