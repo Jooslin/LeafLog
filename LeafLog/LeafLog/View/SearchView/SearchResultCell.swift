@@ -22,7 +22,7 @@ final class SearchResultCell: UICollectionViewCell {
     
     // 이미지가 없을 경우, 로딩 시 사용
     private let thumbnailContainerView = UIView().then {
-        $0.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1)
+        $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 8
         $0.layer.masksToBounds = true
     }
