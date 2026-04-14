@@ -11,7 +11,6 @@ import Dependencies
 final class PlantDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     private static let defaultSpeciesName = "익명의 식물"
-    private lazy var client = supabaseManager.client
     
     // 날짜를 "2026-04-13" 같은 문자열로 바꿔주는 포매터
     private static let dateOnlyFormatter: DateFormatter = {
@@ -43,7 +42,7 @@ final class PlantDBManager {
         )
         
         // Supabase Insert 실행 후 생성된 데이터를 모델로 바로 디코딩
-        let response = try await client
+        let response = try await supabaseManager.client
             .from("plants")
             .insert(payload)
             .select() // 생성된 전체 로우 데이터를 반환받음
@@ -52,7 +51,7 @@ final class PlantDBManager {
         
         // 커스텀 디코더(날짜 처리 등)가 설정된 client.database.configuration.decoder 사용 권장
         do {
-            return try client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
+            return try supabaseManager.client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
         } catch {
             throw AuthError.plantFailed("식물 정보 등록에는 성공했으나, 데이터를 불러오는 데 실패했습니다.")
         }
