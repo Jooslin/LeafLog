@@ -12,7 +12,7 @@ import Then
 final class CalendarHeaderView: UIView {
     let previousButton = UIButton(configuration: .plain())
     let nextButton = UIButton(configuration: .plain())
-    let dateLabel = UILabel(config: .label16)
+    let dateLabel = UILabel(text: "2026년 4월", config: .label16)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -29,6 +29,12 @@ extension CalendarHeaderView {
     private func setButtonAttributes() {
         previousButton.setImage(.arrowLeft, for: .normal)
         nextButton.setImage(.arrowRight, for: .normal)
+        
+        var config = UIButton.Configuration.plain()
+        config.baseForegroundColor = .black
+        
+        previousButton.configuration = config
+        nextButton.configuration = config
     }
     
     private func setLayout() {
