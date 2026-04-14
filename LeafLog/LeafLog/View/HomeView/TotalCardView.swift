@@ -9,12 +9,7 @@ import UIKit
 import SnapKit
 import Then
 
-final class TotalCardView: BaseCardView {
-    //TODO: 병합 후 수정 필요
-    //    private let cardView = BaseCardView(cornerRadius: 12).then {
-//    $0.backgroundColor = .white
-//}
-    
+final class TotalCardView: BaseCardView {    
     private let imageView = UIImageView().then {
         $0.snp.makeConstraints {
             $0.width.height.equalTo(32)
@@ -25,6 +20,8 @@ final class TotalCardView: BaseCardView {
     init(image: String, text: String) {
 //        super.init(cornerRadius: 12)
         super.init(frame: .zero)
+        
+        backgroundColor = .white
         
         imageView.image = UIImage(named: image)
         label.text = text
