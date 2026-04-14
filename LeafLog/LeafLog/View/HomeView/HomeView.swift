@@ -16,8 +16,8 @@ final class HomeView: UIView {
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
     //TODO: image 추후 변경 필요
-    let totalPlant = TotalCardView(image: "badgeSproutBig", text: "내 식물 N개")
-    let totalWater = TotalCardView(image: "badgeWaterBig", text: "물 준 식물 N개")
+    let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
+    let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
     let emptyView = EmptyPlantView()
     
