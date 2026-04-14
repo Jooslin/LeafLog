@@ -10,71 +10,6 @@ import SnapKit
 import Then
 
 final class CalendarView: UIView {
-    enum Badge: String {
-        case water = "물주기"
-        case grow = "분갈이"
-        case sprout = "비료"
-        case treat = "치료"
-        
-        var smallImage: String {
-            switch self {
-            case .water: "badgeWaterSmall"
-            case .grow: "badgeGrowSmall"
-            case .sprout: "badgeSproutSmall"
-            case .treat: "badgeTreatSmall"
-            }
-        }
-        
-        var bigImage: String {
-            switch self {
-            case .water: "badgeWaterBig"
-            case .grow: "badgeGrowBig"
-            case .sprout: "badgeSproutBig"
-            case .treat: "badgeTreatBig"
-            }
-        }
-        
-        var color: UIColor {
-            switch self {
-            case .water: .subBlue
-            case .grow: .subBrown
-            case .sprout: .primary600
-            case .treat: .subRed
-            }
-        }
-    }
-    
-    nonisolated
-    struct ManageInfoByDate: Hashable {
-        let currentMonth: Bool // 표시되는 달 여부
-        let day: Int
-        let badge: Set<Badge>
-    }
-    
-    nonisolated
-    struct DetailManageInfo: Hashable {
-        let id: UUID // 식물의 uuid
-        let name: String // 식물의 이름(별명)
-        let badge: Badge
-    }
-    
-    enum Section: Int {
-        case calendar = 0
-        case water
-        case grow
-        case sprout
-        case treat
-    }
-    
-    nonisolated
-    enum Item: Hashable {
-        case calendar(ManageInfoByDate)
-        case water(DetailManageInfo)
-        case grow(DetailManageInfo)
-        case sprout(DetailManageInfo)
-        case treat(DetailManageInfo)
-    }
-    
     //MARK: properties
     private let collectionView = CalendarCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
@@ -214,5 +149,79 @@ extension CalendarView {
         }
         
         dataSource.apply(snapshot, animatingDifferences: true)
+    }
+}
+
+//MARK: Badge enum
+extension CalendarView {
+    enum Badge: String {
+        case water = "물주기"
+        case grow = "분갈이"
+        case sprout = "비료"
+        case treat = "치료"
+        
+        var smallImage: String {
+            switch self {
+            case .water: "badgeWaterSmall"
+            case .grow: "badgeGrowSmall"
+            case .sprout: "badgeSproutSmall"
+            case .treat: "badgeTreatSmall"
+            }
+        }
+        
+        var bigImage: String {
+            switch self {
+            case .water: "badgeWaterBig"
+            case .grow: "badgeGrowBig"
+            case .sprout: "badgeSproutBig"
+            case .treat: "badgeTreatBig"
+            }
+        }
+        
+        var color: UIColor {
+            switch self {
+            case .water: .subBlue
+            case .grow: .subBrown
+            case .sprout: .primary600
+            case .treat: .subRed
+            }
+        }
+    }
+}
+
+//MARK: CollectionView - Section, Item
+extension CalendarView {
+    enum Section: Int {
+        case calendar = 0
+        case water
+        case grow
+        case sprout
+        case treat
+    }
+    
+    nonisolated
+    enum Item: Hashable {
+        case calendar(ManageInfoByDate)
+        case water(DetailManageInfo)
+        case grow(DetailManageInfo)
+        case sprout(DetailManageInfo)
+        case treat(DetailManageInfo)
+    }
+}
+
+//MARK: CollectionView - Item Model
+extension CalendarView {
+    nonisolated
+    struct ManageInfoByDate: Hashable {
+        let currentMonth: Bool // 표시되는 달 여부
+        let day: Int
+        let badge: Set<Badge>
+    }
+    
+    nonisolated
+    struct DetailManageInfo: Hashable {
+        let id: UUID // 식물의 uuid
+        let name: String // 식물의 이름(별명)
+        let badge: Badge
     }
 }
