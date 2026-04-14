@@ -18,8 +18,14 @@ final class EmptyPlantView: UIView {
     private let label = UILabel(text: "아직 키우는 식물이 없어요", config: .title18)
     private let subLabel = UILabel(text: "식물을 등록하고 키워보세요.", config: .body14, color: .grayScale600)
     let registerButton = CornerRadius8Button(title: "식물 등록하기", backgroundColor: .lightGreen).then {
-        $0.setImage(.plus, for: .normal)
+        $0.configuration?.image = .plus
+        $0.configuration?.imagePadding = 8
+        $0.configuration?.imagePlacement = .leading
+        
+        $0.configuration?.baseForegroundColor = .primary900
         $0.configuration?.background.cornerRadius = 12
+        
+        $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
     }
     
     override init(frame: CGRect) {

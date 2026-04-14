@@ -20,6 +20,7 @@ class CornerRadius8Button: UIButton {
     enum BackgroundColor {
         case gray
         case lightGreen
+        case lightBlue
 
         fileprivate var color: UIColor {
             switch self {
@@ -27,6 +28,8 @@ class CornerRadius8Button: UIButton {
                 return .grayScale50
             case .lightGreen:
                 return .primary200
+            case .lightBlue:
+                return .subBlue.withAlphaComponent(0.1)
             }
         }
     }
