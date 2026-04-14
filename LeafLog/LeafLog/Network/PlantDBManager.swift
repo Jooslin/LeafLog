@@ -29,13 +29,19 @@ final class PlantDBManager {
             throw AuthError.plantFailed("급수 주기는 1일 이상 365일 이하로 입력해 주세요.")
         }
         
+        // 공백, nil값 보정
+        let trimmedSpeciesName = input.speciesName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let speciesName = (trimmedSpeciesName?.isEmpty ?? true)
+            ? Self.defaultSpeciesName
+            : trimmedSpeciesName ?? Self.defaultSpeciesName
+
         let payload = PlantPayload(
             id: plantID,
             userID: userID,
             category: input.category.rawValue,
             location: input.location?.rawValue,
             nickname: input.nickname?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-            speciesName: input.speciesName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? Self.defaultSpeciesName,
+            speciesName: speciesName,
             imagePath: imagePath,
             wateringIntervalDays: input.wateringIntervalDays,
             lastWateredAt: Self.dateOnlyFormatter.string(from: input.lastWateredAt)
