@@ -90,8 +90,13 @@ extension PlantShelfCell {
                 cards[index].nextDayLabel.text = "\(String(describing: plant.daysToNextWatering))일"
                 cards[index].waterButton.isSelected = plant.didWater
             } else {
-                plants[index].image = .plantAdd
                 cards[index].isHidden = true
+                
+                if index > 0 {
+                    plants[index].image = plants[plants.index(before: index)].image == .plantAdd ? nil : .plantAdd
+                } else {
+                    plants[index].image = .plantAdd
+                } 
             }
         }
     }
