@@ -15,7 +15,7 @@ import UIKit
  button.apply(title: "완료")
  */
 
-class CornerRadius14Button: UIButton {
+class CornerRadius8Button: UIButton {
     enum BackgroundColor {
         case gray
         case lightGreen
