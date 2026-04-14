@@ -11,6 +11,7 @@ enum Badge: String {
     case grow = "분갈이"
     case sprout = "비료"
     case treat = "치료"
+    case sun, cloud, temperature, bug
     
     var smallImage: String {
         switch self {
@@ -18,6 +19,8 @@ enum Badge: String {
         case .grow: "badgeGrowSmall"
         case .sprout: "badgeSproutSmall"
         case .treat: "badgeTreatSmall"
+        case .sun: "badgeSunSmall"
+        default: ""
         }
     }
     
@@ -27,6 +30,10 @@ enum Badge: String {
         case .grow: "badgeGrowBig"
         case .sprout: "badgeSproutBig"
         case .treat: "badgeTreatBig"
+        case .sun: "badgeSunBig"
+        case .cloud: "badgeCloudBig"
+        case .temperature: "badgeTemperatureBig"
+        case .bug: "badgeBugBig"
         }
     }
     
@@ -36,6 +43,7 @@ enum Badge: String {
         case .grow: .subBrown
         case .sprout: .primary600
         case .treat: .subRed
+        default: .black
         }
     }
 }
