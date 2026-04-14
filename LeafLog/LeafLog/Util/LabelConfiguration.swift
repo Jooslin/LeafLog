@@ -8,6 +8,7 @@ import UIKit
 
 struct LabelConfiguration {
     let font: UIFont
+    let textStyle: UIFont.TextStyle
     let color: UIColor
     let lines: Int
 }
@@ -30,32 +31,34 @@ extension LabelConfiguration {
     private static func make(
         size: CGFloat,
         weight: UIFont.Weight,
+        textStyle: UIFont.TextStyle,
         color: UIColor = .label,
         lines: Int = 0
     ) -> LabelConfiguration {
         LabelConfiguration(
             font: .systemFont(ofSize: size, weight: weight),
+            textStyle: textStyle,
             color: color,
             lines: lines
         )
     }
 
-    static let headline24 = make(size: 24, weight: .bold)
-    static let headline20 = make(size: 20, weight: .bold)
-    static let headline18 = make(size: 18, weight: .bold)
-    static let headline16 = make(size: 16, weight: .bold)
+    static let headline24 = make(size: 24, weight: .bold, textStyle: .largeTitle)
+    static let headline20 = make(size: 20, weight: .bold, textStyle: .title1)
+    static let headline18 = make(size: 18, weight: .bold, textStyle: .title2)
+    static let headline16 = make(size: 16, weight: .bold, textStyle: .title3)
 
-    static let body18 = make(size: 18, weight: .regular)
-    static let body16 = make(size: 16, weight: .regular)
-    static let body14 = make(size: 14, weight: .regular)
-    static let body12 = make(size: 12, weight: .regular)
+    static let body18 = make(size: 18, weight: .regular, textStyle: .body)
+    static let body16 = make(size: 16, weight: .regular, textStyle: .body)
+    static let body14 = make(size: 14, weight: .regular, textStyle: .body)
+    static let body12 = make(size: 12, weight: .regular, textStyle: .footnote)
 
-    static let title20 = make(size: 20, weight: .semibold)
-    static let title18 = make(size: 18, weight: .semibold)
-    static let title16 = make(size: 16, weight: .semibold)
-    static let title14 = make(size: 14, weight: .semibold)
+    static let title20 = make(size: 20, weight: .semibold, textStyle: .title2)
+    static let title18 = make(size: 18, weight: .semibold, textStyle: .title3)
+    static let title16 = make(size: 16, weight: .semibold, textStyle: .headline)
+    static let title14 = make(size: 14, weight: .semibold, textStyle: .subheadline)
 
-    static let label16 = make(size: 16, weight: .medium)
-    static let label14 = make(size: 14, weight: .medium)
-    static let label12 = make(size: 12, weight: .medium)
+    static let label16 = make(size: 16, weight: .medium, textStyle: .headline)
+    static let label14 = make(size: 14, weight: .medium, textStyle: .subheadline)
+    static let label12 = make(size: 12, weight: .medium, textStyle: .footnote)
 }

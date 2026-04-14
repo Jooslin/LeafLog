@@ -10,7 +10,7 @@ import RxFlow
 import ReactorKit
 
 final class MyInfoTabFlow: Flow {
-    let navigationController = UINavigationController()
+    private let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
     
@@ -31,6 +31,9 @@ final class MyInfoTabFlow: Flow {
             viewController.reactor = ProfileEditReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+            
+        case .loginRequired:
+            return .end(forwardToParentFlowWithStep: step)
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))

@@ -16,10 +16,13 @@ final class SplashViewController: BaseViewController {
     @Dependency(\.authService) private var authService
     
     private var didStartSessionCheck = false
+    
+    private let logoImageView = UIImageView(image: .launchLogo)
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .white
+        setupUI()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -31,14 +34,22 @@ final class SplashViewController: BaseViewController {
         validateSession()
     }
 
+    private func setupUI() {
+        view.addSubview(logoImageView)
+        
+        logoImageView.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview().inset(64)
+            $0.top.equalToSuperview().inset(265)
+            $0.bottom.equalToSuperview().inset(405)
+        }
+    }
+    
     // 로그인 세션 확인
     private func validateSession() {
         Task {
             let nextStep = await authService.resolveInitialStep()
 
-            await MainActor.run {
-                self.steps.accept(nextStep)
-            }
+            self.steps.accept(nextStep)
         }
     }
 }

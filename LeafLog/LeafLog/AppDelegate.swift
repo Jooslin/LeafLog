@@ -10,6 +10,7 @@ import KakaoSDKCommon
 import GoogleSignIn
 import Firebase
 import Dependencies
+import FirebaseMessaging
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {

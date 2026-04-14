@@ -94,7 +94,7 @@ final class MyPageViewController: BaseViewController, View {
         reactor.pulse(\.$moveToLogin)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.login)
+                self?.steps.accept(AppStep.loginRequired)
             })
             .disposed(by: disposeBag)
 

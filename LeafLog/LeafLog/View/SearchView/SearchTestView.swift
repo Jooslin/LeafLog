@@ -14,7 +14,7 @@ import Then
 
 
 // TODO: 오류 처리
-final class SearchView: BaseViewController, View {
+final class SearchTestView: BaseViewController, View {
     private let filterScrollView = UIScrollView().then {
         $0.showsHorizontalScrollIndicator = false
     }
