@@ -75,16 +75,8 @@ extension HomeView {
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
-            case .title:
-                collectionView.dequeueConfiguredReusableCell(using: titleCellRegistration, for: indexPath, item: item)
-            case .header:
-                collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: item)
-            case .filter:
-                collectionView.dequeueConfiguredReusableCell(using: filterCellRegistartion, for: indexPath, item: item)
-            case .calendar:
-                collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
-            case .water, .grow, .sprout, .treat:
-                collectionView.dequeueConfiguredReusableCell(using: detailCellRegistration, for: indexPath, item: item)
+            case .plant:
+                collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
             default:
                 fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
@@ -120,10 +112,45 @@ extension HomeView {
     
     nonisolated
     struct ShelfPlant: Hashable {
-        let id: UUID // 식물의 uuid
-        let name: String // 식물의 이름(별명)
-        let daysFromLastWatering: Int // 최근 급수일 - N일 전
-        let daysToNextWatering: Int // 다음 급수일 - N일 후
-        let didWater: Bool // 금일 급수 여부
+        let id: UUID? // 식물의 uuid
+        let category: PlantCategory
+        let name: String? // 식물의 이름(별명)
+        let daysFromLastWatering: Int? // 최근 급수일 - N일 전
+        let daysToNextWatering: Int? // 다음 급수일 - N일 후
+        let didWater: Bool? // 금일 급수 여부
+        let isEmpty: Bool // 빈값 여부
+    }
+}
+
+//TODO: 추후 삭제 필요 - 전역 모델 사용
+extension HomeView {
+    enum PlantCategory: String, Codable, CaseIterable {
+        case upright = "직립형"
+        case shrub = "관목형"
+        case vine = "덩굴성"
+        case grass = "풀모양"
+        case rosette = "로제트형"
+        case succulent = "다육형"
+        case other = "기타"
+
+        // 카테고리 별 식물 기본 이미지 (사용자 등록 이미지가 없을 때 대체 이미지)
+        var defaultImageAssetName: String {
+            switch self {
+            case .upright:
+                return "plantCategoryUpright"
+            case .shrub:
+                return "plantCategoryShrub"
+            case .vine:
+                return "plantCategoryVine"
+            case .grass:
+                return "plantCategoryGrass"
+            case .rosette:
+                return "plantCategoryRosette"
+            case .succulent:
+                return "plantCategorySucculent"
+            case .other:
+                return "plantCategoryOther"
+            }
+        }
     }
 }
