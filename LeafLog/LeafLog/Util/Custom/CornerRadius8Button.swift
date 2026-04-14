@@ -56,6 +56,5 @@ class CornerRadius8Button: UIButton {
             return outgoing
         }
         self.configuration = configuration
-        titleLabel?.adjustsFontForContentSizeCategory = true
     }
 }

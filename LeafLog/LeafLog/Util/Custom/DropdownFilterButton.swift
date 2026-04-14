@@ -48,6 +48,5 @@ final class DropdownFilterButton: UIButton {
         }
 
         self.configuration = configuration
-        titleLabel?.adjustsFontForContentSizeCategory = true
     }
 }
