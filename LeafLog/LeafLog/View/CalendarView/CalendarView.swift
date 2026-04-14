@@ -192,7 +192,10 @@ extension CalendarView {
 //MARK: CollectionView - Section, Item
 extension CalendarView {
     enum Section: Int {
-        case calendar = 0
+        case title = 0
+        case header
+        case filter
+        case calendar
         case water
         case grow
         case sprout
@@ -201,6 +204,9 @@ extension CalendarView {
     
     nonisolated
     enum Item: Hashable {
+        case title
+        case header(String)
+        case filter(String)
         case calendar(ManageInfoByDate)
         case water(DetailManageInfo)
         case grow(DetailManageInfo)
