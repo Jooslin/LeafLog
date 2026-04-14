@@ -24,9 +24,9 @@ class CornerRadius8Button: UIButton {
         fileprivate var color: UIColor {
             switch self {
             case .gray:
-                return UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1)
+                return .grayScale50
             case .lightGreen:
-                return UIColor(red: 0.908, green: 0.955, blue: 0.745, alpha: 1)
+                return .primary200
             }
         }
     }

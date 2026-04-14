@@ -33,11 +33,11 @@ final class DropdownFilterButton: UIButton {
             UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
         configuration.imagePlacement = .trailing
         configuration.imagePadding = 4
-        configuration.baseForegroundColor = UIColor(red: 0.35, green: 0.35, blue: 0.35, alpha: 1)
+        configuration.baseForegroundColor = .grayScale500
         configuration.background.backgroundColor = .white
         configuration.background.cornerRadius = 12
         configuration.background.strokeWidth = 1
-        configuration.background.strokeColor = UIColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1)
+        configuration.background.strokeColor = .grayScale100
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
 
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
