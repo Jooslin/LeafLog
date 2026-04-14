@@ -36,9 +36,7 @@ final class SplashViewController: BaseViewController {
         Task {
             let nextStep = await authService.resolveInitialStep()
 
-            await MainActor.run {
-                self.steps.accept(nextStep)
-            }
+            self.steps.accept(nextStep)
         }
     }
 }

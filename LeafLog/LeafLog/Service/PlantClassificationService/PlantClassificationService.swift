@@ -17,6 +17,7 @@ class PlantClassificationService {
         var modelPath: String? {
             switch self {
             case .aiyPlantsV1:
+                // NSDataAsset
                 Bundle.main.path(forResource: "3", ofType: "tflite")
             }
         }
