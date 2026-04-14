@@ -26,6 +26,10 @@ final class EmptyPlantView: UIView {
         $0.configuration?.background.cornerRadius = 12
         
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+        
+        $0.snp.makeConstraints {
+            $0.height.equalTo(36)
+        }
     }
     
     override init(frame: CGRect) {
