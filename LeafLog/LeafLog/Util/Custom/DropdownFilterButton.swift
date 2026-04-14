@@ -25,7 +25,7 @@ final class DropdownFilterButton: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func apply(title: String) {
+    func apply(title: String, isSelected: Bool = false) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
         configuration.image = UIImage(systemName: "chevron.down")
@@ -33,11 +33,11 @@ final class DropdownFilterButton: UIButton {
             UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
         configuration.imagePlacement = .trailing
         configuration.imagePadding = 4
-        configuration.baseForegroundColor = .grayScale500
-        configuration.background.backgroundColor = .white
+        configuration.baseForegroundColor = isSelected ? .primary700 : .grayScale500
+        configuration.background.backgroundColor = isSelected ? .primary200 : .white
         configuration.background.cornerRadius = 12
         configuration.background.strokeWidth = 1
-        configuration.background.strokeColor = .grayScale100
+        configuration.background.strokeColor = isSelected ? .primary700 : .grayScale100
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
 
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in

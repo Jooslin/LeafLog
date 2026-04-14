@@ -118,7 +118,10 @@ final class SearchViewController: BaseViewController, View {
             let options = state.filterOptions[kind] ?? []
             let selectedOption = state.filterState.option(for: kind)
 
-            button.apply(title: selectedOption?.name ?? kind.title)
+            button.apply(
+                title: selectedOption?.name ?? kind.title,
+                isSelected: selectedOption != nil
+            )
             
             // 각 옵션을 메뉴 액션으로
             let actions = options.map { option in
