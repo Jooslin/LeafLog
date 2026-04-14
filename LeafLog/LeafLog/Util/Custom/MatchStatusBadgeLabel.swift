@@ -26,22 +26,22 @@ final class MatchStatusBadgeLabel: UILabel {
         fileprivate var textColor: UIColor {
             switch self {
             case .high:
-                return UIColor(red: 0.169, green: 0.498, blue: 1, alpha: 1)
+                return .subBlue
             case .medium:
-                return UIColor(red: 0.29, green: 0.29, blue: 0.29, alpha: 1)
+                return .grayScale700
             case .low:
-                return UIColor(red: 0.942, green: 0.417, blue: 0.417, alpha: 1)
+                return .subRed
             }
         }
 
         fileprivate var backgroundColor: UIColor {
             switch self {
             case .high:
-                return UIColor(red: 0.169, green: 0.498, blue: 1, alpha: 0.1)
+                return .subBlue.withAlphaComponent(0.1)
             case .medium:
                 return .grayScale50
             case .low:
-                return UIColor(red: 0.941, green: 0.416, blue: 0.416, alpha: 0.1)
+                return .subRed.withAlphaComponent(0.1)
             }
         }
 
@@ -62,7 +62,9 @@ final class MatchStatusBadgeLabel: UILabel {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        font = .systemFont(ofSize: 12, weight: .medium)
+        let baseFont = UIFont.systemFont(ofSize: 12, weight: .medium)
+        font = UIFontMetrics(forTextStyle: .footnote).scaledFont(for: baseFont)
+        adjustsFontForContentSizeCategory = true
         layer.cornerRadius = 8
         layer.masksToBounds = true
         numberOfLines = 1
