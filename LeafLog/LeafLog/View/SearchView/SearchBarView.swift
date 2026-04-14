@@ -50,7 +50,7 @@ final class SearchBarView: UIView {
         backgroundColor = .white
         layer.cornerRadius = 12
         layer.borderWidth = 1
-        layer.borderColor = UIColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1).cgColor
+        layer.borderColor = UIColor.grayScale100.cgColor
 
         addSubview(searchIconImageView)
         addSubview(textField)
