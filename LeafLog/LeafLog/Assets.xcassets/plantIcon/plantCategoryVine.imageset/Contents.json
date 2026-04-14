@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "plantCategoryVine.svg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
