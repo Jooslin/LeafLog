@@ -14,9 +14,9 @@ final class LoginView: UIView {
     
     // MARK: - UI Components
     
-    private let logoImageView = UIImageView(image: UIImage(named: "launch_logo"))
+    private let logoImageView = UIImageView(image: .launchLogo)
     
-    let logoLabel = UILabel(text: "나만의 식물 다이어리", config: .headline18, color: UIColor(named: "#4A4A4A"))
+    let logoLabel = UILabel(text: "나만의 식물 다이어리", config: .headline18, color: .grayScale700)
     
     let googleLoginButton = UIButton().then {
         var config = UIButton.Configuration.plain()
@@ -25,7 +25,7 @@ final class LoginView: UIView {
         config.attributedTitle = titleAttr
         config.baseForegroundColor = UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1)
         config.image = UIImage(named: "google")
-        config.imagePadding = 8
+        config.imagePadding = 4
         config.imagePlacement = .leading
         config.background.backgroundColor = .white
         config.background.cornerRadius = 8
@@ -42,7 +42,7 @@ final class LoginView: UIView {
         config.attributedTitle = titleAttr
         config.baseForegroundColor = UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1)
         config.image = UIImage(named: "kakao")
-        config.imagePadding = 8
+        config.imagePadding = 4
         config.background.backgroundColor = UIColor(red: 1, green: 0.9, blue: 0, alpha: 1)
         config.background.cornerRadius = 8
         
@@ -51,7 +51,7 @@ final class LoginView: UIView {
     
     let appleLoginButton = ASAuthorizationAppleIDButton(authorizationButtonType: .signIn, authorizationButtonStyle: .black)
     
-    let privacyLabel = UILabel(text: "시작하면 이용약관 및 개인정보처리방침에 동의하게 됩니다.", config: .label12, color: UIColor(named: "#303030"))
+    let privacyLabel = UILabel(text: "시작하면 이용약관 및 개인정보처리방침에 동의하게 됩니다.", config: .label12, color: .grayScale800)
     
     
     // MARK: -  Initialization
@@ -70,23 +70,25 @@ final class LoginView: UIView {
         
         privacyLabel.snp.makeConstraints {
             $0.centerX.equalToSuperview()
-            $0.bottom.equalToSuperview().inset(70.5159)
+            $0.bottom.equalToSuperview().inset(70)
         }
         
         googleLoginButton.snp.makeConstraints {
             $0.centerX.equalToSuperview()
             $0.height.equalTo(50)
-            $0.width.equalTo(345)
+            $0.horizontalEdges.equalToSuperview().inset(15)
             $0.bottom.equalTo(privacyLabel.snp.top).offset(-106)
         }
         
         kakaoLoginButton.snp.makeConstraints {
-            $0.centerX.height.width.equalTo(googleLoginButton)
+            $0.centerX.height.equalTo(googleLoginButton)
+            $0.horizontalEdges.equalTo(googleLoginButton)
             $0.bottom.equalTo(googleLoginButton.snp.top).offset(-16)
         }
         
         appleLoginButton.snp.makeConstraints {
-            $0.centerX.height.width.equalTo(googleLoginButton)
+            $0.centerX.height.equalTo(googleLoginButton)
+            $0.horizontalEdges.equalToSuperview().inset(15)
             $0.bottom.equalTo(kakaoLoginButton.snp.top).offset(-16)
         }
         
