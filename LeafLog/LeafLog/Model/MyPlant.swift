@@ -50,8 +50,8 @@ struct PlantCreateInput {
     let id: UUID
     let category: PlantCategory
     let location: PlantLocation
+    let nickname: String?
     let speciesName: String?
-    let speciesContentNumber: String?
     let imagePath: String?
     let wateringIntervalDays: Int?
     let lastWateredAt: Date?
@@ -60,8 +60,8 @@ struct PlantCreateInput {
         id: UUID = UUID(),
         category: PlantCategory,
         location: PlantLocation,
+        nickname: String?,
         speciesName: String?,
-        speciesContentNumber: String?,
         imagePath: String?,
         wateringIntervalDays: Int?,
         lastWateredAt: Date?
@@ -69,8 +69,8 @@ struct PlantCreateInput {
         self.id = id
         self.category = category
         self.location = location
+        self.nickname = nickname
         self.speciesName = speciesName
-        self.speciesContentNumber = speciesContentNumber
         self.imagePath = imagePath
         self.wateringIntervalDays = wateringIntervalDays
         self.lastWateredAt = lastWateredAt
@@ -83,11 +83,13 @@ struct MyPlant: Codable {
     let userID: UUID
     let category: PlantCategory
     let location: PlantLocation
+    let nickname: String?
     let speciesName: String
-    let speciesContentNumber: String? // 검색 API와 연결되는 식물 식별 값
     let imagePath: String?
     let wateringIntervalDays: Int?
     let lastWateredAt: Date?
+    let healthStatus: String?
+    let guideEnabled: Bool?
     let createdAt: Date?
     let updatedAt: Date?
 
@@ -100,11 +102,13 @@ struct MyPlant: Codable {
         case userID = "user_id"
         case category
         case location
+        case nickname
         case speciesName = "species_name"
-        case speciesContentNumber = "species_content_number"
         case imagePath = "image_path"
         case wateringIntervalDays = "watering_interval_days"
         case lastWateredAt = "last_watered_at"
+        case healthStatus = "health_status"
+        case guideEnabled = "guide_enabled"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
