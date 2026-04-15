@@ -46,16 +46,34 @@ final class MyPageViewController: BaseViewController, View {
 
         // 로그아웃
         myPageView.logoutButton.rx.tap
-            .subscribe(onNext: { [weak self, weak reactor] in
-                self?.presentUserSettingAlert(reactor: reactor, title: "로그아웃", message: "로그아웃 하시겠습니까?", okMessage: "로그아웃", action: .logoutTapped)
-            })
+            .bind { [weak self, weak reactor] in
+                self?.steps.accept(
+                    AppStep.confirmAlert(
+                        title: "로그아웃",
+                        message: "로그아웃 하시겠습니까?",
+                        okTitle: "로그아웃",
+                        onConfirm: {
+                            reactor?.action.onNext(.logoutTapped)
+                        }
+                    )
+                )
+            }
             .disposed(by: disposeBag)
 
         // 회원 탈퇴
         myPageView.withdrawalButton.rx.tap
-            .subscribe(onNext: { [weak self, weak reactor] in
-                self?.presentUserSettingAlert(reactor: reactor, title: "회원 탈퇴", message: "정말 탈퇴 하시겠습니까?", okMessage: "탈퇴", action: .withdrawalTapped)
-            })
+            .bind { [weak self, weak reactor] in
+                self?.steps.accept(
+                    AppStep.confirmAlert(
+                        title: "회원 탈퇴",
+                        message: "정말 탈퇴 하시겠습니까?",
+                        okTitle: "탈퇴",
+                        onConfirm: {
+                            reactor?.action.onNext(.withdrawalTapped)
+                        }
+                    )
+                )
+            }
             .disposed(by: disposeBag)
         
         // 문의하기 버튼
@@ -162,21 +180,6 @@ final class MyPageViewController: BaseViewController, View {
                 // 이미지 로딩 실패 시 기본 이미지를 그대로 유지
             }
         }
-    }
-
-    private func presentUserSettingAlert(reactor: MyPageReactor?, title: String, message: String, okMessage: String, action: MyPageReactor.Action) {
-        let alert = UIAlertController(
-            title: title,
-            message: message,
-            preferredStyle: .alert
-        )
-
-        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
-        alert.addAction(UIAlertAction(title: okMessage, style: .destructive) { _ in
-            reactor?.action.onNext(action)
-        })
-
-        present(alert, animated: true)
     }
 }
 

@@ -32,6 +32,13 @@ enum AppStep: Step {
     case alert(String, String) // (타이틀, 메세지)
     case pageBack
     
+    case confirmAlert(
+        title: String,
+        message: String,
+        okTitle: String,
+        onConfirm: () -> Void
+    )
+    
     // 예시용
     case pushButtonTapped
 }

@@ -32,6 +32,21 @@ final class MyInfoTabFlow: Flow {
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
+        case let .confirmAlert(title, message, okTitle, onConfirm):
+            let alert = UIAlertController(
+                title: title,
+                message: message,
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+            alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
+                onConfirm()
+            })
+
+            navigationController.present(alert, animated: true)
+            return .none
+
         case .loginRequired:
             return .end(forwardToParentFlowWithStep: step)
             
