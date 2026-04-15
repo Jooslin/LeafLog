@@ -15,7 +15,7 @@ final class PlantDBManager {
     
     private init() {}
     
-    /// DB의 plants 테이블에 새 레코드를 Insert
+    // MARK: - DB의 plants 테이블에 새 레코드를 Insert
     func createPlant(plantID: UUID, userID: UUID, imagePath: String?, input: PlantCreateInput) async throws -> MyPlant {
         
         // 유효성 검사: DB 제약조건(>= 1 and <= 365)
@@ -26,9 +26,9 @@ final class PlantDBManager {
         // 공백, nil값 보정
         let trimmedSpeciesName = input.speciesName?.trimmingCharacters(in: .whitespacesAndNewlines)
         let speciesName = (trimmedSpeciesName?.isEmpty ?? true)
-            ? Self.defaultSpeciesName
-            : trimmedSpeciesName ?? Self.defaultSpeciesName
-
+        ? Self.defaultSpeciesName
+        : trimmedSpeciesName ?? Self.defaultSpeciesName
+        
         let payload = PlantPayload(
             id: plantID,
             userID: userID,
@@ -83,7 +83,81 @@ final class PlantDBManager {
             case lastWateredAt = "last_watered_at"
         }
     }
+    
+    
+    // MARK: - DB의 plants 테이블에 기존 레코드를 Update
+    func updatePlant(plantID: UUID, imagePath: String?, input: PlantUpdateInput) async throws -> MyPlant {
+        
+        // 유효성 검사
+        guard (1...365).contains(input.wateringIntervalDays) else {
+            throw AuthError.plantFailed("급수 주기는 1일 이상 365일 이하로 입력해 주세요.")
+        }
+        
+        // 공백, nil값 보정
+        let trimmedSpeciesName = input.speciesName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let speciesName = (trimmedSpeciesName?.isEmpty ?? true) ? Self.defaultSpeciesName : trimmedSpeciesName ?? Self.defaultSpeciesName
+        
+        // 업데이트용 페이로드 생성
+        let payload = PlantUpdatePayload(
+            category: input.category.rawValue,
+            location: input.location?.rawValue,
+            nickname: input.nickname?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            speciesName: speciesName,
+            imagePath: imagePath,
+            wateringIntervalDays: input.wateringIntervalDays,
+            lastWateredAt: input.lastWateredAt
+        )
+        
+        // Supabase Update 실행
+        let response = try await supabaseManager.client
+            .from("plants")
+            .update(payload)
+            .eq("id", value: plantID) // 수정할 식물의 ID
+            .select()
+            .single()
+            .execute()
+        
+        do {
+            return try supabaseManager.client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
+        } catch {
+            throw AuthError.plantFailed("식물 정보 수정에는 성공했으나, 데이터를 불러오는 데 실패했습니다.")
+        }
+    }
+    
+    
+    // MARK: - Update Payload Model
+    /// Supabase Update 전용 구조체 (id, user_id 제외)
+    private struct PlantUpdatePayload: Encodable {
+        let category: String
+        let location: String?
+        let nickname: String
+        let speciesName: String
+        let imagePath: String?
+        let wateringIntervalDays: Int
+        let lastWateredAt: Date
+        
+        enum CodingKeys: String, CodingKey {
+            case category
+            case location
+            case nickname
+            case speciesName = "species_name"
+            case imagePath = "image_path"
+            case wateringIntervalDays = "watering_interval_days"
+            case lastWateredAt = "last_watered_at"
+        }
+    }
+    
+    // MARK: - DB의 plants 테이블에서 특정 식물 레코드를 삭제
+    func deletePlant(plantID: UUID) async throws {
+        try await supabaseManager.client
+            .from("plants")
+            .delete() // 삭제 명령어
+            .eq("id", value: plantID) // 삭제할 식물의 ID
+            .execute()
+    }
 }
+
+
 
 // MARK: - Dependencies
 extension PlantDBManager: DependencyKey {
