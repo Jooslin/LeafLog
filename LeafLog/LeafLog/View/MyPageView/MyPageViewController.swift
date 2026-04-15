@@ -47,14 +47,14 @@ final class MyPageViewController: BaseViewController, View {
         // 로그아웃
         myPageView.logoutButton.rx.tap
             .subscribe(onNext: { [weak self, weak reactor] in
-                self?.UserSettingAlert(reactor: reactor, title: "로그아웃", message: "로그아웃 하시겠습니까?", okMessage: "로그아웃", action: .logoutTapped)
+                self?.presentUserSettingAlert(reactor: reactor, title: "로그아웃", message: "로그아웃 하시겠습니까?", okMessage: "로그아웃", action: .logoutTapped)
             })
             .disposed(by: disposeBag)
 
         // 회원 탈퇴
         myPageView.withdrawalButton.rx.tap
             .subscribe(onNext: { [weak self, weak reactor] in
-                self?.UserSettingAlert(reactor: reactor, title: "회원 탈퇴", message: "정말 탈퇴 하시겠습니까?", okMessage: "탈퇴", action: .withdrawalTapped)
+                self?.presentUserSettingAlert(reactor: reactor, title: "회원 탈퇴", message: "정말 탈퇴 하시겠습니까?", okMessage: "탈퇴", action: .withdrawalTapped)
             })
             .disposed(by: disposeBag)
         
