@@ -22,4 +22,10 @@ class CameraPreview: UIView {
     var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         return layer as! AVCaptureVideoPreviewLayer
     }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        videoPreviewLayer.frame = bounds // 오토레이아웃 설정이 모두 끝난 크기로 레이어 크기 설정
+        videoPreviewLayer.videoGravity = .resizeAspectFill
+    }
 }

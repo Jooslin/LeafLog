@@ -41,8 +41,7 @@ class CameraClassificationView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
-        setCameraPreview()
+
         setLayout()
     }
     
@@ -57,11 +56,6 @@ class CameraClassificationView: UIView {
 }
 
 extension CameraClassificationView {
-    private func setCameraPreview() {
-        cameraPreview.frame = layer.bounds
-        cameraPreview.videoPreviewLayer.videoGravity = .resizeAspectFill
-    }
-    
     private func setLayout() {
         
         addSubview(cameraPreview)

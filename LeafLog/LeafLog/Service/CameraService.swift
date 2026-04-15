@@ -11,15 +11,15 @@ import UIKit
 import Dependencies
 
 protocol CameraServiceProtocol {
-    func checkCameraAuthorization() throws
+    func checkCameraAuthorization() async throws
     func connectSession(preview: CameraPreview)
     func startSession()
 }
 
 class CameraServicePreview: CameraServiceProtocol {
-    func startSession() {}
-    func connectSession(preview: CameraPreview) { }
     func checkCameraAuthorization() {}
+    func startSession() {}
+    func connectSession(preview: CameraPreview) {}
 }
 
 // 프로토콜화
@@ -64,23 +64,26 @@ class CameraService: CameraServiceProtocol {
         }
     }
     
-    func checkCameraAuthorization() throws {
+    func checkCameraAuthorization() async throws {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            try setupSession()
         case .notDetermined:
-            Task {
-                let granted = await AVCaptureDevice.requestAccess(for: .video)
-                
-                if granted {
-                    try setupSession()
-                } else {
-                    print("권한 거절")
-                }
-            }
+            try await requestCameraAuthorization()
+            
+        case .denied, .restricted:
+            throw CameraError.authorizationDenied
             
         default:
-            print("권한 거절")
+            break
+        }
+    }
+    
+    private func requestCameraAuthorization() async throws {
+        let granted = await AVCaptureDevice.requestAccess(for: .video)
+        
+        if granted {
+            try setupSession()
+        } else {
+            throw CameraError.authorizationDenied
         }
     }
     
@@ -92,13 +95,6 @@ class CameraService: CameraServiceProtocol {
     
     func connectSession(preview: CameraPreview) {
         preview.videoPreviewLayer.session = session
-    }
-}
-
-//MARK: Error 타입
-extension CameraService {
-    enum CameraError: Error {
-        case sessionSettingFailed
     }
 }
 
