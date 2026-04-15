@@ -17,6 +17,19 @@ class CameraClassificationView: UIView {
     let cameraPreview = CameraPreview()
     let cameraFrame = CAShapeLayer()
     
+    let guideBackground = BaseCardView(cornerRadius: 8).then {
+        $0.backgroundColor = .white.withAlphaComponent(0.6)       
+    }
+    
+    let guideLabel = UILabel(
+        text: """
+            카메라가 식물을 정확히 찾지 못했어요.
+            식물이 잘 보이도록 다시 촬영해 주세요.
+            """,
+        config: .label14,
+        color: .grayScale800
+    )
+    
     //TODO: 병합 후 주석 해제
 //    let shootButton = BottomSaveButton(title: "촬영하기")
     let shootButton = UIButton(configuration: .filled()).then {
@@ -45,7 +58,10 @@ extension CameraClassificationView {
         addSubview(cameraPreview)
         layer.addSublayer(cameraFrame)
         addSubview(titleView)
+        addSubview(guideBackground)
         addSubview(shootButton)
+        
+        guideBackground.addSubview(guideLabel)
         
         cameraPreview.snp.makeConstraints {
             $0.edges.equalToSuperview()
@@ -56,10 +72,21 @@ extension CameraClassificationView {
             $0.top.equalTo(safeAreaLayoutGuide)
         }
         
+        guideBackground.snp.makeConstraints {
+            $0.bottom.equalTo(shootButton.snp.top).offset(-32)
+//            $0.horizontalEdges.equalToSuperview().inset(49)
+            $0.centerX.equalToSuperview()
+        }
+        
         shootButton.snp.makeConstraints {
             $0.bottom.equalTo(safeAreaLayoutGuide).inset(24)
             $0.horizontalEdges.equalToSuperview().inset(24)
             $0.height.equalTo(48)
+        }
+        
+        guideLabel.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview().inset(16)
+            $0.verticalEdges.equalToSuperview().inset(8)
         }
     }
     
