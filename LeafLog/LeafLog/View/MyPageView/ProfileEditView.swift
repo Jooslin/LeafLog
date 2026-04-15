@@ -30,10 +30,7 @@ final class ProfileEditView: UIView {
     }
     
     // 이름
-    private let nameTitleLabel = UILabel().then {
-        $0.text = "이름"
-        $0.apply(.title14, color: .black)
-    }
+    private let nameTitleLabel = UILabel(text: "이름", config: .title14, color: .black)
     
     let nameTextField = UITextField().then {
         $0.placeholder = "이름을 입력해주세요"
@@ -48,10 +45,7 @@ final class ProfileEditView: UIView {
     
     
     // 로그인 정보 섹션
-    private let loginInfoTitleLabel = UILabel().then {
-        $0.text = "로그인 정보"
-        $0.apply(.title14, color: .black)
-    }
+    private let loginInfoTitleLabel = UILabel(text: "로그인 정보", config: .title14, color: .black)
     
     private let loginInfoContainerView = UIView().then {
         $0.layer.cornerRadius = 12
@@ -66,13 +60,9 @@ final class ProfileEditView: UIView {
         $0.clipsToBounds = true
     }
     
-    let providerValueLabel = UILabel().then {
-        $0.apply(.title16, color: .black)
-    }
+    let providerValueLabel = UILabel(config: .title16, color: .black)
     
-    let providerDescriptionLabel = UILabel().then {
-        $0.apply(.body14, color: .grayScale600)
-    }
+    let providerDescriptionLabel = UILabel(config: .body14, color: .grayScale600)
     
     let saveButton = BottomSaveButton(title: "수정하기")
     

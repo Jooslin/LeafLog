@@ -50,13 +50,9 @@ final class MyPageView: UIView {
         $0.image = .userEmpty
     }
     
-    let nicknameLabel = UILabel().then {
-        $0.apply(.title16, color: .black, lines: 1)
-    }
+    let nicknameLabel = UILabel(config: .title16, color: .black, lines: 1)
     
-    let emailLabel = UILabel().then {
-        $0.apply(.label14, color: .grayScale600, lines: 1)
-    }
+    let emailLabel = UILabel(config: .label14, color: .grayScale600, lines: 1)
     
     let editProfileButton = UIButton(type: .system).then {
         $0.backgroundColor = .clear
@@ -70,8 +66,7 @@ final class MyPageView: UIView {
         $0.isOn = true
     }
     
-    let versionValueLabel = UILabel().then {
-        $0.apply(.body14, color: .black)
+    let versionValueLabel = UILabel(config: .body14, color: .black).then {
         $0.textAlignment = .right
     }
     
@@ -214,10 +209,7 @@ final class MyPageView: UIView {
     
     // MARK: - Component Builders
     private func makeSectionTitle(_ text: String) -> UIView {
-        let label = UILabel().then {
-            $0.text = text
-            $0.apply(.title14, color: .black)
-        }
+        let label = UILabel(text: text, config: .title14, color: .black)
         return label
     }
     
@@ -225,10 +217,8 @@ final class MyPageView: UIView {
         let rowView = UIView()
         rowView.snp.makeConstraints { $0.height.equalTo(48) }
         
-        let titleLabel = UILabel().then {
-            $0.text = title
-            $0.apply(.label14, color: titleColor)
-        }
+        let titleLabel = UILabel(text: title, config: .label14, color: titleColor)
+        
         rowView.addSubview(titleLabel)
         titleLabel.snp.makeConstraints {
             $0.leading.centerY.equalToSuperview()
