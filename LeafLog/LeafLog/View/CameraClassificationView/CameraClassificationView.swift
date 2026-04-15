@@ -17,6 +17,12 @@ class CameraClassificationView: UIView {
     let cameraPreview = CameraPreview()
     let cameraFrame = CAShapeLayer()
     
+    //TODO: 병합 후 주석 해제
+//    let shootButton = BottomSaveButton(title: "촬영하기")
+    let shootButton = UIButton(configuration: .filled()).then {
+        $0.setTitle("촬영하기", for: .normal)
+    }
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -39,6 +45,7 @@ extension CameraClassificationView {
         addSubview(cameraPreview)
         layer.addSublayer(cameraFrame)
         addSubview(titleView)
+        addSubview(shootButton)
         
         cameraPreview.snp.makeConstraints {
             $0.edges.equalToSuperview()
@@ -47,6 +54,12 @@ extension CameraClassificationView {
         titleView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
             $0.top.equalTo(safeAreaLayoutGuide)
+        }
+        
+        shootButton.snp.makeConstraints {
+            $0.bottom.equalTo(safeAreaLayoutGuide).inset(24)
+            $0.horizontalEdges.equalToSuperview().inset(24)
+            $0.height.equalTo(48)
         }
     }
     
