@@ -10,12 +10,14 @@ import SnapKit
 import Then
 
 final class PlantLabelCardView: BaseCardView {
-    let nameLabel = UILabel(text: "", config: .label14)
+    let nameLabel = UILabel(text: "", config: .label14, lines: 1).then {
+        $0.textAlignment = .center
+    }
     
-    private let recentLabel = UILabel(text: "최근 급수", config: .body12, color: .grayScale600)
-    let recentDayLabel = UILabel(text: "N일 전", config: .body12, color: .subBlue)
-    private let nextLabel = UILabel(text: "다음 급수까지", config: .label12, color: .grayScale800)
-    let nextDayLabel = UILabel(text: "N일", config: .label12, color: .primary700)
+    private let recentLabel = UILabel(text: "최근 급수", config: .body12, color: .grayScale600, lines: 1)
+    let recentDayLabel = UILabel(text: "N일 전", config: .body12, color: .subBlue, lines: 1)
+    private let nextLabel = UILabel(text: "다음 급수까지", config: .label12, color: .grayScale800, lines: 1)
+    let nextDayLabel = UILabel(text: "N일", config: .label12, color: .primary700, lines: 1)
     
     let waterButton = CornerRadius8Button(title: "물 줬어요", backgroundColor: .lightBlue).then {
         $0.snp.makeConstraints {
@@ -52,12 +54,12 @@ extension PlantLabelCardView {
         
         recentStack.snp.makeConstraints {
             $0.top.equalTo(nameLabel.snp.bottom).offset(4)
-            $0.horizontalEdges.equalToSuperview().inset(12)
+            $0.centerX.equalToSuperview()
         }
         
         nextStack.snp.makeConstraints {
             $0.top.equalTo(recentStack.snp.bottom)
-            $0.horizontalEdges.equalToSuperview().inset(8)
+            $0.centerX.equalToSuperview()
         }
         
         waterButton.snp.makeConstraints {
@@ -72,8 +74,8 @@ extension PlantLabelCardView {
             $0.spacing = 2
         }
         
-        views[0].setContentHuggingPriority(.defaultLow, for: .horizontal)
-        views[0].setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        views[1].setContentHuggingPriority(.required, for: .horizontal)
+        views[1].setContentCompressionResistancePriority(.required, for: .horizontal)
         
         return stackView
     }
