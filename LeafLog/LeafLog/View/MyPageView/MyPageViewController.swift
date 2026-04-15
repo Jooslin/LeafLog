@@ -164,7 +164,7 @@ final class MyPageViewController: BaseViewController, View {
         }
     }
 
-    private func UserSettingAlert(reactor: MyPageReactor?, title: String, message: String, okMessage: String, action: MyPageReactor.Action?) {
+    private func userSettingAlert(reactor: MyPageReactor?, title: String, message: String, okMessage: String, action: MyPageReactor.Action) {
         let alert = UIAlertController(
             title: title,
             message: message,
@@ -173,7 +173,7 @@ final class MyPageViewController: BaseViewController, View {
 
         alert.addAction(UIAlertAction(title: "취소", style: .cancel))
         alert.addAction(UIAlertAction(title: okMessage, style: .destructive) { _ in
-            reactor?.action.onNext(action!)
+            reactor?.action.onNext(action)
         })
 
         present(alert, animated: true)
