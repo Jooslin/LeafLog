@@ -114,7 +114,7 @@ extension SupabaseManager {
     // Storage에서 식물 이미지 삭제
     func deletePlantImage(path: String) async throws {
         try await client.storage
-            .from("plant-images")
+            .from(StorageBucket.plantImages)
             .remove(paths: [path])
     }
 
