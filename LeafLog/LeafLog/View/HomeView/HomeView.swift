@@ -85,7 +85,7 @@ extension HomeView {
             case .plant:
                 collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
             default:
-                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+                fatalError("PlantCollectionView: 유효하지 않은 섹션입니다.")
             }
         }
         

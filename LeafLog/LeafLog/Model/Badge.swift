@@ -20,7 +20,7 @@ enum Badge: String {
         case .sprout: "badgeSproutSmall"
         case .treat: "badgeTreatSmall"
         case .sun: "badgeSunSmall"
-        default: ""
+        case .cloud, .temperature, .bug: ""
         }
     }
     
@@ -43,7 +43,7 @@ enum Badge: String {
         case .grow: .subBrown
         case .sprout: .primary600
         case .treat: .subRed
-        default: .black
+        case .sun, .cloud, .temperature, .bug: .black
         }
     }
 }
