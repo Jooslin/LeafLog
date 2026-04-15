@@ -101,10 +101,9 @@ final class SearchInfoView: UIView {
                 ]
             )
         )
-
-        [growthSection, lightSection].forEach {
-            contentStackView.addArrangedSubview($0)
-        }
+        
+        contentStackView.addArrangedSubview(growthSection)
+        contentStackView.addArrangedSubview(lightSection)
     }
 }
 
@@ -217,6 +216,12 @@ private final class SearchInfoImageRowView: UIView {
             $0.trailing.equalToSuperview()
             $0.centerY.equalTo(titleLabel)
         }
+        
+        // 크기 확실하게 해주기
+        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        descriptionLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        descriptionLabel.lineBreakMode = .byTruncatingTail
     }
 }
 

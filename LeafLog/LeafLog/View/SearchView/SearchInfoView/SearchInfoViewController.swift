@@ -39,7 +39,7 @@ final class SearchInfoViewController: UIViewController {
         cardContainerView.snp.makeConstraints {
             $0.centerY.equalToSuperview().priority(750)
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.verticalEdges.greaterThanOrEqualTo(view.safeAreaLayoutGuide).inset(32)
+            $0.verticalEdges.greaterThanOrEqualTo(view.safeAreaLayoutGuide).inset(65)
         }
 
         infoView.snp.makeConstraints {
