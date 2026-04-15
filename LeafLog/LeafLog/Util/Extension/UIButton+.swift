@@ -29,7 +29,7 @@ extension UIButton {
         title: String,
         textStyle: UIFont.TextStyle = .subheadline
     ) {
-        self.init(type: .system)
+        self.init(frame: .zero)
 
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
