@@ -25,7 +25,7 @@ import UIKit
 enum AppButtonStyle {
     case sSize
     case mSize
-    case LSize
+    case lSize
 
     var normalTextColor: UIColor {
         switch self {
