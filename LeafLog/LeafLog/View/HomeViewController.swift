@@ -20,7 +20,8 @@ final class HomeViewController: BaseViewController {
         navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
         let sample = sampled()
-        homeView.setSnapshot([.plant: sample])
+        let single = singleSample()
+        homeView.setSnapshot([.plant: single])
     }
 }
 
@@ -89,5 +90,77 @@ extension HomeViewController {
         // 4. 스냅샷 등에 사용하기 위한 배열 예시
         let shelfItems: [HomeView.Item] = [fullShelf, partialShelf2, partialShelf1]
         return shelfItems
+    }
+    
+    func singleSample() -> [HomeView.Item] {
+        // 1. 실제 식물 정보가 들어있는 single 아이템
+        let singlePlant: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: UUID(),
+            category: .shrub,
+            name: "로즈마리",
+            daysFromLastWatering: 2,
+            daysToNextWatering: 3,
+            didWater: false,
+            isAddButton: nil
+        ))
+
+        // 2. 식물 추가 버튼 역할을 하는 아이템 (isAddButton 사용)
+        let addBottonItem: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: nil,
+            category: nil,
+            name: nil,
+            daysFromLastWatering: nil,
+            daysToNextWatering: nil,
+            didWater: nil,
+            isAddButton: true
+        ))
+
+        // 3. 아무것도 정보가 없는 완전 빈 아이템 (PlaceHolder용)
+        let emptyItem: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: UUID(),
+            category: nil,
+            name: nil,
+            daysFromLastWatering: nil,
+            daysToNextWatering: nil,
+            didWater: nil,
+            isAddButton: false
+        ))
+        
+        let emptyItem2: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: UUID(),
+            category: nil,
+            name: nil,
+            daysFromLastWatering: nil,
+            daysToNextWatering: nil,
+            didWater: nil,
+            isAddButton: false
+        ))
+
+        // 1. 덩굴성 식물 (아이비) - 오늘 물주기 완료함
+        let ivyPlant: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: UUID(),
+            category: .vine,
+            name: "잉글리쉬 아이비",
+            daysFromLastWatering: 0, // 오늘 물줌
+            daysToNextWatering: 7,
+            didWater: true,
+            isAddButton: nil
+        ))
+
+        // 2. 다육형 식물 (선인장) - 물 줄 때가 다 되어감
+        let cactusPlant: HomeView.Item = .single(HomeView.SingleShelfPlant(
+            id: UUID(),
+            category: .succulent,
+            name: "황금사",
+            daysFromLastWatering: 20,
+            daysToNextWatering: 1, // 내일 물주기
+            didWater: false,
+            isAddButton: nil
+        ))
+
+        
+        // 활용 예시 (스냅샷 전송 시)
+        let items: [HomeView.Item] = [singlePlant, ivyPlant, cactusPlant, addBottonItem, emptyItem, emptyItem2]
+        return items
     }
 }

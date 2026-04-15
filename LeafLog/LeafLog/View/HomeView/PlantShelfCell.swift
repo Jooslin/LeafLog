@@ -46,13 +46,41 @@ extension PlantShelfCell {
                 $0.width.height.equalTo(96)
             }
         }
+        
+        cards.forEach {
+            $0.snp.makeConstraints {
+                $0.width.equalTo(88)
+            }
+        }
+    }
+    
+    private func generateStackView() -> UIStackView {
+        let verticals = zip(plants, cards).map {
+            generateVerticalStack(views: [$0.0, $0.1])
+        }
+        
+        let horizontal = generateHorizontalStack(views: verticals)
+        return horizontal
     }
     
     private func generateHorizontalStack(views: [UIView]) -> UIStackView {
         let stackView = UIStackView(arrangedSubviews: views).then {
             $0.axis = .horizontal
-            $0.distribution = .fillEqually
+            $0.distribution = .equalSpacing
         }
+        
+        return stackView
+    }
+    
+    private func generateVerticalStack(views: [UIView]) -> UIStackView {
+        let stackView = UIStackView(arrangedSubviews: views).then {
+            $0.axis = .vertical
+            $0.spacing = 18
+            $0.alignment = .center
+        }
+        
+        views[1].setContentHuggingPriority(.defaultLow, for: .vertical)
+        views[1].setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         
         return stackView
     }
@@ -60,6 +88,17 @@ extension PlantShelfCell {
     private func setLayout() {
         let plantStackView = generateHorizontalStack(views: plants)
         let cardStackView = generateHorizontalStack(views: cards)
+//        let plantStackView = UIStackView(arrangedSubviews: plants).then {
+//            $0.axis = .horizontal
+//            $0.distribution = .equalSpacing
+//        }
+//        
+//        let cardStackView = UIStackView(arrangedSubviews: cards).then {
+//            $0.axis = .horizontal
+//            $0.spacing = 15
+//            $0.distribution = .fillEqually
+//        }
+        
         
         contentView.addSubview(plantStackView)
         contentView.addSubview(shelf)
@@ -80,7 +119,6 @@ extension PlantShelfCell {
             $0.horizontalEdges.equalToSuperview().inset(16)
             $0.bottom.equalToSuperview().inset(18)
         }
-        
     }
 }
 

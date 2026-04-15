@@ -81,13 +81,25 @@ extension HomeView {
             switch item {
             case .plant(let plants):
                 cell.configure(plants)
+            default:
+                break
+            }
+        }
+        
+        let singleShelfCellRegistration = UICollectionView.CellRegistration<SinglePlantShelfCell, Item> { cell, indexPath, item in
+            switch item {
+            case .single(let plant):
+                cell.configure(plant)
+            default:
+                break
             }
         }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
             case .plant:
-                collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
+//                collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
+                collectionView.dequeueConfiguredReusableCell(using: singleShelfCellRegistration, for: indexPath, item: item)
             default:
                 fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
@@ -115,6 +127,7 @@ extension HomeView {
     nonisolated
     enum Item: Hashable {
         case plant([ShelfPlant?])
+        case single(SingleShelfPlant)
     }
     
     nonisolated
@@ -125,6 +138,17 @@ extension HomeView {
         let daysFromLastWatering: Int // 최근 급수일 - N일 전
         let daysToNextWatering: Int // 다음 급수일 - N일 후
         let didWater: Bool // 금일 급수 여부
+    }
+    
+    nonisolated
+    struct SingleShelfPlant: Hashable {
+        let id: UUID? // 식물의 uuid
+        let category: PlantCategory?
+        let name: String? // 식물의 이름(별명)
+        let daysFromLastWatering: Int? // 최근 급수일 - N일 전
+        let daysToNextWatering: Int? // 다음 급수일 - N일 후
+        let didWater: Bool? // 금일 급수 여부
+        let isAddButton: Bool?
     }
 }
 
