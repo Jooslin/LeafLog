@@ -12,7 +12,7 @@ import UIKit
  사용 법입니다.
  
  생성시
- let smallButton = UIButton(config: .Ssize, title: "추가")
+ let smallButton = UIButton(config: .sSize, title: "추가")
  
  이름만 변경 원할 때
  actionButton.setTitle("선택 완료")
@@ -29,7 +29,7 @@ extension UIButton {
         title: String,
         textStyle: UIFont.TextStyle = .subheadline
     ) {
-        self.init(type: .system)
+        self.init(frame: .zero)
 
         var configuration = UIButton.Configuration.plain()
         configuration.title = title

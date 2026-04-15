@@ -12,7 +12,7 @@ import UIKit
  사용 법입니다.
  
  생성시
- let smallButton = UIButton(config: .Ssize, title: "추가")
+ let smallButton = UIButton(config: .sSize, title: "추가")
  
  이름만 변경 원할 때
  actionButton.setTitle("선택 완료")
@@ -25,7 +25,7 @@ import UIKit
 enum AppButtonStyle {
     case sSize
     case mSize
-    case LSize
+    case lSize
 
     var normalTextColor: UIColor {
         switch self {
