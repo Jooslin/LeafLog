@@ -10,6 +10,10 @@ import SnapKit
 import Then
 
 class CameraClassificationView: UIView {
+    let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
+        $0.invertColors()
+        $0.backgroundColor = .clear
+    }
     let cameraPreview = CameraPreview()
     let cameraFrame = CAShapeLayer()
     
@@ -31,11 +35,18 @@ class CameraClassificationView: UIView {
 
 extension CameraClassificationView {
     private func setLayout() {
+        
         addSubview(cameraPreview)
         layer.addSublayer(cameraFrame)
+        addSubview(titleView)
         
         cameraPreview.snp.makeConstraints {
             $0.edges.equalToSuperview()
+        }
+        
+        titleView.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview()
+            $0.top.equalTo(safeAreaLayoutGuide)
         }
     }
     
