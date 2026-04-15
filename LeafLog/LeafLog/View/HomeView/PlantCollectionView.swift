@@ -67,7 +67,7 @@ extension PlantCollectionView {
             )
             
             let section = NSCollectionLayoutSection(group: group)
-//            section.orthogonalScrollingBehavior = .groupPaging
+            section.interGroupSpacing = 32
             
             return section
         }, configuration: configuration)
