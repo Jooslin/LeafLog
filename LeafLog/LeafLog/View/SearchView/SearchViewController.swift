@@ -14,7 +14,8 @@ import Then
 
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
-    private var items: [PlantSummary] = [] // 결과 배열
+    private var itemsByIdentifier: [String: PlantSummary] = [:] // 식물 번호로 저장
+    private var dataSource: UICollectionViewDiffableDataSource<String, String>?
 
     init(reactor: SearchReactor = SearchReactor()) {
         super.init(nibName: nil, bundle: nil)
@@ -63,7 +64,46 @@ final class SearchViewController: BaseViewController, View {
             withReuseIdentifier: SearchBottomGuideView.reuseIdentifier
         )
         rootView.collectionView.delegate = self
-        rootView.collectionView.dataSource = self
+        configureDataSource()
+    }
+
+    private func configureDataSource() {
+        dataSource = UICollectionViewDiffableDataSource<String, String>(
+            collectionView: rootView.collectionView
+        ) { [weak self] collectionView, indexPath, identifier in
+            guard let self,
+                  let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SearchResultCell.reuseIdentifier,
+                    for: indexPath
+                  ) as? SearchResultCell,
+                  let item = self.itemsByIdentifier[identifier]
+            else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(
+                plantName: item.name,
+                statusStyle: .high,
+                statusPrefix: "검색결과",
+                showsStatusBadge: false,
+                thumbnailURLString: item.displayThumbnailURL
+            )
+            return cell
+        }
+
+        dataSource?.supplementaryViewProvider = { collectionView, kind, indexPath in
+            guard kind == UICollectionView.elementKindSectionFooter,
+                  let view = collectionView.dequeueReusableSupplementaryView(
+                    ofKind: kind,
+                    withReuseIdentifier: SearchBottomGuideView.reuseIdentifier,
+                    for: indexPath
+                  ) as? SearchBottomGuideView
+            else {
+                return UICollectionReusableView()
+            }
+
+            return view
+        }
     }
 
     func bind(reactor: SearchReactor) {
@@ -92,8 +132,7 @@ final class SearchViewController: BaseViewController, View {
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] plants in
-                self?.items = plants
-                self?.rootView.collectionView.reloadData()
+                self?.applySnapshot(plants: plants)
             })
             .disposed(by: disposeBag)
 
@@ -146,50 +185,16 @@ final class SearchViewController: BaseViewController, View {
             button.menu = UIMenu(children: [clearAction] + actions)
         }
     }
-    
-}
 
-// 데이터 소스 부분 구현 부
-extension SearchViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        items.count
-    }
-
-    func collectionView(
-        _ collectionView: UICollectionView,
-        viewForSupplementaryElementOfKind kind: String,
-        at indexPath: IndexPath
-    ) -> UICollectionReusableView {
-        guard kind == UICollectionView.elementKindSectionFooter,
-              let view = collectionView.dequeueReusableSupplementaryView(
-                ofKind: kind,
-                withReuseIdentifier: SearchBottomGuideView.reuseIdentifier,
-                for: indexPath
-              ) as? SearchBottomGuideView
-        else {
-            return UICollectionReusableView()
-        }
-
-        return view
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: SearchResultCell.reuseIdentifier,
-            for: indexPath
-        ) as? SearchResultCell else {
-            return UICollectionViewCell()
-        }
-
-        let item = items[indexPath.item]
-        cell.configure(
-            plantName: item.name,
-            statusStyle: .high,
-            statusPrefix: "검색결과",
-            showsStatusBadge: false,
-            thumbnailURLString: item.displayThumbnailURL
+    private func applySnapshot(plants: [PlantSummary], animated: Bool = true) {
+        itemsByIdentifier = Dictionary(
+            uniqueKeysWithValues: plants.map { ($0.contentNumber, $0) }
         )
-        return cell
+
+        var snapshot = NSDiffableDataSourceSnapshot<String, String>()
+        snapshot.appendSections(["main"])
+        snapshot.appendItems(plants.map(\.contentNumber), toSection: "main")
+        dataSource?.apply(snapshot, animatingDifferences: animated)
     }
 }
 
