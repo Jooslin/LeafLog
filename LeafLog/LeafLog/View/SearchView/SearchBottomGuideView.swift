@@ -30,7 +30,7 @@ final class SearchBottomGuideView: UICollectionReusableView {
         addSubview(actionButton)
 
         titleLabel.snp.makeConstraints {
-            $0.top.equalToSuperview().offset(24)
+            $0.top.equalToSuperview().offset(42)
             $0.centerX.equalToSuperview()
         }
 
