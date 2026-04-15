@@ -20,8 +20,18 @@ class CameraClassificationViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        DispatchQueue.global().async {
-            self.cameraService.session.startRunning()
+        do {
+            try cameraService.checkCameraAuthorization()
+        } catch {
+            print(error)
         }
+        cameraService.connectSession(preview: cameraClassificationView.cameraPreview)
+        cameraService.startSession()
     }
+}
+
+//MARK: CameraClassificationViewController Preview
+@available(iOS 17.0, *)
+#Preview {
+  CameraClassificationViewController()
 }

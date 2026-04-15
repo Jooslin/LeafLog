@@ -10,14 +10,27 @@ import AVFoundation
 import UIKit
 import Dependencies
 
-class CameraService {
+protocol CameraServiceProtocol {
+    func checkCameraAuthorization() throws
+    func connectSession(preview: CameraPreview)
+    func startSession()
+}
+
+class CameraServicePreview: CameraServiceProtocol {
+    func startSession() {}
+    func connectSession(preview: CameraPreview) { }
+    func checkCameraAuthorization() {}
+}
+
+// 프로토콜화
+class CameraService: CameraServiceProtocol {
     //MARK: 캡처 서비스를 이용하기 위한 조건
     // session: 앱이 OS의 캡처 인프라와 캡처 장치에 독점적으로 접근할 수 있도록 하고, 입력 장치 ~ 미디어 출력까지의 데이터 흐름을 관리하는 객체
-    var session = AVCaptureSession()
-    var delegate: AVCapturePhotoCaptureDelegate?
+    private var session = AVCaptureSession()
+    private var delegate: AVCapturePhotoCaptureDelegate?
     
     // input은 미디어 소스 - 카메라처럼 '기록하는 디바이스'
-    var device: AVCaptureDevice {
+    private var device: AVCaptureDevice {
         if let device = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back) { // 3구 후면 카메라
             return device
         } else if let device = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) { // 2구 후면 카메라
@@ -29,7 +42,7 @@ class CameraService {
         }
     }
     
-    func setupSession() throws {
+    private func setupSession() throws {
         do {
             // set Input
             let input = try AVCaptureDeviceInput(device: device)
@@ -50,6 +63,36 @@ class CameraService {
             throw CameraError.sessionSettingFailed
         }
     }
+    
+    func checkCameraAuthorization() throws {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            try setupSession()
+        case .notDetermined:
+            Task {
+                let granted = await AVCaptureDevice.requestAccess(for: .video)
+                
+                if granted {
+                    try setupSession()
+                } else {
+                    print("권한 거절")
+                }
+            }
+            
+        default:
+            print("권한 거절")
+        }
+    }
+    
+    func startSession() {
+        DispatchQueue.global().async {
+            self.session.startRunning()
+        }
+    }
+    
+    func connectSession(preview: CameraPreview) {
+        preview.videoPreviewLayer.session = session
+    }
 }
 
 //MARK: Error 타입
@@ -60,15 +103,16 @@ extension CameraService {
 }
 
 //MARK: Dependencies
-extension CameraService: DependencyKey {
-    static var liveValue: CameraService {
-        CameraService()
-    }
+// Dependency에 사용할 키 열거형
+private enum CameraServiceKey: DependencyKey {
+    static let liveValue: any CameraServiceProtocol = CameraService() // 실제 구현체
+    static let previewValue: any CameraServiceProtocol = CameraServicePreview() // 프리뷰용 목업
 }
 
 extension DependencyValues {
-    var cameraService: CameraService {
-        get { self[CameraService.self] }
-        set { self[CameraService.self] = newValue }
+    // Key로 CameraServiceKey 열거형 타입을 사용
+    var cameraService: CameraServiceProtocol {
+        get { self[CameraServiceKey.self] }
+        set { self[CameraServiceKey.self] = newValue}
     }
 }

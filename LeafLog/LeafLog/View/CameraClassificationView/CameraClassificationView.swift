@@ -9,16 +9,15 @@ import UIKit
 import SnapKit
 import Then
 import AVFoundation
+import Dependencies
 
 class CameraClassificationView: UIView {
     let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
         $0.invertColors()
         $0.backgroundColor = .clear
     }
-    private lazy var cameraPreview = CameraPreview().then {
-        $0.frame = layer.bounds
-        $0.videoPreviewLayer.videoGravity = .resizeAspectFill
-    }
+
+    let cameraPreview = CameraPreview()
     let cameraFrame = CAShapeLayer()
     
     let guideBackground = BaseCardView(cornerRadius: 8).then {
@@ -43,6 +42,7 @@ class CameraClassificationView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
+        setCameraPreview()
         setLayout()
     }
     
@@ -57,6 +57,11 @@ class CameraClassificationView: UIView {
 }
 
 extension CameraClassificationView {
+    private func setCameraPreview() {
+        cameraPreview.frame = layer.bounds
+        cameraPreview.videoPreviewLayer.videoGravity = .resizeAspectFill
+    }
+    
     private func setLayout() {
         
         addSubview(cameraPreview)
@@ -78,7 +83,6 @@ extension CameraClassificationView {
         
         guideBackground.snp.makeConstraints {
             $0.bottom.equalTo(shootButton.snp.top).offset(-32)
-//            $0.horizontalEdges.equalToSuperview().inset(49)
             $0.centerX.equalToSuperview()
         }
         
