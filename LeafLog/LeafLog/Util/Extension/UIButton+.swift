@@ -77,8 +77,11 @@ extension UIButton {
 extension UIButton {
 
     func setTitle(_ title: String) {
-        guard var config = self.configuration else { return }
-        config.title = title
-        self.configuration = config
+        if var config = self.configuration {
+            config.title = title
+            self.configuration = config
+        } else {
+            setTitle(title, for: .normal)
+        }
     }
 }
