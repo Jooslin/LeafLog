@@ -1,25 +1,25 @@
 //
-//  DropdownFilterButton.swift
+//  SelectionButton.swift
 //  LeafLog
 //
-//  Created by Yeseul Jang on 4/13/26.
+//  Created by Codex on 4/15/26.
 //
 
 import UIKit
 
 /*
  생성 시
- let button = DropdownFilterButton(title: "꽃색")
+ let button = SelectionButton(title: "물주기")
 
  이름 변경시
- button.apply(title: "잎색")
+ button.apply(title: "비료")
 
  선택 상태 색상 변경 시
  applySelectionStyle(isSelected:)
  isSelected가 true일 경우 연두색으로 표시됩니다.
  */
 
-final class DropdownFilterButton: UIButton {
+final class SelectionButton: UIButton {
     init(title: String) {
         super.init(frame: .zero)
         apply(title: title)
@@ -33,11 +33,6 @@ final class DropdownFilterButton: UIButton {
     func apply(title: String) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
-        configuration.image = UIImage(systemName: "chevron.down")
-        configuration.preferredSymbolConfigurationForImage =
-            UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
-        configuration.imagePlacement = .trailing
-        configuration.imagePadding = 4
         configuration.baseForegroundColor = .grayScale500
         configuration.background.backgroundColor = .white
         configuration.background.cornerRadius = 12

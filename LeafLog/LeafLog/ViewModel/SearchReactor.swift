@@ -27,6 +27,7 @@ final class SearchReactor: Reactor {
         case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
         case setFilterOptions([PlantFilterKind: [PlantFilterOption]]) // 옵션 전체
         case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
+        case setPlants([PlantSummary])
         case setResultText(String) // 결과가 나올때
     }
     
@@ -36,6 +37,7 @@ final class SearchReactor: Reactor {
         var searchType: PlantSearchType = .plantName // 어떤걸 기준으로 검색할지
         var filterOptions: [PlantFilterKind: [PlantFilterOption]] = [:]
         var filterState = PlantFilterState()
+        var plants: [PlantSummary] = []
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
     }
@@ -63,6 +65,8 @@ final class SearchReactor: Reactor {
             // 비었을 때
             guard !query.isEmpty else {
                 return .concat([
+                    .just(.setQuery("")),
+                    .just(.setPlants([])),
                     .just(.setLoading(false)),
                     .just(.setResultText("검색어를 입력해 주세요."))
                 ])
@@ -143,6 +147,8 @@ final class SearchReactor: Reactor {
             newState.filterOptions = filterOptions
         case let .setFilter(kind, option):
             newState.filterState = newState.filterState.applyOption(option, for: kind)
+        case .setPlants(let plants): //검색 결과 받아와서 목록에 저장(셀 그릴 때 필요)
+            newState.plants = plants
         case .setResultText(let resultText):
             newState.resultText = resultText
         }
@@ -192,28 +198,16 @@ final class SearchReactor: Reactor {
                     if plants.isEmpty {
                         message = "'\(query)' 검색 결과가 없습니다."
                     } else {
-                        // 검색 결과가 있으면 앞의 세개만 보여줌
-                        let names = plants.prefix(10).map { $0.name }.joined(separator: "\n")
-                        let selectedFilters = filterState.selectedOptions
-                            .sorted { $0.key.title < $1.key.title }
-                            .map { "\($0.key.title): \($0.value.name)" }
-                            .joined(separator: ", ")
-                        let filterDescription = selectedFilters.isEmpty ? "없음" : selectedFilters
-                        message = """
-                        검색 기준: \(searchType.title)
-                        검색어: \(query)
-                        적용 필터: \(filterDescription)
-                        결과 수: \(plants.count)
-
-                        \(names)
-                        """
+                        message = ""
                     }
                     
+                    observer.onNext(.setPlants(plants))
                     // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
                     observer.onNext(.setResultText(message))
                     observer.onCompleted()
                     // 에러 처리
                 } catch {
+                    observer.onNext(.setPlants([]))
                     observer.onNext(.setResultText("검색 실패: \(error.localizedDescription)"))
                     observer.onCompleted()
                 }

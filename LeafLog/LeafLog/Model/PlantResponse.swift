@@ -133,7 +133,7 @@ struct PlantFilterOption: Decodable, Equatable {
 }
 
 // 고른 필터로 상태
-struct PlantFilterState {
+struct PlantFilterState: Equatable {
     var selectedOptions: [PlantFilterKind: PlantFilterOption] = [:]
 
     var isEmpty: Bool {
@@ -299,11 +299,30 @@ struct PlantSummary: Decodable {
     let imageURL: String?
     let thumbnailURL: String?
 
+    var primaryThumbnailURL: String? {
+        Self.firstURL(from: thumbnailURL)
+    }
+
+    var primaryImageURL: String? {
+        Self.firstURL(from: imageURL)
+    }
+
+    var displayThumbnailURL: String? {
+        primaryThumbnailURL ?? primaryImageURL
+    }
+
     private enum CodingKeys: String, CodingKey {
         case contentNumber = "cntntsNo"
         case name = "cntntsSj"
         case imageURL = "rtnFileUrl"
         case thumbnailURL = "rtnThumbFileUrl"
+    }
+
+    private static func firstURL(from rawValue: String?) -> String? {
+        rawValue?
+            .components(separatedBy: "|")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty })
     }
 }
 
