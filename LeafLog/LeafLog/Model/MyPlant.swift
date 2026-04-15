@@ -65,6 +65,21 @@ struct PlantCreateInput {
     let lastWateredAt: Date
 }
 
+// MARK: - 사용자 Update Input Model
+// VC에서 PlantRegistrationService로 전달할 때 사용
+struct PlantUpdateInput {
+    let id: UUID // 수정할 식물의 ID
+    let category: PlantCategory
+    let location: PlantLocation?
+    let nickname: String?
+    let speciesName: String?
+    
+    let image: UIImage? // 사용자가 새로 선택한 이미지 (없으면 nil)
+    let existingImagePath: String? // 기존에 저장되어 있던 이미지 경로 (새 이미지가 없을 때 유지)
+    
+    let wateringIntervalDays: Int
+    let lastWateredAt: Date
+}
 
 // MARK: - 앱 내에서 전반적으로 사용할 내 식물 모델
 struct MyPlant: Codable {
