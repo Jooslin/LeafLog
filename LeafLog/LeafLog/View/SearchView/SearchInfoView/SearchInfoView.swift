@@ -9,6 +9,7 @@ import SnapKit
 import Then
 import UIKit
 
+// TODO: 생육형태 첫째줄 레이아웃 깨지는 문제, 스트롤 뷰 컨텐츠 만큼 차지하도록 리팩토링
 final class SearchInfoView: UIView {
     let closeButton = UIButton(type: .system).then {
         var configuration = UIButton.Configuration.plain()
