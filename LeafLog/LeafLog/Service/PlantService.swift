@@ -9,6 +9,7 @@ import UIKit
 import Dependencies
 import Auth
 import Supabase
+import OSLog
 
 // MARK: - PlantService
 
@@ -25,6 +26,8 @@ final class PlantService {
     
     @Dependency(\.supabaseManager) private var supabaseManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    
+    private let logger = Logger(subsystem: "LeafLog", category: "PlantService")
     
     private init() {}
     
@@ -76,7 +79,11 @@ final class PlantService {
         
         // DB에서 이미지 삭제
         if let imagePath = imagePath, !imagePath.isEmpty {
-            try? await supabaseManager.deletePlantImage(path: imagePath)
+            do {
+                try await supabaseManager.deletePlantImage(path: imagePath)
+            } catch {
+                logger.error("식물 이미지 삭제 실패 - plantID: \(plantID.uuidString, privacy: .public), path: \(imagePath, privacy: .public)")
+            }
         }
         // DB에서 식물 데이터 삭제
         try await plantDBManager.deletePlant(plantID: plantID)
