@@ -19,8 +19,8 @@ final class HomeViewController: BaseViewController {
         super.viewDidLoad()
         navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
-//        let single = singleSample()
-        let single: [HomeView.Item] = []
+        let single = singleSample()
+//        let single: [HomeView.Item] = []
         if single.isEmpty {
             homeView.emptyView.isHidden = false
             homeView.collectionView.isHidden = true
@@ -43,7 +43,7 @@ extension HomeViewController {
             daysFromLastWatering: 2,
             daysToNextWatering: 3,
             didWater: false,
-            emptyShelf: .none
+            emptyShelf: .none, shelfOrder: .first
         ))
 
         // 2. 식물 추가 버튼 역할을 하는 아이템 (isAddButton 사용)
@@ -54,7 +54,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            emptyShelf: .first
+            emptyShelf: .first, shelfOrder: .first
         ))
 
         // 3. 아무것도 정보가 없는 완전 빈 아이템 (PlaceHolder용)
@@ -65,7 +65,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            emptyShelf: .second
+            emptyShelf: .second, shelfOrder: .second
         ))
         
         let emptyItem2: HomeView.Item = .plant(HomeView.ShelfPlant(
@@ -75,7 +75,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            emptyShelf: .third
+            emptyShelf: .third, shelfOrder: .third
         ))
 
         // 1. 덩굴성 식물 (아이비) - 오늘 물주기 완료함
@@ -86,7 +86,7 @@ extension HomeViewController {
             daysFromLastWatering: 0, // 오늘 물줌
             daysToNextWatering: 7,
             didWater: true,
-            emptyShelf: .none
+            emptyShelf: .none, shelfOrder: .second
         ))
 
         // 2. 다육형 식물 (선인장) - 물 줄 때가 다 되어감
@@ -97,7 +97,7 @@ extension HomeViewController {
             daysFromLastWatering: 20,
             daysToNextWatering: 1, // 내일 물주기
             didWater: false,
-            emptyShelf: .none
+            emptyShelf: .none, shelfOrder: .third
         ))
 
         

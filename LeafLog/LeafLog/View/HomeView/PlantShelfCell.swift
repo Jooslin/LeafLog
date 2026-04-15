@@ -44,7 +44,7 @@ extension PlantShelfCell {
         }
         
         shelf.snp.makeConstraints {
-            $0.top.equalTo(plant.snp.bottom)
+            $0.top.equalTo(plant.snp.bottom).offset(-4)
             $0.horizontalEdges.equalToSuperview()
         }
         
@@ -70,6 +70,24 @@ extension PlantShelfCell {
         default:
             card.isHidden = true
             plant.image = nil
+        }
+        
+        configureShelf(order: data.shelfOrder)
+    }
+    
+    private func configureShelf(order: HomeView.ShelfOrder) {
+        switch order {
+        case .first:
+            shelf.layer.cornerRadius = 3
+            shelf.clipsToBounds = true
+            shelf.layer.maskedCorners = CACornerMask(arrayLiteral: .layerMinXMinYCorner, .layerMinXMaxYCorner)
+        case .second:
+            shelf.layer.cornerRadius = 0
+            shelf.clipsToBounds = false
+        case .third:
+            shelf.layer.cornerRadius = 3
+            shelf.clipsToBounds = true
+            shelf.layer.maskedCorners = CACornerMask(arrayLiteral: .layerMaxXMinYCorner, .layerMaxXMaxYCorner)
         }
     }
 }

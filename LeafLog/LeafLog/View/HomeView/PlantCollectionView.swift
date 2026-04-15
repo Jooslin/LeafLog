@@ -11,6 +11,7 @@ final class PlantCollectionView: UICollectionView {
     override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: UICollectionViewLayout())
         
+        layoutMargins = .init(top: 0, left: 8, bottom: 0, right: 8)
         backgroundColor = .grayScale50
         collectionViewLayout = makeCompositionalLayout()
         showsVerticalScrollIndicator = false
@@ -24,6 +25,7 @@ final class PlantCollectionView: UICollectionView {
 extension PlantCollectionView {    
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
+        configuration.contentInsetsReference = .layoutMargins
         
         return UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
             let itemWidth = environment.container.effectiveContentSize.width / 3

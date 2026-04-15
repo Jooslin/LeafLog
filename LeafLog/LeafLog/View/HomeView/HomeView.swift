@@ -122,11 +122,18 @@ extension HomeView {
         let daysToNextWatering: Int? // 다음 급수일 - N일 후
         let didWater: Bool? // 금일 급수 여부
         let emptyShelf: EmptyShelf
+        let shelfOrder: ShelfOrder
     }
     
     enum EmptyShelf {
         case none
         case first, second, third
+    }
+    
+    enum ShelfOrder {
+        case first
+        case second
+        case third
     }
 }
 
