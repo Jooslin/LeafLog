@@ -6,9 +6,21 @@
 //
 import UIKit
 /*
- 디자인 시스템 가이드를 기반으로 만들었습니다.
+ 디자인 가이드 시스템을 기반으로 만들었습니다.
+ UIButton+에서 구현을 확인 할 수 있습니다.
  
+ 사용 법입니다.
+ 
+ 생성시
+ let smallButton = UIButton(config: .Ssize, title: "추가")
+ 
+ 이름만 변경 원할 때
+ actionButton.setTitle("선택 완료")
+ 
+ isSelected의 상태를 기반으로 버튼의 색이 변경됩니다.
+
  */
+
 
 enum AppButtonStyle {
     case sSize
