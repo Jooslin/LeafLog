@@ -23,6 +23,9 @@ enum AuthError: Error {
     /// 로그인은 성공했지만 사용자 프로필을 준비하지 못했을 때
     case profileFailed(String)
 
+    /// 식물 관련 저장/조회 작업이 실패했을 때
+    case plantFailed(String)
+
     /// 회원탈퇴 처리 중 실패했을 때
     case withdrawalFailed(String)
 }
@@ -33,6 +36,7 @@ extension AuthError {
         case .loginFailed(let message),
              .sessionFailed(let message),
              .profileFailed(let message),
+             .plantFailed(let message),
              .withdrawalFailed(let message):
             return message
         case .cancelled:
