@@ -8,17 +8,21 @@
 import UIKit
 import SnapKit
 import Then
+import AVFoundation
 
 class CameraClassificationView: UIView {
     let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
         $0.invertColors()
         $0.backgroundColor = .clear
     }
-    let cameraPreview = CameraPreview()
+    private lazy var cameraPreview = CameraPreview().then {
+        $0.frame = layer.bounds
+        $0.videoPreviewLayer.videoGravity = .resizeAspectFill
+    }
     let cameraFrame = CAShapeLayer()
     
     let guideBackground = BaseCardView(cornerRadius: 8).then {
-        $0.backgroundColor = .white.withAlphaComponent(0.6)       
+        $0.backgroundColor = .white.withAlphaComponent(0.6)
     }
     
     let guideLabel = UILabel(

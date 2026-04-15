@@ -10,6 +10,7 @@ import AVFoundation
 import Dependencies
 
 class CameraClassificationViewController: BaseViewController {
+    @Dependency(\.cameraService) private var cameraService
     let cameraClassificationView = CameraClassificationView()
     
     override func loadView() {
@@ -18,5 +19,9 @@ class CameraClassificationViewController: BaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        DispatchQueue.global().async {
+            self.cameraService.session.startRunning()
+        }
     }
 }
