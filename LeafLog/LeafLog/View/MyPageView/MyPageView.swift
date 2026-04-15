@@ -13,6 +13,8 @@ import Then
 final class MyPageView: UIView {
     
     // MARK: - UI Components
+    let myPageHeaderView = TitleHeaderView(text: "마이페이지", hasBackButton: false)
+    
     private let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
@@ -50,12 +52,10 @@ final class MyPageView: UIView {
     
     let nicknameLabel = UILabel().then {
         $0.apply(.title16, color: .black, lines: 1)
-        $0.text = "User1234"
     }
     
     let emailLabel = UILabel().then {
         $0.apply(.label14, color: .grayScale600, lines: 1)
-        $0.text = "email@email.com"
     }
     
     let editProfileButton = UIButton(type: .system).then {
@@ -106,16 +106,23 @@ final class MyPageView: UIView {
     }
     
     private func setupUI() {
+        addSubview(myPageHeaderView)
         addSubview(scrollView)
         scrollView.addSubview(mainStackView)
         
+        myPageHeaderView.snp.makeConstraints {
+            $0.top.equalToSuperview().offset(64)
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(48)
+        }
+        
         scrollView.snp.makeConstraints {
-            $0.horizontalEdges.top.equalTo(safeAreaLayoutGuide)
-            $0.bottom.equalToSuperview()
+            $0.top.equalTo(myPageHeaderView.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
         }
         
         mainStackView.snp.makeConstraints {
-            $0.top.equalToSuperview().inset(32)
+            $0.top.equalToSuperview().offset(32)
             $0.bottom.equalToSuperview()
             $0.horizontalEdges.equalToSuperview().inset(16)
             $0.width.equalToSuperview().offset(-32)
@@ -270,9 +277,4 @@ final class MyPageView: UIView {
             self.profileCardView.alpha = 1
         }
     }
-}
-
-@available(iOS 17.0,*)
-#Preview {
-    MyPageViewController()
 }
