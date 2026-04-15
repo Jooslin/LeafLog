@@ -164,7 +164,7 @@ final class MyPageViewController: BaseViewController, View {
         }
     }
 
-    private func userSettingAlert(reactor: MyPageReactor?, title: String, message: String, okMessage: String, action: MyPageReactor.Action) {
+    private func presentUserSettingAlert(reactor: MyPageReactor?, title: String, message: String, okMessage: String, action: MyPageReactor.Action) {
         let alert = UIAlertController(
             title: title,
             message: message,
