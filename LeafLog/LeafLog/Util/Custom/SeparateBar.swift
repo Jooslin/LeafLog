@@ -11,7 +11,7 @@ class SeparateBar: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        backgroundColor = UIColor(red: 0.89, green: 0.89, blue: 0.89, alpha: 1.00) // HEX #E3E3E3
+        backgroundColor = .grayScale100
     }
     
     required init?(coder: NSCoder) {

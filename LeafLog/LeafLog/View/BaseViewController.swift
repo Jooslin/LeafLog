@@ -13,4 +13,9 @@ import UIKit
 class BaseViewController: UIViewController, Stepper {
     let steps = PublishRelay<Step>()
     var disposeBag = DisposeBag()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.navigationController?.navigationBar.isHidden = true
+    }
 }
