@@ -250,12 +250,11 @@ final class MyPageView: UIView {
         }
         
         if showSeparator {
-            let separator = UIView().then { $0.backgroundColor = .grayScale50 }
+            let separator = SeparateBar().then { $0.backgroundColor = .grayScale50 }
             rowView.addSubview(separator)
             separator.snp.makeConstraints {
                 $0.horizontalEdges.equalToSuperview().inset(-16)
                 $0.bottom.equalToSuperview()
-                $0.height.equalTo(1)
             }
         }
         return rowView
