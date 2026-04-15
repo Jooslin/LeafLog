@@ -5,6 +5,7 @@
 //  Created by Yeseul Jang on 4/13/26.
 //
 
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -21,7 +22,7 @@ final class SearchResultCell: UICollectionViewCell {
     
     // 이미지가 없을 경우, 로딩 시 사용
     private let thumbnailContainerView = UIView().then {
-        $0.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 1)
+        $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 8
         $0.layer.masksToBounds = true
     }
@@ -61,6 +62,7 @@ final class SearchResultCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        thumbnailImageView.kf.cancelDownloadTask()
         thumbnailImageView.image = nil
         statusLabel.isHidden = false
         statusLabel.apply(style: .high)
@@ -72,12 +74,23 @@ final class SearchResultCell: UICollectionViewCell {
         statusStyle: MatchStatusBadgeLabel.Style,
         statusPrefix: String = "일치율",
         showsStatusBadge: Bool = true,
-        image: UIImage? = nil
+        thumbnailURLString: String? = nil
     ) {
         plantNameLabel.text = plantName
         statusLabel.isHidden = !showsStatusBadge
         statusLabel.apply(style: statusStyle, prefix: statusPrefix)
-        thumbnailImageView.image = image
+
+        let placeholderImage = UIImage(systemName: "photo")
+        guard let thumbnailURLString,
+              let url = URL(string: thumbnailURLString) else {
+            thumbnailImageView.image = placeholderImage
+            return
+        }
+
+        thumbnailImageView.kf.setImage(
+            with: url,
+            placeholder: placeholderImage
+        )
     }
 
     private func setupUI() {

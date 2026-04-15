@@ -10,11 +10,11 @@ import SnapKit
 
 class BaseCardView: UIView {
     
-    override init(frame: CGRect) {
+    init(frame: CGRect = .zero, cornerRadius: CGFloat = 8) {
         super.init(frame: frame)
-        
+
         backgroundColor = .grayScale50
-        layer.cornerRadius = 8
+        layer.cornerRadius = cornerRadius
         clipsToBounds = true
     }
     

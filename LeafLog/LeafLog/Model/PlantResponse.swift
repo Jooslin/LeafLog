@@ -133,7 +133,7 @@ struct PlantFilterOption: Decodable, Equatable {
 }
 
 // 고른 필터로 상태
-struct PlantFilterState {
+struct PlantFilterState: Equatable {
     var selectedOptions: [PlantFilterKind: PlantFilterOption] = [:]
 
     var isEmpty: Bool {
@@ -213,6 +213,43 @@ struct PlantDetailBody: Decodable {
     let item: PlantDetail?
 }
 
+
+// 사진 파일 API 응답
+struct PlantFileResponse: Decodable {
+    let header: PlantResponseHeader
+    let body: PlantFileBody?
+}
+
+struct PlantFileBody: Decodable {
+    let items: PlantFileItems?
+}
+
+struct PlantFileItems: Decodable {
+    let item: [PlantFileItem]
+
+    private enum CodingKeys: String, CodingKey {
+        case item
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        do {
+            item = try container.decode([PlantFileItem].self, forKey: .item)
+        } catch DecodingError.typeMismatch {
+            let singleItem = try container.decode(PlantFileItem.self, forKey: .item)
+            item = [singleItem]
+        } catch let error as DecodingError {
+            switch error {
+            case .keyNotFound, .valueNotFound:
+                item = []
+            default:
+                throw error
+            }
+        }
+    }
+}
+
 // 필터용 요청
 struct PlantFilterListResponse: Decodable {
     let header: PlantResponseHeader
@@ -262,11 +299,30 @@ struct PlantSummary: Decodable {
     let imageURL: String?
     let thumbnailURL: String?
 
+    var primaryThumbnailURL: String? {
+        Self.firstURL(from: thumbnailURL)
+    }
+
+    var primaryImageURL: String? {
+        Self.firstURL(from: imageURL)
+    }
+
+    var displayThumbnailURL: String? {
+        primaryThumbnailURL ?? primaryImageURL
+    }
+
     private enum CodingKeys: String, CodingKey {
         case contentNumber = "cntntsNo"
         case name = "cntntsSj"
         case imageURL = "rtnFileUrl"
         case thumbnailURL = "rtnThumbFileUrl"
+    }
+
+    private static func firstURL(from rawValue: String?) -> String? {
+        rawValue?
+            .components(separatedBy: "|")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty })
     }
 }
 
@@ -329,5 +385,37 @@ struct PlantDetail: Decodable {
         case functionality = "fncltyInfo"
         case lightDemand = "lighttdemanddoCodeNm"
         case placement = "postngplaceCodeNm"
+    }
+}
+
+struct PlantFileItem: Decodable, Equatable {
+    let contentNumber: String?
+    let name: String?
+    let fileCode: String?
+    let fileCodeName: String?
+    let fileSequence: String?
+    let fileURL: String?
+    let imageDescription: String?
+    let imageCode: String?
+    let imageCodeName: String?
+    let originalFileName: String?
+    let thumbnailURL: String?
+
+    var isImage: Bool {
+        fileCodeName == "이미지" || fileCode == "185002"
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case contentNumber = "cntntsNo"
+        case name = "cntntsSj"
+        case fileCode = "rtnFileSeCode"
+        case fileCodeName = "rtnFileSeCodeName"
+        case fileSequence = "rtnFileSn"
+        case fileURL = "rtnFileUrl"
+        case imageDescription = "rtnImageDc"
+        case imageCode = "rtnImgSeCode"
+        case imageCodeName = "rtnImgSeCodeName"
+        case originalFileName = "rtnOrginlFileNm"
+        case thumbnailURL = "rtnThumbFileUrl"
     }
 }
