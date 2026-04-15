@@ -1,5 +1,5 @@
 //
-//  PlantRegistrationService.swift
+//  PlantService.swift
 //  LeafLog
 //
 //  Created by OpenAI Codex on 4/13/26.
@@ -10,13 +10,13 @@ import Dependencies
 import Auth
 import Supabase
 
-// MARK: - PlantRegistrationService
+// MARK: - PlantService
 
 /// 식물 등록 흐름을 조율하는 서비스
 /// - 이미지 업로드(Storage) → DB 저장(PlantDBManager) 순서로 실행
 /// - ViewController 사용 예시:
 ///   ```swift
-///   @Dependency(\.plantRegistrationService) var registrationService
+///   @Dependency(\.plantService) var plantService
 ///
 ///   let plant = try await registrationService.registerPlant(input: input)
 ///   ```
