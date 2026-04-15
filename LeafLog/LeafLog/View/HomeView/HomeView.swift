@@ -34,10 +34,15 @@ final class HomeView: UIView {
 }
 
 extension HomeView {
-    func setLayout() {
+    private func setLayout() {
+        let cardStack = UIStackView(arrangedSubviews: [totalPlant, totalWater]).then {
+            $0.axis = .horizontal
+            $0.spacing = 16
+            $0.distribution = .fillEqually
+        }
+        
         addSubview(titleView)
-        addSubview(totalPlant)
-        addSubview(totalWater)
+        addSubview(cardStack)
         addSubview(emptyView)
         addSubview(collectionView)
         
@@ -46,18 +51,10 @@ extension HomeView {
             $0.horizontalEdges.equalToSuperview()
         }
         
-        totalPlant.snp.makeConstraints {
+        cardStack.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
-            $0.leading.equalToSuperview().inset(16)
+            $0.horizontalEdges.equalToSuperview().inset(16)
             $0.height.equalTo(48)
-            $0.width.equalTo(135)
-        }
-        
-        totalWater.snp.makeConstraints {
-            $0.top.equalTo(titleView.snp.bottom)
-            $0.leading.equalTo(totalPlant.snp.trailing).offset(16)
-            $0.height.equalTo(48)
-            $0.width.equalTo(150)
         }
         
         emptyView.snp.makeConstraints {

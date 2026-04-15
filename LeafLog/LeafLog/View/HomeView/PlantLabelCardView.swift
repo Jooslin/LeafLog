@@ -19,6 +19,7 @@ final class PlantLabelCardView: BaseCardView {
     private let nextLabel = UILabel(text: "다음 급수까지", config: .label12, color: .grayScale800, lines: 1)
     let nextDayLabel = UILabel(text: "N일", config: .label12, color: .primary700, lines: 1)
     
+    //TODO: 추후 component 변경
     let waterButton = CornerRadius8Button(title: "물 줬어요", backgroundColor: .lightBlue).then {
         $0.snp.makeConstraints {
             $0.height.equalTo(28)

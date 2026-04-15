@@ -36,17 +36,18 @@ final class TotalCardView: BaseCardView {
 
 extension TotalCardView {
     private func setLayout() {
-        addSubview(imageView)
-        addSubview(label)
-        
-        imageView.snp.makeConstraints {
-            $0.verticalEdges.equalToSuperview().inset(8)
-            $0.leading.equalToSuperview().inset(12)
+        let stackView = UIStackView(arrangedSubviews: [imageView, label]).then {
+            $0.axis = .horizontal
+            $0.spacing = 8
+            imageView.setContentHuggingPriority(.required, for: .horizontal)
+            imageView.setContentCompressionResistancePriority(.required, for: .horizontal)
         }
         
-        label.snp.makeConstraints {
-            $0.leading.equalTo(imageView.snp.trailing).offset(8)
-            $0.verticalEdges.equalToSuperview().inset(14)
+        addSubview(stackView)
+        
+        stackView.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(8)
+            $0.centerX.equalToSuperview()
         }
     }
 }
