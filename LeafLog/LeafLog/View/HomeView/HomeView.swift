@@ -11,7 +11,7 @@ import Then
 
 final class HomeView: UIView {
     //MARK: properties
-    private let collectionView = PlantCollectionView()
+    let collectionView = PlantCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")

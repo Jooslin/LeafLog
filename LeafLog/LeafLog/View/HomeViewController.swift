@@ -19,8 +19,16 @@ final class HomeViewController: BaseViewController {
         super.viewDidLoad()
         navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
-        let single = singleSample()
-        homeView.setSnapshot([.plant: single])
+//        let single = singleSample()
+        let single: [HomeView.Item] = []
+        if single.isEmpty {
+            homeView.emptyView.isHidden = false
+            homeView.collectionView.isHidden = true
+        } else {
+            homeView.emptyView.isHidden = true
+            homeView.collectionView.isHidden = false
+            homeView.setSnapshot([.plant: single])
+        }
     }
 }
 
