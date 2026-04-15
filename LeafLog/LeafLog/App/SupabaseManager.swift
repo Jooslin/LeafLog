@@ -110,6 +110,13 @@ extension SupabaseManager {
             .from(bucket)
             .createSignedURL(path: storedValue, expiresIn: 60 * 60)
     }
+    
+    // Storage에서 식물 이미지 삭제
+    func deletePlantImage(path: String) async throws {
+        try await client.storage
+            .from("plant-images")
+            .remove(paths: [path])
+    }
 
     //TODO: ProfileDBManager 병합 시 이관 필요
     // 유저 fcm 토큰 업데이트
