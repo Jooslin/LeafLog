@@ -15,7 +15,6 @@ final class HomeView: UIView {
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
-    //TODO: image 추후 변경 필요
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
     let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
@@ -79,27 +78,15 @@ extension HomeView {
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, Item> {
         let shelfCellRegistration = UICollectionView.CellRegistration<PlantShelfCell, Item> { cell, indexPath, item in
             switch item {
-            case .plant(let plants):
-                cell.configure(plants)
-            default:
-                break
-            }
-        }
-        
-        let singleShelfCellRegistration = UICollectionView.CellRegistration<SinglePlantShelfCell, Item> { cell, indexPath, item in
-            switch item {
-            case .single(let plant):
+            case .plant(let plant):
                 cell.configure(plant)
-            default:
-                break
             }
         }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
             case .plant:
-//                collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
-                collectionView.dequeueConfiguredReusableCell(using: singleShelfCellRegistration, for: indexPath, item: item)
+                collectionView.dequeueConfiguredReusableCell(using: shelfCellRegistration, for: indexPath, item: item)
             default:
                 fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
@@ -126,22 +113,11 @@ extension HomeView {
     
     nonisolated
     enum Item: Hashable {
-        case plant([ShelfPlant?])
-        case single(SingleShelfPlant)
+        case plant(ShelfPlant)
     }
     
     nonisolated
     struct ShelfPlant: Hashable {
-        let id: UUID // 식물의 uuid
-        let category: PlantCategory
-        let name: String // 식물의 이름(별명)
-        let daysFromLastWatering: Int // 최근 급수일 - N일 전
-        let daysToNextWatering: Int // 다음 급수일 - N일 후
-        let didWater: Bool // 금일 급수 여부
-    }
-    
-    nonisolated
-    struct SingleShelfPlant: Hashable {
         let id: UUID? // 식물의 uuid
         let category: PlantCategory?
         let name: String? // 식물의 이름(별명)

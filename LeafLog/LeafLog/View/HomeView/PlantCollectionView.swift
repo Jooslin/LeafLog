@@ -21,31 +21,7 @@ final class PlantCollectionView: UICollectionView {
     }
 }
 
-extension PlantCollectionView {
-//    private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
-//        let configuration = UICollectionViewCompositionalLayoutConfiguration()
-//        
-//        return UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
-//            let item = NSCollectionLayoutItem(
-//                layoutSize: NSCollectionLayoutSize(
-//                    widthDimension: .fractionalWidth(1),
-//                    heightDimension: .fractionalWidth(0.63)
-//                ))
-//            
-//            let group = NSCollectionLayoutGroup.vertical(
-//                layoutSize: NSCollectionLayoutSize(
-//                    widthDimension: .fractionalWidth(1),
-//                    heightDimension: .fractionalWidth(0.63)),
-//                subitems: [item]
-//            )
-//            
-//            let section = NSCollectionLayoutSection(group: group)
-////            section.orthogonalScrollingBehavior = .groupPaging
-//            
-//            return section
-//        }, configuration: configuration)
-//    }
-    
+extension PlantCollectionView {    
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         
