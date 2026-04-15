@@ -8,6 +8,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import Dependencies
 
 class CameraService {
     //MARK: 캡처 서비스를 이용하기 위한 조건
@@ -51,8 +52,23 @@ class CameraService {
     }
 }
 
+//MARK: Error 타입
 extension CameraService {
     enum CameraError: Error {
         case sessionSettingFailed
+    }
+}
+
+//MARK: Dependencies
+extension CameraService: DependencyKey {
+    static var liveValue: CameraService {
+        CameraService()
+    }
+}
+
+extension DependencyValues {
+    var cameraService: CameraService {
+        get { self[CameraService.self] }
+        set { self[CameraService.self] = newValue }
     }
 }
