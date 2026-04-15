@@ -11,8 +11,6 @@ import Foundation
 import XMLCoder
 
 final class NetworkManager {
-    static let shared = NetworkManager()
-
     private let session: Session
     private let decoder: XMLDecoder //XML 데이터용
     private let baseURL = AppConfig.baseURL
@@ -174,7 +172,7 @@ extension NetworkManager {
 // swift Dependencies 적용
 extension NetworkManager: DependencyKey {
     static var liveValue: NetworkManager {
-        .shared
+        NetworkManager()
     }
 }
 

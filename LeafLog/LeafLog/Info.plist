@@ -41,8 +41,6 @@
 	<string>$(NONGSARO_API_KEY)</string>
 	<key>NongsaroBaseURL</key>
 	<string>$(NONGSARO_BASE_URL)</string>
-	<key>NSCameraUsageDescription</key>
-	<string>프로필 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>

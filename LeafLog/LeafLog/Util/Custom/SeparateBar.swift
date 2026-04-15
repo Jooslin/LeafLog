@@ -10,8 +10,8 @@ import UIKit
 class SeparateBar: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
-        backgroundColor = .grayScale200
+
+        backgroundColor = .grayScale100
     }
     
     required init?(coder: NSCoder) {

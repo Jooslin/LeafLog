@@ -26,10 +26,10 @@ class TitleHeaderView: UIView {
     
     let rightButton = UIButton(configuration: .plain())
     
-    init(text: String, hasBackButton: Bool, rightButtonImage: String? = nil) {
+    init(text: String, hasBackButton: Bool, rightButtonImage: String? = nil, isCollectionView: Bool = false) {
         super.init(frame: .zero)
         configure(text: text, hasBackButton: hasBackButton, rightButtonImage: rightButtonImage)
-        setLayout()
+        isCollectionView ? setLayoutForCollectionView() : setLayout()
     }
     
     required init?(coder: NSCoder) {
@@ -80,5 +80,28 @@ extension TitleHeaderView {
         titleLabel.textColor = .white
         backButton.configuration?.baseForegroundColor = .white
         rightButton.configuration?.baseForegroundColor = .white
+    }
+}
+
+extension TitleHeaderView {
+    private func setLayoutForCollectionView() {
+        addSubview(titleLabel)
+        addSubview(backButton)
+        addSubview(rightButton)
+        
+        backButton.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(12)
+            $0.leading.equalToSuperview()
+        }
+        
+        titleLabel.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(11)
+            $0.horizontalEdges.equalToSuperview().inset(40)
+        }
+        
+        rightButton.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(12)
+            $0.trailing.equalToSuperview()
+        }
     }
 }

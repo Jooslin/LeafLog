@@ -125,11 +125,13 @@ extension HomeView {
         let shelfOrder: ShelfOrder
     }
     
+    nonisolated
     enum EmptyShelf {
         case none
         case first, second, third
     }
     
+    nonisolated
     enum ShelfOrder {
         case first
         case second
