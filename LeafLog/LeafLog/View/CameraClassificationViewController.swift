@@ -7,7 +7,16 @@
 
 import UIKit
 import AVFoundation
+import Dependencies
 
 class CameraClassificationViewController: BaseViewController {
+    let cameraClassificationView = CameraClassificationView()
     
+    override func loadView() {
+        view = cameraClassificationView
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
 }
