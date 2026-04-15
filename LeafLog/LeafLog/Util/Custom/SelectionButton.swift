@@ -54,7 +54,7 @@ final class SelectionButton: UIButton {
 
             if button.isSelected {
                 config.baseForegroundColor = .primary700
-                config.background.backgroundColor = .primary100
+                config.background.backgroundColor = .primary400
                 config.background.strokeColor = .primary700
             } else {
                 config.baseForegroundColor = .grayScale500
