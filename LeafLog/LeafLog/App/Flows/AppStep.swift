@@ -39,6 +39,8 @@ enum AppStep: Step {
         onConfirm: () -> Void
     )
     
+    case profileImageSourceSheet
+    
     // 예시용
     case pushButtonTapped
 }

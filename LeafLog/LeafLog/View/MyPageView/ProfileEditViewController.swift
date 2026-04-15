@@ -18,6 +18,10 @@ final class ProfileEditViewController: BaseViewController, View {
     private let profileEditView = ProfileEditView()
     private var imageLoadTask: Task<Void, Never>?
 
+    var profileImagePickerSourceView: UIView {
+        profileEditView.profileImageButton
+    }
+    
     override func loadView() {
         view = profileEditView
     }
@@ -47,7 +51,7 @@ final class ProfileEditViewController: BaseViewController, View {
 
         profileEditView.profileImageButton.rx.controlEvent(.touchUpInside)
             .subscribe(onNext: { [weak self] in
-                self?.presentImageActionSheet()
+                self?.steps.accept(AppStep.profileImageSourceSheet)
             })
             .disposed(by: disposeBag)
 
@@ -189,48 +193,6 @@ final class ProfileEditViewController: BaseViewController, View {
         default:
             return .sprout
         }
-    }
-
-    private func presentImageActionSheet() {
-        let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            alertController.addAction(UIAlertAction(title: "카메라", style: .default) { [weak self] _ in
-                self?.presentCameraPicker()
-            })
-        }
-
-        alertController.addAction(UIAlertAction(title: "앨범", style: .default) { [weak self] _ in
-            self?.presentPhotoPicker()
-        })
-
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-
-        if let popoverController = alertController.popoverPresentationController {
-            popoverController.sourceView = profileEditView.profileImageButton
-            popoverController.sourceRect = profileEditView.profileImageButton.bounds
-        }
-
-        present(alertController, animated: true)
-    }
-
-    private func presentCameraPicker() {
-        guard UIImagePickerController.isSourceTypeAvailable(.camera) else { return }
-
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = self
-        present(picker, animated: true)
-    }
-
-    private func presentPhotoPicker() {
-        var configuration = PHPickerConfiguration(photoLibrary: .shared())
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-
-        let picker = PHPickerViewController(configuration: configuration)
-        picker.delegate = self
-        present(picker, animated: true)
     }
 }
 
