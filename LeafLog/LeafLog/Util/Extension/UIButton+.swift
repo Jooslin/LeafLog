@@ -39,6 +39,8 @@ extension UIButton {
 
         configuration.baseForegroundColor = style.normalTextColor
         configuration.background.backgroundColor = style.normalBackgroundColor
+        
+        configuration.background.cornerRadius = 8
 
         // 다이나믹 폰트
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
