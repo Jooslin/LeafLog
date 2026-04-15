@@ -31,7 +31,7 @@ enum AppButtonStyle {
         switch self {
         case .sSize: return .grayScale700
         case .mSize: return .grayScale700
-        case .LSize: return .grayScale600
+        case .lSize: return .grayScale600
         }
     }
 
@@ -39,7 +39,7 @@ enum AppButtonStyle {
         switch self {
         case .sSize: return .white
         case .mSize: return .grayScale50
-        case .LSize: return .grayScale50
+        case .lSize: return .grayScale50
         }
     }
 
@@ -47,7 +47,7 @@ enum AppButtonStyle {
         switch self {
         case .sSize: return .grayScale400
         case .mSize: return .primary800
-        case .LSize: return .primary800
+        case .lSize: return .primary800
         }
     }
 
@@ -55,7 +55,7 @@ enum AppButtonStyle {
         switch self {
         case .sSize: return .grayScale100
         case .mSize: return .primary200
-        case .LSize: return .primary200
+        case .lSize: return .primary200
         }
     }
 
@@ -68,7 +68,7 @@ enum AppButtonStyle {
         case .mSize:
             return .init(top: 6, leading: 12, bottom: 6, trailing: 12)
             
-        case .LSize:
+        case .lSize:
             return .init(top: 8, leading: 12, bottom: 8, trailing: 12)
         }
     }
