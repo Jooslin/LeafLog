@@ -111,6 +111,7 @@ final class SearchViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state // 필터 버튼 제목/메뉴를 갱신
+            .distinctUntilChanged { $0.filterState == $1.filterState && $0.filterOptions == $1.filterOptions }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] state in
                 self?.updateFilterMenus(state: state, reactor: reactor)
@@ -126,10 +127,8 @@ final class SearchViewController: BaseViewController, View {
             let options = state.filterOptions[kind] ?? []
             let selectedOption = state.filterState.option(for: kind)
 
-            button.apply(
-                title: selectedOption?.name ?? kind.title,
-                isSelected: selectedOption != nil
-            )
+            button.apply(title: selectedOption?.name ?? kind.title)
+            button.applySelectionStyle(isSelected: selectedOption != nil)
             
             // 각 옵션을 메뉴 액션으로
             let actions = options.map { option in
@@ -148,13 +147,6 @@ final class SearchViewController: BaseViewController, View {
         }
     }
     
-    // 이미지 파일 가공
-    private func firstImageURL(from rawValue: String?) -> String? {
-        rawValue?
-            .components(separatedBy: "|")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first(where: { !$0.isEmpty })
-    }
 }
 
 // 데이터 소스 부분 구현 부
@@ -195,7 +187,7 @@ extension SearchViewController: UICollectionViewDataSource {
             statusStyle: .high,
             statusPrefix: "검색결과",
             showsStatusBadge: false,
-            thumbnailURLString: firstImageURL(from: item.thumbnailURL) ?? firstImageURL(from: item.imageURL)
+            thumbnailURLString: item.displayThumbnailURL
         )
         return cell
     }
