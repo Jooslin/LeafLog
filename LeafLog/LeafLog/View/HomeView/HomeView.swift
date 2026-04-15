@@ -124,7 +124,12 @@ extension HomeView {
         let daysFromLastWatering: Int? // 최근 급수일 - N일 전
         let daysToNextWatering: Int? // 다음 급수일 - N일 후
         let didWater: Bool? // 금일 급수 여부
-        let isAddButton: Bool?
+        let emptyShelf: EmptyShelf
+    }
+    
+    enum EmptyShelf {
+        case none
+        case first, second, third
     }
 }
 

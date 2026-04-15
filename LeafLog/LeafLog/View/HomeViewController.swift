@@ -35,7 +35,7 @@ extension HomeViewController {
             daysFromLastWatering: 2,
             daysToNextWatering: 3,
             didWater: false,
-            isAddButton: nil
+            emptyShelf: .none
         ))
 
         // 2. 식물 추가 버튼 역할을 하는 아이템 (isAddButton 사용)
@@ -46,7 +46,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            isAddButton: true
+            emptyShelf: .first
         ))
 
         // 3. 아무것도 정보가 없는 완전 빈 아이템 (PlaceHolder용)
@@ -57,7 +57,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            isAddButton: false
+            emptyShelf: .second
         ))
         
         let emptyItem2: HomeView.Item = .plant(HomeView.ShelfPlant(
@@ -67,7 +67,7 @@ extension HomeViewController {
             daysFromLastWatering: nil,
             daysToNextWatering: nil,
             didWater: nil,
-            isAddButton: false
+            emptyShelf: .third
         ))
 
         // 1. 덩굴성 식물 (아이비) - 오늘 물주기 완료함
@@ -78,7 +78,7 @@ extension HomeViewController {
             daysFromLastWatering: 0, // 오늘 물줌
             daysToNextWatering: 7,
             didWater: true,
-            isAddButton: nil
+            emptyShelf: .none
         ))
 
         // 2. 다육형 식물 (선인장) - 물 줄 때가 다 되어감
@@ -89,7 +89,7 @@ extension HomeViewController {
             daysFromLastWatering: 20,
             daysToNextWatering: 1, // 내일 물주기
             didWater: false,
-            isAddButton: nil
+            emptyShelf: .none
         ))
 
         

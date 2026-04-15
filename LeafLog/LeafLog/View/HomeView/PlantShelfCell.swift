@@ -57,19 +57,19 @@ extension PlantShelfCell {
 
 extension PlantShelfCell {
     func configure(_ data: HomeView.ShelfPlant) {
-        if let target = data.isAddButton {
-            card.isHidden = true
-            if target {
-                plant.image = .plantAdd
-            } else {
-                plant.image = nil
-            }
-        } else {
+        switch data.emptyShelf {
+        case .none:
             plant.image = UIImage(named: data.category?.defaultImageAssetName ?? "")
             card.nameLabel.text = data.name ?? ""
             card.recentDayLabel.text = "\(String(describing: data.daysFromLastWatering ?? 0))일 전"
             card.nextDayLabel.text = "\(String(describing: data.daysToNextWatering ?? 0))일"
             card.waterButton.isSelected = data.didWater ?? false
+        case .first:
+            card.isHidden = true
+            plant.image = .plantAdd
+        default:
+            card.isHidden = true
+            plant.image = nil
         }
     }
 }
