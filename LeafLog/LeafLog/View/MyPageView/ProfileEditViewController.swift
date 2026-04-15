@@ -24,14 +24,14 @@ final class ProfileEditViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "정보 수정"
-        navigationItem.largeTitleDisplayMode = .never
     }
+
 
     func bind(reactor: ProfileEditReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
     }
+    
 
     private func bindAction(reactor: ProfileEditReactor) {
         rx.viewWillAppear
@@ -39,24 +39,27 @@ final class ProfileEditViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        profileEditView.nicknameTextField.rx.text.orEmpty
+        profileEditView.nameTextField.rx.text.orEmpty
             .skip(1)
             .map(ProfileEditReactor.Action.updateNickname)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        Observable.merge(
-            profileEditView.imageButton.rx.tap.asObservable(),
-            profileEditView.cameraButton.rx.tap.asObservable()
-        )
-        .subscribe(onNext: { [weak self] in
-            self?.presentImageActionSheet()
-        })
-        .disposed(by: disposeBag)
+        profileEditView.profileImageButton.rx.controlEvent(.touchUpInside)
+            .subscribe(onNext: { [weak self] in
+                self?.presentImageActionSheet()
+            })
+            .disposed(by: disposeBag)
 
         profileEditView.saveButton.rx.tap
             .map { ProfileEditReactor.Action.saveTapped }
             .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        profileEditView.profileEditHeaderView.backButton.rx.tap
+            .bind { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            }
             .disposed(by: disposeBag)
     }
 
@@ -71,10 +74,11 @@ final class ProfileEditViewController: BaseViewController, View {
 
         reactor.state
             .map(\.nickname)
+            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] nickname in
-                guard let self, self.profileEditView.nicknameTextField.text != nickname else { return }
-                self.profileEditView.nicknameTextField.text = nickname
+                guard let self, self.profileEditView.nameTextField.text != nickname else { return }
+                self.profileEditView.nameTextField.text = nickname
             })
             .disposed(by: disposeBag)
 
@@ -82,21 +86,17 @@ final class ProfileEditViewController: BaseViewController, View {
             .map(\.selectedImage)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] image in
-                guard let image else { return }
                 self?.imageLoadTask?.cancel()
-                self?.profileEditView.profileImageView.image = image
+                self?.applyProfileImage(image)
             })
             .disposed(by: disposeBag)
 
         reactor.state
             .map { $0.isLoading || $0.isSaving }
+            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isBusy in
-                guard let self else { return }
-                self.profileEditView.nicknameTextField.isEnabled = !isBusy
-                self.profileEditView.imageButton.isEnabled = !isBusy
-                self.profileEditView.cameraButton.isEnabled = !isBusy
-                self.profileEditView.saveButton.isEnabled = !isBusy
+                self?.setControlsEnabled(!isBusy)
             })
             .disposed(by: disposeBag)
 
@@ -119,15 +119,18 @@ final class ProfileEditViewController: BaseViewController, View {
     private func renderProfile(_ profile: UserProfileModel?) {
         guard let profile else { return }
 
-        profileEditView.providerValueLabel.text = profile.provider
-        profileEditView.emailValueLabel.text = profile.email ?? "이메일 정보가 없습니다."
+        let providerName = providerDisplayName(from: profile.provider)
+        profileEditView.providerValueLabel.text = providerName
+        profileEditView.providerDescriptionLabel.text = profile.email ?? "\(providerName)로 로그인됨"
+        profileEditView.providerIconImageView.image = providerIcon(from: profile.provider)
         loadProfileImage(from: profile.profileImageURL)
     }
 
     private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
+        applyProfileImage(nil)
 
-        profileEditView.profileImageView.image = UIImage(named: "userEmpty") ?? UIImage(systemName: "person.crop.circle.fill")
+        guard let storedValue, !storedValue.isEmpty else { return }
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
@@ -141,11 +144,50 @@ final class ProfileEditViewController: BaseViewController, View {
                 guard !Task.isCancelled, let image = UIImage(data: data) else { return }
 
                 await MainActor.run {
-                    self.profileEditView.profileImageView.image = image
+                    self.applyProfileImage(image)
                 }
             } catch {
                 // 실패 시 기본 이미지를 유지한다.
             }
+        }
+    }
+
+    private func applyProfileImage(_ image: UIImage?) {
+        profileEditView.profileImageButton.layer.contents = image?.cgImage
+        profileEditView.profileImageButton.layer.contentsGravity = .resizeAspectFill
+        profileEditView.profileImageButton.backgroundColor = image == nil ? .grayScale50 : .clear
+    }
+
+    private func setControlsEnabled(_ isEnabled: Bool) {
+        profileEditView.nameTextField.isEnabled = isEnabled
+        profileEditView.profileImageButton.isEnabled = isEnabled
+        profileEditView.saveButton.isEnabled = isEnabled
+        profileEditView.saveButton.alpha = isEnabled ? 1.0 : 0.6
+    }
+
+    private func providerDisplayName(from provider: String) -> String {
+        switch provider.lowercased() {
+        case let value where value.contains("kakao"):
+            return "Kakao"
+        case let value where value.contains("google"):
+            return "Google"
+        case let value where value.contains("apple"):
+            return "Apple"
+        default:
+            return provider
+        }
+    }
+
+    private func providerIcon(from provider: String) -> UIImage? {
+        switch provider.lowercased() {
+        case let value where value.contains("kakao"):
+            return .kakao
+        case let value where value.contains("google"):
+            return .google
+        case let value where value.contains("apple"):
+            return UIImage(systemName: "apple.logo")?.withTintColor(.black, renderingMode: .alwaysOriginal)
+        default:
+            return .sprout
         }
     }
 
@@ -165,8 +207,8 @@ final class ProfileEditViewController: BaseViewController, View {
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
 
         if let popoverController = alertController.popoverPresentationController {
-            popoverController.sourceView = profileEditView.cameraButton
-            popoverController.sourceRect = profileEditView.cameraButton.bounds
+            popoverController.sourceView = profileEditView.profileImageButton
+            popoverController.sourceRect = profileEditView.profileImageButton.bounds
         }
 
         present(alertController, animated: true)
@@ -206,6 +248,7 @@ extension ProfileEditViewController: PHPickerViewControllerDelegate {
 
         result.itemProvider.loadObject(ofClass: UIImage.self) { image, _ in
             guard let image = image as? UIImage else { return }
+
             DispatchQueue.main.async {
                 reactor.action.onNext(.updateImage(image))
             }
