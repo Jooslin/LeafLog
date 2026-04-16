@@ -24,6 +24,10 @@ class CameraClassificationViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
+        
+        Task {
+            await cameraService.connectSession(preview: cameraClassificationView.cameraPreview) // 세션 연결
+        }
     }
     
     //MARK: Bind
@@ -43,8 +47,10 @@ class CameraClassificationViewController: BaseViewController, View {
         
         cameraClassificationView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
-                self?.cameraService.stopRunningSession()
-                self?.steps.accept(AppStep.pop)
+                Task {
+                    await self?.cameraService.stopRunningSession()
+                    self?.steps.accept(AppStep.pop)
+                }
             })
             .disposed(by: disposeBag)
     }
@@ -53,15 +59,12 @@ class CameraClassificationViewController: BaseViewController, View {
         let state = reactor.state.asDriver(onErrorJustReturn: CameraClassificationReactor.State())
         
         reactor.pulse(\.$isCameraAvailable)
-            .map { $0 }
+            .filter { $0 == true }
             .asDriver(onErrorDriveWith: .empty())
-            .drive(
-                with: self,
-                onNext: { `self`, isAvailable in
-                    if isAvailable {
-                        self.cameraService.connectSession(preview: self.cameraClassificationView.cameraPreview)
-                        self.cameraService.startSession()
-                    }
+            .drive(with: self, onNext: { `self`, isAvailable in
+                Task {
+                    await self.cameraService.startSession()
+                }
             })
             .disposed(by: disposeBag)
         
@@ -73,6 +76,7 @@ class CameraClassificationViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
     }
+
 }
 
 //MARK: CameraClassificationViewController Preview
