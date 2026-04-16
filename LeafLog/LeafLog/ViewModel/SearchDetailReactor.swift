@@ -17,11 +17,13 @@ final class SearchDetailReactor: Reactor {
 
     enum Mutation {
         case setDetail(PlantDetail)
+        case setImages([PlantFileItem])
     }
 
     struct State {
         var contentNumber: String
         var detail: PlantDetail?
+        var images: [PlantFileItem] = []
     }
 
     let initialState: State
@@ -35,7 +37,10 @@ final class SearchDetailReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
-            return fetchDetail(contentNumber: currentState.contentNumber)
+            return .concat([
+                fetchDetail(contentNumber: currentState.contentNumber),
+                fetchImages(contentNumber: currentState.contentNumber)
+            ])
         }
     }
 
@@ -45,6 +50,10 @@ final class SearchDetailReactor: Reactor {
         switch mutation {
         case .setDetail(let detail):
             newState.detail = detail
+
+        case .setImages(let images):
+            newState.images = images
+            print("✏️✏️ 이미지 개수:", images.count)
         }
 
         return newState
@@ -59,6 +68,28 @@ final class SearchDetailReactor: Reactor {
                     observer.onNext(.setDetail(detail))
                     observer.onCompleted()
                 } catch {
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+    
+    private func fetchImages(contentNumber: String) -> Observable<Mutation> {
+        Observable.create { [networkManager] observer in
+            let task = Task {
+                do {
+                    let images = try await networkManager.fetchPlantFiles(contentNumber: contentNumber)
+
+                    print("💙💙 이미지 API 성공:", images)
+
+                    observer.onNext(.setImages(images))
+                    observer.onCompleted()
+                } catch {
+                    print("❌❌ 이미지 API 실패:", error)
                     observer.onCompleted()
                 }
             }

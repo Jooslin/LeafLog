@@ -45,5 +45,14 @@ final class SearchDetailViewController: UIViewController, View {
                 print("✏️✏️✏️ VC에서 받은 detail---", detail)
             })
             .disposed(by: disposeBag)
+        
+        // 이미지 들어오는 지 확인
+        reactor.state
+            .map { $0.images }
+            .filter { !$0.isEmpty }
+            .subscribe(onNext: { images in
+                print("🖼 이미지 들어옴:", images)
+            })
+            .disposed(by: disposeBag)
     }
 }
