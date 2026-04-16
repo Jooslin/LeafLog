@@ -16,6 +16,7 @@ class CameraClassificationViewController: BaseViewController, View {
     @Dependency(\.cameraService) private var cameraService
     let cameraClassificationView = CameraClassificationView()
     
+    
     //MARK: Lifecycle
     override func loadView() {
         view = cameraClassificationView
@@ -24,10 +25,12 @@ class CameraClassificationViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
+        tabBarController?.tabBar.isHidden = true
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        tabBarController?.tabBar.isHidden = false
         
         Task { [weak self] in
             await self?.cameraService.stopRunningSession()

@@ -18,11 +18,10 @@ import AVFoundation
 
 final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
-    
     private let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
-    
+
     func navigate(to step: any RxFlow.Step) -> RxFlow.FlowContributors {
         guard let step = step as? AppStep else {
             return .none
