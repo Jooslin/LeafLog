@@ -137,6 +137,7 @@ extension CameraService {
         
         // 카메라 세션 연결 작업은 UI작업이라 메인 액터에서 진행
         await MainActor.run {
+            guard preview.videoPreviewLayer.session != currentSession else { return } // 세션이 동일하지 않을 경우에만 세션 연결 진행
             preview.videoPreviewLayer.session = currentSession
         }
     }
