@@ -171,7 +171,6 @@ private final class SearchInfoCardView: UIView {
 private final class SearchInfoImageRowView: UIView {
     let iconImageView = UIImageView().then {
         $0.contentMode = .scaleAspectFit
-        $0.backgroundColor = .clear
         $0.clipsToBounds = true
     }
 
@@ -181,6 +180,7 @@ private final class SearchInfoImageRowView: UIView {
 
     private let descriptionLabel = UILabel().then {
         $0.apply(.body12, color: .grayScale700, lines: 1)
+        $0.lineBreakMode = .byTruncatingTail
     }
 
     init(image: String, title: String, description: String) {
@@ -196,34 +196,32 @@ private final class SearchInfoImageRowView: UIView {
     }
 
     private func setupUI() {
-        addSubview(iconImageView)
-        addSubview(titleLabel)
-        addSubview(descriptionLabel)
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel]).then {
+            $0.axis = .horizontal
+            $0.spacing = 8
+            $0.alignment = .center
+        }
+
+        let rootStack = UIStackView(arrangedSubviews: [iconImageView, textStack]).then {
+            $0.axis = .horizontal
+            $0.spacing = 4
+            $0.alignment = .center
+        }
+
+        addSubview(rootStack)
 
         iconImageView.snp.makeConstraints {
-            $0.leading.equalToSuperview()
-            $0.centerY.equalToSuperview()
             $0.size.equalTo(16)
         }
 
-        titleLabel.snp.makeConstraints {
-            $0.leading.equalTo(iconImageView.snp.trailing).offset(4)
-            $0.centerY.equalTo(iconImageView)
+        rootStack.snp.makeConstraints {
+            $0.edges.equalToSuperview()
         }
 
-        descriptionLabel.snp.makeConstraints {
-            $0.leading.equalTo(titleLabel.snp.trailing).offset(18)
-            $0.trailing.equalToSuperview()
-            $0.centerY.equalTo(titleLabel)
-        }
-        
-        // 크기 확실하게 해주기
         titleLabel.setContentHuggingPriority(.required, for: .horizontal)
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-
         descriptionLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         descriptionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        descriptionLabel.lineBreakMode = .byTruncatingTail
     }
 }
 
