@@ -12,9 +12,7 @@ import SnapKit
 import UIKit
 import Then
 
-final class SearchDetailViewController: UIViewController, View {
-
-    var disposeBag = DisposeBag()
+final class SearchDetailViewController: BaseViewController, View {
 
     init(reactor: SearchDetailReactor) {
         super.init(nibName: nil, bundle: nil)
