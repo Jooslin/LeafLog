@@ -24,10 +24,6 @@ class CameraClassificationViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
-        
-        Task {
-            await cameraService.connectSession(preview: cameraClassificationView.cameraPreview) // 세션 연결
-        }
     }
     
     //MARK: Bind

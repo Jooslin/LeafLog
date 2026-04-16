@@ -20,6 +20,8 @@ import SnapKit
 
 final class ViewController: BaseViewController {
     
+    @Dependency(\.cameraService) private var cameraService
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -37,6 +39,11 @@ final class ViewController: BaseViewController {
             .map { _ in AppStep.pushButtonTapped } // push Step으로 변환
             .bind(to: steps) // VC의 steps와 바인딩 -> 버튼을 누를 때마다 'push' 스텝이 방출
             .disposed(by: disposeBag)
+        
+        //TODO: 추후 등록화면에서 아래 함수 추가 필요
+        Task {
+            try await cameraService.silentPrewarm() // 카메라 세션 설정 함수 - 카메라 권한이 허용되어있는 경우 세션을 미리 설정
+        }
     }
 }
 

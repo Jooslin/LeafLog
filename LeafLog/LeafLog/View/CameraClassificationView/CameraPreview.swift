@@ -23,6 +23,15 @@ class CameraPreview: UIView {
         return layer as! AVCaptureVideoPreviewLayer
     }
     
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .black
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
         videoPreviewLayer.frame = bounds // 오토레이아웃 설정이 모두 끝난 크기로 레이어 크기 설정

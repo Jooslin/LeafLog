@@ -11,6 +11,7 @@ import UIKit
 import Dependencies
 
 protocol CameraServiceProtocol {
+    func silentPrewarm() async throws
     func checkCameraAuthorization() async throws
     func connectSession(preview: CameraPreview) async
     func startSession() async
@@ -18,6 +19,7 @@ protocol CameraServiceProtocol {
 }
 
 class CameraServicePreview: CameraServiceProtocol {
+    func silentPrewarm() {}
     func checkCameraAuthorization() {}
     func connectSession(preview: CameraPreview) {}
     func startSession() {}
@@ -86,6 +88,17 @@ extension CameraService {
             throw CameraError.sessionSettingFailed
         }
     }
+    
+    // 세션 미리 준비 메서드 - 카메라 진입 전 등록 화면에서 호출
+    func silentPrewarm() throws {
+        // 현재 권한 상태확인
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        // 이미 허용 상태인 경우에만 백그라운드에서 세션 설정 시작
+        if status == .authorized {
+            try setupSession()
+        }
+    }
 }
 
 //MARK: Authorization
@@ -93,9 +106,6 @@ extension CameraService {
     // 카메라 권한 확인 메서드 - 권한만 확인하고 리턴
     func checkCameraAuthorization() async throws {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            try setupSession() // await하지 않고 동작만 실행시키고 바로 리턴
-            
         case .notDetermined:
             try await requestCameraAuthorization()
             
@@ -122,12 +132,18 @@ extension CameraService {
 //MARK: Perform Session
 extension CameraService {
     // 세션 시작 메서드
-    func startSession() {
-        guard !session.isRunning else { return }
+    func startSession() async {
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
+              !session.isRunning else { return }
         
-        // startRunning은 동작에 시간이 오래 걸리는 함수이므로 스레드를 혼자 점유하지 않도록 비동기로 실행
-        Task.detached(priority: .userInitiated) { [session] in
-            session.startRunning()
+        // withCheckedContinuation: startRunning()이 끝나면 resume을 통해 신호를 보냄
+        // -> startSession()을 await한 쪽에서 startSession 작업이 끝났다는 것을 알 수 있음
+        await withCheckedContinuation { continuation in
+            // startRunning은 동작에 시간이 오래 걸리는 함수이므로 스레드를 혼자 점유하지 않도록 비동기로 실행
+            Task.detached(priority: .userInitiated) { [session] in
+                session.startRunning()
+                continuation.resume()
+            }
         }
     }
     
@@ -140,6 +156,8 @@ extension CameraService {
             guard preview.videoPreviewLayer.session != currentSession else { return } // 세션이 동일하지 않을 경우에만 세션 연결 진행
             preview.videoPreviewLayer.session = currentSession
         }
+        
+        await startSession()
     }
     
     // 세션 중단 메서드
