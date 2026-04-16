@@ -57,24 +57,16 @@ class CameraClassificationViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: CameraClassificationReactor) {
-        let state = reactor.state.asDriver(onErrorJustReturn: CameraClassificationReactor.State())
-        
-        
-        reactor.pulse(\.$isCameraAvailable)
-            .filter { $0 == true }
-            .asDriver(onErrorDriveWith: .empty())
-            .drive(with: self, onNext: { `self`, isAvailable in
-//                Task {
-//                    await self.cameraService.startSession()
-//                }
-            })
-            .disposed(by: disposeBag)
+        let state = reactor.state
+            .asDriver(onErrorJustReturn: CameraClassificationReactor.State())
         
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive(with: self, onNext: { `self`, message in
-                self.steps.accept(AppStep.alert("Error", message))
+//                self.cameraClassificationView.cameraAuthDenied()
+                print(message)
+                
             })
             .disposed(by: disposeBag)
     }

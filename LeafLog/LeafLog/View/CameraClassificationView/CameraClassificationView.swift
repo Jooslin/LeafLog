@@ -125,6 +125,10 @@ extension CameraClassificationView {
         
         cameraFrame.fillColor = UIColor.grayScale600.withAlphaComponent(0.7).cgColor
     }
+    
+    func cameraAuthDenied() {
+        print("CameraAuthDenied")
+    }
 }
 
 extension Reactive where Base: CameraClassificationView {
