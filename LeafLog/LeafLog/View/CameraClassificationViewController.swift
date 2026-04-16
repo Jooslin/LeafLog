@@ -33,13 +33,19 @@ class CameraClassificationViewController: BaseViewController, View {
     }
     
     private func bindAction(reactor: CameraClassificationReactor) {
-        //TODO: viewWillAppear가 아닌 이니셜라이즈 분기 처리필요 - 중복 세션 생성 방지를 위함
         self.rx.viewWillAppear
             .withUnretained(self)
             .map { `self`, _ in
                 return CameraClassificationReactor.Action.viewWillAppear(self.cameraClassificationView)
             }
             .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        cameraClassificationView.rx.backButtonTap
+            .subscribe(onNext: { [weak self] _ in
+                self?.cameraService.stopRunningSession()
+                self?.steps.accept(AppStep.pop)
+            })
             .disposed(by: disposeBag)
     }
     

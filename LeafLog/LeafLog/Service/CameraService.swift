@@ -14,12 +14,14 @@ protocol CameraServiceProtocol {
     func checkCameraAuthorization() async throws
     func connectSession(preview: CameraPreview)
     func startSession()
+    func stopRunningSession()
 }
 
 class CameraServicePreview: CameraServiceProtocol {
     func checkCameraAuthorization() {}
-    func startSession() {}
     func connectSession(preview: CameraPreview) {}
+    func startSession() {}
+    func stopRunningSession() {}
 }
 
 // 프로토콜화
@@ -98,7 +100,12 @@ class CameraService: CameraServiceProtocol {
     }
     
     func connectSession(preview: CameraPreview) {
+        preview.videoPreviewLayer.session = nil // 세션 초기화
         preview.videoPreviewLayer.session = session
+    }
+    
+    func stopRunningSession() {
+        session.stopRunning()
     }
 }
 

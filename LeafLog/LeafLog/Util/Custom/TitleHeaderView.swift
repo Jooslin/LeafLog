@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 /// 공통으로 사용될 TitleHeaderView입니다.
 ///
@@ -103,5 +105,11 @@ extension TitleHeaderView {
             $0.verticalEdges.equalToSuperview().inset(12)
             $0.trailing.equalToSuperview()
         }
+    }
+}
+
+extension Reactive where Base: TitleHeaderView {
+    var backButtonTap: ControlEvent<Void> {
+        base.backButton.rx.tap
     }
 }

@@ -35,6 +35,10 @@ final class MainFlow: Flow {
         case .alert(let title, let message):
             return presentAlert(title: title, message: message)
             
+        case .pop:
+            pop(animated: true)
+            return .none
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -50,6 +54,14 @@ final class MainFlow: Flow {
     
     private func present(_ viewController: UIViewController, animated: Bool) {
         tabBarController.selectedViewController?.present(viewController, animated: animated, completion: nil)
+    }
+    
+    private func pop(animated: Bool) {
+        if let navigationController = tabBarController.selectedViewController as? UINavigationController {
+            navigationController.popViewController(animated: animated)
+        } else {
+            tabBarController.selectedViewController?.dismiss(animated: animated)
+        }
     }
 }
 

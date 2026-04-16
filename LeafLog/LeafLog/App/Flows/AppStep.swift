@@ -30,6 +30,7 @@ enum AppStep: Step {
     
     // Global
     case alert(String, String) // (타이틀, 메세지)
+    case pop
     
     // 예시용
     case pushButtonTapped

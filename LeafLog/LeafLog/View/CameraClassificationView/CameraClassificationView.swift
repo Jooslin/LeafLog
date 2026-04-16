@@ -10,6 +10,8 @@ import SnapKit
 import Then
 import AVFoundation
 import Dependencies
+import RxSwift
+import RxCocoa
 
 class CameraClassificationView: UIView {
     let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
@@ -122,5 +124,11 @@ extension CameraClassificationView {
         cameraFrame.fillRule = .evenOdd
         
         cameraFrame.fillColor = UIColor.grayScale600.withAlphaComponent(0.7).cgColor
+    }
+}
+
+extension Reactive where Base: CameraClassificationView {
+    var backButtonTap: ControlEvent<Void> {
+        base.titleView.rx.backButtonTap
     }
 }
