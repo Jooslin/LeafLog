@@ -101,7 +101,7 @@ extension CameraClassificationView {
         let path = UIBezierPath(rect: self.bounds)
         
         // 프레임 영역
-        let size: CGFloat = 224
+        let size: CGFloat = 280
         
         let topY = titleView.frame.maxY // titleView의 bottom Y 좌표
         let bottomY = guideBackground.frame.minY // guideBackground의 top Y좌표
