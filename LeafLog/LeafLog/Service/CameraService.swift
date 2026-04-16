@@ -44,6 +44,11 @@ class CameraService: CameraServiceProtocol {
     
     private func setupSession() throws {
         do {
+            guard session.inputs.isEmpty else { return }
+            
+            session.beginConfiguration() // configuration 시작
+            defer { session.commitConfiguration() } // configuration 설정 사항 commit - 함수 종료 직전에 호출함
+            
             // set Input
             let input = try AVCaptureDeviceInput(device: device)
             guard session.canAddInput(input) else { return } // 유효한 input일 경우에만 계속
@@ -58,7 +63,6 @@ class CameraService: CameraServiceProtocol {
             session.sessionPreset = .photo // output 퀄리티 설정 - 사진의 화질을 설정하는 느낌
             session.addOutput(output)
             session.addOutput(videoOutput)
-            session.commitConfiguration()
         } catch {
             throw CameraError.sessionSettingFailed
         }
