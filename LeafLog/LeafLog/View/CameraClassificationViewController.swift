@@ -69,6 +69,14 @@ class CameraClassificationViewController: BaseViewController, View {
         let state = reactor.state
             .asDriver(onErrorJustReturn: CameraClassificationReactor.State())
         
+        reactor.pulse(\.$classificationResult)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] image in
+                self?.cameraClassificationView.capture(image)
+            })
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())

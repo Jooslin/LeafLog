@@ -28,7 +28,7 @@ class CameraServicePreview: CameraServiceProtocol {
     func runSession() {}
     func stopRunningSession() {}
     
-    func capturePhoto() -> Single<Data> {}
+    func capturePhoto() -> Single<Data> { return Single.just(Data())}
 }
 
 // 프로토콜화

@@ -29,7 +29,7 @@ final class CameraClassificationReactor: Reactor {
     struct State {
         @Pulse var isCameraReady: Bool = false
     
-        @Pulse var classificationResult: String? = nil
+        @Pulse var classificationResult: UIImage? = nil
         
         @Pulse var errorMessage: String? = nil
     }
@@ -69,7 +69,7 @@ final class CameraClassificationReactor: Reactor {
             newState.isCameraReady = true
             
         case .captureImageData(let data):
-            
+            newState.classificationResult = convertToUIImage(data)
             
         case .error(let message):
             newState.isCameraReady = false
@@ -104,5 +104,13 @@ extension CameraClassificationReactor {
             
             return Disposables.create()
         }
+    }
+}
+
+extension CameraClassificationReactor {
+    private func convertToUIImage(_ data: Data) -> UIImage? {
+        let image = UIImage(data: data)
+        
+        return image
     }
 }

@@ -41,6 +41,12 @@ class CameraClassificationView: UIView {
         $0.setTitle("촬영하기", for: .normal)
     }
     
+    
+    //TODO: Sample!!!!!!!!!!
+    let imageView = UIImageView().then {
+        $0.isHidden = true
+    }
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
 
@@ -65,6 +71,7 @@ extension CameraClassificationView {
         addSubview(titleView)
         addSubview(guideBackground)
         addSubview(shootButton)
+        addSubview(imageView)
         
         guideBackground.addSubview(guideLabel)
         
@@ -91,6 +98,10 @@ extension CameraClassificationView {
         guideLabel.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
             $0.verticalEdges.equalToSuperview().inset(8)
+        }
+        
+        imageView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
         }
     }
     
@@ -128,6 +139,12 @@ extension CameraClassificationView {
     
     func cameraAuthDenied() {
         print("CameraAuthDenied")
+    }
+    
+    func capture(_ image: UIImage?) {
+        imageView.image = image
+        imageView.isHidden = false
+        print("image")
     }
 }
 
