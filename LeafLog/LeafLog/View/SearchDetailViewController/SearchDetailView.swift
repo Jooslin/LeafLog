@@ -47,6 +47,7 @@ final class SearchDetailView: UIView {
     }
 
     let environmentSection = DetailInfoSectionView(
+        imageResource: .badgeSunBig,
         title: "생육 환경",
         rows: [
             DetailInfoRowView(title: "광도 요구", value: "낮은 광도 (300~800 LUX)"),
@@ -55,6 +56,7 @@ final class SearchDetailView: UIView {
     )
     
     let appearanceSection = DetailInfoSectionView(
+        imageResource: .badgeGrowSmall,
         title: "외형 특징",
         rows: [
             DetailInfoRowView(title: "생육 형태", value: "직립형"),
@@ -65,6 +67,7 @@ final class SearchDetailView: UIView {
     )
     
     let wateringSection = DetailInfoSectionView(
+        imageResource: .badgeWaterSmall,
         title: "물주기",
         rows: [
             DetailInfoRowView(title: "봄", value: "4~6일"),
@@ -76,7 +79,8 @@ final class SearchDetailView: UIView {
     )
     
     let flowerAndFruitSection = DetailInfoSectionView(
-        title: "물주기",
+        imageResource: .badgeSproutSmall,
+        title: "개화/열매",
         rows: [
             DetailInfoRowView(title: "꽃색", value: "분홍색"),
             DetailInfoRowView(title: "꽃피는 계절", value: "여름"),
@@ -208,7 +212,8 @@ final class DetailInfoRowView: UIView {
 
 // 섹션
 final class DetailInfoSectionView: UIView {
-
+    
+    private let sectionImage = UIImageView()
     private let titleLabel = UILabel(config: .title14, color: .black)
 
     private let stackView = UIStackView().then {
@@ -222,8 +227,9 @@ final class DetailInfoSectionView: UIView {
         $0.layoutMargins = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
     }
 
-    init(title: String, rows: [DetailInfoRowView]) {
+    init(imageResource: ImageResource, title: String, rows: [DetailInfoRowView]) {
         super.init(frame: .zero)
+        sectionImage.image = UIImage(resource: imageResource)
         titleLabel.text = title
 
         setupLayout()
@@ -238,11 +244,18 @@ final class DetailInfoSectionView: UIView {
     }
 
     private func setupLayout() {
+        addSubview(sectionImage)
         addSubview(titleLabel)
         addSubview(stackView)
-
+        
+        sectionImage.snp.makeConstraints {
+            $0.top.leading.equalToSuperview().offset(2)
+            $0.size.equalTo(14)
+        }
+        
         titleLabel.snp.makeConstraints {
-            $0.top.leading.trailing.equalToSuperview()
+            $0.top.trailing.equalToSuperview()
+            $0.leading.equalTo(sectionImage.snp.trailing).offset(4)
         }
 
         stackView.snp.makeConstraints {
