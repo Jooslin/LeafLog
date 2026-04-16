@@ -12,6 +12,7 @@ import SnapKit
 import UIKit
 import Then
 
+// TODO: APPFlow 적용하기
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
     private var itemsByIdentifier: [String: PlantSummary] = [:] // 식물 번호로 저장

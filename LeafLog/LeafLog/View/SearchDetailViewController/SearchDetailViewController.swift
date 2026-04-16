@@ -42,7 +42,6 @@ final class SearchDetailViewController: UIViewController, View {
         reactor.state
             .compactMap { $0.detail }
             .subscribe(onNext: { detail in
-                print("✏️✏️✏️ VC에서 받은 detail---", detail)
             })
             .disposed(by: disposeBag)
         
@@ -51,7 +50,6 @@ final class SearchDetailViewController: UIViewController, View {
             .map { $0.images }
             .filter { !$0.isEmpty }
             .subscribe(onNext: { images in
-                print("🖼 이미지 들어옴:", images)
             })
             .disposed(by: disposeBag)
     }

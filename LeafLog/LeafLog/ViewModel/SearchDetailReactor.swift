@@ -53,7 +53,6 @@ final class SearchDetailReactor: Reactor {
 
         case .setImages(let images):
             newState.images = images
-            print("✏️✏️ 이미지 개수:", images.count)
         }
 
         return newState
@@ -84,12 +83,9 @@ final class SearchDetailReactor: Reactor {
                 do {
                     let images = try await networkManager.fetchPlantFiles(contentNumber: contentNumber)
 
-                    print("💙💙 이미지 API 성공:", images)
-
                     observer.onNext(.setImages(images))
                     observer.onCompleted()
                 } catch {
-                    print("❌❌ 이미지 API 실패:", error)
                     observer.onCompleted()
                 }
             }
