@@ -40,7 +40,52 @@ final class SearchDetailView: UIView {
         $0.backgroundColor = .primary600
         $0.layer.cornerRadius = 12
     }
+    
+    let sectionStackView = UIStackView().then {
+        $0.axis = .vertical
+        $0.spacing = 24
+    }
 
+    let environmentSection = DetailInfoSectionView(
+        title: "생육 환경",
+        rows: [
+            DetailInfoRowView(title: "광도 요구", value: "낮은 광도 (300~800 LUX)"),
+            DetailInfoRowView(title: "겨울 최저온도", value: "7°C")
+        ]
+    )
+    
+    let appearanceSection = DetailInfoSectionView(
+        title: "외형 특징",
+        rows: [
+            DetailInfoRowView(title: "생육 형태", value: "직립형"),
+            DetailInfoRowView(title: "잎색", value: "녹색 연두색"),
+            DetailInfoRowView(title: "잎무늬", value: "무늬 없음")
+            
+        ]
+    )
+    
+    let wateringSection = DetailInfoSectionView(
+        title: "물주기",
+        rows: [
+            DetailInfoRowView(title: "봄", value: "4~6일"),
+            DetailInfoRowView(title: "여름", value: "4~6일"),
+            DetailInfoRowView(title: "가을", value: "4~6일"),
+            DetailInfoRowView(title: "겨울", value: "4~6일")
+            
+        ]
+    )
+    
+    let flowerAndFruitSection = DetailInfoSectionView(
+        title: "물주기",
+        rows: [
+            DetailInfoRowView(title: "꽃색", value: "분홍색"),
+            DetailInfoRowView(title: "꽃피는 계절", value: "여름"),
+            DetailInfoRowView(title: "열매색", value: "빨간색"),
+            DetailInfoRowView(title: "열매 계절", value: "여름")
+            
+        ]
+    )
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
@@ -69,19 +114,25 @@ final class SearchDetailView: UIView {
         contentView.addSubview(nameLabel)
         contentView.addSubview(familyNameLabel)
         contentView.addSubview(originLabel)
+        contentView.addSubview(sectionStackView)
+        
+        sectionStackView.addArrangedSubview(environmentSection)
+        sectionStackView.addArrangedSubview(appearanceSection)
+        sectionStackView.addArrangedSubview(wateringSection)
+        sectionStackView.addArrangedSubview(flowerAndFruitSection)
 
         buttonStack.addArrangedSubview(closeButton)
         buttonStack.addArrangedSubview(selectButton)
 
         // 버튼 고정으로
         scrollView.snp.makeConstraints {
-            $0.top.leading.trailing.equalToSuperview()
+            $0.top.leading.trailing.equalTo(safeAreaLayoutGuide)
             $0.bottom.equalTo(buttonStack.snp.top)
         }
 
         contentView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-            $0.width.equalToSuperview()
+            $0.edges.equalTo(scrollView.contentLayoutGuide)
+            $0.width.equalTo(scrollView.frameLayoutGuide)
         }
 
         // 이미지
@@ -105,7 +156,13 @@ final class SearchDetailView: UIView {
             $0.top.equalTo(familyNameLabel.snp.bottom).offset(4)
             $0.leading.trailing.equalToSuperview().inset(16)
         }
-
+        
+        sectionStackView.snp.makeConstraints {
+            $0.top.equalTo(originLabel.snp.bottom).offset(32)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.bottom.equalToSuperview().inset(24)
+        }
+        
         // 버튼
         buttonStack.snp.makeConstraints {
             $0.leading.trailing.bottom.equalTo(safeAreaLayoutGuide).inset(16)
@@ -114,6 +171,7 @@ final class SearchDetailView: UIView {
     }
 }
 
+// 한줄 세부사항
 final class DetailInfoRowView: UIView {
 
     private let titleLabel = UILabel(config: .label14, color: .black)
@@ -137,16 +195,18 @@ final class DetailInfoRowView: UIView {
 
         titleLabel.snp.makeConstraints {
             $0.leading.equalToSuperview()
-            $0.centerY.equalToSuperview()
+            $0.top.bottom.equalToSuperview().inset(5)
         }
 
         valueLabel.snp.makeConstraints {
-            $0.trailing.equalToSuperview()
-            $0.centerY.equalToSuperview()
-        }
+                $0.leading.greaterThanOrEqualTo(titleLabel.snp.trailing).offset(5)
+                $0.trailing.equalToSuperview()
+                $0.centerY.equalTo(titleLabel)
+            }
     }
 }
 
+// 섹션
 final class DetailInfoSectionView: UIView {
 
     private let titleLabel = UILabel(config: .title14, color: .black)
@@ -154,11 +214,16 @@ final class DetailInfoSectionView: UIView {
     private let stackView = UIStackView().then {
         $0.axis = .vertical
         $0.spacing = 12
+        $0.layer.cornerRadius = 12
+        $0.clipsToBounds = true
+        $0.backgroundColor = .primary50
+        
+        $0.isLayoutMarginsRelativeArrangement = true
+        $0.layoutMargins = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
     }
 
     init(title: String, rows: [DetailInfoRowView]) {
         super.init(frame: .zero)
-
         titleLabel.text = title
 
         setupLayout()
