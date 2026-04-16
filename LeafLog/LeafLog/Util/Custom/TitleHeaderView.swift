@@ -21,6 +21,7 @@ class TitleHeaderView: UIView {
     }
     
     let backButton = UIButton(configuration: .plain()).then {
+        $0.configuration?.baseForegroundColor = .black
         $0.setImage(.arrowLeft, for: .normal)
     }
     
