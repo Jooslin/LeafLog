@@ -26,6 +26,14 @@ class CameraClassificationViewController: BaseViewController, View {
         self.reactor = CameraClassificationReactor()
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        Task { [weak self] in
+            await self?.cameraService.stopRunningSession()
+        }
+    }
+    
     //MARK: Bind
     func bind(reactor: CameraClassificationReactor) {
         bindAction(reactor: reactor)
@@ -43,10 +51,7 @@ class CameraClassificationViewController: BaseViewController, View {
         
         cameraClassificationView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
-                Task {
-                    await self?.cameraService.stopRunningSession()
                     self?.steps.accept(AppStep.pop)
-                }
             })
             .disposed(by: disposeBag)
     }
@@ -54,21 +59,22 @@ class CameraClassificationViewController: BaseViewController, View {
     private func bindState(reactor: CameraClassificationReactor) {
         let state = reactor.state.asDriver(onErrorJustReturn: CameraClassificationReactor.State())
         
+        
         reactor.pulse(\.$isCameraAvailable)
             .filter { $0 == true }
             .asDriver(onErrorDriveWith: .empty())
             .drive(with: self, onNext: { `self`, isAvailable in
-                Task {
-                    await self.cameraService.startSession()
-                }
+//                Task {
+//                    await self.cameraService.startSession()
+//                }
             })
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
-            .drive(onNext: { [weak self] message in
-                self?.steps.accept(AppStep.alert("Error", message))
+            .drive(with: self, onNext: { `self`, message in
+                self.steps.accept(AppStep.alert("Error", message))
             })
             .disposed(by: disposeBag)
     }

@@ -19,6 +19,8 @@ final class CameraClassificationReactor: Reactor {
     // State를 변경시킬 값
     enum Mutation {
         case successSetup
+        
+        case cameraReady
         case error(String)
     }
     
@@ -26,6 +28,7 @@ final class CameraClassificationReactor: Reactor {
     struct State {
         @Pulse var isCameraAvailable: Bool = false
         @Pulse var errorMessage: String? = nil
+        @Pulse var isCameraReady: Bool = false
     }
     
     // 최초 상태
@@ -39,7 +42,8 @@ final class CameraClassificationReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear(let cameraView):
-            return checkCameraAuthorization()
+//            return checkCameraAuthorization()
+            return prepareCamera(view: cameraView)
         }
     }
     
@@ -50,8 +54,12 @@ final class CameraClassificationReactor: Reactor {
         case .successSetup:
             newState.isCameraAvailable = true
             
+        case .cameraReady:
+            newState.isCameraReady = true
+            
         case .error(let message):
             newState.isCameraAvailable = false
+            newState.isCameraReady = false
             newState.errorMessage = message
         }
         
@@ -60,6 +68,31 @@ final class CameraClassificationReactor: Reactor {
 }
 
 extension CameraClassificationReactor {
+    private func prepareCamera(view: CameraClassificationView) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            
+            Task {
+                do {
+                    try await self.cameraService.checkCameraAuthorization()
+                    try await self.cameraService.connectPreview(view.cameraPreview)
+                    await self.cameraService.runSession()
+                    
+                    observer.onNext(.cameraReady)
+                    observer.onCompleted()
+                } catch let error as CameraError {
+                    observer.onNext(.error(error.message))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.error("알 수 없는 에러입니다."))
+                    observer.onCompleted()
+                }
+            }
+            
+            return Disposables.create()
+        }
+    }
+    
     private func checkCameraAuthorization() -> Observable<Mutation> {
         return Observable.create { [weak self] observer in
             guard let self else {

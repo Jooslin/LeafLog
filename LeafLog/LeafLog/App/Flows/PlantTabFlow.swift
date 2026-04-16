@@ -36,17 +36,8 @@ final class PlantTabFlow: Flow {
             
         case .pushButtonTapped: // push 버튼이 눌렀을 경우
             let camera = CameraClassificationViewController()
+            navigationController.pushViewController(camera, animated: true)
             
-            Task {
-                // 카메라 세션 미리 연결
-                await cameraService.connectSession(preview: camera.cameraClassificationView.cameraPreview)
-                
-                // 세션이 연결되고 시작된 후에 화면 전환
-                await MainActor.run {
-                    navigationController.pushViewController(camera, animated: true)
-                }
-            }
-
             // 다음 Presentable 객체인 SecondVC와 다음 Step을 방출한 Stepper인 SecondVC를 전달 (Presentable과 Stepper 모두 동일하게 secondVC입니다.)
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
             
