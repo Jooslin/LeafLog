@@ -107,7 +107,8 @@ final class SearchViewController: BaseViewController, View {
             return view
         }
     }
-
+    
+    // TODO: 리팩토링 필요함
     private func bindUI() {
         rootView.titleHeaderView.backButton.addAction(
             UIAction { [weak self] _ in

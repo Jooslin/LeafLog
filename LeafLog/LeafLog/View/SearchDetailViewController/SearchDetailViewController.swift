@@ -13,10 +13,15 @@ import UIKit
 import Then
 
 final class SearchDetailViewController: BaseViewController, View {
+    let detailView = SearchDetailView()
 
     init(reactor: SearchDetailReactor) {
         super.init(nibName: nil, bundle: nil)
         self.reactor = reactor
+    }
+    
+    override func loadView() {
+        view = detailView
     }
     
     required init?(coder: NSCoder) {
