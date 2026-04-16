@@ -201,8 +201,11 @@ private final class SearchInfoImageRowView: UIView {
         addSubview(descriptionLabel)
 
         iconImageView.snp.makeConstraints {
-            $0.leading.top.bottom.equalToSuperview()
+        iconImageView.snp.makeConstraints {
+            $0.leading.equalToSuperview()
+            $0.centerY.equalToSuperview()
             $0.size.equalTo(16)
+        }
         }
 
         titleLabel.snp.makeConstraints {
