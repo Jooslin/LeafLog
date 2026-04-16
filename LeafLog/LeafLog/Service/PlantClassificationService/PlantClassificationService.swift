@@ -192,6 +192,83 @@ extension PlantClassificationService {
     }
 }
 
+// MARK: Added - Capture Image Crop & Preprocess
+extension PlantClassificationService {
+    // 모델 입력용 데이터로 전처리
+    func preprocessCapturedImageData(
+        _ imageData: Data,
+        normalizedRect: CGRect
+    ) -> Data? {
+        guard let croppedImage = cropCapturedImage(imageData, normalizedRect: normalizedRect) else {
+            return nil
+        }
+
+        return preprocessImage(croppedImage, width: inputWidth, height: inputHeight)
+    }
+    
+    // normalized rect 기준으로 캡처 데이터에서 guideFrame 영역만 잘라낸 이미지를 반환
+    func cropCapturedImage(
+        _ imageData: Data,
+        normalizedRect: CGRect
+    ) -> UIImage? {
+        guard let image = UIImage(data: imageData) else { return nil }
+        guard !normalizedRect.isEmpty else { return image }
+
+        // 설명:
+        // capturePhoto로 얻은 UIImage는 orientation 메타데이터만 세로 방향을 나타내고,
+        // 실제 cgImage 픽셀은 가로 기준일 수 있습니다.
+        // 여기서는 `image.size` 기준의 세로 캔버스에 다시 그려서,
+        // 이후 crop 좌표 계산을 "사용자가 보는 방향 그대로" 맞춥니다.
+        let orientedSize = image.size
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+
+        let orientedImage = UIGraphicsImageRenderer(size: orientedSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: orientedSize))
+        }
+
+        guard let cgImage = orientedImage.cgImage else {
+            return image
+        }
+
+        let imageSize = CGSize(width: cgImage.width, height: cgImage.height)
+
+        // 설명:
+        // previewLayer.metadataOutputRectConverted(fromLayerRect:)가 반환한 normalized rect는
+        // 프리뷰 좌표계를 기준으로 축이 바뀐 형태라,
+        // 세로 이미지 기준 crop에서는 x/y와 width/height를 서로 바꿔 적용해야
+        // guideFrame에 보였던 정사각형 영역과 같은 크기로 잘립니다.
+        let cropRect = CGRect(
+            x: normalizedRect.minY * imageSize.width,
+            y: normalizedRect.minX * imageSize.height,
+            width: normalizedRect.height * imageSize.width,
+            height: normalizedRect.width * imageSize.height
+        ).intersection(CGRect(origin: .zero, size: imageSize))
+
+
+        guard !cropRect.isEmpty,
+              let croppedCGImage = cgImage.cropping(to: cropRect.integral) else {
+            return orientedImage
+        }
+
+        return UIImage(cgImage: croppedCGImage)
+    }
+
+    // UIImage의 방향을 실제 픽셀에 반영하여 crop 좌표 계산이 어긋나지 않도록 정방향 이미지로 다시 그림
+    private func normalizedImage(from image: UIImage) -> UIImage? {
+        guard let cgImage = image.cgImage else { return image }
+
+        let pixelSize = CGSize(width: cgImage.width, height: cgImage.height)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+
+        return UIGraphicsImageRenderer(size: pixelSize, format: format).image { _ in
+            UIImage(cgImage: cgImage, scale: 1, orientation: image.imageOrientation)
+                .draw(in: CGRect(origin: .zero, size: pixelSize))
+        }
+    }
+}
+
 //MARK: Data 변환 익스텐션
 extension Data {
     func toArray<T>(type: T.Type) -> [T] {

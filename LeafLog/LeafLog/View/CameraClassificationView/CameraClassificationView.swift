@@ -21,6 +21,7 @@ class CameraClassificationView: UIView {
 
     let cameraPreview = CameraPreview()
     let cameraFrame = CAShapeLayer()
+    private(set) var guideFrameSize: CGRect = .zero // 가이드 프레임 사이즈
     
     let guideBackground = BaseCardView(cornerRadius: 8).then {
         $0.backgroundColor = .white.withAlphaComponent(0.6)
@@ -45,6 +46,7 @@ class CameraClassificationView: UIView {
     //TODO: Sample!!!!!!!!!!
     let imageView = UIImageView().then {
         $0.isHidden = true
+        $0.contentMode = .scaleAspectFit
     }
     
     override init(frame: CGRect) {
@@ -101,7 +103,8 @@ extension CameraClassificationView {
         }
         
         imageView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
+            $0.center.equalToSuperview()
+            $0.width.height.equalTo(224)
         }
     }
     
@@ -124,7 +127,8 @@ extension CameraClassificationView {
             width: size,
             height: size
         )
-
+        guideFrameSize = frame
+        
         let framePath = UIBezierPath(rect: frame)
         
         // path에 추가

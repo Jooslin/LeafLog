@@ -15,13 +15,13 @@ final class CameraClassificationReactor: Reactor {
     // 행동(트리거)
     enum Action {
         case viewWillAppear(CameraClassificationView)
-        case capture
+        case capture(CGRect) // normalized guide frame
     }
     
     // State를 변경시킬 값
     enum Mutation {
         case cameraReady
-        case captureImageData(Data)
+        case captureImageData(CGRect, Data) // normalized guide frame, image data
         case error(String)
     }
     
@@ -39,6 +39,7 @@ final class CameraClassificationReactor: Reactor {
     
     //MARK: Properties
     @Dependency(\.cameraService) private var cameraService
+    @Dependency(\.plantClassificationService) private var plantClassificationService
     
     // Action -> Mutation -> State
     // Action을 Mutation으로 변환
@@ -47,10 +48,10 @@ final class CameraClassificationReactor: Reactor {
         case .viewWillAppear(let cameraView):
             return prepareCamera(view: cameraView)
             
-        case .capture:
+        case .capture(let normalizedRect):
             return cameraService.capturePhoto()
                 .asObservable()
-                .map { .captureImageData($0) }
+                .map { .captureImageData(normalizedRect, $0) }
                 .catch { error in
                     if let cameraError = error as? CameraError {
                         return Observable.just(.error(cameraError.message))
@@ -67,9 +68,13 @@ final class CameraClassificationReactor: Reactor {
         switch mutation {
         case .cameraReady:
             newState.isCameraReady = true
+
+        case .captureImageData(let normalizedRect, let data):
             
-        case .captureImageData(let data):
-            newState.classificationResult = convertToUIImage(data)
+            newState.classificationResult = plantClassificationService.cropCapturedImage(
+                data,
+                normalizedRect: normalizedRect
+            )
             
         case .error(let message):
             newState.isCameraReady = false
@@ -104,13 +109,5 @@ extension CameraClassificationReactor {
             
             return Disposables.create()
         }
-    }
-}
-
-extension CameraClassificationReactor {
-    private func convertToUIImage(_ data: Data) -> UIImage? {
-        let image = UIImage(data: data)
-        
-        return image
     }
 }

@@ -63,7 +63,12 @@ class CameraClassificationViewController: BaseViewController, View {
         // 촬영하기
         cameraClassificationView.shootButton.rx.tap
             .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
-            .map { CameraClassificationReactor.Action.capture }
+            .withUnretained(self)
+            .map { `self`, _ in
+                CameraClassificationReactor.Action.capture(
+                    self.normalizedGuideFrame()
+                )
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
@@ -93,7 +98,17 @@ class CameraClassificationViewController: BaseViewController, View {
 
 }
 
+// MARK: Added - Normalized Guide Frame
+extension CameraClassificationViewController {
+    // CameraPreview의 resizeAspectFill 표시 방식을 previewLayer가 직접 반영하여
+    // 화면의 guideFrame을 원본 비디오/사진 좌표계 기준 normalized rect(0~1)로 변환
+    private func normalizedGuideFrame() -> CGRect {
+        let previewLayer = cameraClassificationView.cameraPreview.videoPreviewLayer
+        let guideFrame = cameraClassificationView.guideFrameSize
 
+        return previewLayer.metadataOutputRectConverted(fromLayerRect: guideFrame)
+    }
+}
 
 //MARK: CameraClassificationViewController Preview
 @available(iOS 17.0, *)
