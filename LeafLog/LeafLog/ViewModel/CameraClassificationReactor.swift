@@ -9,26 +9,29 @@ import UIKit
 import ReactorKit
 import RxSwift
 import Dependencies
+import AVFoundation
 
 final class CameraClassificationReactor: Reactor {
     // 행동(트리거)
     enum Action {
         case viewWillAppear(CameraClassificationView)
+        case capture
     }
     
     // State를 변경시킬 값
     enum Mutation {
-        case successSetup
-        
         case cameraReady
+        case captureImageData(Data)
         case error(String)
     }
     
     // (화면의) 상태
     struct State {
-        @Pulse var isCameraAvailable: Bool = false
-        @Pulse var errorMessage: String? = nil
         @Pulse var isCameraReady: Bool = false
+    
+        @Pulse var classificationResult: String? = nil
+        
+        @Pulse var errorMessage: String? = nil
     }
     
     // 최초 상태
@@ -42,8 +45,19 @@ final class CameraClassificationReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear(let cameraView):
-//            return checkCameraAuthorization()
             return prepareCamera(view: cameraView)
+            
+        case .capture:
+            return cameraService.capturePhoto()
+                .asObservable()
+                .map { .captureImageData($0) }
+                .catch { error in
+                    if let cameraError = error as? CameraError {
+                        return Observable.just(.error(cameraError.message))
+                    } else {
+                        return Observable.just(.error("알 수 없는 오류입니다."))
+                    }
+                }
         }
     }
     
@@ -51,14 +65,13 @@ final class CameraClassificationReactor: Reactor {
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
-        case .successSetup:
-            newState.isCameraAvailable = true
-            
         case .cameraReady:
             newState.isCameraReady = true
             
+        case .captureImageData(let data):
+            
+            
         case .error(let message):
-            newState.isCameraAvailable = false
             newState.isCameraReady = false
             newState.errorMessage = message
         }
@@ -74,9 +87,9 @@ extension CameraClassificationReactor {
             
             Task {
                 do {
-                    try await self.cameraService.checkCameraAuthorization()
-                    try await self.cameraService.connectPreview(view.cameraPreview)
-                    await self.cameraService.runSession()
+                    try await self.cameraService.checkCameraAuthorization() // 카메라 권한 확인
+                    try await self.cameraService.connectPreview(view.cameraPreview) // 프리뷰 - 세션 연결
+                    await self.cameraService.runSession() // 세션 시작
                     
                     observer.onNext(.cameraReady)
                     observer.onCompleted()
@@ -85,31 +98,6 @@ extension CameraClassificationReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.error("알 수 없는 에러입니다."))
-                    observer.onCompleted()
-                }
-            }
-            
-            return Disposables.create()
-        }
-    }
-    
-    private func checkCameraAuthorization() -> Observable<Mutation> {
-        return Observable.create { [weak self] observer in
-            guard let self else {
-                return Disposables.create()
-            }
-            
-            Task {
-                do {
-                    try await self.cameraService.checkCameraAuthorization() // 카메라 권한만 확인하고 리턴
-                    observer.onNext(.successSetup)
-                    observer.onCompleted()
-                } catch {
-                    if let cameraError = error as? CameraError {
-                        observer.onNext(.error(cameraError.message))
-                    } else {
-                        observer.onNext(.error("알 수 없는 에러입니다."))
-                    }
                     observer.onCompleted()
                 }
             }

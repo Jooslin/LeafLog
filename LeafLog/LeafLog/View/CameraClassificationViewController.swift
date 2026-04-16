@@ -41,6 +41,7 @@ class CameraClassificationViewController: BaseViewController, View {
     }
     
     private func bindAction(reactor: CameraClassificationReactor) {
+        // viewWillAppear
         self.rx.viewWillAppear
             .withUnretained(self)
             .map { `self`, _ in
@@ -49,10 +50,18 @@ class CameraClassificationViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        // 뒤로가기
         cameraClassificationView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
-                    self?.steps.accept(AppStep.pop)
+                self?.steps.accept(AppStep.pop)
             })
+            .disposed(by: disposeBag)
+        
+        // 촬영하기
+        cameraClassificationView.shootButton.rx.tap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
+            .map { CameraClassificationReactor.Action.capture }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
     
@@ -72,6 +81,8 @@ class CameraClassificationViewController: BaseViewController, View {
     }
 
 }
+
+
 
 //MARK: CameraClassificationViewController Preview
 @available(iOS 17.0, *)

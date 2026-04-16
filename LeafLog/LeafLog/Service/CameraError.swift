@@ -8,6 +8,7 @@
 enum CameraError: Error {
     case authorizationDenied
     case sessionSettingFailed
+    case captureDataFailed
     
     var title: String { "Error" }
     var message: String {
@@ -16,6 +17,8 @@ enum CameraError: Error {
             "카메라 권한이 거절되었습니다."
         case .sessionSettingFailed:
             "카메라 세팅에 실패했습니다."
+        case .captureDataFailed:
+            "사진 데이터를 얻을 수 없습니다."
         }
     }
 }

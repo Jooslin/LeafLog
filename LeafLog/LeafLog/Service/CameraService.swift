@@ -9,12 +9,16 @@ import Foundation
 import AVFoundation
 import UIKit
 import Dependencies
+import RxSwift
 
 protocol CameraServiceProtocol {
     func checkCameraAuthorization() async throws
     func connectPreview(_ preview: CameraPreview) async throws
+    
     func runSession() async
     func stopRunningSession() async
+    
+    func capturePhoto() -> Single<Data>
 }
 
 class CameraServicePreview: CameraServiceProtocol {
@@ -23,14 +27,19 @@ class CameraServicePreview: CameraServiceProtocol {
 
     func runSession() {}
     func stopRunningSession() {}
+    
+    func capturePhoto() -> Single<Data> {}
 }
 
 // 프로토콜화
-actor CameraService: CameraServiceProtocol {
+actor CameraService: NSObject, CameraServiceProtocol {
     //MARK: 캡처 서비스를 이용하기 위한 조건
     // session: 앱이 OS의 캡처 인프라와 캡처 장치에 독점적으로 접근할 수 있도록 하고, 입력 장치 ~ 미디어 출력까지의 데이터 흐름을 관리하는 객체
     private var session = AVCaptureSession()
     private var delegate: AVCapturePhotoCaptureDelegate?
+    
+    private let output = AVCapturePhotoOutput() // 사진 캡처 결과물
+    private var capturedSubject: AsyncSubject<Data>? // 촬영이 끝날 때까지 결과를 잠시 보관할 객체 - 매 촬영마다 새로운 값
     
 }
 
@@ -86,7 +95,7 @@ extension CameraService {
         }
         session.addInput(input)
         
-        let output = AVCapturePhotoOutput() // 사진 캡처 결과물
+
         let videoOutput = AVCaptureVideoDataOutput() // 프레임별로 생성하는 사진 캡처 결과물
         guard session.canAddOutput(output),
               session.canAddOutput(videoOutput) else {
@@ -139,6 +148,49 @@ extension CameraService {
                 session.stopRunning()
                 continuation.resume()
             }
+        }
+    }
+}
+
+extension CameraService: AVCapturePhotoCaptureDelegate {
+    func capturePhoto() -> Single<Data> {
+        let subject = AsyncSubject<Data>() // 현재 촬영 결과로 사용할 새로운 subject 생성 - AsyncSubject는 onCompleted()가 호출된 시점에 가장 최근값을 방출
+        self.capturedSubject = subject // 현재 촬영 결과를 관찰
+        
+        let photoSettings = AVCapturePhotoSettings()
+        output.capturePhoto(with: photoSettings, delegate: self)
+        
+        return subject.asSingle()
+    }
+    
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: (any Error)?) {
+        Task { [weak self] in
+            guard let self else { return }
+            
+            if let error {
+                await self.finishCapture(result: .failure(error))
+                return
+            }
+            
+            guard let imageData = photo.fileDataRepresentation() else {
+                await self.finishCapture(result: .failure(CameraError.captureDataFailed))
+                return
+            }
+            
+            await self.finishCapture(result: .success(imageData))
+        }
+    }
+    
+    // 캡처 결과 -> PublishSubject로 방출
+    private func finishCapture(result: Result<Data, Error>) {
+        switch result {
+        case .success(let data):
+            capturedSubject?.onNext(data)
+            capturedSubject?.onCompleted()
+            capturedSubject = nil
+        case .failure(let error):
+            capturedSubject?.onError(error)
+            capturedSubject = nil
         }
     }
 }
