@@ -29,7 +29,7 @@ final class CameraClassificationReactor: Reactor {
     struct State {
         @Pulse var isCameraReady: Bool = false
     
-        @Pulse var classificationResult: UIImage? = nil
+        @Pulse var classificationResult: (PlantClassificationService.Confidence, String)? = nil
         
         @Pulse var errorMessage: String? = nil
     }
@@ -71,10 +71,7 @@ final class CameraClassificationReactor: Reactor {
 
         case .captureImageData(let normalizedRect, let data):
             
-            newState.classificationResult = plantClassificationService.cropCapturedImage(
-                data,
-                normalizedRect: normalizedRect
-            )
+            newState.classificationResult = analyzePicture(data, normalizedRect: normalizedRect)
             
         case .error(let message):
             newState.isCameraReady = false
@@ -108,6 +105,21 @@ extension CameraClassificationReactor {
             }
             
             return Disposables.create()
+        }
+    }
+}
+
+extension CameraClassificationReactor {
+    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> (PlantClassificationService.Confidence, String)? {
+        let cropImage = plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
+        guard let cropImage else {
+            return nil
+        }
+        
+        do {
+            return try plantClassificationService.analyzeImage(image: cropImage)
+        } catch {
+            return nil
         }
     }
 }

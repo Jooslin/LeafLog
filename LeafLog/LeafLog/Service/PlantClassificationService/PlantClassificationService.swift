@@ -35,6 +35,7 @@ class PlantClassificationService {
         case high = "높음"
         case normal = "보통"
         case low = "낮음"
+        case unknown
         
         static func from(value: UInt8) -> Confidence {
             switch value {
@@ -116,7 +117,7 @@ extension PlantClassificationService {
             guard let max = results.max(),
                   let maxIndex = results.firstIndex(of: max),
                   maxIndex < labels.count else {
-                return (.low, "Unknown")
+                return (.unknown, "Unknown")
             }
             
             let grade = Confidence.from(value: max)

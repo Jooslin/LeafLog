@@ -78,10 +78,14 @@ class CameraClassificationViewController: BaseViewController, View {
             .asDriver(onErrorJustReturn: CameraClassificationReactor.State())
         
         reactor.pulse(\.$classificationResult)
-            .compactMap { $0 }
+            .map { $0 }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] image in
-                self?.cameraClassificationView.capture(image)
+            .subscribe(onNext: { [weak self] result in
+                if let result {
+                    print(result.0.rawValue, result.1)
+                } else {
+                    print("검색 결과 없음")
+                }
             })
             .disposed(by: disposeBag)
         
