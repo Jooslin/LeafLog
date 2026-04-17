@@ -214,11 +214,8 @@ extension PlantClassificationService {
         guard let image = UIImage(data: imageData) else { return nil }
         guard !normalizedRect.isEmpty else { return image }
 
-        // 설명:
-        // capturePhoto로 얻은 UIImage는 orientation 메타데이터만 세로 방향을 나타내고,
-        // 실제 cgImage 픽셀은 가로 기준일 수 있습니다.
-        // 여기서는 `image.size` 기준의 세로 캔버스에 다시 그려서,
-        // 이후 crop 좌표 계산을 "사용자가 보는 방향 그대로" 맞춥니다.
+        // capturePhoto로 얻은 UIImage는 데이터가 나타내느 방향(orientation)과 실제 cgImage 픽셀 방향이 다를 수 있음
+        // 캡처 이미지의 사이즈만큼 세로 캔버스에 다시 그려서 crop 좌표 계산을 "사용자가 보는 방향"으로 맞춤
         let orientedSize = image.size
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
@@ -233,11 +230,8 @@ extension PlantClassificationService {
 
         let imageSize = CGSize(width: cgImage.width, height: cgImage.height)
 
-        // 설명:
-        // previewLayer.metadataOutputRectConverted(fromLayerRect:)가 반환한 normalized rect는
-        // 프리뷰 좌표계를 기준으로 축이 바뀐 형태라,
-        // 세로 이미지 기준 crop에서는 x/y와 width/height를 서로 바꿔 적용해야
-        // guideFrame에 보였던 정사각형 영역과 같은 크기로 잘립니다.
+        // normalized rect는 프리뷰 좌표계를 기준으로 축이 바뀐 형태
+        // -> 세로 이미지 기준 crop에서는 x/y와 width/height를 서로 바꿔 적용해야 guideFrame에 보였던 정사각형 영역과 같은 크기로 잘림
         let cropRect = CGRect(
             x: normalizedRect.minY * imageSize.width,
             y: normalizedRect.minX * imageSize.height,
