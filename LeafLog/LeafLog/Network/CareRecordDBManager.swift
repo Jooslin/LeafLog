@@ -36,7 +36,7 @@ final class CareRecordDBManager {
         let payload = CareRecordPayload(
             plantID: input.plantID,
             recordDate: input.recordDate,
-            recordedAt: input.recordedAt ?? existing?.recordedAt,
+            recordedAt: input.recordedAt ?? existing?.recordedAt ?? Date(),
             status: input.status ?? existing?.status,
             watered: input.watered ?? existing?.watered ?? false,
             repotted: input.repotted ?? existing?.repotted ?? false,
