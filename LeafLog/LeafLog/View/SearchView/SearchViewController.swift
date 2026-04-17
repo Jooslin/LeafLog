@@ -122,7 +122,7 @@ final class SearchViewController: BaseViewController, View {
             },
             for: .touchUpInside
         )
-
+        
         rootView.titleHeaderView.rightButton.addAction(
             UIAction { [weak self] _ in
                 let infoViewController = SearchInfoViewController()
