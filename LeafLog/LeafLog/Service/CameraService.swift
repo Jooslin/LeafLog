@@ -36,7 +36,6 @@ actor CameraService: NSObject, CameraServiceProtocol {
     //MARK: 캡처 서비스를 이용하기 위한 조건
     // session: 앱이 OS의 캡처 인프라와 캡처 장치에 독점적으로 접근할 수 있도록 하고, 입력 장치 ~ 미디어 출력까지의 데이터 흐름을 관리하는 객체
     private var session = AVCaptureSession()
-    private var delegate: AVCapturePhotoCaptureDelegate?
     
     private let output = AVCapturePhotoOutput() // 사진 캡처 결과물
     private var capturedSubject: AsyncSubject<Data>? // 촬영이 끝날 때까지 결과를 잠시 보관할 객체 - 매 촬영마다 새로운 값
