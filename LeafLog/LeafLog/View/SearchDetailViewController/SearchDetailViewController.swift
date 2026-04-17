@@ -56,5 +56,13 @@ final class SearchDetailViewController: BaseViewController, View {
                 self?.detailView.configure(detail: detail, displayName: displayName, imageURLs: imageURLs)
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
     }
 }
