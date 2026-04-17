@@ -261,10 +261,8 @@ extension SearchReactor {
         Observable.create { [networkManager] observer in
             guard !classifications.isEmpty else {
                 // 결과 처리
-                let message = "AI 검색 결과 식물을 찾지 못했습니다."
-                
                 observer.onNext(.setPlants([]))
-                observer.onNext(.setResultText(message))
+                observer.onNext(.setResultText("AI 검색 결과 식물을 찾지 못했습니다."))
                 observer.onCompleted()
                 return Disposables.create()
             }
@@ -296,9 +294,11 @@ extension SearchReactor {
                         return $0 + [item]
                     }
                     
+                    let message: String = items.isEmpty ? "AI 검색 결과 식물을 찾지 못했습니다." : ""
+                    
                     observer.onNext(.setPlants(items))
                     // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
-                    observer.onNext(.setResultText(""))
+                    observer.onNext(.setResultText(message))
                     observer.onCompleted()
                     // 에러 처리
                 } catch {
