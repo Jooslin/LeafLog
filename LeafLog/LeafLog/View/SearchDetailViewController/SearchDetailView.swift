@@ -120,10 +120,13 @@ final class SearchDetailView: UIView {
 
 // MARK: 데이터 변경
 extension SearchDetailView {
-    func configure(detail: PlantDetail?, displayName: String, imageURLs: [String]) {
-        configureImages(with: imageURLs)
+    func configureContent(detail: PlantDetail?, displayName: String) {
         configureHeader(detail: detail, displayName: displayName)
         configureSections(detail: detail)
+    }
+
+    func configureImages(imageURLs: [String]) {
+        updateImages(with: imageURLs)
     }
 }
 
@@ -139,7 +142,7 @@ private extension SearchDetailView {
         imageCollectionView.reloadData()
     }
 
-    private func configureImages(with imageURLs: [String]) {
+    private func updateImages(with imageURLs: [String]) {
         self.imageURLs = imageURLs
         pageControl.numberOfPages = imageURLs.count
         pageControl.currentPage = 0

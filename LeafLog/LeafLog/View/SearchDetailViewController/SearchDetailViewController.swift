@@ -50,10 +50,19 @@ final class SearchDetailViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state
-            .map { ($0.detail, $0.displayName, $0.displayImageURLs) }
+            .map { ($0.detail, $0.displayName) }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] detail, displayName, imageURLs in
-                self?.detailView.configure(detail: detail, displayName: displayName, imageURLs: imageURLs)
+            .subscribe(onNext: { [weak self] detail, displayName in
+                self?.detailView.configureContent(detail: detail, displayName: displayName)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.displayImageURLs)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] imageURLs in
+                self?.detailView.configureImages(imageURLs: imageURLs)
             })
             .disposed(by: disposeBag)
 
