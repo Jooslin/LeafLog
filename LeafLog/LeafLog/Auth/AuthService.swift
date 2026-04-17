@@ -59,6 +59,24 @@ final class AuthService {
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
         )
+        
+        
+        let session = try await supabase.auth.session
+
+        try await supabase.functions.invoke(
+            "store-apple-token",
+            options: .init(
+                method: .post,
+                headers: [
+                    "Authorization": "Bearer \(session.accessToken)"
+                ],
+                body: [
+                    "authorizationCode": credential.authorizationCode,
+                    "userIdentifier": credential.userIdentifier
+                ]
+            )
+        )
+
         return try await supabase.auth.user()
     }
 
