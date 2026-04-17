@@ -22,6 +22,7 @@ final class MatchStatusBadgeLabel: UILabel {
         case high
         case medium
         case low
+        case unknown
 
         fileprivate var textColor: UIColor {
             switch self {
@@ -31,6 +32,8 @@ final class MatchStatusBadgeLabel: UILabel {
                 return .grayScale700
             case .low:
                 return .subRed
+            case .unknown:
+                return .grayScale50
             }
         }
 
@@ -42,6 +45,8 @@ final class MatchStatusBadgeLabel: UILabel {
                 return .grayScale50
             case .low:
                 return .subRed.withAlphaComponent(0.1)
+            case .unknown:
+                return .grayScale50
             }
         }
 
@@ -53,6 +58,8 @@ final class MatchStatusBadgeLabel: UILabel {
                 return "보통"
             case .low:
                 return "낮음"
+            case .unknown:
+                return "알 수 없음"
             }
         }
     }

@@ -33,12 +33,21 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
+        case .classificationResult(let result):
+            print(result)
+            let searchViewController = SearchViewController(classficationResult: result)
+            
+            navigationController.pushViewController(searchViewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
+            
         case .pushButtonTapped: // push 버튼이 눌렀을 경우
             let camera = CameraClassificationViewController()
             navigationController.pushViewController(camera, animated: true)
             
             // 다음 Presentable 객체인 SecondVC와 다음 Step을 방출한 Stepper인 SecondVC를 전달 (Presentable과 Stepper 모두 동일하게 secondVC입니다.)
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+            
+            
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))

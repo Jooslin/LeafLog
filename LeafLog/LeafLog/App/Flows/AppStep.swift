@@ -32,6 +32,9 @@ enum AppStep: Step {
     case alert(String, String) // (타이틀, 메세지)
     case pop
     
+    // PlantTab
+    case classificationResult([String: PlantClassificationService.Confidence])
+    
     // 예시용
     case pushButtonTapped
 }

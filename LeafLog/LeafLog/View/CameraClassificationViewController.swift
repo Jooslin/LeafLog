@@ -74,19 +74,10 @@ class CameraClassificationViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: CameraClassificationReactor) {
-        let state = reactor.state
-            .asDriver(onErrorJustReturn: CameraClassificationReactor.State())
-        
-        reactor.pulse(\.$classificationResult)
-            .map { $0 }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] result in
-                if let result {
-                    print(result.0.rawValue, result.1)
-                } else {
-                    print("검색 결과 없음")
-                }
-            })
+        reactor.state
+            .map { AppStep.classificationResult($0.classificationResult)
+            }
+            .bind(to: steps)
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$errorMessage)

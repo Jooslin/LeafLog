@@ -42,7 +42,8 @@ class PlantClassificationService {
             case 150...255: .extremeHigh // 59% 이상 - 모델이 강하게 확신
             case 80..<150: .high // 31~58% - 명확히 구분됨 (몬스테라 120 해당)
             case 40..<80: .normal // 16~31% - 비슷한 종이 여럿 있음
-            default: .low // 15% 이하 - 불확실, 재촬영 권장
+            case 20..<40: .low // 7~15% - 불확실, 재촬영 권장
+            default: .unknown // 7% 이하 - 매우 낮음, 알수없음
             }
         }
         
@@ -111,8 +112,6 @@ class PlantClassificationService {
 
 //MARK: Run Model
 extension PlantClassificationService {
-    
-    //TODO: 리턴 타입 바꾸기
     // 이미지 분석 함수
     func analyzeImage(image: UIImage) throws -> [String: Confidence] {
         do {

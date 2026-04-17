@@ -29,7 +29,7 @@ final class CameraClassificationReactor: Reactor {
     struct State {
         @Pulse var isCameraReady: Bool = false
     
-        @Pulse var classificationResult: [String: PlantClassificationService.Confidence] = [:]
+        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
         
         @Pulse var errorMessage: String? = nil
     }

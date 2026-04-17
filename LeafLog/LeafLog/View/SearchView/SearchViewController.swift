@@ -14,14 +14,23 @@ import Then
 
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
-    private var itemsByIdentifier: [String: PlantSummary] = [:] // 식물 번호로 저장
+    private var itemsByIdentifier: [String: PlantSummaryItem] = [:]
+    // 식물 번호로 저장
     private var dataSource: UICollectionViewDiffableDataSource<String, String>?
 
+    private var classificationResult: [String: PlantClassificationService.Confidence]? // AI 검색 에서 진입 시 존재
+    
     init(reactor: SearchReactor = SearchReactor()) {
         super.init(nibName: nil, bundle: nil)
         self.reactor = reactor
     }
 
+    init(reactor: SearchReactor = SearchReactor(), classficationResult: [String: PlantClassificationService.Confidence]) {
+        super.init(nibName: nil, bundle: nil)
+        self.classificationResult = classficationResult
+        self.reactor = reactor
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -80,12 +89,10 @@ final class SearchViewController: BaseViewController, View {
             else {
                 return UICollectionViewCell()
             }
-
+            
             cell.configure(
                 plantName: item.name,
-                statusStyle: .high,
-                statusPrefix: "검색결과",
-                showsStatusBadge: false,
+                confidence: item.confidence,
                 thumbnailURLString: item.displayThumbnailURL
             )
             return cell
@@ -117,9 +124,19 @@ final class SearchViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         rootView.searchBarView.textField.rx.text.orEmpty
+            .skip(1)
             .debounce(.milliseconds(400), scheduler: MainScheduler.instance)
             .distinctUntilChanged()
             .map(SearchReactor.Action.updateQuery) // 입력문자 Reactor 액션으로 변환
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        self.rx.viewWillAppear
+            .take(1)
+            .compactMap { [classificationResult] _ in
+                guard let classificationResult else { return nil }
+                return SearchReactor.Action.classificationQuery(classificationResult)
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
@@ -185,8 +202,9 @@ final class SearchViewController: BaseViewController, View {
             button.menu = UIMenu(children: [clearAction] + actions)
         }
     }
-
-    private func applySnapshot(plants: [PlantSummary], animated: Bool = true) {
+    
+    // 파라미터 타입 변경
+    private func applySnapshot(plants: [PlantSummaryItem], animated: Bool = true) {
         itemsByIdentifier = Dictionary(
             uniqueKeysWithValues: plants.map { ($0.contentNumber, $0) }
         )
@@ -207,9 +225,7 @@ extension SearchViewController {
         let name: String
         let imageURL: String?
         let thumbnailURL: String?
-        
-        let isClassificationResult: Bool
-        let statusStyle: MatchStatusBadgeLabel.Style = .high // ai 검색 일치율
+        let confidence: PlantClassificationService.Confidence // ai 검색 일치율
 
         let primaryThumbnailURL: String?
         let primaryImageURL: String?

@@ -166,7 +166,7 @@ extension NetworkManager {
         
         var plants: [PlantSummary] = []
         
-        for parameters in parameterList {
+        for parameters in parameterList {            
             let response: PlantListResponse = try await request(
                 path: "gardenList",
                 parameters: parameters
