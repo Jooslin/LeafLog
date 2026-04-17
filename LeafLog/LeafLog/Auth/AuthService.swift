@@ -109,7 +109,7 @@ final class AuthService {
             userIdentifier: credential.userIdentifier
         )
 
-        let _: StoreAppleTokenResponse = try await supabase.functions.invoke(
+        let response: StoreAppleTokenResponse = try await supabase.functions.invoke(
             "store-apple-token",
             options: .init(
                 method: .post,
@@ -117,6 +117,10 @@ final class AuthService {
                 body: request
             )
         )
+
+        guard response.success else {
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        }
     }
 
     
