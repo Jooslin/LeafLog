@@ -14,6 +14,23 @@ final class PlantDBManager {
     
     
     private init() {}
+
+    // MARK: 현재 로그인한 사용자가 등록한 식물 목록 조회
+    func fetchMyPlants() async throws -> [MyPlant] {
+        let user = try await supabaseManager.client.auth.user()
+
+        do {
+            return try await supabaseManager.client
+                .from("plants")
+                .select()
+                .eq("user_id", value: user.id)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.plantFailed("등록한 식물 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+    }
     
     // MARK: - DB의 plants 테이블에 새 레코드를 Insert
     func createPlant(plantID: UUID, userID: UUID, imagePath: String?, input: PlantCreateInput) async throws -> MyPlant {
