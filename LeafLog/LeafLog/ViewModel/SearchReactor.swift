@@ -277,23 +277,23 @@ extension SearchReactor {
                     
                     // API 검색 결과
                     let plants = try await networkManager.fetchPlantListBy(keywords: keywords)
-                    
+
                     let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
-                        let confidence = classifications[$1.name] ?? .unknown
+                        guard let confidence = classifications[$1.key] else { return $0 }
                         
                         let item = SearchViewController.PlantSummaryItem(
-                            contentNumber: $1.contentNumber,
-                            name: $1.name,
-                            imageURL: $1.imageURL,
-                            thumbnailURL: $1.thumbnailURL,
+                            contentNumber: $1.value.contentNumber,
+                            name: $1.value.name,
+                            imageURL: $1.value.imageURL,
+                            thumbnailURL: $1.value.thumbnailURL,
                             confidence: confidence,
-                            primaryThumbnailURL: $1.primaryImageURL,
-                            primaryImageURL: $1.primaryImageURL,
-                            displayThumbnailURL: $1.displayThumbnailURL)
-                        
+                            primaryThumbnailURL: $1.value.primaryImageURL,
+                            primaryImageURL: $1.value.primaryImageURL,
+                            displayThumbnailURL: $1.value.displayThumbnailURL)
+
                         return $0 + [item]
                     }
-                    
+
                     let message: String = items.isEmpty ? "AI 검색 결과 식물을 찾지 못했습니다." : ""
                     
                     observer.onNext(.setPlants(items))

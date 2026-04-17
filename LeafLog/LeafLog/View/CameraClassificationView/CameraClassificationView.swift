@@ -144,12 +144,6 @@ extension CameraClassificationView {
     func cameraAuthDenied() {
         print("CameraAuthDenied")
     }
-    
-    func capture(_ image: UIImage?) {
-        imageView.image = image
-        imageView.isHidden = false
-        print("image")
-    }
 }
 
 extension Reactive where Base: CameraClassificationView {

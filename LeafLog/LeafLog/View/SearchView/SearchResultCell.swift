@@ -127,17 +127,13 @@ extension SearchResultCell {
     ) {
         plantNameLabel.text = plantName
         statusLabel.isHidden = confidence == .unknown ? true : false
-        
+
         let statusStyle: MatchStatusBadgeLabel.Style =
         switch confidence {
-        case .extremeHigh, .high:
-                .high
-        case .normal:
-                .medium
-        case .low:
-                .low
-        case .unknown:
-                .unknown
+        case .high: .high
+        case .normal: .medium
+        case .low: .low
+        case .unknown: .unknown
         }
         
         let statusPrefix = statusStyle == .unknown ? "검색결과": "일치율"

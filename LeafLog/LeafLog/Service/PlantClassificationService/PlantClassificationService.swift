@@ -31,25 +31,22 @@ class PlantClassificationService {
     }
     
     enum Confidence: Int {
-        case extremeHigh = 0
-        case high
+        case high = 0
         case normal
         case low
         case unknown
         
         static func from(value: UInt8) -> Confidence {
             switch value {
-            case 150...255: .extremeHigh // 59% 이상 - 모델이 강하게 확신
-            case 80..<150: .high // 31~58% - 명확히 구분됨 (몬스테라 120 해당)
-            case 40..<80: .normal // 16~31% - 비슷한 종이 여럿 있음
-            case 20..<40: .low // 7~15% - 불확실, 재촬영 권장
-            default: .unknown // 7% 이하 - 매우 낮음, 알수없음
+            case 120...255: .high // 47% 이상 - 명확히 구분됨 (몬스테라 120 해당)
+            case 75..<120: .normal // 29~46% - 비슷한 종이 여럿 있음
+            case 35..<75: .low // 14~28% - 불확실, 재촬영 권장
+            default: .unknown // 알수없음
             }
         }
         
         var description: String {
             switch self {
-            case .extremeHigh: "매우 높음"
             case .high: "높음"
             case .normal: "보통"
             case .low: "낮음"

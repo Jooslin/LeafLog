@@ -151,35 +151,30 @@ extension NetworkManager {
     // 검색결과 간략하게
     func fetchPlantListBy(
         keywords: [String]
-    ) async throws -> [PlantSummary] {
-        let parameterList: [Parameters] = keywords.reduce([Parameters]()) {
+    ) async throws -> [String: PlantSummary] {
+        var plants: [String: PlantSummary] = [:]
+        
+        for keyword in keywords {
             let parameters: Parameters = [
                 "apiKey": AppConfig.apiKey,
                 "sType": PlantSearchType.botanicalName.rawValue,
-                "sText": $1,
+                "sText": keyword,
                 "pageNo": "1",
                 "numOfRows": "1"
             ]
             
-            return $0 + [parameters]
-        }
-        
-        var plants: [PlantSummary] = []
-        
-        for parameters in parameterList {            
             let response: PlantListResponse = try await request(
                 path: "gardenList",
                 parameters: parameters
-            )
+                )
             
-            // HTTP 요청이 아닌 농사로 자체 API 확인(내부 resultCode 확인)
             try validate(header: response.header)
             
             guard let plant = response.body.items.item.first else {
                 continue
             }
             
-            plants.append(plant)
+            plants[keyword] = plant
         }
 
         return plants

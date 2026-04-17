@@ -34,7 +34,6 @@ final class PlantTabFlow: Flow {
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
         case .classificationResult(let result):
-            print(result)
             let searchViewController = SearchViewController(classficationResult: result)
             
             navigationController.pushViewController(searchViewController, animated: true)
