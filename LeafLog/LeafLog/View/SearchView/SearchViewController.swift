@@ -12,6 +12,7 @@ import SnapKit
 import UIKit
 import Then
 
+// TODO: APPFlow 적용하기
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
     private var itemsByIdentifier: [String: PlantSummary] = [:] // 식물 번호로 저장
@@ -34,6 +35,7 @@ final class SearchViewController: BaseViewController, View {
         super.viewDidLoad()
         configureFilters()
         configureCollectionView()
+        bindUI()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -104,6 +106,31 @@ final class SearchViewController: BaseViewController, View {
 
             return view
         }
+    }
+    
+    // TODO: 리팩토링 필요함
+    private func bindUI() {
+        rootView.titleHeaderView.backButton.addAction(
+            UIAction { [weak self] _ in
+                guard let self else { return }
+
+                if let navigationController, navigationController.viewControllers.first != self {
+                    navigationController.popViewController(animated: false)
+                } else {
+                    dismiss(animated: false)
+                }
+            },
+            for: .touchUpInside
+        )
+
+        rootView.titleHeaderView.rightButton.addAction(
+            UIAction { [weak self] _ in
+                let infoViewController = SearchInfoViewController()
+                infoViewController.modalPresentationStyle = .overFullScreen
+                self?.present(infoViewController, animated: false)
+            },
+            for: .touchUpInside
+        )
     }
 
     func bind(reactor: SearchReactor) {
@@ -198,4 +225,16 @@ final class SearchViewController: BaseViewController, View {
     }
 }
 
-extension SearchViewController: UICollectionViewDelegate {}
+extension SearchViewController: UICollectionViewDelegate {
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let identifier = dataSource?.itemIdentifier(for: indexPath),
+            let item = itemsByIdentifier[identifier]
+        else { return }
+
+        let reactor = SearchDetailReactor(contentNumber: item.contentNumber)
+        let viewController = SearchDetailViewController(reactor: reactor)
+
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+}
