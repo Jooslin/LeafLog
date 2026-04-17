@@ -3,6 +3,7 @@
 //  LeafLog
 //
 //  Created by t2025-m0143 on 4/3/26.
+//  Updated by 김주희 on 4/16/26.
 //
 
 import UIKit
@@ -12,6 +13,17 @@ import Dependencies
 final class AuthService {
 
     private struct WithdrawResponse: Decodable {
+        let success: Bool
+    }
+
+    // 서버로 Apple authorizationCode를 보내기 위한 요청 모델
+    private struct StoreAppleTokenRequest: Encodable {
+        let authorizationCode: String
+        let userIdentifier: String
+    }
+
+    // Edgefunction의 응답
+    private struct StoreAppleTokenResponse: Decodable {
         let success: Bool
     }
     
@@ -56,37 +68,55 @@ final class AuthService {
     // MARK: - Apple Login
     func startAppleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
         let credential = try await appleProvider.fetchCredential(presentingViewController: presentingViewController)
+
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
         )
-        
-        
-        let session = try await supabase.auth.session
 
-        try await supabase.functions.invoke(
-            "store-apple-token",
+        let session = try await supabase.auth.session // 슈파베이스 로그인 세션
+        
+        do {
+            // Edge function으로 authorizationCode 보냄
+            try await storeAppleToken(credential: credential, accessToken: session.accessToken)
+        } catch {
+            try? await supabase.auth.signOut(scope: .local) // 로그인 성공했지만 refresh_token 저장 실패했으므로 로컬 세션 지워줌
+            throw AuthError.sessionFailed("Apple 인증 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+
+        return try await supabase.auth.user()
+    }
+
+    // Edge Function 호출
+    private func storeAppleToken(
+        credential: AppleAuthProvider.AppleCredential, // authorizationCode, userIdentifier
+        accessToken: String // Edge function 인증용
+    ) async throws {
+        let request = StoreAppleTokenRequest(
+            authorizationCode: credential.authorizationCode,
+            userIdentifier: credential.userIdentifier
+        )
+
+        let _: StoreAppleTokenResponse = try await supabase.functions.invoke(
+            "store-apple-token", // 호출할 edge function 이름
             options: .init(
                 method: .post,
                 headers: [
-                    "Authorization": "Bearer \(session.accessToken)"
+                    "Authorization": "Bearer \(accessToken)"
                 ],
-                body: [
-                    "authorizationCode": credential.authorizationCode,
-                    "userIdentifier": credential.userIdentifier
-                ]
+                body: request
             )
         )
-
-        return try await supabase.auth.user()
     }
 
     
     // MARK: - Google Login
     func startGoogleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
         let credential = try await googleProvider.fetchCredential(presentingViewController: presentingViewController)
+
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .google, idToken: credential.idToken, nonce: credential.rawNonce)
         )
+
         let user = try await supabase.auth.user()
         try await ensureProfileExists(for: user)
         return user
