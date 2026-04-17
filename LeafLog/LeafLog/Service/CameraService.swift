@@ -61,17 +61,6 @@ extension CameraService {
             throw CameraError.authorizationDenied
         }
     }
-    
-    // 카메라 권한 요청 메서드
-    private func requestCameraAuthorization() async throws {
-        let granted = await AVCaptureDevice.requestAccess(for: .video)
-        
-        if granted {
-            try prepareSession()
-        } else {
-            throw CameraError.authorizationDenied
-        }
-    }
 }
 
 //MARK: Session Setup
