@@ -15,7 +15,7 @@ import RxCocoa
 
 class CameraClassificationView: UIView {
     let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
-        $0.invertColors()
+        $0.apply(color: .white)
         $0.backgroundColor = .clear
     }
 
@@ -42,11 +42,8 @@ class CameraClassificationView: UIView {
         $0.setTitle("촬영하기", for: .normal)
     }
     
-    
-    //TODO: Sample!!!!!!!!!!
-    let imageView = UIImageView().then {
+    let authDeniedView = CameraAuthNoticeView().then {
         $0.isHidden = true
-        $0.contentMode = .scaleAspectFit
     }
     
     override init(frame: CGRect) {
@@ -73,7 +70,7 @@ extension CameraClassificationView {
         addSubview(titleView)
         addSubview(guideBackground)
         addSubview(shootButton)
-        addSubview(imageView)
+        addSubview(authDeniedView)
         
         guideBackground.addSubview(guideLabel)
         
@@ -102,9 +99,9 @@ extension CameraClassificationView {
             $0.verticalEdges.equalToSuperview().inset(8)
         }
         
-        imageView.snp.makeConstraints {
-            $0.center.equalToSuperview()
-            $0.width.height.equalTo(224)
+        authDeniedView.snp.makeConstraints {
+            $0.top.equalTo(titleView.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
     
@@ -141,8 +138,26 @@ extension CameraClassificationView {
         cameraFrame.fillColor = UIColor.grayScale600.withAlphaComponent(0.7).cgColor
     }
     
-    func cameraAuthDenied() {
-        print("CameraAuthDenied")
+    func configure(isAuthorized: Bool, isCameraReady: Bool) {
+        if isAuthorized && isCameraReady {
+            cameraFrame.fillColor = UIColor.grayScale600.withAlphaComponent(0.7).cgColor
+            
+            titleView.backgroundColor = .clear
+            titleView.apply(color: .white)
+            
+            authDeniedView.isHidden = true
+        } else {
+            cameraFrame.fillColor = UIColor.white.cgColor
+            
+            titleView.backgroundColor = .white
+            titleView.apply(color: .black)
+            
+            authDeniedView.isHidden = false
+            
+            isAuthorized ?
+            authDeniedView.configure(with: .cameraNotReady)
+            : authDeniedView.configure(with: .authorizationDenied)
+        }
     }
 }
 

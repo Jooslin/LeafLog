@@ -80,13 +80,30 @@ class CameraClassificationViewController: BaseViewController, View {
             .bind(to: steps)
             .disposed(by: disposeBag)
         
+        let isAuthorized = reactor.pulse(\.$isAuthorized)
+            .asDriver(onErrorDriveWith: .empty())
+        
+        let isCameraReady = reactor.pulse(\.$isCameraReady)
+            .asDriver(onErrorDriveWith: .empty())
+        
+        Driver
+            .combineLatest(isAuthorized, isCameraReady)
+            .drive(onNext: { [weak self] isAuthorized, isCameraReady in
+                self?.cameraClassificationView.configure(isAuthorized: isAuthorized, isCameraReady: isCameraReady)
+                
+                if isAuthorized && isCameraReady {
+                    self?.view.backgroundColor = .clear
+                } else {
+                    self?.view.backgroundColor = .white
+                }
+            })
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
-            .drive(with: self, onNext: { `self`, message in
-//                self.cameraClassificationView.cameraAuthDenied()
-                print(message)
-                
+            .drive(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("에러", message))
             })
             .disposed(by: disposeBag)
     }

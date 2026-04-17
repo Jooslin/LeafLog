@@ -77,11 +77,11 @@ extension TitleHeaderView {
 }
 
 extension TitleHeaderView {
-    // 색상 반전 메서드(white)
-    func invertColors() {
-        titleLabel.textColor = .white
-        backButton.configuration?.baseForegroundColor = .white
-        rightButton.configuration?.baseForegroundColor = .white
+    // 색상 변경 메서드
+    func apply(color: UIColor) {
+        titleLabel.textColor = color
+        backButton.configuration?.baseForegroundColor = color
+        rightButton.configuration?.baseForegroundColor = color
     }
 }
 

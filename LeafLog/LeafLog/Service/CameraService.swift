@@ -51,7 +51,7 @@ extension CameraService {
         case .authorized:
             return
         case .notDetermined:
-            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            let granted = await AVCaptureDevice.requestAccess(for: .video) // 카메라 권한 요청
             if !granted {
                 throw CameraError.authorizationDenied
             }

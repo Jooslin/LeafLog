@@ -20,13 +20,16 @@ final class CameraClassificationReactor: Reactor {
     
     // State를 변경시킬 값
     enum Mutation {
+        case authDenied
         case cameraReady
+        case cameraNotReady
         case analyzeCapture([String: PlantClassificationService.Confidence]) // [식물 학명: 일치율]
         case error(String)
     }
     
     // (화면의) 상태
     struct State {
+        @Pulse var isAuthorized: Bool = false
         @Pulse var isCameraReady: Bool = false
     
         var classificationResult: [String: PlantClassificationService.Confidence] = [:]
@@ -40,7 +43,6 @@ final class CameraClassificationReactor: Reactor {
     //MARK: Properties
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.plantClassificationService) private var plantClassificationService
-    @Dependency(\.networkManager) private var networkManager
     
     // Action -> Mutation -> State
     // Action을 Mutation으로 변환
@@ -70,8 +72,16 @@ final class CameraClassificationReactor: Reactor {
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
+        case .authDenied:
+            newState.isAuthorized = false
+            newState.isCameraReady = false
+            
         case .cameraReady:
+            newState.isAuthorized = true
             newState.isCameraReady = true
+            
+        case .cameraNotReady:
+            newState.isCameraReady = false
 
         case .analyzeCapture(let results):
             newState.classificationResult = results
@@ -98,15 +108,24 @@ extension CameraClassificationReactor {
                     
                     observer.onNext(.cameraReady)
                     observer.onCompleted()
-                } catch let error as CameraError {
-                    observer.onNext(.error(error.message))
-                    observer.onCompleted()
                 } catch {
-                    observer.onNext(.error("알 수 없는 에러입니다."))
-                    observer.onCompleted()
+                    if let cameraError = error as? CameraError {
+                        switch cameraError {
+                        case .authorizationDenied:
+                            observer.onNext(.authDenied)
+                            observer.onCompleted()
+                        case .sessionSettingFailed:
+                            observer.onNext(.cameraNotReady)
+                            observer.onCompleted()
+                        case .captureDataFailed:
+                            break
+                        }
+                    } else {
+                        observer.onNext(.error("알 수 없는 에러입니다."))
+                        observer.onCompleted()
+                    }
                 }
             }
-            
             return Disposables.create()
         }
     }

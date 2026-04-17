@@ -187,7 +187,6 @@ final class SearchReactor: Reactor {
         }
     }
     
-    
     private func search(
         query: String,
         searchType: PlantSearchType,
