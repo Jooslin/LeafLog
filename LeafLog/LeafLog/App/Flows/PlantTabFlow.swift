@@ -18,6 +18,7 @@ import AVFoundation
 
 final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
+    @Dependency(\.uiApplication) private var uiApplication
     private let navigationController = UINavigationController()
     
     var root: any RxFlow.Presentable { navigationController }
@@ -38,6 +39,13 @@ final class PlantTabFlow: Flow {
             
             navigationController.pushViewController(searchViewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
+        
+        case .applicatoinSettingRequired:
+            // 휴대폰의 앱 설정 화면으로 이동
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                uiApplication.open(url)
+            }
+            return .none
             
         case .pushButtonTapped: // push 버튼이 눌렀을 경우
             let camera = CameraClassificationViewController()
@@ -45,7 +53,6 @@ final class PlantTabFlow: Flow {
             
             // 다음 Presentable 객체인 SecondVC와 다음 Step을 방출한 Stepper인 SecondVC를 전달 (Presentable과 Stepper 모두 동일하게 secondVC입니다.)
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
-            
             
             
         default:

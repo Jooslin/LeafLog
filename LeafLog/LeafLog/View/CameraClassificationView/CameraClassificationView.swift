@@ -14,20 +14,20 @@ import RxSwift
 import RxCocoa
 
 class CameraClassificationView: UIView {
-    let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
+    fileprivate let titleView = TitleHeaderView(text: "AI 검색", hasBackButton: true).then {
         $0.apply(color: .white)
         $0.backgroundColor = .clear
     }
 
     let cameraPreview = CameraPreview()
-    let cameraFrame = CAShapeLayer()
+    private let cameraFrame = CAShapeLayer()
     private(set) var guideFrameSize: CGRect = .zero // 가이드 프레임 사이즈
     
-    let guideBackground = BaseCardView(cornerRadius: 8).then {
+    private let guideBackground = BaseCardView(cornerRadius: 8).then {
         $0.backgroundColor = .white.withAlphaComponent(0.6)
     }
     
-    let guideLabel = UILabel(
+    private let guideLabel = UILabel(
         text: """
             카메라가 식물을 정확히 찾지 못했어요.
             식물이 잘 보이도록 다시 촬영해 주세요.
@@ -42,7 +42,7 @@ class CameraClassificationView: UIView {
         $0.setTitle("촬영하기", for: .normal)
     }
     
-    let authDeniedView = CameraAuthNoticeView().then {
+    fileprivate let authDeniedView = CameraAuthNoticeView().then {
         $0.isHidden = true
     }
     
@@ -134,8 +134,6 @@ extension CameraClassificationView {
         // evenOdd 설정 - 기본적으로는 path가 겹치는 부분을 채우지만, evenOdd의 경우 path가 겹치는 부분을 반대로 동작(없앰)
         cameraFrame.path = path.cgPath
         cameraFrame.fillRule = .evenOdd
-        
-        cameraFrame.fillColor = UIColor.grayScale600.withAlphaComponent(0.7).cgColor
     }
     
     func configure(isAuthorized: Bool, isCameraReady: Bool) {
@@ -164,5 +162,9 @@ extension CameraClassificationView {
 extension Reactive where Base: CameraClassificationView {
     var backButtonTap: ControlEvent<Void> {
         base.titleView.rx.backButtonTap
+    }
+    
+    var settingButtonTap: ControlEvent<Void> {
+        base.authDeniedView.rx.settingButtonTap
     }
 }

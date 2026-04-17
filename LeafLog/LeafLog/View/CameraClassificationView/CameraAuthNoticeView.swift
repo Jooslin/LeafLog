@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CameraAuthNoticeView: UIView {
     let imageView = UIImageView(image: .cameraColored).then {
@@ -27,8 +29,8 @@ final class CameraAuthNoticeView: UIView {
         $0.textAlignment = .center
     }
     //TODO: component 수정 필요
-    //    let moveToSettingButton = BottomSaveButton(title: "설정으로 이동")
-    let moveToSettingButton = UIButton(configuration: .filled()).then {
+    //    let settingButton = BottomSaveButton(title: "설정으로 이동")
+    let settingButton = UIButton(configuration: .filled()).then {
         $0.setTitle("설정으로 이동", for: .normal)
         $0.snp.makeConstraints {
             $0.height.equalTo(24)
@@ -59,14 +61,14 @@ final class CameraAuthNoticeView: UIView {
         }
         
         addSubview(stackView)
-        addSubview(moveToSettingButton)
+        addSubview(settingButton)
         
         stackView.snp.makeConstraints {
             $0.centerY.equalToSuperview()
             $0.horizontalEdges.equalToSuperview().inset(76)
         }
         
-        moveToSettingButton.snp.makeConstraints {
+        settingButton.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(24)
             $0.bottom.equalTo(safeAreaLayoutGuide).inset(24)
         }
@@ -106,5 +108,11 @@ extension CameraAuthNoticeView {
             label.text = type.label
             subLabel.text = type.subLabel
         }
+    }
+}
+
+extension Reactive where Base: CameraAuthNoticeView {
+    var settingButtonTap: ControlEvent<Void> {
+        base.settingButton.rx.tap
     }
 }

@@ -34,6 +34,7 @@ enum AppStep: Step {
     
     // PlantTab
     case classificationResult([String: PlantClassificationService.Confidence])
+    case applicatoinSettingRequired // 휴대폰의 앱 설정 화면
     
     // 예시용
     case pushButtonTapped

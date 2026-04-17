@@ -71,6 +71,13 @@ class CameraClassificationViewController: BaseViewController, View {
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        cameraClassificationView.rx.settingButtonTap
+            .throttle(.microseconds(500), scheduler: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.steps.accept(AppStep.applicatoinSettingRequired)
+            })
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: CameraClassificationReactor) {
@@ -90,12 +97,7 @@ class CameraClassificationViewController: BaseViewController, View {
             .combineLatest(isAuthorized, isCameraReady)
             .drive(onNext: { [weak self] isAuthorized, isCameraReady in
                 self?.cameraClassificationView.configure(isAuthorized: isAuthorized, isCameraReady: isCameraReady)
-                
-                if isAuthorized && isCameraReady {
-                    self?.view.backgroundColor = .clear
-                } else {
-                    self?.view.backgroundColor = .white
-                }
+
             })
             .disposed(by: disposeBag)
         
