@@ -11,7 +11,7 @@ import Then
 import UIKit
 import RxSwift
 
-final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIScrollViewDelegate {
+final class SearchDetailView: UIView {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -93,7 +93,7 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         rows: []
     )
 
-    private var imageItems: [PlantFileItem] = []
+    private var imageURLs: [String] = []
 
     // 버튼탭 이벤트
     var closeButtonTap: ControlEvent<Void> {
@@ -110,16 +110,27 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    func configure(detail: PlantDetail?, images: [PlantFileItem]) {
-        configureImages(with: images)
-        configureHeader(detail: detail, images: images)
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        imageCollectionViewFlowLayout.itemSize = CGSize(width: imageCollectionView.bounds.width, height: imageCollectionView.bounds.height)
+    }
+}
+
+
+// MARK: 데이터 변경
+extension SearchDetailView {
+    func configure(detail: PlantDetail?, displayName: String, imageURLs: [String]) {
+        configureImages(with: imageURLs)
+        configureHeader(detail: detail, displayName: displayName)
         configureSections(detail: detail)
     }
-    
-    // 초기 세팅
+}
+
+// MARK: UI 구현 부
+private extension SearchDetailView {
     private func configureInitialState() {
-        imageItems = []
+        imageURLs = []
         pageControl.numberOfPages = 0
         nameLabel.text = "식물 정보를 불러오는 중"
         familyNameLabel.text = nil
@@ -127,19 +138,19 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         configureSections(detail: nil)
         imageCollectionView.reloadData()
     }
-    
-    private func configureImages(with images: [PlantFileItem]) {
-        imageItems = images.filter { $0.fileCodeName == "이미지" || $0.isImage }
-        pageControl.numberOfPages = imageItems.count
+
+    private func configureImages(with imageURLs: [String]) {
+        self.imageURLs = imageURLs
+        pageControl.numberOfPages = imageURLs.count
         pageControl.currentPage = 0
         imageCollectionView.reloadData()
 
-        guard !imageItems.isEmpty else { return }
+        guard !imageURLs.isEmpty else { return }
         imageCollectionView.setContentOffset(.zero, animated: false)
     }
-    
-    private func configureHeader(detail: PlantDetail?, images: [PlantFileItem]) {
-        nameLabel.text = displayName(detail: detail, images: images)
+
+    private func configureHeader(detail: PlantDetail?, displayName: String) {
+        nameLabel.text = displayName
 
         if let familyName = nonEmptyValue(detail?.familyName) {
             familyNameLabel.text = "과명: \(familyName)"
@@ -185,12 +196,6 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         ])
     }
 
-    private func displayName(detail: PlantDetail?, images: [PlantFileItem]) -> String {
-        nonEmptyValue(images.first?.name)
-        ?? "이름 정보 없음"
-    }
-    
-    // 공백 제거 및 값 확인
     private func nonEmptyValue(_ value: String?) -> String? {
         guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else {
@@ -200,12 +205,6 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         return trimmed
     }
     
-    private static func firstURL(from rawValue: String) -> String {
-        rawValue.components(separatedBy: "|")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first(where: { !$0.isEmpty }) ?? rawValue
-    }
-
     private func setupLayout() {
         addSubview(scrollView)
         addSubview(buttonStack)
@@ -227,7 +226,6 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         buttonStack.addArrangedSubview(closeButton)
         buttonStack.addArrangedSubview(selectButton)
 
-        // 버튼 고정으로
         scrollView.snp.makeConstraints {
             $0.top.leading.trailing.equalTo(safeAreaLayoutGuide)
             $0.bottom.equalTo(buttonStack.snp.top)
@@ -269,21 +267,17 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
             $0.bottom.equalToSuperview().inset(24)
         }
         
-        // 버튼
         buttonStack.snp.makeConstraints {
             $0.leading.trailing.bottom.equalTo(safeAreaLayoutGuide).inset(16)
             $0.height.equalTo(50)
         }
     }
-    
-    // 셀과 컬렉션 뷰 크기 맞추기
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        imageCollectionViewFlowLayout.itemSize = CGSize(width: imageCollectionView.bounds.width, height: imageCollectionView.bounds.height)
-    }
+}
 
+// MARK: 콜렉션 뷰(식물 이미지) 구현 부
+extension SearchDetailView: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIScrollViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        max(imageItems.count, 1)
+        max(imageURLs.count, 1)
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -294,8 +288,8 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
             return UICollectionViewCell()
         }
 
-        let imageURLString = imageItems.indices.contains(indexPath.item)
-            ? Self.firstURL(from: imageItems[indexPath.item].fileURL ?? imageItems[indexPath.item].thumbnailURL ?? "")
+        let imageURLString = imageURLs.indices.contains(indexPath.item)
+            ? imageURLs[indexPath.item]
             : nil
         cell.configure(imageURLString: imageURLString)
         return cell
@@ -305,168 +299,5 @@ final class SearchDetailView: UIView, UICollectionViewDataSource, UICollectionVi
         guard scrollView === imageCollectionView, scrollView.bounds.width > 0 else { return }
         let page = Int(round(scrollView.contentOffset.x / scrollView.bounds.width))
         pageControl.currentPage = max(0, min(page, max(pageControl.numberOfPages - 1, 0)))
-    }
-}
-
-// 한줄 세부사항
-final class DetailInfoRowView: UIView {
-
-    private let titleLabel = UILabel(config: .label14, color: .black)
-
-    private let valueLabel = UILabel(config: .label14, color: .grayScale600).then {
-        $0.numberOfLines = 0
-        $0.textAlignment = .right
-    }
-
-    init(title: String, value: String) {
-        super.init(frame: .zero)
-        titleLabel.text = title
-        titleLabel.setContentHuggingPriority(.required, for: .horizontal)
-        titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        valueLabel.text = value
-        setupLayout()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func setupLayout() {
-        addSubview(titleLabel)
-        addSubview(valueLabel)
-
-        titleLabel.snp.makeConstraints {
-            $0.leading.equalToSuperview()
-            $0.top.bottom.equalToSuperview().inset(5)
-        }
-
-        valueLabel.snp.makeConstraints {
-            $0.leading.greaterThanOrEqualTo(titleLabel.snp.trailing).offset(5)
-            $0.trailing.equalToSuperview()
-            $0.top.bottom.equalToSuperview().inset(5)
-        }
-    }
-}
-
-// 이미지 셀
-final class SearchDetailImageCell: UICollectionViewCell {
-    static let reuseIdentifier = "SearchDetailImageCell"
-
-    private let imageView = UIImageView().then {
-        $0.contentMode = .scaleAspectFill
-        $0.clipsToBounds = true
-        $0.backgroundColor = .grayScale100
-    }
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.addSubview(imageView)
-
-        imageView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-        }
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        imageView.kf.cancelDownloadTask()
-        imageView.image = UIImage(systemName: "photo")
-    }
-
-    func configure(imageURLString: String?) {
-        let placeholderImage = UIImage(systemName: "photo")
-
-        guard let imageURLString, !imageURLString.isEmpty,
-              let url = URL(string: imageURLString) else {
-            imageView.image = placeholderImage
-            return
-        }
-
-        imageView.kf.setImage(with: url, placeholder: placeholderImage)
-    }
-}
-
-// 섹션
-final class DetailInfoSectionView: UIView {
-    
-    private let sectionImage = UIImageView()
-    private let titleLabel = UILabel(config: .title14, color: .black)
-
-    private let stackView = UIStackView().then {
-        $0.axis = .vertical
-        $0.spacing = 12
-        $0.layer.cornerRadius = 12
-        $0.clipsToBounds = true
-        $0.backgroundColor = .primary50
-        
-        $0.isLayoutMarginsRelativeArrangement = true
-        $0.layoutMargins = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
-    }
-
-    init(imageResource: ImageResource, title: String, rows: [DetailInfoRowView]) {
-        super.init(frame: .zero)
-        sectionImage.image = UIImage(resource: imageResource)
-        titleLabel.text = title
-
-        setupLayout()
-
-        setRows(rows)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func setupLayout() {
-        addSubview(sectionImage)
-        addSubview(titleLabel)
-        addSubview(stackView)
-        
-        sectionImage.snp.makeConstraints {
-            $0.top.leading.equalToSuperview().offset(2)
-            $0.size.equalTo(14)
-        }
-        
-        titleLabel.snp.makeConstraints {
-            $0.top.trailing.equalToSuperview()
-            $0.leading.equalTo(sectionImage.snp.trailing).offset(4)
-        }
-
-        stackView.snp.makeConstraints {
-            $0.top.equalTo(titleLabel.snp.bottom).offset(12)
-            $0.leading.trailing.bottom.equalToSuperview()
-        }
-    }
-    
-    // 기존의 줄들을 다 지우고 셋팅
-    func setRows(_ rows: [DetailInfoRowView]) {
-        stackView.arrangedSubviews.forEach { view in
-            stackView.removeArrangedSubview(view)
-            view.removeFromSuperview()
-        }
-
-        rows.forEach {
-            stackView.addArrangedSubview($0)
-        }
-
-        isHidden = rows.isEmpty
-    }
-    
-    // (String, String?) 배열을 받아서 값이 비어있지 않은 것만 DetailInfoRowView로 변환
-    func setRows(_ rows: [(String, String?)]) {
-        let rowViews = rows.compactMap { title, value -> DetailInfoRowView? in
-            guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !value.isEmpty else {
-                return nil
-            }
-
-            return DetailInfoRowView(title: title, value: value)
-        }
-
-        setRows(rowViews)
     }
 }
