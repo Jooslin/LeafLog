@@ -16,41 +16,45 @@ final class CareRecordDBManager {
     
     // MARK: - 특정 식물의 특정 날짜에 해당하는 관리 기록 DB에서 불러 옴 (없으면 nil)
     func fetchCareRecord(plantID: UUID, recordDate: LocalDate) async throws -> CareRecord? {
-        let records: [CareRecord] = try await supabaseManager.client
-            .from("care_records")
-            .select()
-            .eq("plant_id", value: plantID)
-            .eq("record_date", value: recordDate.rawValue)
-            .limit(1)
-            .execute()
-            .value
-        
-        return records.first
+        do {
+            let records: [CareRecord] = try await supabaseManager.client
+                .from("care_records")
+                .select()
+                .eq("plant_id", value: plantID)
+                .eq("record_date", value: recordDate.rawValue)
+                .limit(1)
+                .execute()
+                .value
+
+            return records.first
+        } catch {
+            throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
+        }
     }
     
     
     // MARK: - 식물 관리 기록 upsert
     func upsertCareRecord(input: CareRecordUpsertInput) async throws -> CareRecord {
-        let existing = try await fetchCareRecord(plantID: input.plantID, recordDate: input.recordDate)
-        
-        let payload = CareRecordPayload(
-            plantID: input.plantID,
-            recordDate: input.recordDate,
-            recordedAt: input.recordedAt ?? existing?.recordedAt ?? Date(),
-            status: input.status ?? existing?.status,
-            watered: input.watered ?? existing?.watered ?? false,
-            repotted: input.repotted ?? existing?.repotted ?? false,
-            fertilized: input.fertilized ?? existing?.fertilized ?? false,
-            treated: input.treated ?? existing?.treated ?? false,
-            wateredNote: input.wateredNote ?? existing?.wateredNote,
-            repottedNote: input.repottedNote ?? existing?.repottedNote,
-            fertilizedNote: input.fertilizedNote ?? existing?.fertilizedNote,
-            treatedNote: input.treatedNote ?? existing?.treatedNote,
-            diaryText: input.diaryText ?? existing?.diaryText,
-            diaryPhotoPath: input.diaryPhotoPath ?? existing?.diaryPhotoPath
-        )
-        
         do {
+            let existing = try await fetchCareRecord(plantID: input.plantID, recordDate: input.recordDate)
+
+            let payload = CareRecordPayload(
+                plantID: input.plantID,
+                recordDate: input.recordDate,
+                recordedAt: input.recordedAt ?? existing?.recordedAt ?? Date(),
+                status: input.status ?? existing?.status,
+                watered: input.watered ?? existing?.watered ?? false,
+                repotted: input.repotted ?? existing?.repotted ?? false,
+                fertilized: input.fertilized ?? existing?.fertilized ?? false,
+                treated: input.treated ?? existing?.treated ?? false,
+                wateredNote: input.wateredNote ?? existing?.wateredNote,
+                repottedNote: input.repottedNote ?? existing?.repottedNote,
+                fertilizedNote: input.fertilizedNote ?? existing?.fertilizedNote,
+                treatedNote: input.treatedNote ?? existing?.treatedNote,
+                diaryText: input.diaryText ?? existing?.diaryText,
+                diaryPhotoPath: input.diaryPhotoPath ?? existing?.diaryPhotoPath
+            )
+
             return try await supabaseManager.client
                 .from("care_records")
                 .upsert(payload, onConflict: "plant_id,record_date") // 같은 날짜, 식물이면 
@@ -58,8 +62,10 @@ final class CareRecordDBManager {
                 .single()
                 .execute()
                 .value
+        } catch let error as AuthError {
+            throw error
         } catch {
-            throw AuthError.careFailed("식물 상태 기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+            throw AuthError.careFailed("식물 상태 기록을 저장하지 못했어요: \(error.localizedDescription)")
         }
     }
     
