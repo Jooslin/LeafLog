@@ -12,17 +12,23 @@ import Dependencies
 
 final class AuthService {
 
+    private enum Message {
+        static let appleLoginFailed = "Apple 로그인에 실패했어요. 잠시 후 다시 시도해주세요."
+        static let appleTokenStoreFailed = "Apple 로그인 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+        static let withdrawalFailed = "회원탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해주세요."
+    }
+
     private struct WithdrawResponse: Decodable {
         let success: Bool
     }
 
-    // 서버로 Apple authorizationCode를 보내기 위한 요청 모델
+    // Apple 토큰 저장 함수에 전달할 요청 모델
     private struct StoreAppleTokenRequest: Encodable {
         let authorizationCode: String
         let userIdentifier: String
     }
 
-    // Edgefunction의 응답
+    // Edge Function의 응답
     private struct StoreAppleTokenResponse: Decodable {
         let success: Bool
     }
@@ -69,27 +75,34 @@ final class AuthService {
     func startAppleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
         let credential = try await appleProvider.fetchCredential(presentingViewController: presentingViewController)
 
-        try await supabase.auth.signInWithIdToken(
-            credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
-        )
-
-        let session = try await supabase.auth.session // 슈파베이스 로그인 세션
-        
         do {
-            // Edge function으로 authorizationCode 보냄
-            try await storeAppleToken(credential: credential, accessToken: session.accessToken)
+            try await supabase.auth.signInWithIdToken(
+                credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
+            )
         } catch {
-            try? await supabase.auth.signOut(scope: .local) // 로그인 성공했지만 refresh_token 저장 실패했으므로 로컬 세션 지워줌
-            throw AuthError.sessionFailed("Apple 인증 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요.")
+            throw AuthError.sessionFailed(Message.appleLoginFailed)
         }
 
-        return try await supabase.auth.user()
+        let session = try await supabase.auth.session
+        
+        do {
+            try await storeAppleToken(credential: credential, accessToken: session.accessToken)
+        } catch FunctionsError.httpError {
+            await signOutLocalSession()
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        } catch {
+            await signOutLocalSession()
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        }
+
+        let user = try await supabase.auth.user()
+        try await ensureProfileExists(for: user)
+        return user
     }
 
-    // Edge Function 호출
     private func storeAppleToken(
-        credential: AppleAuthProvider.AppleCredential, // authorizationCode, userIdentifier
-        accessToken: String // Edge function 인증용
+        credential: AppleAuthProvider.AppleCredential,
+        accessToken: String
     ) async throws {
         let request = StoreAppleTokenRequest(
             authorizationCode: credential.authorizationCode,
@@ -97,12 +110,10 @@ final class AuthService {
         )
 
         let _: StoreAppleTokenResponse = try await supabase.functions.invoke(
-            "store-apple-token", // 호출할 edge function 이름
+            "store-apple-token",
             options: .init(
                 method: .post,
-                headers: [
-                    "Authorization": "Bearer \(accessToken)"
-                ],
+                headers: authorizationHeaders(accessToken: accessToken),
                 body: request
             )
         )
@@ -176,21 +187,26 @@ final class AuthService {
                 "delete-user", // DB에서 유저 데이터 삭제
                 options: .init(
                     method: .post,
-                    headers: [
-                        "Authorization": "Bearer \(session.accessToken)"
-                    ]
+                    headers: authorizationHeaders(accessToken: session.accessToken)
                 )
             )
-        } catch FunctionsError.httpError(_, let data) {
-            let body = String(data: data, encoding: .utf8) ?? "응답 본문을 읽을 수 없어요."
-            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(body)")
+        } catch FunctionsError.httpError {
+            throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         } catch {
-            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(error.localizedDescription)")
+            throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         }
 
         // 로그아웃
         try? await supabase.auth.signOut(scope: .local)
         await signOutProvider(for: user)
+    }
+
+    private func authorizationHeaders(accessToken: String) -> [String: String] {
+        ["Authorization": "Bearer \(accessToken)"]
+    }
+
+    private func signOutLocalSession() async {
+        try? await supabase.auth.signOut(scope: .local)
     }
 
     
