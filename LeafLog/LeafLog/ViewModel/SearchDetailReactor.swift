@@ -24,6 +24,12 @@ final class SearchDetailReactor: Reactor {
         var contentNumber: String
         var detail: PlantDetail?
         var images: [PlantFileItem] = []
+        var displayName: String = "이름 정보 없음"
+        var displayImages: [PlantFileItem] = []
+
+        var displayImageURLs: [String] {
+            displayImages.compactMap(\.displayImageURL)
+        }
     }
 
     let initialState: State
@@ -50,9 +56,12 @@ final class SearchDetailReactor: Reactor {
         switch mutation {
         case .setDetail(let detail):
             newState.detail = detail
+            newState.displayName = Self.makeDisplayName(from: newState.images)
 
         case .setImages(let images):
             newState.images = images
+            newState.displayImages = Self.makeDisplayImages(from: images)
+            newState.displayName = Self.makeDisplayName(from: images)
         }
 
         return newState
@@ -94,5 +103,20 @@ final class SearchDetailReactor: Reactor {
                 task.cancel()
             }
         }
+    }
+    
+    // 적절한 이미지만 만들기
+    private static func makeDisplayImages(from images: [PlantFileItem]) -> [PlantFileItem] {
+        images.filter(\.isImage)
+    }
+    // 이미지 이름 판별
+    private static func makeDisplayName(from images: [PlantFileItem]) -> String {
+        let imageName = images
+            .lazy
+            .compactMap(\.name)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty })
+
+        return imageName ?? "이름 정보 없음"
     }
 }

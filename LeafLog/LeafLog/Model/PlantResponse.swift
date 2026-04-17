@@ -300,11 +300,11 @@ struct PlantSummary: Decodable {
     let thumbnailURL: String?
 
     var primaryThumbnailURL: String? {
-        Self.firstURL(from: thumbnailURL)
+        thumbnailURL?.firstCleanedValue
     }
 
     var primaryImageURL: String? {
-        Self.firstURL(from: imageURL)
+        imageURL?.firstCleanedValue
     }
 
     var displayThumbnailURL: String? {
@@ -316,13 +316,6 @@ struct PlantSummary: Decodable {
         case name = "cntntsSj"
         case imageURL = "rtnFileUrl"
         case thumbnailURL = "rtnThumbFileUrl"
-    }
-
-    private static func firstURL(from rawValue: String?) -> String? {
-        rawValue?
-            .components(separatedBy: "|")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first(where: { !$0.isEmpty })
     }
 }
 
@@ -383,6 +376,18 @@ struct PlantFileItem: Decodable, Equatable {
         fileCodeName == "이미지" || fileCode == "185002"
     }
 
+    var primaryThumbnailURL: String? {
+        thumbnailURL?.firstCleanedValue
+    }
+
+    var primaryFileURL: String? {
+        fileURL?.firstCleanedValue
+    }
+
+    var displayImageURL: String? {
+        primaryFileURL ?? primaryThumbnailURL
+    }
+
     private enum CodingKeys: String, CodingKey {
         case contentNumber = "cntntsNo"
         case name = "cntntsSj"
@@ -395,5 +400,13 @@ struct PlantFileItem: Decodable, Equatable {
         case imageCodeName = "rtnImgSeCodeName"
         case originalFileName = "rtnOrginlFileNm"
         case thumbnailURL = "rtnThumbFileUrl"
+    }
+}
+
+private extension String {
+    var firstCleanedValue: String? {
+        components(separatedBy: "|")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty })
     }
 }
