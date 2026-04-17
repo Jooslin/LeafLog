@@ -327,64 +327,42 @@ struct PlantSummary: Decodable {
 }
 
 struct PlantDetail: Decodable {
-    let contentNumber: String
-    let botanicalName: String?
-    let englishName: String?
-    let distributionName: String?
-    let familyName: String?
-    let origin: String?
-    let advice: String?
-    let growthHeight: String?
-    let growthWidth: String?
-    let leafStyle: String?
-    let toxicity: String?
-    let propagationSeason: String?
-    let manageLevel: String?
-    let growthSpeed: String?
-    let growthTemperature: String?
-    let winterMinimumTemperature: String?
-    let humidity: String?
-    let fertilizer: String?
-    let soil: String?
-    let springWaterCycle: String?
-    let summerWaterCycle: String?
-    let autumnWaterCycle: String?
-    let winterWaterCycle: String?
-    let pestManagement: String?
-    let specialManagement: String?
-    let functionality: String?
-    let lightDemand: String?
-    let placement: String?
+    let contentNumber: String? // 넘버
+    let familyName: String? // 과명
+    let origin: String? // 원산지 정보
+    let winterMinimumTemperature: String? // 겨울 최저 온도
+    let springWaterCycle: String? // 봄 물주기
+    let summerWaterCycle: String? // 여름 물주기
+    let autumnWaterCycle: String? // 가을 물주기
+    let winterWaterCycle: String? // 겨울 물주기
+    let lightDemand: String?// 광도요구
+    let placement: String? // 장소 추천
+    let growStyle: String? // 생육 형태
+    let leafColor: String? // 잎색
+    let leafMark: String? // 잎 무늬
+    let flowerColor: String? // 꽃색
+    let flowerSeason: String? // 꽃피는 계절
+    let fruitColor: String?// 과일 색
+    let fruitSeason: String? // 과일 계절
 
     private enum CodingKeys: String, CodingKey {
-        case contentNumber = "cntntsNo"
-        case botanicalName = "plntbneNm"
-        case englishName = "plntzrNm"
-        case distributionName = "distbNm"
-        case familyName = "fmlNm"
-        case origin = "orgplceInfo"
-        case advice = "adviseInfo"
-        case growthHeight = "growthHgInfo"
-        case growthWidth = "growthAraInfo"
-        case leafStyle = "lefStleInfo"
-        case toxicity = "toxctyInfo"
-        case propagationSeason = "prpgtEraInfo"
-        case manageLevel = "managelevelCodeNm"
-        case growthSpeed = "grwtveCodeNm"
-        case growthTemperature = "grwhTpCodeNm"
-        case winterMinimumTemperature = "winterLwetTpCodeNm"
-        case humidity = "hdCodeNm"
-        case fertilizer = "frtlzrInfo"
-        case soil = "soilInfo"
-        case springWaterCycle = "watercycleSprngCodeNm"
-        case summerWaterCycle = "watercycleSummerCodeNm"
-        case autumnWaterCycle = "watercycleAutumnCodeNm"
-        case winterWaterCycle = "watercycleWinterCodeNm"
-        case pestManagement = "dlthtsManageInfo"
-        case specialManagement = "speclmanageInfo"
-        case functionality = "fncltyInfo"
-        case lightDemand = "lighttdemanddoCodeNm"
-        case placement = "postngplaceCodeNm"
+        case contentNumber = "cntntsNo" // 넘버
+        case familyName = "fmlCodeNm" // 과명
+        case origin = "orgplceInfo" // 원산지 정보
+        case winterMinimumTemperature = "winterLwetTpCodeNm" // 겨울 최저 온도
+        case springWaterCycle = "watercycleSprngCodeNm" // 봄 물주기
+        case summerWaterCycle = "watercycleSummerCodeNm" // 여름 물주기
+        case autumnWaterCycle = "watercycleAutumnCodeNm" // 가을 물주기
+        case winterWaterCycle = "watercycleWinterCodeNm" // 겨울 물주기
+        case lightDemand = "lighttdemanddoCodeNm" // 광도요구
+        case placement = "postngplaceCodeNm" // 장소 추천
+        case growStyle = "grwhstleCodeNm" // 생육 형태
+        case leafColor = "lefcolrCodeNm" // 잎색
+        case leafMark = "lefmrkCodeNm" // 잎 무늬
+        case flowerColor = "flclrCodeNm" // 꽃색
+        case flowerSeason = "ignSeasonCodeNm" // 꽃피는 계절
+        case fruitColor = "fmldecolrCodeNm" // 과일 색
+        case fruitSeason = "fmldeSeasonCodeNm" // 과일 계절
     }
 }
 

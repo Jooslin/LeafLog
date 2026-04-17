@@ -34,25 +34,26 @@ final class SearchDetailViewController: BaseViewController, View {
     }
 
     func bind(reactor: SearchDetailReactor) {
-
-        // 화면 뜨면서
         Observable.just(())
             .map { SearchDetailReactor.Action.viewDidLoad }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        // 데이터 들어오는지 확인
-        reactor.state
-            .compactMap { $0.detail }
-            .subscribe(onNext: { detail in
-            })
+        detailView.closeButtonTap
+            .bind(with: self) { owner, _ in
+                if owner.presentingViewController != nil {
+                    owner.dismiss(animated: true)
+                } else {
+                    owner.navigationController?.popViewController(animated: true)
+                }
+            }
             .disposed(by: disposeBag)
-        
-        // 이미지 들어오는 지 확인
+
         reactor.state
-            .map { $0.images }
-            .filter { !$0.isEmpty }
-            .subscribe(onNext: { images in
+            .map { ($0.detail, $0.images) }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] detail, images in
+                self?.detailView.configure(detail: detail, images: images)
             })
             .disposed(by: disposeBag)
     }
