@@ -64,8 +64,8 @@ class PlantClassificationService {
         var title: String { "Error" }
         var message: String {
             switch self {
-            case .preprocessingFailed: "이미지 전처리 실패"
-            case .inferenceFailed: "모델 실행 실패"
+            case .preprocessingFailed: "이미지 전처리 작업에 실패하였습니다."
+            case .inferenceFailed: "이미지 추론에 실패하였습니다."
             }
         }
     }

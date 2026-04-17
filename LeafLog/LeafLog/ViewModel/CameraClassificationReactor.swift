@@ -21,7 +21,7 @@ final class CameraClassificationReactor: Reactor {
     // State를 변경시킬 값
     enum Mutation {
         case cameraReady
-        case captureImageData(CGRect, Data) // normalized guide frame, image data
+        case analyzeCapture([String: PlantClassificationService.Confidence]) // [식물 학명: 일치율]
         case error(String)
     }
     
@@ -52,7 +52,10 @@ final class CameraClassificationReactor: Reactor {
         case .capture(let normalizedRect):
             return cameraService.capturePhoto()
                 .asObservable()
-                .map { .captureImageData(normalizedRect, $0) }
+                .withUnretained(self)
+                .flatMap { `self`, data in
+                    return self.analyzePicture(data, normalizedRect: normalizedRect)
+                }
                 .catch { error in
                     if let cameraError = error as? CameraError {
                         return Observable.just(.error(cameraError.message))
@@ -70,9 +73,8 @@ final class CameraClassificationReactor: Reactor {
         case .cameraReady:
             newState.isCameraReady = true
 
-        case .captureImageData(let normalizedRect, let data):
-            
-            newState.classificationResult = analyzePicture(data, normalizedRect: normalizedRect)
+        case .analyzeCapture(let results):
+            newState.classificationResult = results
             
         case .error(let message):
             newState.isCameraReady = false
@@ -111,19 +113,29 @@ extension CameraClassificationReactor {
 }
 
 extension CameraClassificationReactor {
-    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> [String: PlantClassificationService.Confidence] {
-        let cropImage = plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
-        guard let cropImage else {
-            return [:]
-        }
-        
-        Task {
-            do {
-                let aiResult = try plantClassificationService.analyzeImage(image: cropImage)
-                
-            } catch {
-                return nil
+    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            
+            let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
+            guard let cropImage else {
+                observer.onNext(.analyzeCapture([:]))
+                observer.onCompleted()
+                return Disposables.create()
             }
+            
+            Task {
+                do {
+                    let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
+                    observer.onNext(.analyzeCapture(classificationResult))
+                    observer.onCompleted()
+                } catch {
+                    print(error)
+                    observer.onNext(.analyzeCapture([:]))
+                    observer.onCompleted()
+                }
+            }
+            return Disposables.create()
         }
     }
 }
