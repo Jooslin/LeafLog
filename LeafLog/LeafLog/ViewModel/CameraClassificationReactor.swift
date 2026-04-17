@@ -29,7 +29,7 @@ final class CameraClassificationReactor: Reactor {
     struct State {
         @Pulse var isCameraReady: Bool = false
     
-        @Pulse var classificationResult: (PlantClassificationService.Confidence, String)? = nil
+        @Pulse var classificationResult: [String: PlantClassificationService.Confidence] = [:]
         
         @Pulse var errorMessage: String? = nil
     }
@@ -40,6 +40,7 @@ final class CameraClassificationReactor: Reactor {
     //MARK: Properties
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.plantClassificationService) private var plantClassificationService
+    @Dependency(\.networkManager) private var networkManager
     
     // Action -> Mutation -> State
     // Action을 Mutation으로 변환
@@ -110,16 +111,19 @@ extension CameraClassificationReactor {
 }
 
 extension CameraClassificationReactor {
-    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> (PlantClassificationService.Confidence, String)? {
+    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> [String: PlantClassificationService.Confidence] {
         let cropImage = plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
         guard let cropImage else {
-            return nil
+            return [:]
         }
         
-        do {
-            return try plantClassificationService.analyzeImage(image: cropImage)
-        } catch {
-            return nil
+        Task {
+            do {
+                let aiResult = try plantClassificationService.analyzeImage(image: cropImage)
+                
+            } catch {
+                return nil
+            }
         }
     }
 }

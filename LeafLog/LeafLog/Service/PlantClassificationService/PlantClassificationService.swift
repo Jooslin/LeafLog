@@ -30,11 +30,11 @@ class PlantClassificationService {
         }
     }
     
-    enum Confidence: String {
-        case extremeHigh = "매우 높음"
-        case high = "높음"
-        case normal = "보통"
-        case low = "낮음"
+    enum Confidence: Int {
+        case extremeHigh = 0
+        case high
+        case normal
+        case low
         case unknown
         
         static func from(value: UInt8) -> Confidence {
@@ -43,6 +43,16 @@ class PlantClassificationService {
             case 80..<150: .high // 31~58% - 명확히 구분됨 (몬스테라 120 해당)
             case 40..<80: .normal // 16~31% - 비슷한 종이 여럿 있음
             default: .low // 15% 이하 - 불확실, 재촬영 권장
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .extremeHigh: "매우 높음"
+            case .high: "높음"
+            case .normal: "보통"
+            case .low: "낮음"
+            case .unknown: "알 수 없음"
             }
         }
     }
@@ -101,8 +111,10 @@ class PlantClassificationService {
 
 //MARK: Run Model
 extension PlantClassificationService {
+    
+    //TODO: 리턴 타입 바꾸기
     // 이미지 분석 함수
-    func analyzeImage(image: UIImage) throws -> (Confidence, String) {
+    func analyzeImage(image: UIImage) throws -> [String: Confidence] {
         do {
             guard let rgbData = preprocessImage(image, width: inputWidth, height: inputHeight) else {
                 throw ClassificationError.preprocessingFailed
@@ -112,16 +124,27 @@ extension PlantClassificationService {
             try interpreter.invoke() // interpreter 실행
             
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
-            let results = output.data.toArray(type: UInt8.self) // 추론 결과를 UInt8 배열로 변환 - '해당 식물일 확률'을 UInt8 타입으로 나타낸 배열
+            let InferenceResults = output.data.toArray(type: UInt8.self) // 추론 결과를 UInt8 배열로 변환 - '해당 식물일 확률'을 UInt8 타입으로 나타낸 배열
+
+            // 추론 결과값이 가장 높은 3개
+            let targets = InferenceResults.enumerated().sorted(by: {
+                $0.element > $1.element
+            }).prefix(3)
             
-            guard let max = results.max(),
-                  let maxIndex = results.firstIndex(of: max),
-                  maxIndex < labels.count else {
-                return (.unknown, "Unknown")
+            var result: [String: Confidence] = [:]
+            
+            for target in targets {
+                guard target.offset < labels.count else { continue
+                }
+                
+                let name = labels[target.offset]
+                let confidence = Confidence.from(value: target.element)
+                
+                guard confidence != .unknown else { continue }
+                result[name] = confidence
             }
             
-            let grade = Confidence.from(value: max)
-            return (grade, labels[maxIndex])
+            return result
         } catch {
             throw ClassificationError.inferenceFailed
         }

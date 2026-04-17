@@ -199,3 +199,20 @@ final class SearchViewController: BaseViewController, View {
 }
 
 extension SearchViewController: UICollectionViewDelegate {}
+
+extension SearchViewController {
+    // 컬렉션뷰 configure용 struct
+    struct PlantSummaryItem {
+        let contentNumber: String
+        let name: String
+        let imageURL: String?
+        let thumbnailURL: String?
+        
+        let isClassificationResult: Bool
+        let statusStyle: MatchStatusBadgeLabel.Style = .high // ai 검색 일치율
+
+        let primaryThumbnailURL: String?
+        let primaryImageURL: String?
+        let displayThumbnailURL: String?
+    }
+}
