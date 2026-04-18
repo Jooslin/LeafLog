@@ -36,7 +36,7 @@ final class ViewController: BaseViewController {
         }
         
         pushButton.rx.tap
-            .map { _ in AppStep.pushButtonTapped } // push Step으로 변환
+            .map { _ in AppStep.photoSelect } // push Step으로 변환
             .bind(to: steps) // VC의 steps와 바인딩 -> 버튼을 누를 때마다 'push' 스텝이 방출
             .disposed(by: disposeBag)
     }

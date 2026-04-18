@@ -9,6 +9,7 @@ import UIKit
 import RxFlow
 import Dependencies
 import AVFoundation
+import RxRelay
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -20,6 +21,7 @@ final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.uiApplication) private var uiApplication
     private let navigationController = UINavigationController()
+    private let photoSelectStepper = PhotoSelectStepper()
     
     var root: any RxFlow.Presentable { navigationController }
 
@@ -29,34 +31,68 @@ final class PlantTabFlow: Flow {
         }
         
         switch step {
-        case .plantTab:
+        case .plantTab: // 메인 컨트롤러 표시
             let viewController = ViewController()
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+//            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: CompositeStepper(
+                        steppers: [viewController, photoSelectStepper]
+                    )))
             
-        case .classificationResult(let result):
+        case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
             
             navigationController.pushViewController(searchViewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
         
-        case .applicatoinSettingRequired:
-            // 휴대폰의 앱 설정 화면으로 이동
+        case .applicatoinSettingRequired: // 휴대폰 앱 설정 화면 이동
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 uiApplication.open(url)
             }
             return .none
             
-        case .pushButtonTapped: // push 버튼이 눌렀을 경우
+        case .photoSelect: // 사진 선택 분기
+            return presentPhotoSelect()
+            
+        case .cameraRequired:
             let camera = CameraClassificationViewController()
             navigationController.pushViewController(camera, animated: true)
             
-            // 다음 Presentable 객체인 SecondVC와 다음 Step을 방출한 Stepper인 SecondVC를 전달 (Presentable과 Stepper 모두 동일하게 secondVC입니다.)
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
-            
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
+    }
+}
+
+extension PlantTabFlow {
+    // 사진 선택 alert에서 사용할 stepper
+    struct PhotoSelectStepper: Stepper {
+        let steps = PublishRelay<Step>()
+    }
+    
+    private func presentPhotoSelect() -> FlowContributors {
+        let alert = UIAlertController()
+        let cameraAction = UIAlertAction(title: "촬영하기", style: .default) { [weak self] _ in
+            self?.photoSelectStepper.steps.accept(AppStep.pushButtonTapped)
+        }
+        
+        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { _ in
+            print("gallery")
+        }
+        
+        let cancel = UIAlertAction(title: "취소", style: .cancel)
+        
+        alert.addAction(cameraAction)
+        alert.addAction(galleryAction)
+        alert.addAction(cancel)
+        
+        navigationController.present(alert, animated: true)
+        
+        return .none
     }
 }
