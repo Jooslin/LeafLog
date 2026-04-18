@@ -10,6 +10,7 @@ import RxFlow
 import Dependencies
 import AVFoundation
 import RxRelay
+import PhotosUI
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -21,10 +22,11 @@ final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.uiApplication) private var uiApplication
     private let navigationController = UINavigationController()
+    private let viewController = ViewController() //TODO: 등록 VC로 변경 필요
     private let photoSelectStepper = PhotoSelectStepper()
     
     var root: any RxFlow.Presentable { navigationController }
-
+    
     func navigate(to step: any RxFlow.Step) -> RxFlow.FlowContributors {
         guard let step = step as? AppStep else {
             return .none
@@ -32,9 +34,16 @@ final class PlantTabFlow: Flow {
         
         switch step {
         case .plantTab: // 메인 컨트롤러 표시
-            let viewController = ViewController()
+//            let viewController = ViewController()//TODO: PlantVC로 변경 필요
             navigationController.pushViewController(viewController, animated: true)
-//            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+            //TODO: PlantVC 내용으로 변경 필요
+//            return .one(flowContributor: .contribute(
+//                withNextPresentable: viewController,
+//                withNextStepper: viewController
+//            )
+            
+            //TODO: 등록VC 띄우는 step으로 이관 필요
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: viewController,
@@ -63,6 +72,9 @@ final class PlantTabFlow: Flow {
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
             
+        case .galleryRequired:
+            return presentGallery()
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -78,11 +90,11 @@ extension PlantTabFlow {
     private func presentPhotoSelect() -> FlowContributors {
         let alert = UIAlertController()
         let cameraAction = UIAlertAction(title: "촬영하기", style: .default) { [weak self] _ in
-            self?.photoSelectStepper.steps.accept(AppStep.pushButtonTapped)
+            self?.photoSelectStepper.steps.accept(AppStep.cameraRequired)
         }
         
-        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { _ in
-            print("gallery")
+        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { [weak self] _ in
+            self?.photoSelectStepper.steps.accept(AppStep.galleryRequired)
         }
         
         let cancel = UIAlertAction(title: "취소", style: .cancel)
@@ -92,6 +104,19 @@ extension PlantTabFlow {
         alert.addAction(cancel)
         
         navigationController.present(alert, animated: true)
+        
+        return .none
+    }
+    
+    private func presentGallery() -> FlowContributors {
+        var config = PHPickerConfiguration()
+        config.filter = .images // 라이브러리에서 보여줄 asset의 종류 지정
+        config.selectionLimit = 1 // 선택 개수 설정 (0은 무제한)
+        
+        let imagePicker = PHPickerViewController(configuration: config)
+        imagePicker.delegate = viewController
+        
+        navigationController.present(imagePicker, animated: true)
         
         return .none
     }

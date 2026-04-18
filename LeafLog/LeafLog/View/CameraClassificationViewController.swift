@@ -16,7 +16,6 @@ class CameraClassificationViewController: BaseViewController, View {
     @Dependency(\.cameraService) private var cameraService
     let cameraClassificationView = CameraClassificationView()
     
-    
     //MARK: Lifecycle
     override func loadView() {
         view = cameraClassificationView

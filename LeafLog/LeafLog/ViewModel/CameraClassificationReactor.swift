@@ -23,7 +23,7 @@ final class CameraClassificationReactor: Reactor {
         case authDenied
         case cameraReady
         case cameraNotReady
-        case analyzeCapture([String: PlantClassificationService.Confidence]) // [식물 학명: 일치율]
+        case analyzeResult([String: PlantClassificationService.Confidence]) // [식물 학명: 일치율]
         case error(String)
     }
     
@@ -56,7 +56,7 @@ final class CameraClassificationReactor: Reactor {
                 .asObservable()
                 .withUnretained(self)
                 .flatMap { `self`, data in
-                    return self.analyzePicture(data, normalizedRect: normalizedRect)
+                    return self.analyzeImage(data, normalizedRect: normalizedRect)
                 }
                 .catch { error in
                     if let cameraError = error as? CameraError {
@@ -83,7 +83,7 @@ final class CameraClassificationReactor: Reactor {
         case .cameraNotReady:
             newState.isCameraReady = false
 
-        case .analyzeCapture(let results):
+        case .analyzeResult(let results):
             newState.classificationResult = results
             
         case .error(let message):
@@ -132,13 +132,13 @@ extension CameraClassificationReactor {
 }
 
 extension CameraClassificationReactor {
-    private func analyzePicture(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
+    private func analyzeImage(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
             let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
             guard let cropImage else {
-                observer.onNext(.analyzeCapture([:]))
+                observer.onNext(.analyzeResult([:]))
                 observer.onCompleted()
                 return Disposables.create()
             }
@@ -146,11 +146,11 @@ extension CameraClassificationReactor {
             Task {
                 do {
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
-                    observer.onNext(.analyzeCapture(classificationResult))
+                    observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
                 } catch {
                     print(error)
-                    observer.onNext(.analyzeCapture([:]))
+                    observer.onNext(.analyzeResult([:]))
                     observer.onCompleted()
                 }
             }
