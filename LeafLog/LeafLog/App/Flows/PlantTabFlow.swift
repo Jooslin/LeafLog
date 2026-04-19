@@ -29,6 +29,11 @@ final class PlantTabFlow: Flow {
             let viewController = HomeViewController()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .record(let plant):
+            let viewController = RecordViewController(plant: plant)
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
