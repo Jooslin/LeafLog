@@ -37,6 +37,8 @@ final class CalendarDateCell: UICollectionViewCell {
         badges.forEach {
             $0.image = nil
         }
+        
+        dateLabel.textColor = .label
     }
 }
 

@@ -8,11 +8,16 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CalendarView: UIView {
     //MARK: properties
-    private let collectionView = CalendarCollectionView()
+    fileprivate let collectionView = CalendarCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    
+    fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
+    fileprivate let headerNextButtonTap = PublishRelay<Void>()
     
     init() {
         super.init(frame: .zero)
@@ -67,10 +72,19 @@ extension CalendarView {
             
         }
         
-        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
+        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
             switch item {
             case .header(let year, let month):
                 cell.configure(year: year, month: month)
+                
+                cell.rx.headerPreviousButtonTap
+                    .bind(to: self.headerPreviousButtonTap)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.headerNextButtonTap
+                    .bind(to: self.headerNextButtonTap)
+                    .disposed(by: cell.disposeBag)
             default:
                 break
             }
@@ -133,7 +147,7 @@ extension CalendarView {
                 default:
                     return collectionView.dequeueConfiguredReusableSupplementary(using: detailHeaderViewRegistration, for: indexPath)
                 }
-               
+                
             case "footerKind":
                 return collectionView.dequeueConfiguredReusableSupplementary(using: calendarFooterViewRegistration, for: indexPath)
                 
@@ -141,7 +155,7 @@ extension CalendarView {
                 return UICollectionReusableView()
             }
         }
-
+        
         return dataSource
     }
     
@@ -237,5 +251,15 @@ extension CalendarView {
         let id: UUID // 식물의 uuid
         let name: String // 식물의 이름(별명)
         let badge: Badge
+    }
+}
+
+extension Reactive where Base: CalendarView {
+    var headerPreviousButtonTap: PublishRelay<Void> {
+        base.headerPreviousButtonTap
+    }
+    
+    var headerNextButtonTap: PublishRelay<Void> {
+        base.headerNextButtonTap
     }
 }

@@ -34,6 +34,16 @@ class CalendarViewController: BaseViewController, View {
             .map { _ in CalendarReactor.Action.viewWillAppear}
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        calendarView.rx.headerPreviousButtonTap
+            .map { _ in CalendarReactor.Action.previousMonth }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        calendarView.rx.headerNextButtonTap
+            .map { _ in CalendarReactor.Action.nextMonth }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: CalendarReactor) {

@@ -13,13 +13,16 @@ import Dependencies
 final class CalendarReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case previousMonth
+        case nextMonth
     }
     
     enum Mutation {
-        case calendarDates(Int, Int, [CalendarView.Item]) // (년, 월, [일])
+        case calendarDates(Date, Int, Int, [CalendarView.Item]) // (기준 일자, 년, 월, [일])
     }
     
     struct State {
+        var benchmarkDate: Date = Date()
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
             .filter: [.filter(["전체", "물주기", "분갈이", "비료", "치료"])]
@@ -35,12 +38,19 @@ final class CalendarReactor: Reactor {
         switch action {
         case .viewWillAppear:
             return calendarDates(of: Date())
+            
+        case .previousMonth:
+            return moveMonthTo(.previous)
+            
+        case .nextMonth:
+            return moveMonthTo(.next)
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
-        case .calendarDates(let year, let month, let calendarItems):
+        case .calendarDates(let benchmark, let year, let month, let calendarItems):
+            newState.benchmarkDate = benchmark
             newState.data[.header] = [CalendarView.Item.header(year, month)]
             newState.data[.calendar] = calendarItems
         }
@@ -60,8 +70,42 @@ extension CalendarReactor {
             let dates = self.calculateDates(of: date)
             let items = datesConvertToItems(currentMonth: month, dates)
             
-            observer.onNext(.calendarDates(year, month, items))
+            observer.onNext(.calendarDates(date, year, month, items))
             observer.onCompleted()
+            
+            return Disposables.create()
+        }
+    }
+    
+    private func moveMonthTo(_ move: MoveMonth) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            
+            let current = currentState.benchmarkDate
+            guard let currentBenchmark = calendar.dateInterval(of: .month, for: current)?.start else { return Disposables.create() }
+            
+            switch move {
+            case .previous:
+                guard let previous = calendar.date(byAdding: .month, value: -1, to: currentBenchmark),
+                      let year = calendar.dateComponents([.year, .month], from: previous).year,
+                      let month = calendar.dateComponents([.year, .month], from: previous).month else { return Disposables.create() }
+                
+                let dates = self.calculateDates(of: previous)
+                let items = datesConvertToItems(currentMonth: month, dates)
+                
+                observer.onNext(.calendarDates(previous, year, month, items))
+                observer.onCompleted()
+            case .next:
+                guard let next = calendar.date(byAdding: .month, value: +1, to: currentBenchmark),
+                      let year = calendar.dateComponents([.year, .month], from: next).year,
+                      let month = calendar.dateComponents([.year, .month], from: next).month else { return Disposables.create() }
+                
+                let dates = self.calculateDates(of: next)
+                let items = datesConvertToItems(currentMonth: month, dates)
+                
+                observer.onNext(.calendarDates(next, year, month, items))
+                observer.onCompleted()
+            }
             
             return Disposables.create()
         }
@@ -114,5 +158,12 @@ extension CalendarReactor {
             
             return $0 + [item]
         }
+    }
+}
+
+extension CalendarReactor {
+    enum MoveMonth {
+        case previous
+        case next
     }
 }
