@@ -35,7 +35,6 @@ enum AppStep: Step {
     // PlantTab
     case photoSelect
     case cameraRequired
-    case galleryRequired
     case classificationResult([String: PlantClassificationService.Confidence])
     case applicatoinSettingRequired // 휴대폰의 앱 설정 화면
     

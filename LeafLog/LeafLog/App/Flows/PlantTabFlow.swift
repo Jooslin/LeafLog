@@ -75,9 +75,6 @@ final class PlantTabFlow: Flow {
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
             
-//        case .galleryRequired:
-//            return presentGallery()
-            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
