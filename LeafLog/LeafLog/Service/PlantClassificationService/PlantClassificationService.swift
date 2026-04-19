@@ -14,18 +14,17 @@ class PlantClassificationService {
     enum Model: String {
         case aiyPlantsV1 = "aiy_plants_V1"
         
-        var modelPath: String? {
+        var modelData: Data? {
             switch self {
             case .aiyPlantsV1:
-                // NSDataAsset
-                Bundle.main.path(forResource: "3", ofType: "tflite")
+                NSDataAsset(name: "model")?.data
             }
         }
         
-        var labelPath: String? {
+        var labelData: Data? {
             switch self {
             case .aiyPlantsV1:
-                Bundle.main.path(forResource: "aiy_plants_V1_labels", ofType: "txt")
+                NSDataAsset(name: "labels")?.data
             }
         }
     }
@@ -80,11 +79,12 @@ class PlantClassificationService {
     //MARK: Initial Setting Functions
     // interpreter 생성 함수
     private func createInterpreter() -> Interpreter {
-        guard let modelPath = model.modelPath else {
+        guard let modelData = model.modelData else {
             fatalError("\(model.rawValue) 모델을 불러오는 데 실패하였습니다.")
         }
+        
         do {
-            let interpreter = try Interpreter(modelPath: modelPath)
+            let interpreter = try Interpreter(modelData: modelData)
             try interpreter.allocateTensors()
             return interpreter
         } catch {
@@ -94,16 +94,15 @@ class PlantClassificationService {
     
     // labels를 가져오는 함수
     private func loadLabels() -> [String] {
-        guard let labelPath = model.labelPath else {
+        guard let labelData = model.labelData else {
             return []
         }
         
-        do {
-            let content = try String(contentsOfFile: labelPath, encoding: .utf8)
-            return content.components(separatedBy: .newlines)
-        } catch {
+        guard let content = String(data: labelData, encoding: .utf8) else {
             fatalError("\(model.rawValue) 모델의 레이블 파일을 읽을 수 없습니다.")
         }
+        
+        return content.components(separatedBy: .newlines)
     }
 }
 
