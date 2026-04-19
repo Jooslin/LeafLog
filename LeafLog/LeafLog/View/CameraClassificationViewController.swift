@@ -25,6 +25,7 @@ class CameraClassificationViewController: BaseViewController, View {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
         tabBarController?.tabBar.isHidden = true
+        navigationController?.navigationBar.isHidden = true
     }
     
     override func viewWillDisappear(_ animated: Bool) {

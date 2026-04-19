@@ -29,8 +29,8 @@ class CameraClassificationView: UIView {
     
     private let guideLabel = UILabel(
         text: """
-            카메라가 식물을 정확히 찾지 못했어요.
-            식물이 잘 보이도록 다시 촬영해 주세요.
+            프레임의 중앙에 하나의 식물을 놓아주세요.
+            AI 검색 결과는 정확하지 않을 수 있습니다.
             """,
         config: .label14,
         color: .grayScale800
