@@ -10,7 +10,7 @@ import SnapKit
 import ReactorKit
 import Then
 
-class CalendarViewController: BaseViewController {
+class CalendarViewController: BaseViewController, View {
     private let calendarView = CalendarView()
     
     override func loadView() {
@@ -20,6 +20,22 @@ class CalendarViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setSample()
+    }
+    
+    // MARK: - Bind
+    func bind(reactor: CalendarReactor) {
+        bindAction(reactor: reactor)
+        bindState(reactor: reactor)
+    }
+    
+    
+    private func bindAction(reactor: CalendarReactor) {
+        
+    }
+    
+    
+    private func bindState(reactor: CalendarReactor) {
+        
     }
 }
 
