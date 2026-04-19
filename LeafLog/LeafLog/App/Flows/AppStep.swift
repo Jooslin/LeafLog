@@ -27,6 +27,7 @@ enum AppStep: Step {
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
+    case record(plant: MyPlant)
     
     // Global
     case alert(String, String) // (타이틀, 메세지)
