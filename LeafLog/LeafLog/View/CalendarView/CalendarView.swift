@@ -69,8 +69,8 @@ extension CalendarView {
         
         let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
             switch item {
-            case .header(let date):
-                cell.configure(year: 2026, month: 4)
+            case .header(let year, let month):
+                cell.configure(year: year, month: month)
             default:
                 break
             }
@@ -212,7 +212,7 @@ extension CalendarView {
     nonisolated
     enum Item: Hashable {
         case title
-        case header(String)
+        case header(Int, Int) // 년, 월
         case filter([String])
         case calendar(ManageInfoByDate)
         case water(DetailManageInfo)

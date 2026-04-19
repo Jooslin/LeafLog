@@ -16,15 +16,14 @@ final class CalendarReactor: Reactor {
     }
     
     enum Mutation {
-        case calendarDates([CalendarView.Item])
+        case calendarDates(Int, Int, [CalendarView.Item]) // (년, 월, [일])
     }
     
     struct State {
         var data: [CalendarView.Section: [CalendarView.Item]] = [
-                        .title: [.title],
-                        .header: [.header("2026년 4월")],
-                        .filter: [.filter(["전체", "물주기", "분갈이", "비료", "치료"])]
-                    ]
+            .title: [.title],
+            .filter: [.filter(["전체", "물주기", "분갈이", "비료", "치료"])]
+        ]
     }
     
     let initialState = State()
@@ -41,7 +40,8 @@ final class CalendarReactor: Reactor {
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
-        case .calendarDates(let calendarItems):
+        case .calendarDates(let year, let month, let calendarItems):
+            newState.data[.header] = [CalendarView.Item.header(year, month)]
             newState.data[.calendar] = calendarItems
         }
         return newState
@@ -53,13 +53,14 @@ extension CalendarReactor {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
-            let dateComp = self.calendar.dateComponents([.month], from: date)
-            guard let month = dateComp.month else { return Disposables.create() }
+            let dateComp = self.calendar.dateComponents([.year, .month], from: date)
+            guard let year = dateComp.year,
+                  let month = dateComp.month else { return Disposables.create() }
             
             let dates = self.calculateDates(of: date)
             let items = datesConvertToItems(currentMonth: month, dates)
             
-            observer.onNext(.calendarDates(items))
+            observer.onNext(.calendarDates(year, month, items))
             observer.onCompleted()
             
             return Disposables.create()
