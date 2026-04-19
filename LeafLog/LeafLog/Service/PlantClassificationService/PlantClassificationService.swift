@@ -119,10 +119,10 @@ extension PlantClassificationService {
             try interpreter.invoke() // interpreter 실행
             
             let output = try interpreter.output(at: 0) // 추론 결과 가져오기
-            let InferenceResults = output.data.toArray(type: UInt8.self) // 추론 결과를 UInt8 배열로 변환 - '해당 식물일 확률'을 UInt8 타입으로 나타낸 배열
+            let inferenceResults = output.data.toArray(type: UInt8.self) // 추론 결과를 UInt8 배열로 변환 - '해당 식물일 확률'을 UInt8 타입으로 나타낸 배열
 
             // 추론 결과값이 가장 높은 3개
-            let targets = InferenceResults.enumerated().sorted(by: {
+            let targets = inferenceResults.enumerated().sorted(by: {
                 $0.element > $1.element
             }).prefix(3)
             
