@@ -98,3 +98,8 @@ extension CalendarView.ManageInfoByDate {
 }
 
 
+//MARK: CameraClassificationViewController Preview
+@available(iOS 17.0, *)
+#Preview {
+  CalendarViewController()
+}
