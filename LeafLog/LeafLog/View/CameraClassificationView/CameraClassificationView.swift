@@ -18,7 +18,7 @@ class CameraClassificationView: UIView {
         $0.apply(color: .white)
         $0.backgroundColor = .clear
     }
-
+    
     let cameraPreview = CameraPreview()
     private let cameraFrame = CAShapeLayer()
     private(set) var guideFrameSize: CGRect = .zero // 가이드 프레임 사이즈
@@ -37,9 +37,13 @@ class CameraClassificationView: UIView {
     )
     
     //TODO: 병합 후 주석 해제
-//    let shootButton = BottomSaveButton(title: "촬영하기")
-    let shootButton = UIButton(configuration: .filled()).then {
-        $0.setTitle("촬영하기", for: .normal)
+    //    let shootButton = BottomSaveButton(title: "촬영하기")
+    let shootButton = UIButton(configuration: .filled()).then { button in
+        button.setTitle("촬영하기", for: .normal)
+        button.addAction(
+            UIAction { _ in button.isEnabled = false },
+            for: .touchUpInside
+        )
     }
     
     fileprivate let authDeniedView = CameraAuthNoticeView().then {
@@ -48,7 +52,7 @@ class CameraClassificationView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-
+        
         setLayout()
     }
     
