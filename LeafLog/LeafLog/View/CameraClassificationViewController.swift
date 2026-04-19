@@ -73,7 +73,7 @@ class CameraClassificationViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         cameraClassificationView.rx.settingButtonTap
-            .throttle(.microseconds(500), scheduler: MainScheduler.instance)
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
                 self?.steps.accept(AppStep.applicatoinSettingRequired)
             })
