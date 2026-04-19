@@ -9,6 +9,7 @@ import UIKit
 import SnapKit
 import ReactorKit
 import Then
+import RxCocoa
 
 class CalendarViewController: BaseViewController, View {
     private let calendarView = CalendarView()
@@ -28,11 +29,12 @@ class CalendarViewController: BaseViewController, View {
         bindState(reactor: reactor)
     }
     
-    
     private func bindAction(reactor: CalendarReactor) {
-        
+        self.rx.viewWillAppear
+            .map { _ in CalendarReactor.Action.viewWillAppear}
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
-    
     
     private func bindState(reactor: CalendarReactor) {
         

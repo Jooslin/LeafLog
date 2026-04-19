@@ -70,7 +70,7 @@ extension CalendarView {
         let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
             switch item {
             case .header(let date):
-                cell.configure(date)
+                cell.configure(year: 2026, month: 4)
             default:
                 break
             }
@@ -228,6 +228,7 @@ extension CalendarView {
     struct ManageInfoByDate: Hashable {
         let currentMonth: Bool // 표시되는 달 여부
         let day: Int
+        let date: Date
         let badge: Set<Badge>
     }
     

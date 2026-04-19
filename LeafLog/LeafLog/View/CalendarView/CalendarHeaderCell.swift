@@ -12,6 +12,9 @@ import Then
 final class CalendarHeaderCell: UICollectionViewCell {
     let previousButton = UIButton(configuration: .plain())
     let nextButton = UIButton(configuration: .plain())
+    
+    private var year: Int = 0
+    private var month: Int = 0
     let dateLabel = UILabel(text: "", config: .label16)
     
     override init(frame: CGRect) {
@@ -64,7 +67,8 @@ extension CalendarHeaderCell {
 }
 
 extension CalendarHeaderCell {
-    func configure(_ string: String) {
-        dateLabel.text = string
+    func configure(year: Int, month: Int) {
+        dateLabel.text = "\(year)년 \(month)월"
     }
 }
+
