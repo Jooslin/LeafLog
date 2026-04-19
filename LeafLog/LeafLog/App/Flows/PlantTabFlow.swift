@@ -22,8 +22,8 @@ final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.uiApplication) private var uiApplication
     private let navigationController = UINavigationController()
-    private let viewController = ViewController() //TODO: 등록 VC로 변경 필요
     private let photoSelectStepper = PhotoSelectStepper()
+    private var imagePicker: PHPickerViewController?
     
     var root: any RxFlow.Presentable { navigationController }
     
@@ -34,14 +34,17 @@ final class PlantTabFlow: Flow {
         
         switch step {
         case .plantTab: // 메인 컨트롤러 표시
-//            let viewController = ViewController()//TODO: PlantVC로 변경 필요
+                        let viewController = ViewController()//TODO: PlantVC로 변경 필요
             navigationController.pushViewController(viewController, animated: true)
-
+            
             //TODO: PlantVC 내용으로 변경 필요
-//            return .one(flowContributor: .contribute(
-//                withNextPresentable: viewController,
-//                withNextStepper: viewController
-//            )
+            //            return .one(flowContributor: .contribute(
+            //                withNextPresentable: viewController,
+            //                withNextStepper: viewController
+            //            )
+            
+            prepareImagePicker()
+            imagePicker?.delegate = viewController
             
             //TODO: 등록VC 띄우는 step으로 이관 필요
             return .one(
@@ -56,7 +59,7 @@ final class PlantTabFlow: Flow {
             
             navigationController.pushViewController(searchViewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
-        
+            
         case .applicatoinSettingRequired: // 휴대폰 앱 설정 화면 이동
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 uiApplication.open(url)
@@ -72,8 +75,8 @@ final class PlantTabFlow: Flow {
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
             
-        case .galleryRequired:
-            return presentGallery()
+//        case .galleryRequired:
+//            return presentGallery()
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
@@ -94,7 +97,13 @@ extension PlantTabFlow {
         }
         
         let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { [weak self] _ in
-            self?.photoSelectStepper.steps.accept(AppStep.galleryRequired)
+            guard let self else { return }
+            
+           let imagePicker = imagePicker ?? makeImagePicker()
+            
+            alert.dismiss(animated: true) {
+                self.navigationController.present(imagePicker, animated: true)
+            }
         }
         
         let cancel = UIAlertAction(title: "취소", style: .cancel)
@@ -108,16 +117,17 @@ extension PlantTabFlow {
         return .none
     }
     
-    private func presentGallery() -> FlowContributors {
+    private func prepareImagePicker() {
+        guard imagePicker == nil else { return }
+        imagePicker = makeImagePicker()
+    }
+
+    private func makeImagePicker() -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images // 라이브러리에서 보여줄 asset의 종류 지정
         config.selectionLimit = 1 // 선택 개수 설정 (0은 무제한)
         
         let imagePicker = PHPickerViewController(configuration: config)
-        imagePicker.delegate = viewController
-        
-        navigationController.present(imagePicker, animated: true)
-        
-        return .none
+        return imagePicker
     }
 }

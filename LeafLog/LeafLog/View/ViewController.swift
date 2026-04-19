@@ -21,6 +21,7 @@ import PhotosUI
  */
 
 final class ViewController: BaseViewController, View {
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -37,6 +38,7 @@ final class ViewController: BaseViewController, View {
         }
         
         pushButton.rx.tap
+            .withUnretained(self)
             .map { _ in AppStep.photoSelect } // push Step으로 변환
             .bind(to: steps) // VC의 steps와 바인딩 -> 버튼을 누를 때마다 'push' 스텝이 방출
             .disposed(by: disposeBag)
