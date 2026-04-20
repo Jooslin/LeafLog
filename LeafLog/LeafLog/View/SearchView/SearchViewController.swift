@@ -114,6 +114,10 @@ final class SearchViewController: BaseViewController, View {
                 return UICollectionReusableView()
             }
 
+            view.onRegisterOtherTap = { [weak self] in
+                self?.steps.accept(AppStep.plantSelected(.other))
+            }
+
             return view
         }
     }

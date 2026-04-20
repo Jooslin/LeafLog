@@ -59,7 +59,7 @@ final class PlantRegisterView: UIView {
     private let lightGuideView = LightGuideView()
 
     private let wateringCycleTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "급수 주기")
-    let wateringCycleTextField = PlantRegisterView.makeTextField(placeholder: "??일").then {
+    let wateringCycleTextField = PlantRegisterView.makeTextField(placeholder: "급수 주기").then {
         $0.keyboardType = .numberPad
     }
     private let wateringCycleUnitLabel = UILabel(text: "일마다", config: .title16, color: .grayScale500)
@@ -86,9 +86,28 @@ final class PlantRegisterView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func applySelectedPlant(name: String, growStyle: String?, lightDemand: String?, springWaterCycle: String?) {
+    func applySelectedPlant(
+        name: String,
+        growStyle: String?,
+        lightDemand: String?,
+        springWaterCycle: String?,
+        selectedCategory: PlantCategory?
+    ) {
         plantTypeSearchBar.textField.text = name
         wateringCycleTextField.text = WateringGuideView.suggestedInputValue(from: springWaterCycle)
+
+        if selectedCategory == .other {
+            categoryButtons.forEach {
+                $0.isSelected = false
+                $0.isEnabled = false
+            }
+            categoryGuideView.configure(plantName: nil, category: nil)
+            lightGuideView.configure(plantName: name, lightDemand: lightDemand)
+            wateringGuideBannerView.configure(plantName: name, springWaterCycle: springWaterCycle)
+            return
+        }
+
+        categoryButtons.forEach { $0.isEnabled = true }
 
         if let category = PlantCategoryDescription.matching(growStyle: growStyle) {
             categoryButtons.forEach { button in
