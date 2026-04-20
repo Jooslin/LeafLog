@@ -23,6 +23,7 @@ final class CalendarReactor: Reactor {
         case updateBenchmarkDate(Date)
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
+        case setLabelItem([CalendarView.Item])
         case setDetailWaterItem([CalendarView.Item])
         case setDetailGrowItem([CalendarView.Item])
         case setDetailSproutItem([CalendarView.Item])
@@ -42,7 +43,7 @@ final class CalendarReactor: Reactor {
     let initialState = State()
     
     //MARK: properties
-    private let calendar = Calendar.current
+    fileprivate let calendar = Calendar.current
     @Dependency(\.plantDBManager) private var plantDBManager
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
@@ -87,6 +88,9 @@ final class CalendarReactor: Reactor {
             
         case .setCalendarItem(let items):
             newState.data[.calendar] = items
+            
+        case .setLabelItem(let item):
+            newState.data[.label] = item
             
         case .setDetailWaterItem(let items):
             newState.data[.water] = items
@@ -157,12 +161,17 @@ extension CalendarReactor {
             guard let self else { return Disposables.create() }
             let task = Task {
                 do {
+                    let dateString = self.dateToString(date, forLabel: true)
+                    let labelItem = [CalendarView.Item.label(dateString)]
+                    
                     let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
+                    
                     let water = self.dailyRecordConvertToItem(records, kind: .water)
                     let grow = self.dailyRecordConvertToItem(records, kind: .grow)
                     let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
                     let treat = self.dailyRecordConvertToItem(records, kind: .treat)
                     
+                    observer.onNext(.setLabelItem(labelItem))
                     observer.onNext(.setDetailWaterItem(water))
                     observer.onNext(.setDetailGrowItem(grow))
                     observer.onNext(.setDetailSproutItem(sprout))
@@ -295,13 +304,9 @@ extension CalendarReactor {
     }
     
     private func dailyPlantRecords(of date: Date) async throws -> [MyPlant: CareRecord] {
-        let dateComp = calendar.dateComponents([.year, .month, .day], from: date)
+        let dateRawValue = dateToString(date, forLabel: false)
         
-        guard let year = dateComp.year,
-              let month = dateComp.month,
-              let day = dateComp.day else { return [:] }
-        
-        let dateRawValue = String(format: "%04d-%02d-%02d", year, month, day) // LocaleDate를 만들기 위한 date 문자열
+        guard !dateRawValue.isEmpty else { return [:] }
         let targetDate = LocalDate(rawValue: dateRawValue)
         
         let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
@@ -346,6 +351,21 @@ extension CalendarReactor {
             return []
         }
         
+    }
+}
+
+extension CalendarReactor {
+    private func dateToString(_ date: Date, forLabel: Bool) -> String {
+        let dateComp = calendar.dateComponents([.year, .month, .day], from: date)
+        
+        guard let year = dateComp.year,
+              let month = dateComp.month,
+              let day = dateComp.day else { return "" }
+        
+        let dateRawValue = String(format: "%04d-%02d-%02d", year, month, day) // LocaleDate를 만들기 위한 date 문자열
+        let labelString = "\(year)년 \(month)월 \(day)일"
+        
+        return forLabel ? labelString : dateRawValue
     }
 }
 

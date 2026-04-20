@@ -38,7 +38,7 @@ extension CalendarDetailHeaderView {
         
         stackView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.top.equalToSuperview().offset(39)
+            $0.top.equalToSuperview().offset(12)
         }
     }
     

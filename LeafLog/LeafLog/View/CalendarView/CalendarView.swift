@@ -63,11 +63,6 @@ extension CalendarView {
             }
         }
         
-        let calendarFooterViewRegistration = UICollectionView.SupplementaryRegistration<CalendarDateFooterView>(elementKind: "footerKind") { supplementaryView, elementKind, indexPath in
-            //TODO: 수정 필요
-            supplementaryView.configure("4월 13일 월요일")
-        }
-        
         let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { cell,indexPath,item in
             
         }
@@ -108,6 +103,15 @@ extension CalendarView {
             }
         }
         
+        let dateLabelCellRegistration = UICollectionView.CellRegistration<CalendarDateLabelCell, Item> { cell, indexPath, item in
+            switch item {
+            case .label(let text):
+                cell.configure(text)
+            default:
+                break
+            }
+        }
+        
         let detailCellRegistration = UICollectionView.CellRegistration<CalendarDetailCell, Item> { cell, indexPath, item in
             switch item {
             case .water(let info), .grow(let info), .sprout(let info), .treat(let info):
@@ -125,6 +129,8 @@ extension CalendarView {
                 collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: item)
             case .filter:
                 collectionView.dequeueConfiguredReusableCell(using: filterCellRegistartion, for: indexPath, item: item)
+            case .label:
+                collectionView.dequeueConfiguredReusableCell(using: dateLabelCellRegistration, for: indexPath, item: item)
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
@@ -147,9 +153,6 @@ extension CalendarView {
                 default:
                     return collectionView.dequeueConfiguredReusableSupplementary(using: detailHeaderViewRegistration, for: indexPath)
                 }
-                
-            case "footerKind":
-                return collectionView.dequeueConfiguredReusableSupplementary(using: calendarFooterViewRegistration, for: indexPath)
                 
             default:
                 return UICollectionReusableView()
@@ -180,6 +183,7 @@ extension CalendarView {
         case header
         case filter
         case calendar
+        case label
         case water
         case grow
         case sprout
@@ -192,6 +196,7 @@ extension CalendarView {
         case header(Int, Int) // 년, 월
         case filter([String])
         case calendar(ManageInfoByDate)
+        case label(String)
         case water(DetailManageInfo)
         case grow(DetailManageInfo)
         case sprout(DetailManageInfo)
