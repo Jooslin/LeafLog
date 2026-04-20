@@ -10,6 +10,12 @@ import SnapKit
 import Then
 
 final class CalendarDateCell: UICollectionViewCell {
+    private let selectedView = BaseCardView(cornerRadius: 12).then {
+        $0.backgroundColor = .white
+        $0.layer.borderWidth = 0.5
+        $0.layer.borderColor = UIColor.primary500.cgColor
+        $0.isHidden = true
+    }
     
     private let dateLabel = UILabel(text: "0", config: .label16).then {
         $0.textAlignment = .center
@@ -40,14 +46,25 @@ final class CalendarDateCell: UICollectionViewCell {
         
         dateLabel.textColor = .label
     }
+    
+    override var isSelected: Bool {
+        didSet {
+            selectedView.isHidden = !isSelected
+        }
+    }
 }
 
 extension CalendarDateCell {
     private func setLayout() {
         let badgeStack = generateBadgeStack()
         
+        contentView.addSubview(selectedView)
         contentView.addSubview(dateLabel)
         contentView.addSubview(badgeStack)
+        
+        selectedView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
         
         dateLabel.snp.makeConstraints {
             $0.top.equalToSuperview().inset(8)
@@ -94,7 +111,7 @@ extension CalendarDateCell {
     func configure(_ data: CalendarView.ManageInfoByDate) {
         dateLabel.text = "\(data.day)"
         dateLabel.textColor =
-        data.currentMonth ? dateLabel.textColor
+        data.isCurrentMonth ? dateLabel.textColor
         : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
         
         data.badge.prefix(badges.count).enumerated().forEach {

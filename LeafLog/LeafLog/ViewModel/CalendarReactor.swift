@@ -21,13 +21,16 @@ final class CalendarReactor: Reactor {
     
     enum Mutation {
         case updateBenchmarkDate(Date)
+        
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
         case setLabelItem([CalendarView.Item])
+        
         case setDetailWaterItem([CalendarView.Item])
         case setDetailGrowItem([CalendarView.Item])
         case setDetailSproutItem([CalendarView.Item])
         case setDetailTreatItem([CalendarView.Item])
+        
         case error(String)
     }
     
@@ -257,8 +260,8 @@ extension CalendarReactor {
                   let month = dateComp.month,
                   let day = dateComp.day else { return arr }
             
-            let currentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
-            let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CardRecord.recordDate.rawValue와의 비교용 문자열
+            let isCurrentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
+            let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CareRecord.recordDate.rawValue와의 비교용 문자열
             
             var badges: Set<Badge> = []
             
@@ -278,7 +281,7 @@ extension CalendarReactor {
             }
             
             let manageInfoByDate = CalendarView.ManageInfoByDate(
-                currentMonth: currentMonth,
+                isCurrentMonth: isCurrentMonth,
                 day: day,
                 date: targetDate,
                 badge: badges

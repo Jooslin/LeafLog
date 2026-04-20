@@ -208,7 +208,7 @@ extension CalendarView {
 extension CalendarView {
     nonisolated
     struct ManageInfoByDate: Hashable {
-        let currentMonth: Bool // 표시되는 달 여부
+        let isCurrentMonth: Bool // 표시되는 달 여부
         let day: Int
         let date: Date
         let badge: Set<Badge>
