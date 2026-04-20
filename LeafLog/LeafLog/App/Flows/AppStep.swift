@@ -34,6 +34,12 @@ enum AppStep: Step {
     case alert(String, String) // (타이틀, 메세지)
     case pageBack
     
+    // PlantTab
+    case photoSelect
+    case cameraRequired
+    case classificationResult([String: PlantClassificationService.Confidence])
+    case applicatoinSettingRequired // 휴대폰의 앱 설정 화면
+    
     case confirmAlert(
         title: String,
         message: String,

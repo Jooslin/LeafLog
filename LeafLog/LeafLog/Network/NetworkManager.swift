@@ -148,6 +148,40 @@ final class NetworkManager {
 }
 
 extension NetworkManager {
+    // 검색결과 간략하게
+    func fetchPlantListBy(
+        keywords: [String]
+    ) async throws -> [String: PlantSummary] {
+        var plants: [String: PlantSummary] = [:]
+        
+        for keyword in keywords {
+            let parameters: Parameters = [
+                "apiKey": AppConfig.apiKey,
+                "sType": PlantSearchType.botanicalName.rawValue,
+                "sText": keyword,
+                "pageNo": "1",
+                "numOfRows": "1"
+            ]
+            
+            let response: PlantListResponse = try await request(
+                path: "gardenList",
+                parameters: parameters
+                )
+            
+            try validate(header: response.header)
+            
+            guard let plant = response.body.items.item.first else {
+                continue
+            }
+            
+            plants[keyword] = plant
+        }
+
+        return plants
+    }
+}
+
+extension NetworkManager {
     enum NetworkError: LocalizedError {
         case apiError(code: String, message: String) // API 내부 결과코드 실패
         case emptyResult

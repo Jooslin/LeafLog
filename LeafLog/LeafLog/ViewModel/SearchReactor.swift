@@ -18,6 +18,7 @@ final class SearchReactor: Reactor {
         case updateQuery(String) // 검색어 생김
         case updateSearchType(PlantSearchType) // 식물 이름 어떤식으로 검색하는지
         case updateFilter(PlantFilterKind, PlantFilterOption?) // 필터 바꿈
+        case classificationQuery([String: PlantClassificationService.Confidence]) // AI 식별 결과 받음
     }
     
     // 상태를 어떻게 바꿀지에 대한 변화
@@ -27,7 +28,7 @@ final class SearchReactor: Reactor {
         case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
         case setFilterOptions([PlantFilterKind: [PlantFilterOption]]) // 옵션 전체
         case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
-        case setPlants([PlantSummary])
+        case setPlants([SearchViewController.PlantSummaryItem])
         case setResultText(String) // 결과가 나올때
     }
     
@@ -37,11 +38,11 @@ final class SearchReactor: Reactor {
         var searchType: PlantSearchType = .plantName // 어떤걸 기준으로 검색할지
         var filterOptions: [PlantFilterKind: [PlantFilterOption]] = [:]
         var filterState = PlantFilterState()
-        var plants: [PlantSummary] = []
+        var plants: [SearchViewController.PlantSummaryItem] = []
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
     }
-
+    
     @Dependency(\.networkManager) private var networkManager
     
     // 최초 상태
@@ -57,7 +58,7 @@ final class SearchReactor: Reactor {
                 loadFilterOptions(), // 서버에서 필터 목록가져오기
                 .just(.setLoading(false))
             ])
-
+            
             // 사용자가 텍스트 입력시 실행
         case .updateQuery(let rawQuery):
             let query = cleanQuery(rawQuery)
@@ -128,6 +129,16 @@ final class SearchReactor: Reactor {
                 ),
                 .just(.setLoading(false))
             ])
+            
+            // AI 식물 식별 결과 사용할 때
+        case let .classificationQuery(classificationResult):
+            // 학명 검색
+            return .concat([
+                .just(.setSearchType(.botanicalName)),
+                .just(.setLoading(true)),
+                searchClassificationResult(classifications: classificationResult),
+                .just(.setLoading(false))
+            ])
         }
     }
     
@@ -152,7 +163,7 @@ final class SearchReactor: Reactor {
         case .setResultText(let resultText):
             newState.resultText = resultText
         }
-
+        
         return newState
     }
     
@@ -169,13 +180,12 @@ final class SearchReactor: Reactor {
                     observer.onCompleted()
                 }
             }
-
+            
             return Disposables.create {
                 task.cancel()
             }
         }
     }
-    
     
     private func search(
         query: String,
@@ -193,6 +203,22 @@ final class SearchReactor: Reactor {
                         numOfRows: 10
                     )
                     
+                    // items 추가
+                    let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+                        
+                        let item = SearchViewController.PlantSummaryItem(
+                            contentNumber: $1.contentNumber,
+                            name: $1.name,
+                            imageURL: $1.imageURL,
+                            thumbnailURL: $1.thumbnailURL,
+                            confidence: .unknown,
+                            primaryThumbnailURL: $1.primaryImageURL,
+                            primaryImageURL: $1.primaryImageURL,
+                            displayThumbnailURL: $1.displayThumbnailURL)
+                        
+                        return $0 + [item]
+                    }
+                    
                     // 결과 처리
                     let message: String
                     if plants.isEmpty {
@@ -201,7 +227,7 @@ final class SearchReactor: Reactor {
                         message = ""
                     }
                     
-                    observer.onNext(.setPlants(plants))
+                    observer.onNext(.setPlants(items))
                     // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
                     observer.onNext(.setResultText(message))
                     observer.onCompleted()
@@ -219,10 +245,72 @@ final class SearchReactor: Reactor {
             }
         }
     }
-
+    
     private func cleanQuery(_ query: String) -> String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
+    }
+}
+
+extension SearchReactor {
+    private func searchClassificationResult(
+        classifications: [String: PlantClassificationService.Confidence]
+    ) -> Observable<Mutation> {
+        Observable.create { [networkManager] observer in
+            guard !classifications.isEmpty else {
+                // 결과 처리
+                observer.onNext(.setPlants([]))
+                observer.onNext(.setResultText("AI 검색 결과 식물을 찾지 못했습니다."))
+                observer.onCompleted()
+                return Disposables.create()
+            }
+            
+            let task = Task {
+                do {
+                    // 일치율 높은 순으로 정렬한 식물 학명 배열
+                    let keywords = classifications
+                        .sorted(by: {
+                            $0.value.rawValue < $1.value.rawValue})
+                        .map { String($0.key) }
+                    
+                    // API 검색 결과
+                    let plants = try await networkManager.fetchPlantListBy(keywords: keywords)
+
+                    let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+                        guard let confidence = classifications[$1.key] else { return $0 }
+                        
+                        let item = SearchViewController.PlantSummaryItem(
+                            contentNumber: $1.value.contentNumber,
+                            name: $1.value.name,
+                            imageURL: $1.value.imageURL,
+                            thumbnailURL: $1.value.thumbnailURL,
+                            confidence: confidence,
+                            primaryThumbnailURL: $1.value.primaryImageURL,
+                            primaryImageURL: $1.value.primaryImageURL,
+                            displayThumbnailURL: $1.value.displayThumbnailURL)
+
+                        return $0 + [item]
+                    }
+
+                    let message: String = items.isEmpty ? "AI 검색 결과 식물을 찾지 못했습니다." : ""
+                    
+                    observer.onNext(.setPlants(items))
+                    // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
+                    observer.onNext(.setResultText(message))
+                    observer.onCompleted()
+                    // 에러 처리
+                } catch {
+                    observer.onNext(.setPlants([]))
+                    observer.onNext(.setResultText("검색 실패: \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+            
+            // 구독이 해제되면 실행중인 Task 취소
+            return Disposables.create {
+                task.cancel()
+            }
+        }
     }
 }
