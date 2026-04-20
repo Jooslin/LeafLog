@@ -319,7 +319,7 @@ struct PlantSummary: Decodable {
     }
 }
 
-struct PlantDetail: Decodable {
+struct PlantDetail: Decodable, Equatable {
     let contentNumber: String? // 넘버
     let familyName: String? // 과명
     let origin: String? // 원산지 정보
