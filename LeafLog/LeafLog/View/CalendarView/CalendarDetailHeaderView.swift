@@ -18,14 +18,7 @@ class CalendarDetailHeaderView: UICollectionReusableView {
         }
     }
     
-    private let manageLabel = UILabel(text: "물주기", config: .title14)
-    
-    //TODO: 추후 colorchip label로 교체 필요
-    private let completeLabel = UILabel().then {
-        $0.text = "완료"
-        $0.backgroundColor = .systemGray
-        $0.layer.cornerRadius = 8
-    }
+    private let manageLabel = UILabel(text: "", config: .title14)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,7 +43,7 @@ extension CalendarDetailHeaderView {
     }
     
     private func generateStackView() -> UIStackView {
-        let stackView = UIStackView(arrangedSubviews: [badge, manageLabel, completeLabel]).then {
+        let stackView = UIStackView(arrangedSubviews: [badge, manageLabel]).then {
             $0.axis = .horizontal
             $0.spacing = 8
             $0.alignment = .center
@@ -62,8 +55,6 @@ extension CalendarDetailHeaderView {
         badge.setContentHuggingPriority(.required, for: .horizontal)
         badge.setContentCompressionResistancePriority(.required, for: .horizontal)
         
-        completeLabel.setContentHuggingPriority(.required, for: .horizontal)
-        completeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         return stackView
     }
 }

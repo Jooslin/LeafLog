@@ -11,7 +11,7 @@ import Then
 
 final class CalendarDetailCell: UICollectionViewCell {
 
-    private let nameLabel = UILabel(text: "몬스테라", config: .body14)
+    private let nameLabel = UILabel(text: "", config: .body14)
     
     private let colorChip = UIView().then {
         $0.layer.cornerRadius = 4
