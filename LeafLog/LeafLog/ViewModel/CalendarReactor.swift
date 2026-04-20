@@ -18,6 +18,7 @@ final class CalendarReactor: Reactor {
     }
     
     enum Mutation {
+        case setCalendarHeader(Int, Int) // 년, 월
         case calendarDates(Date, Int, Int, [CalendarView.Item]) // (기준 일자, 년, 월, [일])
         case calendarRecords([CareRecord])
         case error(String)
@@ -43,6 +44,7 @@ final class CalendarReactor: Reactor {
         case .viewWillAppear:
             let benchmark = currentState.benchmarkDate
             return Observable.concat([
+                setCalendarHeader(of: benchmark),
                 calendarDates(of: benchmark),
                 calendarCareRecords(of: benchmark)
                 ])
@@ -57,9 +59,10 @@ final class CalendarReactor: Reactor {
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
+        case .setCalendarHeader(let year, let month):
+            newState.data[.header] = [CalendarView.Item.header(year, month)]
         case .calendarDates(let benchmark, let year, let month, let calendarItems):
             newState.benchmarkDate = benchmark
-            newState.data[.header] = [CalendarView.Item.header(year, month)]
             newState.data[.calendar] = calendarItems
             
         case .calendarRecords(let records):
@@ -73,6 +76,22 @@ final class CalendarReactor: Reactor {
 }
 
 extension CalendarReactor {
+    private func setCalendarHeader(of date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            
+            let dateComp = self.calendar.dateComponents([.year, .month], from: date)
+            
+            guard let year = dateComp.year,
+                  let month = dateComp.month else { return Disposables.create() }
+            
+            observer.onNext(.setCalendarHeader(year, month))
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
+    }
+    
     private func calendarDates(of date: Date) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
