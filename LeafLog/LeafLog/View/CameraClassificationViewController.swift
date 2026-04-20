@@ -56,7 +56,7 @@ class CameraClassificationViewController: BaseViewController, View {
         // 뒤로가기
         cameraClassificationView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.pop)
+                self?.steps.accept(AppStep.pageBack)
             })
             .disposed(by: disposeBag)
         

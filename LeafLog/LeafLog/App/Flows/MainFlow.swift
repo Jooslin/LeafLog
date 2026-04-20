@@ -35,7 +35,7 @@ final class MainFlow: Flow {
         case .alert(let title, let message):
             return presentAlert(title: title, message: message)
             
-        case .pop:
+        case .pageBack:
             pop(animated: true)
             return .none
             
@@ -75,25 +75,27 @@ extension MainFlow {
         // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
         // Flow.use는 내부에서 Single 이벤트를 drive로 구독을 소비하므로 소비 완료 후 자동으로 구독이 해제되어 메모리 누수가 발생하지 않음
         Flows.use(plantTabFlow, calendarTabFlow, myInfoTabFlow, when: .created) { plant, calendar, my in
+            
             plant.tabBarItem = UITabBarItem(
-                title: "식물",
-                image: UIImage(systemName: "leaf"),
-                tag: 0
+                title: "홈",
+                image: .houseEmpty,
+                selectedImage: .houseFill
             )
             
             calendar.tabBarItem = UITabBarItem(
-                title: "달력",
-                image: UIImage(systemName: "calendar"),
-                tag: 1
+                title: "캘린더",
+                image: .calendarEmpty,
+                selectedImage: .calendarFill,
             )
             
             my.tabBarItem = UITabBarItem(
-                title: "내 정보",
-                image: UIImage(systemName: "person"),
-                tag: 2
+                title: "마이",
+                image: .userEmpty,
+                selectedImage: .userFill
             )
             
             self.tabBarController.setViewControllers([plant, calendar, my], animated: true)
+            self.tabBarController.tabBar.tintColor = .primary700
         }
         
         return .multiple(flowContributors: [

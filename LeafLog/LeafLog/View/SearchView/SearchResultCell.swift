@@ -45,7 +45,7 @@ final class SearchResultCell: UICollectionViewCell {
     
     private let plantNameLabel = UILabel(text: "식물 이름", config: .title16)
 
-    private let selectButton = CornerRadius8Button(title: "선택")
+    private let selectButton = UIButton(config: .mSize, title: "선택")
 
     private let dividerView = UIView().then {
         $0.backgroundColor = UIColor.separator.withAlphaComponent(0.1)

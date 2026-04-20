@@ -2,7 +2,7 @@
 //  MyPageViewController.swift
 //  LeafLog
 //
-//  Created by OpenAI Codex on 4/13/26.
+//  Created by 김주희 on 4/13/26.
 //
 
 import UIKit
@@ -10,6 +10,7 @@ import ReactorKit
 import RxSwift
 import RxCocoa
 import Dependencies
+import MessageUI
 
 final class MyPageViewController: BaseViewController, View {
 
@@ -23,8 +24,6 @@ final class MyPageViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "마이페이지"
-        navigationItem.largeTitleDisplayMode = .never
     }
 
     func bind(reactor: MyPageReactor) {
@@ -47,14 +46,47 @@ final class MyPageViewController: BaseViewController, View {
 
         // 로그아웃
         myPageView.logoutButton.rx.tap
-            .map { MyPageReactor.Action.logoutTapped }
-            .bind(to: reactor.action)
+            .bind { [weak self, weak reactor] in
+                self?.steps.accept(
+                    AppStep.confirmAlert(
+                        title: "로그아웃",
+                        message: "로그아웃 하시겠습니까?",
+                        okTitle: "로그아웃",
+                        onConfirm: {
+                            reactor?.action.onNext(.logoutTapped)
+                        }
+                    )
+                )
+            }
             .disposed(by: disposeBag)
 
         // 회원 탈퇴
         myPageView.withdrawalButton.rx.tap
-            .subscribe(onNext: { [weak self, weak reactor] in
-                self?.presentWithdrawalAlert(reactor: reactor)
+            .bind { [weak self, weak reactor] in
+                self?.steps.accept(
+                    AppStep.confirmAlert(
+                        title: "회원 탈퇴",
+                        message: "정말 탈퇴 하시겠습니까?",
+                        okTitle: "탈퇴",
+                        onConfirm: {
+                            reactor?.action.onNext(.withdrawalTapped)
+                        }
+                    )
+                )
+            }
+            .disposed(by: disposeBag)
+        
+        // 문의하기 버튼
+        myPageView.inquiryButton.rx.tap
+            .map { MyPageReactor.Action.inquiryTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        // 오류 신고 버튼
+        myPageView.reportErrorButton.rx.tap
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] in
+                self?.presentMailComposeViewController(isError: true)
             })
             .disposed(by: disposeBag)
     }
@@ -106,13 +138,18 @@ final class MyPageViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("오류", message))
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$routeToMail)
+                    .compactMap { $0 }
+                    .observe(on: MainScheduler.instance)
+                    .subscribe(onNext: { [weak self] isError in
+                        self?.presentMailComposeViewController(isError: isError)
+                    })
+                    .disposed(by: disposeBag)
     }
 
     private func render(profile: UserProfileModel?) {
         guard let profile else {
-            myPageView.nicknameLabel.text = "프로필을 불러오는 중..."
-            myPageView.emailLabel.text = nil
-            myPageView.profileImageView.image = UIImage(named: "userEmpty") ?? UIImage(systemName: "person.crop.circle.fill")
             return
         }
 
@@ -124,7 +161,6 @@ final class MyPageViewController: BaseViewController, View {
     // 프로필 사진 불러오기
     private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
-        myPageView.profileImageView.image = UIImage(named: "userEmpty") ?? UIImage(systemName: "person.crop.circle.fill")
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
@@ -145,19 +181,41 @@ final class MyPageViewController: BaseViewController, View {
             }
         }
     }
+}
 
-    private func presentWithdrawalAlert(reactor: MyPageReactor?) {
-        let alert = UIAlertController(
-            title: "회원탈퇴",
-            message: "정말 탈퇴하시겠어요?",
-            preferredStyle: .alert
-        )
 
-        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
-        alert.addAction(UIAlertAction(title: "탈퇴", style: .destructive) { _ in
-            reactor?.action.onNext(.withdrawalTapped)
-        })
-
-        present(alert, animated: true)
+// MARK: - Mail Compose
+extension MyPageViewController: MFMailComposeViewControllerDelegate {
+    
+    // 메일 작성 화면 띄우기
+    private func presentMailComposeViewController(isError: Bool) {
+        // 기기에 메일 계정이 설정되어 있는지 확인
+        guard MFMailComposeViewController.canSendMail() else {
+            // 메일 앱을 사용할 수 없을 때 알림
+            self.steps.accept(AppStep.alert("메일 설정 오류", "기본 메일 앱이 설정되어 있지 않습니다. leaflogapp@gmail.com으로 직접 문의해 주세요."))
+            return
+        }
+        
+        let mailVC = MFMailComposeViewController()
+        mailVC.mailComposeDelegate = self
+        
+        // 받는 사람 지정
+        mailVC.setToRecipients(["leaflogapp@gmail.com"])
+        
+        // 문의/오류신고에 따라 제목과 본문 양식 다르게 지정
+        if isError {
+            mailVC.setSubject("[LeafLog] 오류 신고")
+            mailVC.setMessageBody("발생한 오류에 대해 적어주세요.\n\n- 발생 일시:\n- 오류 내용:\n", isHTML: false)
+        } else {
+            mailVC.setSubject("[LeafLog] 서비스 문의")
+            mailVC.setMessageBody("문의하실 내용을 적어주세요.\n\n", isHTML: false)
+        }
+        
+        present(mailVC, animated: true)
+    }
+    
+    // 메일 작성 화면에서 '취소' 또는 '보내기'를 눌렀을 때 화면을 닫아주는 델리게이트 메서드
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+        controller.dismiss(animated: true)
     }
 }

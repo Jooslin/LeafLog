@@ -33,27 +33,26 @@ final class PlantTabFlow: Flow {
         }
         
         switch step {
-        case .plantTab: // 메인 컨트롤러 표시
-                        let viewController = ViewController()//TODO: PlantVC로 변경 필요
+        case .plantTab:
+            let viewController = HomeViewController()
             navigationController.pushViewController(viewController, animated: true)
             
-            //TODO: PlantVC 내용으로 변경 필요
-            //            return .one(flowContributor: .contribute(
-            //                withNextPresentable: viewController,
-            //                withNextStepper: viewController
-            //            )
+            //            prepareImagePicker()
+            //            imagePicker?.delegate = viewController
+            //
+                        //TODO: 등록VC 띄우는 step으로 이관 필요
+            //            return .one(
+            //                flowContributor: .contribute(
+            //                    withNextPresentable: viewController,
+            //                    withNextStepper: CompositeStepper(
+            //                        steppers: [viewController, photoSelectStepper]
+            //                    )))
             
-            prepareImagePicker()
-            imagePicker?.delegate = viewController
-            
-            //TODO: 등록VC 띄우는 step으로 이관 필요
-            return .one(
-                flowContributor: .contribute(
-                    withNextPresentable: viewController,
-                    withNextStepper: CompositeStepper(
-                        steppers: [viewController, photoSelectStepper]
-                    )))
-            
+            return .one(flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController
+            ))
+        
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
             

@@ -20,6 +20,8 @@ final class MyPageReactor: Reactor {
         case editProfileTapped
         case logoutTapped
         case withdrawalTapped
+        case inquiryTapped
+        case reportErrorTapped
     }
 
     enum Mutation {
@@ -29,6 +31,7 @@ final class MyPageReactor: Reactor {
         case setRouteToEdit(UserProfileModel?)
         case setMoveToLogin(Bool)
         case setErrorMessage(String?)
+        case setRouteToMail(isError: Bool)
     }
 
     struct State {
@@ -38,6 +41,7 @@ final class MyPageReactor: Reactor {
         @Pulse var routeToEdit: UserProfileModel?
         @Pulse var moveToLogin = false
         @Pulse var errorMessage: String?
+        @Pulse var routeToMail: Bool? // true면 오류 신고, false면 일반 문의 버전
     }
 
     let initialState = State()
@@ -62,6 +66,12 @@ final class MyPageReactor: Reactor {
             return runAccountAction {
                 try await self.authService.withdrawAccount()
             }
+            
+        case .inquiryTapped:
+            return .just(.setRouteToMail(isError: false))
+            
+        case .reportErrorTapped:
+            return .just(.setRouteToMail(isError: true))
         }
     }
 
@@ -90,6 +100,9 @@ final class MyPageReactor: Reactor {
             newState.isLoading = false
             newState.isSubmitting = false
             newState.errorMessage = message
+            
+        case .setRouteToMail(let isError):
+                    newState.routeToMail = isError
         }
 
         return newState

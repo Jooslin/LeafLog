@@ -16,6 +16,16 @@ class BaseViewController: UIViewController, Stepper {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationController?.navigationBar.isHidden = true
+        
+        // 네비게이션 바가 숨겨져도 스와이프로 뒤로 가기가 가능하도록 설정
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // 화면이 나타날 때마다 네비게이션 바를 숨김
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 }
+
