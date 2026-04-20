@@ -12,12 +12,16 @@ import RxSwift
 final class PlantRegisterReactor: Reactor {
     enum Action {
         case viewDidLoad
+        case selectPlant(SelectedPlant)
     }
 
-    enum Mutation { }
+    enum Mutation {
+        case setSelectedPlant(SelectedPlant)
+    }
 
     struct State {
         var isReady = false
+        var selectedPlant: SelectedPlant? = nil
     }
 
     let initialState = State()
@@ -26,10 +30,19 @@ final class PlantRegisterReactor: Reactor {
         switch action {
         case .viewDidLoad:
             return .empty()
+        case .selectPlant(let selectedPlant):
+            return .just(.setSelectedPlant(selectedPlant))
         }
     }
 
     func reduce(state: State, mutation: Mutation) -> State {
-        state
+        var newState = state
+
+        switch mutation {
+        case .setSelectedPlant(let selectedPlant):
+            newState.selectedPlant = selectedPlant
+        }
+
+        return newState
     }
 }
