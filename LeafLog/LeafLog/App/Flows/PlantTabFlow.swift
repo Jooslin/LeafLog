@@ -33,25 +33,27 @@ final class PlantTabFlow: Flow {
         }
         
         switch step {
-        case .plantTab:
-            let viewController = HomeViewController()
-            navigationController.pushViewController(viewController, animated: true)
-            
-            //            prepareImagePicker()
-            //            imagePicker?.delegate = viewController
-            //
-                        //TODO: 등록VC 띄우는 step으로 이관 필요
-            //            return .one(
-            //                flowContributor: .contribute(
-            //                    withNextPresentable: viewController,
-            //                    withNextStepper: CompositeStepper(
-            //                        steppers: [viewController, photoSelectStepper]
-            //                    )))
-            
-            return .one(flowContributor: .contribute(
-                withNextPresentable: viewController,
-                withNextStepper: viewController
-            ))
+        case .plantTab, .plantRegister:
+            let viewController = PlantRegisterViewController()
+            navigationController.setViewControllers([viewController], animated: false)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: viewController
+                )
+            )
+
+        case .plantSearch:
+            let searchViewController = SearchViewController()
+            navigationController.pushViewController(searchViewController, animated: true)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: searchViewController,
+                    withNextStepper: searchViewController
+                )
+            )
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
@@ -73,6 +75,10 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(camera, animated: true)
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+
+        case .pageBack:
+            navigationController.popViewController(animated: true)
+            return .none
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))

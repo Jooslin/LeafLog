@@ -33,6 +33,8 @@ enum AppStep: Step {
     case pageBack
     
     // PlantTab
+    case plantRegister
+    case plantSearch
     case photoSelect
     case cameraRequired
     case classificationResult([String: PlantClassificationService.Confidence])

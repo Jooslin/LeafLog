@@ -119,13 +119,14 @@ final class SearchViewController: BaseViewController, View {
     private func bindUI() {
         rootView.titleHeaderView.backButton.addAction(
             UIAction { [weak self] _ in
-                guard let self else { return }
+                self?.steps.accept(AppStep.pageBack)
+            },
+            for: .touchUpInside
+        )
 
-                if let navigationController, navigationController.viewControllers.first != self {
-                    navigationController.popViewController(animated: false)
-                } else {
-                    dismiss(animated: false)
-                }
+        rootView.searchBarView.cameraButton.addAction(
+            UIAction { [weak self] _ in
+                self?.steps.accept(AppStep.cameraRequired)
             },
             for: .touchUpInside
         )
