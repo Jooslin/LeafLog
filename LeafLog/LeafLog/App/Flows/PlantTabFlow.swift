@@ -34,6 +34,10 @@ final class PlantTabFlow: Flow {
             let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .pageBack:
+            navigationController.popViewController(animated: true)
+            return .none
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
