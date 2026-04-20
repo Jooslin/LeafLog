@@ -30,7 +30,7 @@ final class WateringGuideView: UIView {
         super.init(frame: frame)
         setupStyle()
         setupLayout()
-        configure(cycleText: "??일")
+        isHidden = true
     }
 
     required init?(coder: NSCoder) {
@@ -55,15 +55,22 @@ final class WateringGuideView: UIView {
         }
 
         messageLabel.attributedText = attributedText
+        isHidden = false
     }
 
     func configure(plantName: String?, springWaterCycle: String?) {
         guard let plantName, !plantName.isEmpty else {
-            configure(cycleText: "??일")
+            messageLabel.text = nil
+            isHidden = true
             return
         }
 
-        let cycleText = WaterCycleDescription.cycleText(from: springWaterCycle) ?? "??일"
+        guard let cycleText = WaterCycleDescription.cycleText(from: springWaterCycle) else {
+            messageLabel.text = nil
+            isHidden = true
+            return
+        }
+
         let suffix = WaterCycleDescription.suffixText(from: springWaterCycle)
         let fullText = "\(plantName)은(는) 평균 \(cycleText) 주기로 급수가 필요해요. \(suffix)"
 
@@ -85,6 +92,7 @@ final class WateringGuideView: UIView {
         }
 
         messageLabel.attributedText = attributedText
+        isHidden = false
     }
 }
 
@@ -120,22 +128,22 @@ private struct WaterCycleDescription {
         .init(
             keyword: "토양 표면이 말랐을때 충분히 관수함",
             cycleText: "4 ~ 6일",
-            suffixText: "(표면이 말랐을때 충분히 줌)"
+            suffixText: "(표면이 말랐을때 충분히 급수)"
         ),
         .init(
             keyword: "화분 흙 대부분 말랐을때 충분히 관수함",
             cycleText: "7 ~ 10일",
-            suffixText: "(흙 대부분 말랐을때 충분히 줌)"
+            suffixText: "(흙 대부분 말랐을때 충분히 급수)"
         ),
         .init(
-            keyword: "흙을 촉촉하게 유지함(물에 잠기지 않도록 주의)",
+            keyword: "항상 흙을 촉촉하게 유지함",
             cycleText: "0 ~ 2일",
             suffixText: "(수시 보충)"
         ),
         .init(
             keyword: "흙을 촉촉하게 유지함",
             cycleText: "3 ~ 5일",
-            suffixText: "(촉촉하게 유지권장, 물에 잠기지 않도록 주의)"
+            suffixText: "(물에 잠기지 않도록 주의)"
         )
     ]
 

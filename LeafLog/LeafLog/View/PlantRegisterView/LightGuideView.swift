@@ -16,7 +16,7 @@ final class LightGuideView: UIView {
         $0.contentMode = .scaleAspectFit
     }
 
-    private let messageLabel = UILabel(config: .body12, color: .grayScale700, lines: 0)
+    private let messageLabel = UILabel(config: .body12 , color: .grayScale700, lines: 0)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -24,7 +24,7 @@ final class LightGuideView: UIView {
         layer.cornerRadius = 8
         clipsToBounds = true
         setupUI()
-        configure(plantName: nil, lightDemand: nil)
+        isHidden = true
     }
 
     required init?(coder: NSCoder) {
@@ -35,7 +35,9 @@ final class LightGuideView: UIView {
         let descriptions = LightDemandDescription.matchingAll(lightDemand: lightDemand)
 
         guard !descriptions.isEmpty else {
-            messageLabel.text = "식물 검색 시 조언을 해드립니다."
+            messageLabel.text = nil
+            messageLabel.attributedText = nil
+            isHidden = true
             return
         }
 
@@ -49,10 +51,33 @@ final class LightGuideView: UIView {
 
         guard let plantName, !plantName.isEmpty else {
             messageLabel.text = fullDescription
+            messageLabel.attributedText = nil
+            isHidden = false
             return
         }
 
-        messageLabel.text = "\(plantName)은(는) \(preferenceText)와 같은 장소에 두는 걸 추천합니다."
+        let fullText = "\(plantName)은(는) \(preferenceText)와 같은 장소에 두는 걸 추천합니다."
+        let attributedText = NSMutableAttributedString(
+            string: fullText,
+            attributes: [
+                .font: messageLabel.font as Any,
+                .foregroundColor: UIColor.grayScale700
+            ]
+        )
+
+        [plantName]
+            .appending(contentsOf: descriptions.map(\.preferenceText))
+            .forEach { highlightedText in
+                let highlightedRange = (fullText as NSString).range(of: highlightedText)
+                if highlightedRange.location != NSNotFound {
+                    attributedText.addAttributes([
+                        .foregroundColor: UIColor.primary700
+                    ], range: highlightedRange)
+                }
+            }
+
+        messageLabel.attributedText = attributedText
+        isHidden = false
     }
 
     private func setupUI() {
@@ -70,6 +95,12 @@ final class LightGuideView: UIView {
             $0.leading.equalTo(iconImageView.snp.trailing).offset(6)
             $0.trailing.equalToSuperview().inset(10)
         }
+    }
+}
+
+private extension Array where Element == String {
+    func appending(contentsOf elements: [String]) -> [String] {
+        self + elements
     }
 }
 
@@ -91,7 +122,7 @@ private struct LightDemandDescription {
         ),
         .init(
             keywords: ["높은 광도", "1,500~10,000", "1,500∼10,000", "1500~10000", "1500∼10000"],
-            preferenceText: "창가의 직광, 베란다",
+            preferenceText: "창가의 직광, 베란다의 직광",
             fullDescription: "높은 광도 (1,500~10,000 Lux): 창가의 직광, 베란다"
         )
     ]

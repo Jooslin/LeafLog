@@ -34,11 +34,30 @@ final class CategoryGuideView: UIView {
     func configure(plantName: String?, category: PlantCategoryDescription?) {
         guard let plantName, let category else {
             messageLabel.text = nil
+            messageLabel.attributedText = nil
             isHidden = true
             return
         }
 
-        messageLabel.text = "\(plantName)은 \(category.title)입니다.\n\(category.title)은 \(category.description)"
+        let fullText = "\(plantName)은 \(category.description) \(category.title) 식물 입니다."
+        let attributedText = NSMutableAttributedString(
+            string: fullText,
+            attributes: [
+                .font: messageLabel.font as Any,
+                .foregroundColor: UIColor.grayScale700
+            ]
+        )
+
+        [plantName, category.description, category.title].forEach { highlightedText in
+            let highlightedRange = (fullText as NSString).range(of: highlightedText)
+            if highlightedRange.location != NSNotFound {
+                attributedText.addAttributes([
+                    .foregroundColor: UIColor.primary700
+                ], range: highlightedRange)
+            }
+        }
+
+        messageLabel.attributedText = attributedText
         isHidden = false
     }
 
@@ -65,12 +84,12 @@ struct PlantCategoryDescription {
     let description: String
 
     static let all: [PlantCategoryDescription] = [
-        .init(title: "직립형", description: "위로 쭉 자라요."),
-        .init(title: "관목형", description: "풍성하게 자라요."),
-        .init(title: "덩굴성", description: "길게 늘어져요."),
-        .init(title: "풀모양", description: "가늘게 자라요."),
-        .init(title: "로제트형", description: "납작하고 동그랗게 퍼져요."),
-        .init(title: "다육형", description: "통통하게 자라요.")
+        .init(title: "직립형", description: "위로 쭉 자라는"),
+        .init(title: "관목형", description: "풍성하게 자라는"),
+        .init(title: "덩굴성", description: "길게 늘어지는"),
+        .init(title: "풀모양", description: "가늘게 자라는"),
+        .init(title: "로제트형", description: "납작하고 동그랗게 퍼지며 자라는"),
+        .init(title: "다육형", description: "통통하게 자라는")
     ]
 
     static func matching(growStyle: String?) -> PlantCategoryDescription? {
