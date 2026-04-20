@@ -1,0 +1,342 @@
+//
+//  PlantRegisterViewController.swift
+//  LeafLog
+//
+//  Created by Yeseul Jang on 4/17/26.
+//
+
+import PhotosUI
+import ReactorKit
+import RxSwift
+import UIKit
+import RxCocoa
+import Then
+
+final class PlantRegisterViewController: BaseViewController, View {
+
+    private let registerView = PlantRegisterView()
+    private var selectedImage: UIImage?
+    private let lastWateredDatePicker = UIDatePicker().then {
+        $0.datePickerMode = .date
+        $0.preferredDatePickerStyle = .wheels
+        $0.locale = Locale(identifier: "ko_KR")
+        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.maximumDate = Date()
+    }
+    private let lastWateredDateFormatter = DateFormatter().then {
+        $0.locale = Locale(identifier: "ko_KR")
+        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.dateFormat = "yyyy / MM / dd"
+    }
+
+    init(reactor: PlantRegisterReactor = PlantRegisterReactor()) {
+        super.init(nibName: nil, bundle: nil)
+        self.reactor = reactor
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func loadView() {
+        view = registerView
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .white
+        bindUI()
+    }
+
+    func bind(reactor: PlantRegisterReactor) {
+        Observable.just(())
+            .map { PlantRegisterReactor.Action.viewDidLoad }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.selectedPlant)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] selectedPlant in
+                guard let self else { return }
+
+                guard let selectedPlant else {
+                    self.resetFormUI()
+                    return
+                }
+
+                self.registerView.applySelectedPlant(
+                    name: selectedPlant.name,
+                    growStyle: selectedPlant.detail?.growStyle,
+                    lightDemand: selectedPlant.detail?.lightDemand,
+                    springWaterCycle: selectedPlant.detail?.springWaterCycle,
+                    selectedCategory: selectedPlant.category
+                )
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.selectedCategory)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] category in
+                self?.applyCategorySelection(category)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.selectedLocation)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] location in
+                self?.applyLocationSelection(location)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.wateringIntervalText)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] text in
+                guard self?.registerView.wateringCycleTextField.text != text else { return }
+                self?.registerView.wateringCycleTextField.text = text
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.isRegisterEnabled)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isEnabled in
+                self?.applyRegisterButtonState(isEnabled: isEnabled)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$saveCompleted)
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.resetFormUI()
+                self?.steps.accept(AppStep.pageBack)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("저장 실패", message))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func bindUI() {
+        registerView.headerView.backButton.addAction(
+            UIAction { [weak self] _ in
+                self?.steps.accept(AppStep.pageBack)
+            },
+            for: .touchUpInside
+        )
+
+        registerView.cameraButton.addAction(
+            UIAction { [weak self] _ in
+                self?.presentPhotoPicker()
+            },
+            for: .touchUpInside
+        )
+
+        registerView.plantTypeSearchButton.addAction(
+            UIAction { [weak self] _ in
+                self?.handlePlantTypeSearchTap()
+            },
+            for: .touchUpInside
+        )
+
+        registerView.categoryButtons.forEach { button in
+            button.addAction(
+                UIAction { [weak self] _ in
+                    self?.updateSingleSelection(
+                        selectedButton: button,
+                        in: self?.registerView.categoryButtons ?? []
+                    )
+                    self?.notifyCategorySelectionChanged()
+                },
+                for: .touchUpInside
+            )
+        }
+
+        registerView.locationButtons.forEach { button in
+            button.addAction(
+                UIAction { [weak self] _ in
+                    self?.updateSingleSelection(
+                        selectedButton: button,
+                        in: self?.registerView.locationButtons ?? []
+                    )
+                    self?.notifyLocationSelectionChanged()
+                },
+                for: .touchUpInside
+            )
+        }
+
+        registerView.wateringCycleTextField.addTarget(
+            self,
+            action: #selector(handleFormValueChanged),
+            for: .editingChanged
+        )
+
+        registerView.registerButton.addAction(
+            UIAction { [weak self] _ in
+                self?.handleRegisterTap()
+            },
+            for: .touchUpInside
+        )
+
+        configureLastWateredDatePicker()
+        syncInitialFormState()
+    }
+
+    private func updateSingleSelection(selectedButton: UIButton, in buttons: [UIButton]) {
+        buttons.forEach { $0.isSelected = ($0 === selectedButton) }
+    }
+
+    @objc private func handleFormValueChanged() {
+        reactor?.action.onNext(
+            .updateWateringInterval(registerView.wateringCycleTextField.text ?? "")
+        )
+    }
+
+    private func notifyCategorySelectionChanged() {
+        reactor?.action.onNext(.updateCategory(selectedCategoryFromButtons))
+    }
+
+    private func notifyLocationSelectionChanged() {
+        reactor?.action.onNext(.updateLocation(selectedLocationFromButtons))
+    }
+
+    private func syncInitialFormState() {
+        notifyCategorySelectionChanged()
+        notifyLocationSelectionChanged()
+        reactor?.action.onNext(.updateWateringInterval(registerView.wateringCycleTextField.text ?? ""))
+    }
+
+    private func applyRegisterButtonState(isEnabled: Bool) {
+        registerView.registerButton.isEnabled = isEnabled
+        registerView.registerButton.alpha = isEnabled ? 1.0 : 0.6
+    }
+
+    private func applyCategorySelection(_ category: PlantCategory?) {
+        if category == .other {
+            registerView.categoryButtons.forEach { $0.isSelected = false }
+            return
+        }
+
+        registerView.categoryButtons.forEach { button in
+            let buttonTitle = button.configuration?.title ?? button.title(for: .normal)
+            button.isSelected = (buttonTitle == category?.rawValue)
+        }
+    }
+
+    private func applyLocationSelection(_ location: PlantLocation?) {
+        registerView.locationButtons.forEach { button in
+            let buttonTitle = button.configuration?.title ?? button.title(for: .normal)
+            button.isSelected = (buttonTitle == location?.rawValue)
+        }
+    }
+
+    private func handlePlantTypeSearchTap() {
+        view.endEditing(true)
+        steps.accept(AppStep.plantSearch)
+    }
+
+    private func presentPhotoPicker() {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+
+        let pickerViewController = PHPickerViewController(configuration: configuration)
+        pickerViewController.delegate = self
+        present(pickerViewController, animated: true)
+    }
+
+    private func configureLastWateredDatePicker() {
+        registerView.lastWateredDateTextField.inputView = lastWateredDatePicker
+        registerView.lastWateredDateTextField.tintColor = .clear
+
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        toolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapLastWateredDateDone))
+        ]
+        registerView.lastWateredDateTextField.inputAccessoryView = toolbar
+    }
+
+    @objc private func didTapLastWateredDateDone() {
+        let selectedDate = lastWateredDatePicker.date
+        updateLastWateredDateField(date: selectedDate)
+        reactor?.action.onNext(.updateLastWateredDate(selectedDate))
+        registerView.lastWateredDateTextField.resignFirstResponder()
+    }
+
+    private func updateLastWateredDateField(date: Date) {
+        registerView.lastWateredDateTextField.text = lastWateredDateFormatter.string(from: date)
+    }
+
+    private func resetFormUI() {
+        selectedImage = nil
+        lastWateredDatePicker.date = Date()
+        registerView.resetForm()
+    }
+
+    private func handleRegisterTap() {
+        let nickname = registerView.plantNameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        reactor?.action.onNext(
+            .saveTapped(
+                nickname: nickname?.isEmpty == true ? nil : nickname,
+                image: selectedImage
+            )
+        )
+    }
+
+    private var selectedCategoryFromButtons: PlantCategory? {
+        let selectedTitle = registerView.categoryButtons
+            .first(where: \.isSelected)?
+            .configuration?.title
+
+        guard let selectedTitle else { return nil }
+        return PlantCategory.allCases.first(where: { $0.rawValue == selectedTitle })
+    }
+
+    private var selectedLocationFromButtons: PlantLocation? {
+        let selectedTitle = registerView.locationButtons
+            .first(where: \.isSelected)?
+            .configuration?.title
+
+        guard let selectedTitle else { return nil }
+        return PlantLocation.allCases.first(where: { $0.rawValue == selectedTitle })
+    }
+}
+
+extension PlantRegisterViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+
+        guard let result = results.first,
+              result.itemProvider.canLoadObject(ofClass: UIImage.self)
+        else {
+            return
+        }
+
+        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
+            guard let selectedImage = image as? UIImage else { return }
+
+            DispatchQueue.main.async {
+                self?.selectedImage = selectedImage
+                self?.registerView.cameraButton.layer.contents = selectedImage.cgImage
+                self?.registerView.cameraButton.layer.contentsGravity = .resizeAspectFill
+                self?.registerView.cameraButton.backgroundColor = .clear
+            }
+        }
+    }
+}
