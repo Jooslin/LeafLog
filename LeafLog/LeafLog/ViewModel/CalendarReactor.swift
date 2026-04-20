@@ -19,6 +19,7 @@ final class CalendarReactor: Reactor {
     
     enum Mutation {
         case setCalendarHeader(Int, Int) // 년, 월
+        case setCalendarItem([CalendarView.Item])
         case calendarDates(Date, Int, Int, [CalendarView.Item]) // (기준 일자, 년, 월, [일])
         case calendarRecords([CareRecord])
         case error(String)
@@ -44,16 +45,23 @@ final class CalendarReactor: Reactor {
         case .viewWillAppear:
             let benchmark = currentState.benchmarkDate
             return Observable.concat([
-                setCalendarHeader(of: benchmark),
-                calendarDates(of: benchmark),
-                calendarCareRecords(of: benchmark)
-                ])
+                calendarHeaderItem(of: benchmark),
+                calendarItems(of: benchmark)
+            ])
             
         case .previousMonth:
-            return moveMonthTo(.previous)
+            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: .previous)
+            return Observable.concat([
+                calendarHeaderItem(of: benchmark),
+                calendarItems(of: benchmark)
+            ])
             
         case .nextMonth:
-            return moveMonthTo(.next)
+            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: .next)
+            return Observable.concat([
+                calendarHeaderItem(of: benchmark),
+                calendarItems(of: benchmark)
+            ])
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
@@ -61,6 +69,10 @@ final class CalendarReactor: Reactor {
         switch mutation {
         case .setCalendarHeader(let year, let month):
             newState.data[.header] = [CalendarView.Item.header(year, month)]
+            
+        case .setCalendarItem(let items):
+            newState.data[.calendar] = items
+            
         case .calendarDates(let benchmark, let year, let month, let calendarItems):
             newState.benchmarkDate = benchmark
             newState.data[.calendar] = calendarItems
@@ -76,7 +88,7 @@ final class CalendarReactor: Reactor {
 }
 
 extension CalendarReactor {
-    private func setCalendarHeader(of date: Date) -> Observable<Mutation> {
+    private func calendarHeaderItem(of date: Date) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
@@ -92,50 +104,92 @@ extension CalendarReactor {
         }
     }
     
+    private func calendarItems(of date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            let task = Task {
+                let dates = self.calculateDates(of: date) // 달력에 표시될 날짜들
+                let records = try await self.plantRecords(of: date) // 달력 범위의 기록들
+                let items = self.datesConvertToItems(current: date, dates, records: records) // 컬렉션뷰에 표시될 아이템
+                
+                observer.onNext(.setCalendarItem(items))
+                observer.onCompleted()
+            }
+            
+            return Disposables.create() {
+                task.cancel()
+            }
+        }
+    }
+    
     private func calendarDates(of date: Date) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
-            let dateComp = self.calendar.dateComponents([.year, .month], from: date)
+            let dateComp = calendar.dateComponents([.year, .month], from: date)
             guard let year = dateComp.year,
                   let month = dateComp.month else { return Disposables.create() }
             
-            let dates = self.calculateDates(of: date)
-            let items = datesConvertToItems(currentMonth: month, dates)
-            
-            observer.onNext(.calendarDates(date, year, month, items))
-            observer.onCompleted()
+            Task {
+                let records = try await self.plantRecords(of: date)
+                let dates = self.calculateDates(of: date)
+                let items = self.datesConvertToItems(current: date, dates, records: records)
+                
+                observer.onNext(.calendarDates(date, year, month, items))
+                observer.onCompleted()
+            }
             
             return Disposables.create()
         }
     }
     
-    private func moveMonthTo(_ move: MoveMonth) -> Observable<Mutation> {
-        Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
-            let benchmark = switch move {
-            case .previous:
-                benchmarkDate(of: currentState.benchmarkDate, moveTo: .previous)
-            case .next:
-                benchmarkDate(of: currentState.benchmarkDate, moveTo: .next)
-            case .none:
-                currentState.benchmarkDate
-            }
-            
-            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
-            guard let year = dateComp.year,
-                  let month = dateComp.month else { return Disposables.create() }
-            
-            let dates = self.calculateDates(of: benchmark)
-            let items = self.datesConvertToItems(currentMonth: month, dates)
-            
-            observer.onNext(.calendarDates(benchmark, year, month, items))
-            observer.onCompleted()
-            
-            return Disposables.create()
-        }
-    }
+//    private func calendarDates(of date: Date) -> Observable<Mutation> {
+//        Observable.create { [weak self] observer in
+//            guard let self else { return Disposables.create() }
+//            
+//            let dateComp = self.calendar.dateComponents([.year, .month], from: date)
+//            guard let year = dateComp.year,
+//                  let month = dateComp.month else { return Disposables.create() }
+//            
+//            let dates = self.calculateDates(of: date)
+//            let items = datesConvertToItems(currentMonth: month, dates)
+//            
+//            observer.onNext(.calendarDates(date, year, month, items))
+//            observer.onCompleted()
+//            
+//            return Disposables.create()
+//        }
+//    }
+    
+//    private func moveMonthTo(_ move: MoveMonth) -> Observable<Mutation> {
+//        Observable.create { [weak self] observer in
+//            guard let self else { return Disposables.create() }
+//            
+//            let benchmark = switch move {
+//            case .previous:
+//                benchmarkDate(of: currentState.benchmarkDate, moveTo: .previous)
+//            case .next:
+//                benchmarkDate(of: currentState.benchmarkDate, moveTo: .next)
+//            case .none:
+//                currentState.benchmarkDate
+//            }
+//            
+//            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
+//            guard let year = dateComp.year,
+//                  let month = dateComp.month else { return Disposables.create() }
+//            
+//            Task {
+//                let records = try await self.plantRecords(of: benchmark)
+//                let dates = self.calculateDates(of: benchmark)
+//                let items = self.datesConvertToItems(current: benchmark, dates, records: records)
+//                
+//                observer.onNext(.calendarDates(benchmark, year, month, items))
+//                observer.onCompleted()
+//            }
+//            
+//            return Disposables.create()
+//        }
+//    }
     
     private func calendarCareRecords(of date: Date) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
@@ -143,10 +197,10 @@ extension CalendarReactor {
                   let calendarRange = calendarRange(of: date) else {
                 return Disposables.create()
             }
-
+            
             Task {
                 do {
-                    let records = try await self.plantRecords(within: calendarRange.start, calendarRange.end)
+                    let records = try await self.plantRecords(of: date)
                     
                     observer.onNext(.calendarRecords(records))
                     observer.onCompleted()
@@ -207,33 +261,62 @@ extension CalendarReactor {
         return dates
     }
     
-    private func datesConvertToItems(currentMonth: Int, _ dates: [Date]) -> [CalendarView.Item] {
-        return dates.reduce([CalendarView.Item]()) {
-            let dateComp = calendar.dateComponents([.month, .day], from: $1)
+    private func datesConvertToItems(current: Date, _ dates: [Date], records: [CareRecord]) -> [CalendarView.Item] {
+        guard let currentMonth = calendar.dateComponents([.month], from: current).month else { return [] }
+        
+        // 날짜별로 기록 데이터 분류
+        var recordDates = [String: [CareRecord]]()
+        for record in records {
+            recordDates[record.recordDate.rawValue, default: []] += [record]
+        }
+        
+        return dates.reduce([CalendarView.Item]()) { arr, targetDate in
+            let dateComp = calendar.dateComponents([.year, .month, .day], from: targetDate)
             
-            guard let month = dateComp.month,
-                  let day = dateComp.day else { return $0 }
+            guard let year = dateComp.year,
+                  let month = dateComp.month,
+                  let day = dateComp.day else { return arr }
             
-            let currentMonth = month == currentMonth ? true : false
+            let currentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
+            let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CardRecord.recordDate.rawValue와의 비교용 문자열
+  
+            var badges: Set<Badge> = []
+            
+            if let targetRecords = recordDates[targetLocalDate] {
+                for record in targetRecords {
+                    // 모든 뱃지가 존재할 경우
+                    if badges.count == 4 { break }
+                    
+                    if record.watered { badges.insert(Badge.water) }
+                    
+                    if record.repotted { badges.insert(Badge.grow) }
+                    
+                    if record.fertilized { badges.insert(Badge.sprout) }
+                    
+                    if record.treated { badges.insert(Badge.treat) }
+                }
+            }
             
             let manageInfoByDate = CalendarView.ManageInfoByDate(
                 currentMonth: currentMonth,
                 day: day,
-                date: $1,
-                badge: []
+                date: targetDate,
+                badge: badges
             )
             
             let item = CalendarView.Item.calendar(manageInfoByDate)
             
-            return $0 + [item]
+            return arr + [item]
         }
     }
     
-    private func plantRecords(within start: Date, _ end: Date) async throws -> [CareRecord] {
+    private func plantRecords(of date: Date) async throws -> [CareRecord] {
         do {
+            guard let range = calendarRange(of: date) else { return [] }
+            
             let plants = try await plantDBManager.fetchMyPlants()
             
-            let records = try await careRecordDBManager.fetchAllCareRecordWithin(start: start, end: end, plants: plants.map { $0.id })
+            let records = try await careRecordDBManager.fetchAllCareRecordWithin(start: range.start, end: range.end, plants: plants.map { $0.id })
             
             return records
         } catch {

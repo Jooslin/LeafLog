@@ -174,41 +174,41 @@ extension CalendarView {
 }
 
 //MARK: Badge enum
-extension CalendarView {
-    enum Badge: String {
-        case water = "물주기"
-        case grow = "분갈이"
-        case sprout = "비료"
-        case treat = "치료"
-        
-        var smallImage: String {
-            switch self {
-            case .water: "badgeWaterSmall"
-            case .grow: "badgeGrowSmall"
-            case .sprout: "badgeSproutSmall"
-            case .treat: "badgeTreatSmall"
-            }
-        }
-        
-        var bigImage: String {
-            switch self {
-            case .water: "badgeWaterBig"
-            case .grow: "badgeGrowBig"
-            case .sprout: "badgeSproutBig"
-            case .treat: "badgeTreatBig"
-            }
-        }
-        
-        var color: UIColor {
-            switch self {
-            case .water: .subBlue
-            case .grow: .subBrown
-            case .sprout: .primary600
-            case .treat: .subRed
-            }
-        }
-    }
-}
+//extension CalendarView {
+//    enum Badge: String {
+//        case water = "물주기"
+//        case grow = "분갈이"
+//        case sprout = "비료"
+//        case treat = "치료"
+//        
+//        var smallImage: String {
+//            switch self {
+//            case .water: "badgeWaterSmall"
+//            case .grow: "badgeGrowSmall"
+//            case .sprout: "badgeSproutSmall"
+//            case .treat: "badgeTreatSmall"
+//            }
+//        }
+//        
+//        var bigImage: String {
+//            switch self {
+//            case .water: "badgeWaterBig"
+//            case .grow: "badgeGrowBig"
+//            case .sprout: "badgeSproutBig"
+//            case .treat: "badgeTreatBig"
+//            }
+//        }
+//        
+//        var color: UIColor {
+//            switch self {
+//            case .water: .subBlue
+//            case .grow: .subBrown
+//            case .sprout: .primary600
+//            case .treat: .subRed
+//            }
+//        }
+//    }
+//}
 
 //MARK: CollectionView - Section, Item
 extension CalendarView {
