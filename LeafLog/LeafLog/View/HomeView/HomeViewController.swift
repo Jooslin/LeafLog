@@ -47,16 +47,17 @@ final class HomeViewController: BaseViewController {
 extension HomeViewController {
     private func bindPlantSelection() {
         homeView.collectionView.rx.itemSelected
-            .compactMap { [weak self] indexPath -> MyPlant? in
+            .compactMap { [weak self] indexPath -> UUID? in
                 // 사용자가 누른 칸의 데이터 가져옴
                 guard case .plant(let shelfPlant) = self?.homeView.item(at: indexPath),
-                      shelfPlant.emptyShelf == .none else {
+                      shelfPlant.emptyShelf == .none,
+                      let plantID = shelfPlant.id else {
                     return nil // 빈 선반
                 }
 
-                return shelfPlant.plant
+                return plantID
             }
-            .map { AppStep.record(plant: $0) } // Rxflow 기록 화면으로 이동
+            .map { AppStep.record(plantID: $0) } // Rxflow 기록 화면으로 이동
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
@@ -139,7 +140,6 @@ private extension HomeViewController {
                 id: plant.id,
                 category: plant.category,
                 name: plant.nickname?.isEmpty == false ? plant.nickname : plant.speciesName,
-                plant: plant,
                 daysFromLastWatering: daysFromLastWatering,
                 daysToNextWatering: max(0, plant.wateringIntervalDays - daysFromLastWatering),
                 didWater: didWaterToday(plant), // 오늘 급수 여부
@@ -150,7 +150,7 @@ private extension HomeViewController {
     }
 
     // 선반 위치 지정
-    func shelfOrder(for index: Int) -> HomeView.ShelfOrder {
+    func shelfOrder(for index: Int) -> ShelfOrder {
         switch index % 3 {
         case 0:
             return .first
