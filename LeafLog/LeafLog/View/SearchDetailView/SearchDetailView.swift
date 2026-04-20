@@ -99,6 +99,10 @@ final class SearchDetailView: UIView {
     var closeButtonTap: ControlEvent<Void> {
         closeButton.rx.tap
     }
+
+    var selectButtonTap: ControlEvent<Void> {
+        selectButton.rx.tap
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)

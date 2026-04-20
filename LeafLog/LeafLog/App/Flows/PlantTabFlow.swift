@@ -55,6 +55,18 @@ final class PlantTabFlow: Flow {
                     withNextStepper: searchViewController
                 )
             )
+
+        case .plantSearchDetail(let contentNumber):
+            let reactor = SearchDetailReactor(contentNumber: contentNumber)
+            let viewController = SearchDetailViewController(reactor: reactor)
+            navigationController.pushViewController(viewController, animated: true)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: viewController,
+                    withNextStepper: viewController
+                )
+            )
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
