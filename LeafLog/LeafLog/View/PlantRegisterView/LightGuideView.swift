@@ -116,12 +116,12 @@ private struct LightDemandDescription {
             fullDescription: "낮은 광도 (300~800 Lux): 형광등이 있는 어두운 실내"
         ),
         .init(
-            keywords: ["중간 광도", "800~1,500", "800∼1,500", "800~1500", "800∼1500"],
+            keywords: ["중간 광도", "800~1,500"],
             preferenceText: "밝은 실내, 창문 근처 (직사광선X)",
             fullDescription: "중간 광도 (800~1,500 Lux): 밝은 실내, 창문 근처 (직사광선X)"
         ),
         .init(
-            keywords: ["높은 광도", "1,500~10,000", "1,500∼10,000", "1500~10000", "1500∼10000"],
+            keywords: ["높은 광도", "1,500~10,000"],
             preferenceText: "창가의 직광, 베란다의 직광",
             fullDescription: "높은 광도 (1,500~10,000 Lux): 창가의 직광, 베란다"
         )
