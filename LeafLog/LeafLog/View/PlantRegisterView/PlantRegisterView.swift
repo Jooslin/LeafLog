@@ -123,6 +123,27 @@ final class PlantRegisterView: UIView {
         lightGuideView.configure(plantName: name, lightDemand: lightDemand)
         wateringGuideBannerView.configure(plantName: name, springWaterCycle: springWaterCycle)
     }
+
+    func resetForm() {
+        cameraButton.layer.contents = nil
+        cameraButton.layer.contentsGravity = .resize
+        cameraButton.backgroundColor = .grayScale50
+        plantTypeSearchBar.textField.text = nil
+        plantNameTextField.text = nil
+        wateringCycleTextField.text = nil
+        lastWateredDateTextField.text = nil
+
+        categoryButtons.forEach {
+            $0.isSelected = false
+            $0.isEnabled = true
+        }
+
+        locationButtons.forEach { $0.isSelected = false }
+
+        categoryGuideView.configure(plantName: nil, category: nil)
+        lightGuideView.configure(plantName: nil, lightDemand: nil)
+        wateringGuideBannerView.configure(plantName: nil, springWaterCycle: nil)
+    }
 }
 
 private extension PlantRegisterView {
