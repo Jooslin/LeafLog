@@ -14,7 +14,7 @@ import RxCocoa
 final class CalendarView: UIView {
     //MARK: properties
     fileprivate let collectionView = CalendarCollectionView()
-    private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
@@ -173,43 +173,6 @@ extension CalendarView {
     }
 }
 
-//MARK: Badge enum
-//extension CalendarView {
-//    enum Badge: String {
-//        case water = "물주기"
-//        case grow = "분갈이"
-//        case sprout = "비료"
-//        case treat = "치료"
-//        
-//        var smallImage: String {
-//            switch self {
-//            case .water: "badgeWaterSmall"
-//            case .grow: "badgeGrowSmall"
-//            case .sprout: "badgeSproutSmall"
-//            case .treat: "badgeTreatSmall"
-//            }
-//        }
-//        
-//        var bigImage: String {
-//            switch self {
-//            case .water: "badgeWaterBig"
-//            case .grow: "badgeGrowBig"
-//            case .sprout: "badgeSproutBig"
-//            case .treat: "badgeTreatBig"
-//            }
-//        }
-//        
-//        var color: UIColor {
-//            switch self {
-//            case .water: .subBlue
-//            case .grow: .subBrown
-//            case .sprout: .primary600
-//            case .treat: .subRed
-//            }
-//        }
-//    }
-//}
-
 //MARK: CollectionView - Section, Item
 extension CalendarView {
     enum Section: Int {
@@ -261,5 +224,12 @@ extension Reactive where Base: CalendarView {
     
     var headerNextButtonTap: PublishRelay<Void> {
         base.headerNextButtonTap
+    }
+    
+    var itemSelected: Observable<CalendarView.Item> {
+        base.collectionView.rx.itemSelected
+            .compactMap {
+                base.dataSource.itemIdentifier(for: $0)
+            }
     }
 }

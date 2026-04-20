@@ -43,6 +43,18 @@ class CalendarViewController: BaseViewController, View {
             .map { _ in CalendarReactor.Action.nextMonth }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        calendarView.rx.itemSelected
+            .compactMap { item in
+                switch item {
+                case .calendar(let data):
+                    return CalendarReactor.Action.viewWillAppear
+                default:
+                    return nil
+                }
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: CalendarReactor) {
