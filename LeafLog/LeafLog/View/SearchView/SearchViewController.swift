@@ -97,6 +97,9 @@ final class SearchViewController: BaseViewController, View {
                 confidence: item.confidence,
                 thumbnailURLString: item.displayThumbnailURL
             )
+            cell.onSelectButtonTap = { [weak self] in
+                self?.reactor?.action.onNext(.selectPlant(item))
+            }
             return cell
         }
 
@@ -115,7 +118,6 @@ final class SearchViewController: BaseViewController, View {
         }
     }
     
-    // TODO: 리팩토링 필요함
     private func bindUI() {
         rootView.titleHeaderView.backButton.addAction(
             UIAction { [weak self] _ in
@@ -201,6 +203,22 @@ final class SearchViewController: BaseViewController, View {
                 self?.updateFilterMenus(state: state, reactor: reactor)
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$selectedPlant)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] selectedPlant in
+                self?.steps.accept(AppStep.plantSelected(selectedPlant))
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
     }
 
     // 필터링 버튼 구현 함수
@@ -265,10 +283,6 @@ extension SearchViewController: UICollectionViewDelegate {
         guard let identifier = dataSource?.itemIdentifier(for: indexPath),
             let item = itemsByIdentifier[identifier]
         else { return }
-
-        let reactor = SearchDetailReactor(contentNumber: item.contentNumber)
-        let viewController = SearchDetailViewController(reactor: reactor)
-
-        navigationController?.pushViewController(viewController, animated: true)
+        steps.accept(AppStep.plantSearchDetail(item.contentNumber))
     }
 }
