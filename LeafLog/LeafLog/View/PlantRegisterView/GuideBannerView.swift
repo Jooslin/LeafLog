@@ -62,7 +62,7 @@ extension GuideBannerView {
 
 private extension GuideBannerView {
     func setupStyle() {
-        backgroundColor = UIColor(red: 250 / 255, green: 248 / 255, blue: 237 / 255, alpha: 1)
+        backgroundColor = .primary100
         layer.cornerRadius = 8
         clipsToBounds = true
     }
