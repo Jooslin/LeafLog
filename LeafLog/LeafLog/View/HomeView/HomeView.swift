@@ -100,6 +100,10 @@ extension HomeView {
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }
+    
+    func item(at indexPath: IndexPath) -> Item? {
+        dataSource.itemIdentifier(for: indexPath)
+    }
 }
 
 //MARK: CollectionView - Section, Item
@@ -118,56 +122,49 @@ extension HomeView {
         let id: UUID? // 식물의 uuid
         let category: PlantCategory?
         let name: String? // 식물의 이름(별명)
+        let plant: MyPlant?
         let daysFromLastWatering: Int? // 최근 급수일 - N일 전
         let daysToNextWatering: Int? // 다음 급수일 - N일 후
         let didWater: Bool? // 금일 급수 여부
         let emptyShelf: EmptyShelf
         let shelfOrder: ShelfOrder
-    }
-    
-    nonisolated
-    enum EmptyShelf {
-        case none
-        case first, second, third
-    }
-    
-    nonisolated
-    enum ShelfOrder {
-        case first
-        case second
-        case third
+        
+        static func == (lhs: ShelfPlant, rhs: ShelfPlant) -> Bool {
+            lhs.id == rhs.id
+            && lhs.category == rhs.category
+            && lhs.name == rhs.name
+            && lhs.plant?.id == rhs.plant?.id
+            && lhs.daysFromLastWatering == rhs.daysFromLastWatering
+            && lhs.daysToNextWatering == rhs.daysToNextWatering
+            && lhs.didWater == rhs.didWater
+            && lhs.emptyShelf == rhs.emptyShelf
+            && lhs.shelfOrder == rhs.shelfOrder
+        }
+        
+        // 식물 데이터의 고유한 값 생성
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+            hasher.combine(category)
+            hasher.combine(name)
+            hasher.combine(plant?.id)
+            hasher.combine(daysFromLastWatering)
+            hasher.combine(daysToNextWatering)
+            hasher.combine(didWater)
+            hasher.combine(emptyShelf)
+            hasher.combine(shelfOrder)
+        }
     }
 }
 
-//TODO: 추후 삭제 필요 - 전역 모델 사용
-extension HomeView {
-    enum PlantCategory: String, Codable, CaseIterable {
-        case upright = "직립형"
-        case shrub = "관목형"
-        case vine = "덩굴성"
-        case grass = "풀모양"
-        case rosette = "로제트형"
-        case succulent = "다육형"
-        case other = "기타"
+nonisolated
+enum EmptyShelf {
+    case none
+    case first, second, third
+}
 
-        // 카테고리 별 식물 기본 이미지 (사용자 등록 이미지가 없을 때 대체 이미지)
-        var defaultImageAssetName: String {
-            switch self {
-            case .upright:
-                return "plantCategoryUpright"
-            case .shrub:
-                return "plantCategoryShrub"
-            case .vine:
-                return "plantCategoryVine"
-            case .grass:
-                return "plantCategoryGrass"
-            case .rosette:
-                return "plantCategoryRosette"
-            case .succulent:
-                return "plantCategorySucculent"
-            case .other:
-                return "plantCategoryOther"
-            }
-        }
-    }
+nonisolated
+enum ShelfOrder {
+    case first
+    case second
+    case third
 }
