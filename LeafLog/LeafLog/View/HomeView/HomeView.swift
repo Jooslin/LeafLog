@@ -122,37 +122,11 @@ extension HomeView {
         let id: UUID? // 식물의 uuid
         let category: PlantCategory?
         let name: String? // 식물의 이름(별명)
-        let plant: MyPlant?
         let daysFromLastWatering: Int? // 최근 급수일 - N일 전
         let daysToNextWatering: Int? // 다음 급수일 - N일 후
         let didWater: Bool? // 금일 급수 여부
         let emptyShelf: EmptyShelf
         let shelfOrder: ShelfOrder
-        
-        static func == (lhs: ShelfPlant, rhs: ShelfPlant) -> Bool {
-            lhs.id == rhs.id
-            && lhs.category == rhs.category
-            && lhs.name == rhs.name
-            && lhs.plant?.id == rhs.plant?.id
-            && lhs.daysFromLastWatering == rhs.daysFromLastWatering
-            && lhs.daysToNextWatering == rhs.daysToNextWatering
-            && lhs.didWater == rhs.didWater
-            && lhs.emptyShelf == rhs.emptyShelf
-            && lhs.shelfOrder == rhs.shelfOrder
-        }
-        
-        // 식물 데이터의 고유한 값 생성
-        func hash(into hasher: inout Hasher) {
-            hasher.combine(id)
-            hasher.combine(category)
-            hasher.combine(name)
-            hasher.combine(plant?.id)
-            hasher.combine(daysFromLastWatering)
-            hasher.combine(daysToNextWatering)
-            hasher.combine(didWater)
-            hasher.combine(emptyShelf)
-            hasher.combine(shelfOrder)
-        }
     }
 }
 
