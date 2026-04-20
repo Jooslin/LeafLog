@@ -6,6 +6,7 @@
 //
 
 import RxFlow
+import Foundation
 
 /*
  - Step: 각 Step은 '앱의 네비게이션 상태(state)'를 의미합니다.
@@ -40,7 +41,7 @@ enum AppStep: Step {
     )
     
     case profileImageSourceSheet
-    
+    case record(UUID)
     // 예시용
     case pushButtonTapped
 }

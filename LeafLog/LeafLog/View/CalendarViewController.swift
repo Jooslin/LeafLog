@@ -52,8 +52,10 @@ class CalendarViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        calendarView.rx.itemSelected
-            .compactMap { item in
+        let itemSelected: Observable<CalendarView.Item> = calendarView.rx.itemSelected.share()
+                
+        itemSelected
+            .compactMap { item -> CalendarReactor.Action? in
                 switch item {
                 case .calendar(let data):
                     return CalendarReactor.Action.dateSelected(data.date)
@@ -62,6 +64,18 @@ class CalendarViewController: BaseViewController, View {
                 }
             }
             .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        itemSelected
+            .compactMap { item -> AppStep? in
+                switch item {
+                case .water(let data), .grow(let data), .sprout(let data), .treat(let data):
+                    return AppStep.record(data.id)
+                default:
+                    return nil
+                }
+            }
+            .bind(to: steps)
             .disposed(by: disposeBag)
     }
     
