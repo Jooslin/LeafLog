@@ -10,14 +10,12 @@ import SnapKit
 import Then
 
 final class CalendarFilterCell: UICollectionViewCell {
-    
-    //TODO: 추후 component 교체 필요
+        
     private let buttons = [
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain())
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
     ]
     
     override init(frame: CGRect) {
@@ -33,8 +31,11 @@ final class CalendarFilterCell: UICollectionViewCell {
 
 extension CalendarFilterCell {
     private func setButtonAttributes() {
-        for i in 0..<buttons.count {
-            buttons[i].tag = i
+        buttons.enumerated().forEach { button in
+            button.element.tag = button.offset
+            button.element.addAction(UIAction { _ in
+                button.element.isSelected.toggle()
+            }, for: .touchUpInside)
         }
     }
     
@@ -64,7 +65,7 @@ extension CalendarFilterCell {
     func configure(_ data: [String]) {
         buttons.forEach {
             if $0.tag < data.count {
-                $0.setTitle(data[$0.tag], for: .normal)
+                $0.setup(title: data[$0.tag])
             } else {
                 $0.isHidden = true
             }

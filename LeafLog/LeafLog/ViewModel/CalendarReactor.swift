@@ -28,7 +28,7 @@ final class CalendarReactor: Reactor {
         var benchmarkDate: Date = Date()
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
-            .filter: [.filter(["전체", "물주기", "분갈이", "비료", "치료"])]
+            .filter: [.filter(["물주기", "분갈이", "비료", "치료"])]
         ]
     }
     
