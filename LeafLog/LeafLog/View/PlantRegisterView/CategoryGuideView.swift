@@ -39,7 +39,7 @@ final class CategoryGuideView: UIView {
             return
         }
 
-        let fullText = "\(plantName)은 \(category.description) \(category.title) 식물 입니다."
+        let fullText = "\(plantName)은(는) \(category.description) \(category.title) 식물 입니다."
         let attributedText = NSMutableAttributedString(
             string: fullText,
             attributes: [
