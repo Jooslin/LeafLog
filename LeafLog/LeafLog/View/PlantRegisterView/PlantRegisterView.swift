@@ -273,7 +273,7 @@ private extension PlantRegisterView {
         lastWateredDateTextField.snp.makeConstraints {
             $0.top.equalTo(lastWateredTitleLabel.snp.bottom).offset(12)
             $0.leading.equalTo(plantTypeTitleLabel)
-            $0.width.equalTo(96)
+            $0.width.equalTo(126)
             $0.height.equalTo(48)
             $0.bottom.equalToSuperview().inset(24)
         }
