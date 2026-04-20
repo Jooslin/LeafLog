@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 /// 공통으로 사용될 TitleHeaderView입니다.
 ///
@@ -76,11 +78,11 @@ extension TitleHeaderView {
 }
 
 extension TitleHeaderView {
-    // 색상 반전 메서드(white)
-    func invertColors() {
-        titleLabel.textColor = .white
-        backButton.configuration?.baseForegroundColor = .white
-        rightButton.configuration?.baseForegroundColor = .white
+    // 색상 변경 메서드
+    func apply(color: UIColor) {
+        titleLabel.textColor = color
+        backButton.configuration?.baseForegroundColor = color
+        rightButton.configuration?.baseForegroundColor = color
     }
 }
 
@@ -104,5 +106,11 @@ extension TitleHeaderView {
             $0.verticalEdges.equalToSuperview().inset(12)
             $0.trailing.equalToSuperview()
         }
+    }
+}
+
+extension Reactive where Base: TitleHeaderView {
+    var backButtonTap: ControlEvent<Void> {
+        base.backButton.rx.tap
     }
 }

@@ -69,30 +69,6 @@ final class SearchResultCell: UICollectionViewCell {
         plantNameLabel.text = nil
     }
 
-    func configure(
-        plantName: String,
-        statusStyle: MatchStatusBadgeLabel.Style,
-        statusPrefix: String = "일치율",
-        showsStatusBadge: Bool = true,
-        thumbnailURLString: String? = nil
-    ) {
-        plantNameLabel.text = plantName
-        statusLabel.isHidden = !showsStatusBadge
-        statusLabel.apply(style: statusStyle, prefix: statusPrefix)
-
-        let placeholderImage = UIImage(systemName: "photo")
-        guard let thumbnailURLString,
-              let url = URL(string: thumbnailURLString) else {
-            thumbnailImageView.image = placeholderImage
-            return
-        }
-
-        thumbnailImageView.kf.setImage(
-            with: url,
-            placeholder: placeholderImage
-        )
-    }
-
     private func setupUI() {
         backgroundColor = .clear
         contentView.backgroundColor = .clear
@@ -140,5 +116,40 @@ final class SearchResultCell: UICollectionViewCell {
             $0.bottom.equalToSuperview()
             $0.height.equalTo(Self.lineWidth)
         }
+    }
+}
+
+extension SearchResultCell {
+    func configure(
+        plantName: String,
+        confidence: PlantClassificationService.Confidence,
+        thumbnailURLString: String? = nil
+    ) {
+        plantNameLabel.text = plantName
+        statusLabel.isHidden = confidence == .unknown ? true : false
+
+        let statusStyle: MatchStatusBadgeLabel.Style =
+        switch confidence {
+        case .high: .high
+        case .normal: .medium
+        case .low: .low
+        case .unknown: .unknown
+        }
+        
+        let statusPrefix = statusStyle == .unknown ? "검색결과": "일치율"
+        
+        statusLabel.apply(style: statusStyle, prefix: statusPrefix)
+
+        let placeholderImage = UIImage(systemName: "photo")
+        guard let thumbnailURLString,
+              let url = URL(string: thumbnailURLString) else {
+            thumbnailImageView.image = placeholderImage
+            return
+        }
+
+        thumbnailImageView.kf.setImage(
+            with: url,
+            placeholder: placeholderImage
+        )
     }
 }
