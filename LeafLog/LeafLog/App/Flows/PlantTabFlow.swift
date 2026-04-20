@@ -11,6 +11,7 @@ import Dependencies
 import AVFoundation
 import RxRelay
 import PhotosUI
+import ReactorKit
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -24,6 +25,7 @@ final class PlantTabFlow: Flow {
     private let navigationController = UINavigationController()
     private let photoSelectStepper = PhotoSelectStepper()
     private var imagePicker: PHPickerViewController?
+    private let plantRegisterViewController = PlantRegisterViewController()
     
     var root: any RxFlow.Presentable { navigationController }
     
@@ -34,13 +36,12 @@ final class PlantTabFlow: Flow {
         
         switch step {
         case .plantTab, .plantRegister:
-            let viewController = PlantRegisterViewController()
-            navigationController.setViewControllers([viewController], animated: false)
+            navigationController.setViewControllers([plantRegisterViewController], animated: false)
 
             return .one(
                 flowContributor: .contribute(
-                    withNextPresentable: viewController,
-                    withNextStepper: viewController
+                    withNextPresentable: plantRegisterViewController,
+                    withNextStepper: plantRegisterViewController
                 )
             )
 
@@ -75,6 +76,11 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(camera, animated: true)
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+
+        case .plantSelected(let selectedPlant):
+            plantRegisterViewController.reactor?.action.onNext(.selectPlant(selectedPlant))
+            navigationController.popToViewController(plantRegisterViewController, animated: true)
+            return .none
 
         case .pageBack:
             navigationController.popViewController(animated: true)

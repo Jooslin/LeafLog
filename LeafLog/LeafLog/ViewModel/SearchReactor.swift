@@ -19,6 +19,7 @@ final class SearchReactor: Reactor {
         case updateSearchType(PlantSearchType) // 식물 이름 어떤식으로 검색하는지
         case updateFilter(PlantFilterKind, PlantFilterOption?) // 필터 바꿈
         case classificationQuery([String: PlantClassificationService.Confidence]) // AI 식별 결과 받음
+        case selectPlant(SearchViewController.PlantSummaryItem)
     }
     
     // 상태를 어떻게 바꿀지에 대한 변화
@@ -30,6 +31,8 @@ final class SearchReactor: Reactor {
         case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
         case setPlants([SearchViewController.PlantSummaryItem])
         case setResultText(String) // 결과가 나올때
+        case setSelectedPlant(SelectedPlant)
+        case setErrorMessage(String)
     }
     
     // 화면이 어떤 상태인지 표현(처음 상태)
@@ -41,6 +44,8 @@ final class SearchReactor: Reactor {
         var plants: [SearchViewController.PlantSummaryItem] = []
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
+        @Pulse var selectedPlant: SelectedPlant? = nil
+        @Pulse var errorMessage: String? = nil
     }
     
     @Dependency(\.networkManager) private var networkManager
@@ -139,6 +144,9 @@ final class SearchReactor: Reactor {
                 searchClassificationResult(classifications: classificationResult),
                 .just(.setLoading(false))
             ])
+
+        case .selectPlant(let item):
+            return fetchSelectedPlant(from: item)
         }
     }
     
@@ -162,6 +170,10 @@ final class SearchReactor: Reactor {
             newState.plants = plants
         case .setResultText(let resultText):
             newState.resultText = resultText
+        case .setSelectedPlant(let selectedPlant):
+            newState.selectedPlant = selectedPlant
+        case .setErrorMessage(let message):
+            newState.errorMessage = message
         }
         
         return newState
@@ -250,6 +262,33 @@ final class SearchReactor: Reactor {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
+    }
+
+    private func fetchSelectedPlant(from item: SearchViewController.PlantSummaryItem) -> Observable<Mutation> {
+        Observable.create { [networkManager] observer in
+            let task = Task {
+                do {
+                    let detail = try await networkManager.fetchPlantDetail(contentNumber: item.contentNumber)
+                    let selectedPlant = SelectedPlant(name: item.name, detail: detail)
+                    observer.onNext(.setSelectedPlant(selectedPlant))
+                    observer.onCompleted()
+                } catch {
+                    let message: String
+                    if let networkError = error as? NetworkManager.NetworkError {
+                        message = networkError.errorDescription ?? "식물 정보를 불러오지 못했습니다."
+                    } else {
+                        message = error.localizedDescription
+                    }
+
+                    observer.onNext(.setErrorMessage(message))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
     }
 }
 
