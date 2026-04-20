@@ -64,39 +64,15 @@ class CalendarViewController: BaseViewController, View {
                 self?.calendarView.setSnapshot(data)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
     }
-}
-
-extension CalendarViewController {
-//    private func setSample() {
-//        let monthlyData = CalendarView.ManageInfoByDate.generateMonthlySampleData()
-//        let calendarData = monthlyData.map {
-//            CalendarView.Item.calendar($0)
-//        }
-//
-//        // 1. Water 아이템 예시 (물을 준 식물 정보)
-//        let treatItem: [CalendarView.Item] = [
-//            .water(CalendarView.DetailManageInfo(id: UUID(), name: "행운목", badge: .treat)),
-//            .water(CalendarView.DetailManageInfo(id: UUID(), name: "스투키", badge: .treat)),
-//        ]
-//
-//        // 2. Grow 아이템 예시 (성장 기록이 있는 식물 정보)
-//        let growItem: [CalendarView.Item] = [
-//            .grow(CalendarView.DetailManageInfo(id: UUID(), name: "선인장", badge: .grow)),
-//            .grow(CalendarView.DetailManageInfo(id: UUID(), name: "다육이", badge: .grow))
-//        ]
-//        
-//        let data: [CalendarView.Section: [CalendarView.Item]] = [
-//            .title: [.title],
-//            .header: [.header("2026년 4월")],
-//            .filter: [.filter(["전체", "물주기", "분갈이", "비료", "치료"])],
-//            .calendar: calendarData,
-//            .grow: growItem,
-//            .treat: treatItem
-//        ]
-//        
-//        calendarView.setSnapshot(data)
-//    }
 }
 
 //MARK: CameraClassificationViewController Preview

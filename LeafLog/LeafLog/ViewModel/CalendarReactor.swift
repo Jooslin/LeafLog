@@ -36,6 +36,7 @@ final class CalendarReactor: Reactor {
             .title: [.title],
             .filter: [.filter(["물주기", "분갈이", "비료", "치료"])]
         ]
+        @Pulse var errorMessage: String? = nil
     }
     
     let initialState = State()
@@ -100,7 +101,7 @@ final class CalendarReactor: Reactor {
             newState.data[.treat] = items
             
         case .error(let message):
-            print(message)
+            newState.errorMessage = message
         }
         return newState
     }
@@ -127,12 +128,22 @@ extension CalendarReactor {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             let task = Task {
-                let dates = self.calculateDates(of: date) // 달력에 표시될 날짜들
-                let records = try await self.monthlyPlantRecords(of: date) // 달력 범위의 기록들
-                let items = self.datesConvertToItems(current: date, dates, records: records) // 컬렉션뷰에 표시될 아이템
-                
-                observer.onNext(.setCalendarItem(items))
-                observer.onCompleted()
+                do {
+                    let dates = self.calculateDates(of: date) // 달력에 표시될 날짜들
+                    let records = try await self.monthlyPlantRecords(of: date) // 달력 범위의 기록들
+                    let items = self.datesConvertToItems(current: date, dates, records: records) // 컬렉션뷰에 표시될 아이템
+                    
+                    observer.onNext(.setCalendarItem(items))
+                    observer.onCompleted()
+                } catch {
+                    if let authError = error as? AuthError {
+                        observer.onNext(.error(authError.userMessage))
+                        observer.onCompleted()
+                    } else {
+                        observer.onNext(.error("알 수 없는 에러입니다."))
+                        observer.onCompleted()
+                    }
+                }
             }
             
             return Disposables.create() {
@@ -145,17 +156,28 @@ extension CalendarReactor {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             let task = Task {
-                let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
-                let water = self.dailyRecordConvertToItem(records, kind: .water)
-                let grow = self.dailyRecordConvertToItem(records, kind: .grow)
-                let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
-                let treat = self.dailyRecordConvertToItem(records, kind: .treat)
-                
-                observer.onNext(.setDetailWaterItem(water))
-                observer.onNext(.setDetailGrowItem(grow))
-                observer.onNext(.setDetailSproutItem(sprout))
-                observer.onNext(.setDetailTreatItem(treat))
-                observer.onCompleted()
+                do {
+                    let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
+                    let water = self.dailyRecordConvertToItem(records, kind: .water)
+                    let grow = self.dailyRecordConvertToItem(records, kind: .grow)
+                    let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
+                    let treat = self.dailyRecordConvertToItem(records, kind: .treat)
+                    
+                    observer.onNext(.setDetailWaterItem(water))
+                    observer.onNext(.setDetailGrowItem(grow))
+                    observer.onNext(.setDetailSproutItem(sprout))
+                    observer.onNext(.setDetailTreatItem(treat))
+                    observer.onCompleted()
+                }
+                catch {
+                    if let authError = error as? AuthError {
+                        observer.onNext(.error(authError.userMessage))
+                        observer.onCompleted()
+                    } else {
+                        observer.onNext(.error("알 수 없는 에러입니다."))
+                        observer.onCompleted()
+                    }
+                }
             }
             
             return Disposables.create {
@@ -172,11 +194,9 @@ extension CalendarReactor {
             return date
         case .previous:
             guard let previous = calendar.date(byAdding: .month, value: -1, to: date) else { return date }
-            
             return previous
         case .next:
             guard let next = calendar.date(byAdding: .month, value: 1, to: date) else { return date }
-            
             return next
         }
     }
