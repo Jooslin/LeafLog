@@ -30,8 +30,8 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
 
-        case .record(let plant):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plant: plant))
+        case .record(let plantID):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
