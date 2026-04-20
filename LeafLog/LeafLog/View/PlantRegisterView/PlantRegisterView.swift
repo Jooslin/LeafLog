@@ -42,15 +42,10 @@ final class PlantRegisterView: UIView {
         UIButton(config: .lSize, title: "로제트형"),
         UIButton(config: .lSize, title: "다육형")
     ]
-    private let categoryGuideLabel = InsetLabel(text: "직립형은 위로 쭉 자라는 형태를 나타내요.", config: .label12, color: .primary700).then {
-        $0.backgroundColor = .primary100
-        $0.layer.cornerRadius = 8
-        $0.clipsToBounds = true
-        $0.textInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
-    }
+    private let categoryGuideView = CategoryGuideView()
 
     private let plantNameTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "식물 별명")
-    let plantNameTextField = PlantRegisterView.makeTextField(placeholder: "place holder")
+    let plantNameTextField = PlantRegisterView.makeTextField(placeholder: "식물의 별명을 입력해주세요.")
 
     private let locationTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "위치")
     let locationButtons: [UIButton] = [
@@ -64,11 +59,11 @@ final class PlantRegisterView: UIView {
     private let lightGuideView = LightGuideView()
 
     private let wateringCycleTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "급수 주기")
-    let wateringCycleTextField = PlantRegisterView.makeTextField(placeholder: "7").then {
+    let wateringCycleTextField = PlantRegisterView.makeTextField(placeholder: "??일").then {
         $0.keyboardType = .numberPad
     }
     private let wateringCycleUnitLabel = UILabel(text: "일마다", config: .title16, color: .grayScale500)
-    let wateringGuideBannerView = GuideBannerView()
+    let wateringGuideBannerView = WateringGuideView()
 
     private let lastWateredTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "마지막 급수일")
     let lastWateredDateTextField = PlantRegisterView.makeTextField(placeholder: "년 / 월 / 일").then {
@@ -89,6 +84,24 @@ final class PlantRegisterView: UIView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func applySelectedPlant(name: String, growStyle: String?, lightDemand: String?, springWaterCycle: String?) {
+        plantTypeSearchBar.textField.text = name
+
+        if let category = PlantCategoryDescription.matching(growStyle: growStyle) {
+            categoryButtons.forEach { button in
+                let buttonTitle = button.configuration?.title ?? button.title(for: .normal)
+                button.isSelected = (buttonTitle == category.title)
+            }
+            categoryGuideView.configure(plantName: name, category: category)
+        } else {
+            categoryButtons.forEach { $0.isSelected = false }
+            categoryGuideView.configure(plantName: nil, category: nil)
+        }
+
+        lightGuideView.configure(plantName: name, lightDemand: lightDemand)
+        wateringGuideBannerView.configure(plantName: name, springWaterCycle: springWaterCycle)
     }
 }
 
@@ -135,7 +148,7 @@ private extension PlantRegisterView {
             plantTypeSearchButton,
             categoryTitleLabel,
             categoryStackView,
-            categoryGuideLabel,
+            categoryGuideView,
             plantNameTitleLabel,
             plantNameTextField,
             locationTitleLabel,
@@ -179,13 +192,13 @@ private extension PlantRegisterView {
             $0.horizontalEdges.equalTo(plantTypeTitleLabel)
         }
 
-        categoryGuideLabel.snp.makeConstraints {
+        categoryGuideView.snp.makeConstraints {
             $0.top.equalTo(categoryStackView.snp.bottom).offset(8)
-            $0.leading.equalTo(plantTypeTitleLabel)
+            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
         }
 
         plantNameTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(categoryGuideLabel.snp.bottom).offset(24)
+            $0.top.equalTo(categoryGuideView.snp.bottom).offset(24)
             $0.horizontalEdges.equalTo(plantTypeTitleLabel)
         }
 
@@ -244,8 +257,8 @@ private extension PlantRegisterView {
             $0.height.equalTo(48)
             $0.bottom.equalToSuperview().inset(24)
         }
-        categoryGuideLabel.snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(28)
+        categoryGuideView.snp.makeConstraints {
+            $0.height.greaterThanOrEqualTo(32)
         }
     }
 
@@ -305,63 +318,6 @@ private extension PlantRegisterView {
             let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
             $0.leftView = paddingView
             $0.leftViewMode = .always
-        }
-    }
-}
-
-private final class InsetLabel: UILabel {
-    var textInsets = UIEdgeInsets.zero
-
-    override func drawText(in rect: CGRect) {
-        super.drawText(in: rect.inset(by: textInsets))
-    }
-
-    override var intrinsicContentSize: CGSize {
-        let size = super.intrinsicContentSize
-        return CGSize(
-            width: size.width + textInsets.left + textInsets.right,
-            height: size.height + textInsets.top + textInsets.bottom
-        )
-    }
-}
-
-private final class LightGuideView: UIView {
-    private let iconImageView = UIImageView().then {
-        $0.image = UIImage(systemName: "info.circle")
-        $0.tintColor = .grayScale500
-        $0.contentMode = .scaleAspectFit
-    }
-
-    private let messageLabel = UILabel(config: .body12, color: .grayScale700, lines: 0).then {
-        $0.text = "해당 식물은 반음영이 있는 여유로운 채광(300~800 Lux)을 선호해요."
-    }
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        backgroundColor = .primary100
-        layer.cornerRadius = 8
-        clipsToBounds = true
-        setupUI()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func setupUI() {
-        addSubview(iconImageView)
-        addSubview(messageLabel)
-
-        iconImageView.snp.makeConstraints {
-            $0.leading.equalToSuperview().inset(10)
-            $0.top.equalToSuperview().inset(8)
-            $0.size.equalTo(16)
-        }
-
-        messageLabel.snp.makeConstraints {
-            $0.top.bottom.equalToSuperview().inset(8)
-            $0.leading.equalTo(iconImageView.snp.trailing).offset(6)
-            $0.trailing.equalToSuperview().inset(10)
         }
     }
 }
