@@ -69,6 +69,30 @@ final class CareRecordDBManager {
         }
     }
     
+    func fetchAllCareRecordWithin(start: Date, end: Date, plants: [UUID]) async throws -> [CareRecord] {
+        do {
+            let startDate = LocalDate(date: start)
+            let endDate = LocalDate(date: end)
+            
+            guard !plants.isEmpty else { return [] }
+            let plantIds = plants
+                .map { "\"\($0.uuidString)\"" }
+                        .joined(separator: ",")
+            
+            return try await supabaseManager.client
+                .from("care_records")
+                .select()
+                .gte("record_date", value: startDate.rawValue)
+                .lte("record_date", value: endDate.rawValue)
+                .filter("plant_id", operator: "in", value: "(\(plantIds))")
+                .execute()
+                .value
+
+        } catch {
+            throw error
+        }
+    }
+    
     private struct CareRecordPayload: Encodable {
         let plantID: UUID
         let recordDate: LocalDate
