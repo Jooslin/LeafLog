@@ -75,7 +75,7 @@ extension PlantShelfCell {
         configureShelf(order: data.shelfOrder)
     }
     
-    private func configureShelf(order: HomeView.ShelfOrder) {
+    private func configureShelf(order: ShelfOrder) {
         switch order {
         case .first:
             shelf.layer.cornerRadius = 3
