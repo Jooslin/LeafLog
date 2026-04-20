@@ -69,6 +69,7 @@ final class CareRecordDBManager {
         }
     }
     
+    //MARK: - 특정 기간에 해당하는 관리 기록을 DB에서 불러옴
     func fetchAllCareRecordWithin(start: Date, end: Date, plants: [UUID]) async throws -> [CareRecord] {
         do {
             let startDate = LocalDate(date: start)
@@ -89,7 +90,7 @@ final class CareRecordDBManager {
                 .value
 
         } catch {
-            throw error
+            throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
     }
     

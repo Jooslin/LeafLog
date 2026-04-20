@@ -48,7 +48,7 @@ class CalendarViewController: BaseViewController, View {
             .compactMap { item in
                 switch item {
                 case .calendar(let data):
-                    return CalendarReactor.Action.viewWillAppear
+                    return CalendarReactor.Action.dateSelected(data.date)
                 default:
                     return nil
                 }

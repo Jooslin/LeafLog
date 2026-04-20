@@ -15,12 +15,18 @@ final class CalendarReactor: Reactor {
         case viewWillAppear
         case previousMonth
         case nextMonth
+        
+        case dateSelected(Date)
     }
     
     enum Mutation {
         case updateBenchmarkDate(Date)
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
+        case setDetailWaterItem([CalendarView.Item])
+        case setDetailGrowItem([CalendarView.Item])
+        case setDetailSproutItem([CalendarView.Item])
+        case setDetailTreatItem([CalendarView.Item])
         case error(String)
     }
     
@@ -64,6 +70,9 @@ final class CalendarReactor: Reactor {
                 calendarHeaderItem(of: benchmark),
                 calendarItems(of: benchmark)
             ])
+            
+        case .dateSelected(let date):
+            return detailItmes(of: date)
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
@@ -77,6 +86,18 @@ final class CalendarReactor: Reactor {
             
         case .setCalendarItem(let items):
             newState.data[.calendar] = items
+            
+        case .setDetailWaterItem(let items):
+            newState.data[.water] = items
+            
+        case .setDetailGrowItem(let items):
+            newState.data[.grow] = items
+            
+        case .setDetailSproutItem(let items):
+            newState.data[.sprout] = items
+            
+        case .setDetailTreatItem(let items):
+            newState.data[.treat] = items
             
         case .error(let message):
             print(message)
@@ -107,7 +128,7 @@ extension CalendarReactor {
             guard let self else { return Disposables.create() }
             let task = Task {
                 let dates = self.calculateDates(of: date) // 달력에 표시될 날짜들
-                let records = try await self.plantRecords(of: date) // 달력 범위의 기록들
+                let records = try await self.monthlyPlantRecords(of: date) // 달력 범위의 기록들
                 let items = self.datesConvertToItems(current: date, dates, records: records) // 컬렉션뷰에 표시될 아이템
                 
                 observer.onNext(.setCalendarItem(items))
@@ -115,6 +136,29 @@ extension CalendarReactor {
             }
             
             return Disposables.create() {
+                task.cancel()
+            }
+        }
+    }
+    
+    private func detailItmes(of date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            let task = Task {
+                let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
+                let water = self.dailyRecordConvertToItem(records, kind: .water)
+                let grow = self.dailyRecordConvertToItem(records, kind: .grow)
+                let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
+                let treat = self.dailyRecordConvertToItem(records, kind: .treat)
+                
+                observer.onNext(.setDetailWaterItem(water))
+                observer.onNext(.setDetailGrowItem(grow))
+                observer.onNext(.setDetailSproutItem(sprout))
+                observer.onNext(.setDetailTreatItem(treat))
+                observer.onCompleted()
+            }
+            
+            return Disposables.create {
                 task.cancel()
             }
         }
@@ -186,7 +230,7 @@ extension CalendarReactor {
             
             let currentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
             let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CardRecord.recordDate.rawValue와의 비교용 문자열
-  
+            
             var badges: Set<Badge> = []
             
             if let targetRecords = recordDates[targetLocalDate] {
@@ -217,18 +261,71 @@ extension CalendarReactor {
         }
     }
     
-    private func plantRecords(of date: Date) async throws -> [CareRecord] {
+    private func monthlyPlantRecords(of date: Date) async throws -> [CareRecord] {
         do {
             guard let range = calendarRange(of: date) else { return [] }
             
-            let plants = try await plantDBManager.fetchMyPlants()
-            
+            let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
             let records = try await careRecordDBManager.fetchAllCareRecordWithin(start: range.start, end: range.end, plants: plants.map { $0.id })
             
             return records
         } catch {
             throw error
         }
+    }
+    
+    private func dailyPlantRecords(of date: Date) async throws -> [MyPlant: CareRecord] {
+        let dateComp = calendar.dateComponents([.year, .month, .day], from: date)
+        
+        guard let year = dateComp.year,
+              let month = dateComp.month,
+              let day = dateComp.day else { return [:] }
+        
+        let dateRawValue = String(format: "%04d-%02d-%02d", year, month, day) // LocaleDate를 만들기 위한 date 문자열
+        let targetDate = LocalDate(rawValue: dateRawValue)
+        
+        let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
+        
+        var records: [MyPlant: CareRecord] = [:]
+        
+        for plant in plants {
+            guard let record = try await careRecordDBManager.fetchCareRecord(plantID: plant.id, recordDate: targetDate) else { continue }
+            records[plant] = record
+        }
+        
+        return records
+    }
+    
+    private func dailyRecordConvertToItem(_ record: [MyPlant: CareRecord], kind: Badge) -> [CalendarView.Item] {
+        switch kind {
+        case .water:
+            let watered = record.filter { $0.value.watered }
+            return watered.map {
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .water)
+                return CalendarView.Item.water(data)
+            }
+        case .grow:
+            let repotted = record.filter { $0.value.repotted }
+            return repotted.map {
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .grow)
+                return CalendarView.Item.grow(data)
+            }
+        case .sprout:
+            let fertilized = record.filter { $0.value.fertilized }
+            return fertilized.map {
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .sprout)
+                return CalendarView.Item.sprout(data)
+            }
+        case .treat:
+            let treated = record.filter { $0.value.treated }
+            return treated.map {
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .treat)
+                return CalendarView.Item.treat(data)
+            }
+        default:
+            return []
+        }
+        
     }
 }
 
