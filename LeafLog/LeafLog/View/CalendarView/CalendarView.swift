@@ -231,6 +231,14 @@ extension Reactive where Base: CalendarView {
         base.headerNextButtonTap
     }
     
+    var filterItemSelected: ControlEvent<[Badge]> {
+        let filterItemSelected = base.collectionView.rx.willDisplayCell
+            .compactMap { cell, _ in cell as? CalendarFilterCell }
+            .flatMapLatest { $0.rx.filterItemSelected.asObservable() }
+        
+        return ControlEvent(events: filterItemSelected)
+    }
+    
     var itemSelected: Observable<CalendarView.Item> {
         base.collectionView.rx.itemSelected
             .compactMap {

@@ -8,10 +8,12 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CalendarFilterCell: UICollectionViewCell {
         
-    private let buttons = [
+    fileprivate let buttons = [
         SelectionButton(title: ""),
         SelectionButton(title: ""),
         SelectionButton(title: ""),
@@ -33,9 +35,9 @@ extension CalendarFilterCell {
     private func setButtonAttributes() {
         buttons.enumerated().forEach { button in
             button.element.tag = button.offset
-            button.element.addAction(UIAction { _ in
-                button.element.isSelected.toggle()
-            }, for: .touchUpInside)
+//            button.element.addAction(UIAction { _ in
+//                button.element.isSelected.toggle()
+//            }, for: .touchUpInside)
         }
     }
     
@@ -70,5 +72,28 @@ extension CalendarFilterCell {
                 $0.isHidden = true
             }
         }
+    }
+}
+
+extension Reactive where Base: CalendarFilterCell {
+    var filterItemSelected: ControlEvent<[Badge]> {
+        let taps = Observable.merge(
+            base.buttons.map { button in
+                button.rx.tap
+                    .map { [weak base] in
+                        guard let base else { return [Badge]() }
+                        
+                        button.isSelected.toggle()
+                        
+                        return base.buttons.compactMap {
+                            guard $0.isSelected,
+                                  let title = $0.titleLabel?.text else { return nil }
+                            return Badge(rawValue: title)
+                        }
+                    }
+            }
+        )
+        
+        return ControlEvent(events: taps)
     }
 }
