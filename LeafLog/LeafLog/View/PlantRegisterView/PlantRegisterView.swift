@@ -88,6 +88,7 @@ final class PlantRegisterView: UIView {
 
     func applySelectedPlant(name: String, growStyle: String?, lightDemand: String?, springWaterCycle: String?) {
         plantTypeSearchBar.textField.text = name
+        wateringCycleTextField.text = WateringGuideView.suggestedInputValue(from: springWaterCycle)
 
         if let category = PlantCategoryDescription.matching(growStyle: growStyle) {
             categoryButtons.forEach { button in

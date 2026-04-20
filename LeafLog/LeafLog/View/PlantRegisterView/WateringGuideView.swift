@@ -37,6 +37,10 @@ final class WateringGuideView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    static func suggestedInputValue(from springWaterCycle: String?) -> String? {
+        WaterCycleDescription.inputValue(from: springWaterCycle)
+    }
+
     func configure(cycleText: String) {
         let fullText = "해당 식물은 평균 \(cycleText) 주기로 급수가 필요해요."
         let attributedText = NSMutableAttributedString(
@@ -121,27 +125,32 @@ private extension WateringGuideView {
 
 private struct WaterCycleDescription {
     let keyword: String
+    let inputValue: String
     let cycleText: String
     let suffixText: String
 
     static let all: [WaterCycleDescription] = [
         .init(
             keyword: "토양 표면이 말랐을때 충분히 관수함",
+            inputValue: "4",
             cycleText: "4 ~ 6일",
             suffixText: "(표면이 말랐을때 충분히 급수)"
         ),
         .init(
             keyword: "화분 흙 대부분 말랐을때 충분히 관수함",
+            inputValue: "7",
             cycleText: "7 ~ 10일",
             suffixText: "(흙 대부분 말랐을때 충분히 급수)"
         ),
         .init(
             keyword: "항상 흙을 촉촉하게 유지함",
+            inputValue: "0",
             cycleText: "0 ~ 2일",
             suffixText: "(수시 보충)"
         ),
         .init(
             keyword: "흙을 촉촉하게 유지함",
+            inputValue: "3",
             cycleText: "3 ~ 5일",
             suffixText: "(물에 잠기지 않도록 주의)"
         )
@@ -158,6 +167,10 @@ private struct WaterCycleDescription {
 
     static func cycleText(from springWaterCycle: String?) -> String? {
         matchedDescription(from: springWaterCycle)?.cycleText
+    }
+
+    static func inputValue(from springWaterCycle: String?) -> String? {
+        matchedDescription(from: springWaterCycle)?.inputValue
     }
 
     static func suffixText(from springWaterCycle: String?) -> String {
