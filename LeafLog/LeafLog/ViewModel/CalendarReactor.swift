@@ -33,11 +33,15 @@ final class CalendarReactor: Reactor {
     
     //MARK: properties
     private let calendar = Calendar.current
+    @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return calendarDates(of: Date())
+            return Observable.concat([
+                calendarDates(of: Date()),
+                ])
             
         case .previousMonth:
             return moveMonthTo(.previous)
@@ -81,54 +85,69 @@ extension CalendarReactor {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
-            let current = currentState.benchmarkDate
-            guard let currentBenchmark = calendar.dateInterval(of: .month, for: current)?.start else { return Disposables.create() }
-            
-            switch move {
+            let benchmark = switch move {
             case .previous:
-                guard let previous = calendar.date(byAdding: .month, value: -1, to: currentBenchmark),
-                      let year = calendar.dateComponents([.year, .month], from: previous).year,
-                      let month = calendar.dateComponents([.year, .month], from: previous).month else { return Disposables.create() }
-                
-                let dates = self.calculateDates(of: previous)
-                let items = datesConvertToItems(currentMonth: month, dates)
-                
-                observer.onNext(.calendarDates(previous, year, month, items))
-                observer.onCompleted()
+                benchmarkDate(of: currentState.benchmarkDate, moveTo: .previous)
             case .next:
-                guard let next = calendar.date(byAdding: .month, value: +1, to: currentBenchmark),
-                      let year = calendar.dateComponents([.year, .month], from: next).year,
-                      let month = calendar.dateComponents([.year, .month], from: next).month else { return Disposables.create() }
-                
-                let dates = self.calculateDates(of: next)
-                let items = datesConvertToItems(currentMonth: month, dates)
-                
-                observer.onNext(.calendarDates(next, year, month, items))
-                observer.onCompleted()
+                benchmarkDate(of: currentState.benchmarkDate, moveTo: .next)
+            case .none:
+                currentState.benchmarkDate
             }
+            
+            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
+            guard let year = dateComp.year,
+                  let month = dateComp.month else { return Disposables.create() }
+            
+            let dates = self.calculateDates(of: benchmark)
+            let items = self.datesConvertToItems(currentMonth: month, dates)
+            
+            observer.onNext(.calendarDates(benchmark, year, month, items))
+            observer.onCompleted()
             
             return Disposables.create()
         }
     }
+    
 }
 
 extension CalendarReactor {
-    private func calculateDates(of date: Date) -> [Date] {
+    private func benchmarkDate(of date: Date, moveTo: MoveMonth) -> Date {
+        switch moveTo {
+        case .none:
+            return date
+        case .previous:
+            guard let previous = calendar.date(byAdding: .month, value: -1, to: date) else { return date }
+            
+            return previous
+        case .next:
+            guard let next = calendar.date(byAdding: .month, value: 1, to: date) else { return date }
+            
+            return next
+        }
+    }
+    
+    private func calendarRange(of date: Date) -> (start: Date, end: Date)? {
         guard let monthInterval = calendar.dateInterval(of: .month, for: date),
               let end = calendar.date(byAdding: .day, value: -1, to: monthInterval.end),
               let startWeekday = calendar.dateComponents([.weekday], from: monthInterval.start).weekday,
-              let endWeekday = calendar.dateComponents([.weekday], from: end).weekday else { return [] }
+              let endWeekday = calendar.dateComponents([.weekday], from: end).weekday else { return nil }
         
         let pastFromMonday = (startWeekday + 5) % 7 // 첫 주에서 월요일까지 필요한 날짜 수
         let addToSunday = 6 - ((endWeekday + 5) % 7) // 마지막 주에서 일요일까지 필요한 날짜 수
         
         guard let startDate = calendar.date(byAdding: .day, value: -pastFromMonday, to: monthInterval.start),
-              let endDate = calendar.date(byAdding: .day, value: addToSunday, to: end) else { return [] }
+              let endDate = calendar.date(byAdding: .day, value: addToSunday, to: end) else { return nil }
+        
+        return (start: startDate, end: endDate)
+    }
+    
+    private func calculateDates(of date: Date) -> [Date] {
+        guard let range = calendarRange(of: date) else { return [] }
         
         var dates: [Date] = []
-        var current = startDate
+        var current = range.start
         
-        while current <= endDate {
+        while current <= range.end {
             dates.append(current)
             
             guard let next = calendar.date(byAdding: .day, value: 1, to: current) else { break }
@@ -159,11 +178,18 @@ extension CalendarReactor {
             return $0 + [item]
         }
     }
+    
+//    private func plantRecords(within start: Date, _ end: Date) -> [MyPlant] {
+//        do {
+//            let records = await careRecordDBManager.fetchAllCareRecordWithin(start: start, end: end, plants: <#T##[UUID]#>)
+//        }
+//    }
 }
 
 extension CalendarReactor {
     enum MoveMonth {
         case previous
         case next
+        case none
     }
 }
