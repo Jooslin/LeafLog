@@ -25,6 +25,7 @@ final class PlantTabFlow: Flow {
     private let navigationController = UINavigationController()
     private let photoSelectStepper = PhotoSelectStepper()
     private var imagePicker: PHPickerViewController?
+    private let homeViewController = HomeViewController()
     private let plantRegisterViewController = PlantRegisterViewController()
     
     var root: any RxFlow.Presentable { navigationController }
@@ -35,8 +36,22 @@ final class PlantTabFlow: Flow {
         }
         
         switch step {
-        case .plantTab, .plantRegister:
-            navigationController.setViewControllers([plantRegisterViewController], animated: false)
+        case .plantTab:
+            navigationController.setViewControllers([homeViewController], animated: false)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: homeViewController,
+                    withNextStepper: homeViewController
+                )
+            )
+
+        case .plantRegister:
+            if navigationController.viewControllers.isEmpty {
+                navigationController.setViewControllers([homeViewController], animated: false)
+            }
+
+            navigationController.pushViewController(plantRegisterViewController, animated: true)
 
             return .one(
                 flowContributor: .contribute(
