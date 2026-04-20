@@ -19,6 +19,8 @@ final class CalendarReactor: Reactor {
     
     enum Mutation {
         case calendarDates(Date, Int, Int, [CalendarView.Item]) // (기준 일자, 년, 월, [일])
+        case calendarRecords([CareRecord])
+        case error(String)
     }
     
     struct State {
@@ -39,8 +41,10 @@ final class CalendarReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
+            let benchmark = currentState.benchmarkDate
             return Observable.concat([
-                calendarDates(of: Date()),
+                calendarDates(of: benchmark),
+                calendarCareRecords(of: benchmark)
                 ])
             
         case .previousMonth:
@@ -57,6 +61,12 @@ final class CalendarReactor: Reactor {
             newState.benchmarkDate = benchmark
             newState.data[.header] = [CalendarView.Item.header(year, month)]
             newState.data[.calendar] = calendarItems
+            
+        case .calendarRecords(let records):
+            print("calendarRecord Count: ", records.count)
+            print("calendarRecordMutation: ", records)
+        case .error(let message):
+            print("errorMutation: ", message)
         }
         return newState
     }
@@ -108,6 +118,27 @@ extension CalendarReactor {
         }
     }
     
+    private func calendarCareRecords(of date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self,
+                  let calendarRange = calendarRange(of: date) else {
+                return Disposables.create()
+            }
+
+            Task {
+                do {
+                    let records = try await self.plantRecords(within: calendarRange.start, calendarRange.end)
+                    
+                    observer.onNext(.calendarRecords(records))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.error("식물 기록을 가져올 수 없습니다."))
+                    observer.onCompleted()
+                }
+            }
+            return Disposables.create()
+        }
+    }
 }
 
 extension CalendarReactor {
@@ -179,11 +210,17 @@ extension CalendarReactor {
         }
     }
     
-//    private func plantRecords(within start: Date, _ end: Date) -> [MyPlant] {
-//        do {
-//            let records = await careRecordDBManager.fetchAllCareRecordWithin(start: start, end: end, plants: <#T##[UUID]#>)
-//        }
-//    }
+    private func plantRecords(within start: Date, _ end: Date) async throws -> [CareRecord] {
+        do {
+            let plants = try await plantDBManager.fetchMyPlants()
+            
+            let records = try await careRecordDBManager.fetchAllCareRecordWithin(start: start, end: end, plants: plants.map { $0.id })
+            
+            return records
+        } catch {
+            throw error
+        }
+    }
 }
 
 extension CalendarReactor {
