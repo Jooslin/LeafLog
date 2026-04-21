@@ -254,9 +254,7 @@ private extension PlantCareViewController {
                     return
                 }
 
-                await MainActor.run {
-                    self.plantCareView.setPlantImage(image)
-                }
+                self.plantCareView.setPlantImage(image)
             } catch {
                 // 이미지 로딩 실패 시 카테고리 기본 이미지를 그대로 보여준다.
             }
