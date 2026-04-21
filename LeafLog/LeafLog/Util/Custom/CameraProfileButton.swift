@@ -14,7 +14,7 @@ import Then
 final class CameraProfileButton: UIControl {
     
     // MARK: - UI Components
-    private let cameraImageView = UIImageView().then {
+    let cameraImageView = UIImageView().then {
         $0.image = .camera.withRenderingMode(.alwaysTemplate)
         $0.tintColor = .grayScale400
         $0.contentMode = .scaleAspectFit

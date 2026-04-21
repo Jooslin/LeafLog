@@ -141,12 +141,22 @@ final class PlantRegisterViewController: BaseViewController, View {
             .bind(to: steps)
             .disposed(by: disposeBag)
         
-        registerView.cameraButton.addAction(
-            UIAction { [weak self] _ in
-                self?.presentPhotoPicker()
-            },
-            for: .touchUpInside
-        )
+        registerView.cameraButton.rx.tap
+            .compactMap { [weak self] _ -> PHPickerViewController? in
+                return self?.makeImagePicker()
+            }
+            .withUnretained(self)
+            .do(onNext: { $0.present($1, animated: true) }) // $0 == self, $1 == PHPickerViewController
+            .flatMap { $1.rx.selectedImages }
+            .compactMap(\.first)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] image in
+                self?.selectedImage = image
+                self?.registerView.cameraButton.layer.contents = image.cgImage
+                self?.registerView.cameraButton.layer.contentsGravity = .resizeAspectFill
+                self?.registerView.cameraButton.backgroundColor = .clear
+            })
+            .disposed(by: disposeBag)
         
         registerView.plantTypeSearchButton.addAction(
             UIAction { [weak self] _ in
