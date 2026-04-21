@@ -34,7 +34,51 @@ final class PlantTabFlow: Flow {
         
         switch step {
         case .plantTab:
-            let viewController = HomeViewController()
+            let homeViewController = HomeViewController()
+            navigationController.setViewControllers([homeViewController], animated: false)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: homeViewController,
+                    withNextStepper: homeViewController
+                )
+            )
+
+        case .plantRegister(let selectedPlant):
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
+
+            if navigationController.viewControllers.isEmpty {
+                let homeViewController = HomeViewController()
+                navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
+            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+                var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+                updatedViewControllers.append(plantRegisterViewController)
+                navigationController.setViewControllers(updatedViewControllers, animated: true)
+            } else {
+                navigationController.pushViewController(plantRegisterViewController, animated: true)
+            }
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: plantRegisterViewController,
+                    withNextStepper: plantRegisterViewController
+                )
+            )
+
+        case .plantSearch:
+            let searchViewController = SearchViewController()
+            navigationController.pushViewController(searchViewController, animated: true)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: searchViewController,
+                    withNextStepper: searchViewController
+                )
+            )
+
+        case .plantSearchDetail(let contentNumber):
+            let reactor = SearchDetailReactor(contentNumber: contentNumber)
+            let viewController = SearchDetailViewController(reactor: reactor)
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
 
@@ -83,6 +127,10 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(camera, animated: true)
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+
+        case .pageBack:
+            navigationController.popViewController(animated: true)
+            return .none
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
@@ -126,6 +174,11 @@ extension PlantTabFlow {
     private func prepareImagePicker() {
         guard imagePicker == nil else { return }
         imagePicker = makeImagePicker()
+    }
+
+    private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
+        return PlantRegisterViewController(reactor: reactor)
     }
 
     private func makeImagePicker() -> PHPickerViewController {

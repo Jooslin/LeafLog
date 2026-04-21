@@ -13,6 +13,7 @@ final class SearchDetailReactor: Reactor {
 
     enum Action {
         case viewDidLoad
+        case selectPlant
     }
 
     enum Mutation {
@@ -20,6 +21,7 @@ final class SearchDetailReactor: Reactor {
         case setDetail(PlantDetail)
         case setImages([PlantFileItem])
         case setError(String)
+        case setSelectedPlant(SelectedPlant)
     }
 
     struct State {
@@ -29,6 +31,7 @@ final class SearchDetailReactor: Reactor {
         var images: [PlantFileItem] = []
         var displayName: String = "이름 정보 없음"
         var displayImages: [PlantFileItem] = []
+        @Pulse var selectedPlant: SelectedPlant? = nil
         @Pulse var errorMessage: String? = nil
 
         var displayImageURLs: [String] {
@@ -55,6 +58,14 @@ final class SearchDetailReactor: Reactor {
                 ),
                 .just(.setLoading(false))
             ])
+
+        case .selectPlant:
+            guard let detail = currentState.detail else {
+                return .just(.setError("식물 정보를 아직 불러오지 못했어요."))
+            }
+
+            let name = Self.makeSelectedPlantName(detail: detail, displayName: currentState.displayName)
+            return .just(.setSelectedPlant(SelectedPlant(name: name, detail: detail, category: nil)))
         }
     }
 
@@ -76,6 +87,8 @@ final class SearchDetailReactor: Reactor {
 
         case .setError(let message):
             newState.errorMessage = message
+        case .setSelectedPlant(let selectedPlant):
+            newState.selectedPlant = selectedPlant
         }
 
         return newState
@@ -143,5 +156,15 @@ final class SearchDetailReactor: Reactor {
         }
 
         return error.localizedDescription
+    }
+
+    private static func makeSelectedPlantName(detail: PlantDetail, displayName: String) -> String {
+        let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedDisplayName.isEmpty, trimmedDisplayName != "이름 정보 없음" {
+            return trimmedDisplayName
+        }
+
+        let detailName = detail.contentNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (detailName?.isEmpty == false ? detailName : nil) ?? "이름 정보 없음"
     }
 }

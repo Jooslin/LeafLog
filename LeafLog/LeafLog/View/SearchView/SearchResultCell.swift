@@ -46,6 +46,7 @@ final class SearchResultCell: UICollectionViewCell {
     private let plantNameLabel = UILabel(text: "식물 이름", config: .title16)
 
     private let selectButton = UIButton(config: .mSize, title: "선택")
+    var onSelectButtonTap: (() -> Void)?
 
     private let dividerView = UIView().then {
         $0.backgroundColor = UIColor.separator.withAlphaComponent(0.1)
@@ -116,6 +117,13 @@ final class SearchResultCell: UICollectionViewCell {
             $0.bottom.equalToSuperview()
             $0.height.equalTo(Self.lineWidth)
         }
+
+        selectButton.addAction(
+            UIAction { [weak self] _ in
+                self?.onSelectButtonTap?()
+            },
+            for: .touchUpInside
+        )
     }
 }
 

@@ -41,12 +41,13 @@ final class SearchDetailViewController: BaseViewController, View {
 
         detailView.closeButtonTap
             .bind(with: self) { owner, _ in
-                if owner.presentingViewController != nil {
-                    owner.dismiss(animated: true)
-                } else {
-                    owner.navigationController?.popViewController(animated: true)
-                }
+                owner.steps.accept(AppStep.pageBack)
             }
+            .disposed(by: disposeBag)
+
+        detailView.selectButtonTap
+            .map { SearchDetailReactor.Action.selectPlant }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
         reactor.state
@@ -71,6 +72,14 @@ final class SearchDetailViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] message in
                 self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$selectedPlant)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] selectedPlant in
+                self?.steps.accept(AppStep.plantRegister(selectedPlant))
             })
             .disposed(by: disposeBag)
     }
