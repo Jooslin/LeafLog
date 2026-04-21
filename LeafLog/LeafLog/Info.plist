@@ -2,12 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 	<key>NSCameraUsageDescription</key>
 	<string>사진 촬영 및 AI 사진 검색, 사진 등록을 위해 카메라 접근 권한이 필요합니다.</string>
-
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
-
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
