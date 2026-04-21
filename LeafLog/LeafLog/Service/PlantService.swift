@@ -26,6 +26,7 @@ final class PlantService {
     
     @Dependency(\.supabaseManager) private var supabaseManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
     private let logger = Logger(subsystem: "LeafLog", category: "PlantService")
     
@@ -43,12 +44,33 @@ final class PlantService {
         }
         
         
-        return try await plantDBManager.createPlant(
+        let plant = try await plantDBManager.createPlant(
             plantID: plantID,
             userID: user.id,
             imagePath: uploadedImagePath,
             input: input
         )
+
+        _ = try await careRecordDBManager.upsertCareRecord(
+            input: CareRecordUpsertInput(
+                plantID: plant.id,
+                recordDate: Self.localDate(from: input.lastWateredAt),
+                recordedAt: input.lastWateredAt,
+                status: nil,
+                watered: true,
+                repotted: nil,
+                fertilized: nil,
+                treated: nil,
+                wateredNote: nil,
+                repottedNote: nil,
+                fertilizedNote: nil,
+                treatedNote: nil,
+                diaryText: nil,
+                diaryPhotoPath: nil
+            )
+        )
+
+        return plant
     }
     
     
