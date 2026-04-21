@@ -28,6 +28,7 @@ enum AppStep: Step {
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
+    case record(plantID: UUID)
     
     // Global
     case alert(String, String) // (타이틀, 메세지)
@@ -41,7 +42,6 @@ enum AppStep: Step {
     )
     
     case profileImageSourceSheet
-    case record(UUID)
     // 예시용
     case pushButtonTapped
 }

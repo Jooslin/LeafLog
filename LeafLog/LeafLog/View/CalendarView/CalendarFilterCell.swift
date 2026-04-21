@@ -35,9 +35,6 @@ extension CalendarFilterCell {
     private func setButtonAttributes() {
         buttons.enumerated().forEach { button in
             button.element.tag = button.offset
-//            button.element.addAction(UIAction { _ in
-//                button.element.isSelected.toggle()
-//            }, for: .touchUpInside)
         }
     }
     

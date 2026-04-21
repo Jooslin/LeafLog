@@ -70,7 +70,7 @@ class CalendarViewController: BaseViewController, View {
             .compactMap { item -> AppStep? in
                 switch item {
                 case .water(let data), .grow(let data), .sprout(let data), .treat(let data):
-                    return AppStep.record(data.id)
+                    return AppStep.record(plantID: data.id)
                 default:
                     return nil
                 }
