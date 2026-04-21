@@ -29,13 +29,13 @@ final class CameraAuthNoticeView: UIView {
         $0.textAlignment = .center
     }
     //TODO: component 수정 필요
-    //    let settingButton = BottomSaveButton(title: "설정으로 이동")
-    let settingButton = UIButton(configuration: .filled()).then {
-        $0.setTitle("설정으로 이동", for: .normal)
-        $0.snp.makeConstraints {
-            $0.height.equalTo(24)
-        }
-    }
+        let settingButton = BottomSaveButton(title: "설정으로 이동")
+//    let settingButton = UIButton(configuration: .filled()).then {
+//        $0.setTitle("설정으로 이동", for: .normal)
+//        $0.snp.makeConstraints {
+//            $0.height.equalTo(24)
+//        }
+//    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)

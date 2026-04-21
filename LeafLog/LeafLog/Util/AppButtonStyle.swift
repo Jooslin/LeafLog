@@ -26,12 +26,14 @@ enum AppButtonStyle {
     case sSize
     case mSize
     case lSize
+    case water
 
     var normalTextColor: UIColor {
         switch self {
         case .sSize: return .grayScale700
         case .mSize: return .grayScale700
         case .lSize: return .grayScale600
+        case .water: return .subBlue
         }
     }
 
@@ -40,6 +42,7 @@ enum AppButtonStyle {
         case .sSize: return .white
         case .mSize: return .grayScale50
         case .lSize: return .grayScale50
+        case .water: return .subBlue.withAlphaComponent(0.1)
         }
     }
 
@@ -48,6 +51,7 @@ enum AppButtonStyle {
         case .sSize: return .grayScale400
         case .mSize: return .primary800
         case .lSize: return .primary800
+        case .water: return .grayScale600
         }
     }
 
@@ -56,6 +60,7 @@ enum AppButtonStyle {
         case .sSize: return .grayScale100
         case .mSize: return .primary200
         case .lSize: return .primary200
+        case .water: return .grayScale100
         }
     }
 
@@ -70,6 +75,9 @@ enum AppButtonStyle {
             
         case .lSize:
             return .init(top: 8, leading: 12, bottom: 8, trailing: 12)
+            
+        case .water:
+            return .init(top: 4, leading: 12, bottom: 4, trailing: 12)
         }
     }
 }
