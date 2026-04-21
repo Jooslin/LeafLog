@@ -308,6 +308,17 @@ final class PlantCareReactor: Reactor {
                 return .empty()
             }
 
+            let nextIsCompleted = !item.isCompleted
+            if type == .watering,
+               !nextIsCompleted,
+               // 유일한 물주기 기록인지
+               Self.isLastRemainingWateringRecord(
+                date: currentState.selectedDate,
+                timelineEvents: currentState.timelineEvents
+               ) {
+                return .just(.setErrorMessage("마지막 물주기 기록은 취소할 수 없어요. 다른 날짜에 물주기 기록을 추가한 뒤 다시 시도해주세요."))
+            }
+
             let originalItems = currentState.items
             var nextItems = currentState.items
             if let index = nextItems.firstIndex(where: { $0.type == type }) {
@@ -318,7 +329,7 @@ final class PlantCareReactor: Reactor {
                 .just(.setItems(nextItems)),
                 saveCompletion(
                     type: type,
-                    isCompleted: !item.isCompleted,
+                    isCompleted: nextIsCompleted,
                     date: currentState.selectedDate,
                     originalItems: originalItems
                 )
@@ -422,7 +433,7 @@ private extension PlantCareReactor {
         return Observable.create { [careRecordDBManager] observer in
             let task = Task {
                 do {
-                    let recordDate = Self.localDate(from: date)
+                    let recordDate = localDate(from: date)
                     let record = try await careRecordDBManager.fetchCareRecord(
                         plantID: plantID,
                         recordDate: recordDate
@@ -674,13 +685,30 @@ private extension PlantCareReactor {
         }
     }
 
-    /// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
-    static func localDate(from date: Date) -> LocalDate {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar.current
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.timeZone = TimeZone.current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return LocalDate(rawValue: formatter.string(from: date))
+
+    // 마지막 물주기 기록이 있는지 확인
+    static func isLastRemainingWateringRecord(
+        date: Date,
+        timelineEvents: [PlantCareTimelineEvent]
+    ) -> Bool {
+        let targetDate = localDate(from: date)
+        let wateringEvents = timelineEvents.filter { $0.type == .watering }
+
+        guard !wateringEvents.isEmpty else {
+            return true
+        }
+
+        return wateringEvents.allSatisfy { $0.recordDateRaw == targetDate.rawValue }
     }
+}
+
+
+/// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
+func localDate(from date: Date) -> LocalDate {
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar.current
+    formatter.locale = Locale(identifier: "ko_KR")
+    formatter.timeZone = TimeZone.current
+    formatter.dateFormat = "yyyy-MM-dd"
+    return LocalDate(rawValue: formatter.string(from: date))
 }

@@ -54,7 +54,7 @@ final class PlantService {
         _ = try await careRecordDBManager.upsertCareRecord(
             input: CareRecordUpsertInput(
                 plantID: plant.id,
-                recordDate: Self.localDate(from: input.lastWateredAt),
+                recordDate: localDate(from: input.lastWateredAt),
                 recordedAt: input.lastWateredAt,
                 status: nil,
                 watered: true,
