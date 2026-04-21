@@ -219,12 +219,6 @@ final class PlantRegisterViewController: BaseViewController, View {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
     }
     
-//    @objc private func handleFormValueChanged() {
-//        reactor?.action.onNext(
-//            .updateWateringInterval(registerView.wateringCycleTextField.text ?? "")
-//        )
-//    }
-    
     private func notifyCategorySelectionChanged() {
         reactor?.action.onNext(.updateCategory(selectedCategoryFromButtons))
     }
@@ -266,16 +260,6 @@ final class PlantRegisterViewController: BaseViewController, View {
     private func handlePlantTypeSearchTap() {
         view.endEditing(true)
         steps.accept(AppStep.plantSearch)
-    }
-    
-    private func presentPhotoPicker() {
-        var configuration = PHPickerConfiguration()
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-        
-        let pickerViewController = PHPickerViewController(configuration: configuration)
-        pickerViewController.delegate = self
-        present(pickerViewController, animated: true)
     }
     
     private func configureLastWateredDatePicker() {
@@ -345,52 +329,5 @@ extension PlantRegisterViewController {
         
         let imagePicker = PHPickerViewController(configuration: config)
         return imagePicker
-    }
-}
-
-extension PlantRegisterViewController: PHPickerViewControllerDelegate {
-    //TODO: 추후 수정 필요!!!
-    //    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-    //        picker.dismiss(animated: true)
-    //
-    //        guard let result = results.first,
-    //              result.itemProvider.canLoadObject(ofClass: UIImage.self)
-    //        else {
-    //            return
-    //        }
-    //
-    //        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
-    //            guard let selectedImage = image as? UIImage else { return }
-    //
-    //            DispatchQueue.main.async {
-    //                self?.selectedImage = selectedImage
-    //                self?.registerView.cameraButton.layer.contents = selectedImage.cgImage
-    //                self?.registerView.cameraButton.layer.contentsGravity = .resizeAspectFill
-    //                self?.registerView.cameraButton.backgroundColor = .clear
-    //            }
-    //        }
-    //    }
-    
-    // picker에서 이미지 선택 시(picker 종료 시) 동작
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        guard let item = results.first,
-              item.itemProvider.canLoadObject(ofClass: UIImage.self) else {
-            picker.dismiss(animated: true)
-            return
-        }
-        
-        // itemProvider에서 UIImage로 로드가 가능하다면 UIImage로 선택된 사진 load
-        item.itemProvider.loadObject(ofClass: UIImage.self) { [weak self, weak picker] image, error in // loadObject는 비동기로 작동하므로 picker도 약한 참조
-            guard let image = image as? UIImage else {
-                picker?.dismiss(animated: true)
-                return
-            }
-            
-            Task { @MainActor [weak self, weak picker] in
-                picker?.dismiss(animated: true) { [weak self] in
-                    self?.reactor?.action.onNext(PlantRegisterReactor.Action.classificationImageSelected(image))
-                }
-            }
-        }
     }
 }

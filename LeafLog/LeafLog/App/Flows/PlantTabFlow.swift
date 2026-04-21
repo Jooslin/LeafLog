@@ -46,9 +46,6 @@ final class PlantTabFlow: Flow {
 
         case .plantRegister(let selectedPlant):
             let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
-
-            prepareImagePicker()
-            imagePicker?.delegate = plantRegisterViewController
             
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
@@ -130,49 +127,36 @@ extension PlantTabFlow {
         let steps = PublishRelay<Step>()
     }
     
+    //TODO: 추후 수정 필요 - 등록 화면의 카메라 검색 버튼과 연동하여 수정 필요
     private func presentPhotoSelect() -> FlowContributors {
         let alert = UIAlertController()
         let cameraAction = UIAlertAction(title: "촬영하기", style: .default) { [weak self] _ in
             self?.photoSelectStepper.steps.accept(AppStep.cameraRequired)
         }
         
-        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { [weak self] _ in
-            guard let self else { return }
-            
-           let imagePicker = imagePicker ?? makeImagePicker()
-            
-            alert.dismiss(animated: true) {
-                self.navigationController.present(imagePicker, animated: true)
-            }
-        }
+//        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { [weak self] _ in
+//            guard let self else { return }
+//            
+//           let imagePicker = imagePicker ?? makeImagePicker()
+//            
+//            alert.dismiss(animated: true) {
+//                self.navigationController.present(imagePicker, animated: true)
+//            }
+//        }
         
         let cancel = UIAlertAction(title: "취소", style: .cancel)
         
         alert.addAction(cameraAction)
-        alert.addAction(galleryAction)
+//        alert.addAction(galleryAction)
         alert.addAction(cancel)
         
         navigationController.present(alert, animated: true)
         
         return .none
     }
-    
-    private func prepareImagePicker() {
-        guard imagePicker == nil else { return }
-        imagePicker = makeImagePicker()
-    }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
         return PlantRegisterViewController(reactor: reactor)
-    }
-
-    private func makeImagePicker() -> PHPickerViewController {
-        var config = PHPickerConfiguration()
-        config.filter = .images // 라이브러리에서 보여줄 asset의 종류 지정
-        config.selectionLimit = 1 // 선택 개수 설정 (0은 무제한)
-        
-        let imagePicker = PHPickerViewController(configuration: config)
-        return imagePicker
     }
 }
