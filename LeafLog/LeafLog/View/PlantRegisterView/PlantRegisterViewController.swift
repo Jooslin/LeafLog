@@ -45,7 +45,7 @@ final class PlantRegisterViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        bindUI()
+//        bindUI(reactor: reactor)
     }
     
     func bind(reactor: PlantRegisterReactor) {
@@ -129,15 +129,17 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("저장 실패", message))
             })
             .disposed(by: disposeBag)
+        
+        bindUI(reactor: reactor)
     }
     
-    private func bindUI() {
-        registerView.headerView.backButton.addAction(
-            UIAction { [weak self] _ in
-                self?.steps.accept(AppStep.pageBack)
-            },
-            for: .touchUpInside
-        )
+    private func bindUI(reactor: PlantRegisterReactor) {
+        registerView.headerView.backButton.rx.tap
+            .map {
+                AppStep.pageBack
+            }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
         registerView.cameraButton.addAction(
             UIAction { [weak self] _ in
@@ -154,43 +156,38 @@ final class PlantRegisterViewController: BaseViewController, View {
         )
         
         registerView.categoryButtons.forEach { button in
-            button.addAction(
-                UIAction { [weak self] _ in
+            button.rx.tap
+                .subscribe(onNext: { [weak self] in
                     self?.updateSingleSelection(
                         selectedButton: button,
-                        in: self?.registerView.categoryButtons ?? []
-                    )
+                        in: self?.registerView.categoryButtons ?? [])
                     self?.notifyCategorySelectionChanged()
-                },
-                for: .touchUpInside
-            )
+                })
+                .disposed(by: disposeBag)
         }
         
         registerView.locationButtons.forEach { button in
-            button.addAction(
-                UIAction { [weak self] _ in
+            button.rx.tap
+                .subscribe(onNext: { [weak self] in
                     self?.updateSingleSelection(
                         selectedButton: button,
                         in: self?.registerView.locationButtons ?? []
                     )
                     self?.notifyLocationSelectionChanged()
-                },
-                for: .touchUpInside
-            )
+                })
+                .disposed(by: disposeBag)
         }
         
-        registerView.wateringCycleTextField.addTarget(
-            self,
-            action: #selector(handleFormValueChanged),
-            for: .editingChanged
-        )
+        registerView.wateringCycleTextField.rx.text.orEmpty
+            .map { PlantRegisterReactor.Action.updateWateringInterval($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
-        registerView.registerButton.addAction(
-            UIAction { [weak self] _ in
+        registerView.registerButton.rx.tap
+            .subscribe(onNext: { [weak self] in
                 self?.handleRegisterTap()
-            },
-            for: .touchUpInside
-        )
+            })
+            .disposed(by: disposeBag)
         
         configureLastWateredDatePicker()
         syncInitialFormState()
@@ -200,11 +197,11 @@ final class PlantRegisterViewController: BaseViewController, View {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
     }
     
-    @objc private func handleFormValueChanged() {
-        reactor?.action.onNext(
-            .updateWateringInterval(registerView.wateringCycleTextField.text ?? "")
-        )
-    }
+//    @objc private func handleFormValueChanged() {
+//        reactor?.action.onNext(
+//            .updateWateringInterval(registerView.wateringCycleTextField.text ?? "")
+//        )
+//    }
     
     private func notifyCategorySelectionChanged() {
         reactor?.action.onNext(.updateCategory(selectedCategoryFromButtons))
