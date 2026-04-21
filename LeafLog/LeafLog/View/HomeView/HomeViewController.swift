@@ -26,6 +26,7 @@ final class HomeViewController: BaseViewController {
         navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
         bindPlantSelection()
+        bindPlantRegistration()
         showEmptyState()
     }
     
@@ -47,17 +48,34 @@ final class HomeViewController: BaseViewController {
 extension HomeViewController {
     private func bindPlantSelection() {
         homeView.collectionView.rx.itemSelected
-            .compactMap { [weak self] indexPath -> UUID? in
+            .compactMap { [weak self] indexPath -> AppStep? in
                 // 사용자가 누른 칸의 데이터 가져옴
-                guard case .plant(let shelfPlant) = self?.homeView.item(at: indexPath),
-                      shelfPlant.emptyShelf == .none,
-                      let plantID = shelfPlant.id else {
-                    return nil // 빈 선반
+                guard case .plant(let shelfPlant) = self?.homeView.item(at: indexPath) else {
+                    return nil
                 }
                 
-                return plantID
+                switch shelfPlant.emptyShelf {
+                case .none:
+                    guard let plantID = shelfPlant.id else {
+                        return nil
+                    }
+                    
+                    return AppStep.record(plantID: plantID)
+                    
+                case .first:
+                    return AppStep.plantRegister()
+                    
+                case .second, .third:
+                    return nil
+                }
             }
-            .map { AppStep.record(plantID: $0) } // Rxflow 기록 화면으로 이동
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+    }
+    
+    private func bindPlantRegistration() {
+        homeView.emptyView.registerButton.rx.tap
+            .map { AppStep.plantRegister() }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
@@ -126,7 +144,7 @@ private extension HomeViewController {
 // MARK: - Home Data
 private extension HomeViewController {
     func makeShelfItems(from plants: [MyPlant]) -> [HomeView.Item] {
-        plants.enumerated().map { index, plant in
+        var items: [HomeView.Item] = plants.enumerated().map { index, plant in
             let daysFromLastWatering = daysFromLastWatering(from: plant.lastWateredAt)
             
             return .plant(HomeView.ShelfPlant(
@@ -141,6 +159,30 @@ private extension HomeViewController {
                 shelfOrder: shelfOrder(for: index)
             ))
         }
+        
+        let addButtonIndex = items.count
+        items.append(makeEmptyShelfItem(emptyShelf: .first, index: addButtonIndex))
+        
+        while items.count % 3 != 0 {
+            let placeholderIndex = items.count
+            let emptyShelf: EmptyShelf = items.count % 3 == 1 ? .second : .third
+            items.append(makeEmptyShelfItem(emptyShelf: emptyShelf, index: placeholderIndex))
+        }
+        
+        return items
+    }
+    
+    func makeEmptyShelfItem(emptyShelf: EmptyShelf, index: Int) -> HomeView.Item {
+        .plant(HomeView.ShelfPlant(
+            id: nil,
+            category: nil,
+            name: nil,
+            daysFromLastWatering: nil,
+            daysToNextWatering: nil,
+            didWater: nil,
+            emptyShelf: emptyShelf,
+            shelfOrder: shelfOrder(for: index)
+        ))
     }
     
     // 선반 위치 지정

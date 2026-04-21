@@ -59,6 +59,7 @@ extension PlantShelfCell {
     func configure(_ data: HomeView.ShelfPlant) {
         switch data.emptyShelf {
         case .none:
+            card.isHidden = false
             plant.image = UIImage(named: data.category?.defaultImageAssetName ?? "")
             card.nameLabel.text = data.name ?? ""
             card.recentDayLabel.text = "\(data.daysFromLastWatering ?? 0)일 전"
