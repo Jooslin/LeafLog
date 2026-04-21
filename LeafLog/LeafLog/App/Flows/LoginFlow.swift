@@ -3,6 +3,7 @@
 //  LeafLog
 //
 //  Created by t2025-m0143 on 4/10/26.
+//  Updated by 김주희 on 4/17/26.
 //
 
 import UIKit
@@ -30,9 +31,18 @@ final class LoginFlow: Flow {
             return navigateToLogin()
         case .main:
             return .end(forwardToParentFlowWithStep: step)
+        case .alert(let title, let message):
+            return presentAlert(title: title, message: message)
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
+    }
+
+    private func presentAlert(title: String, message: String) -> FlowContributors {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        navigationController.present(alert, animated: true)
+        return .none
     }
 }
 

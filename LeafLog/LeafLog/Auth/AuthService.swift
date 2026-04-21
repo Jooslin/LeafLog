@@ -3,6 +3,7 @@
 //  LeafLog
 //
 //  Created by t2025-m0143 on 4/3/26.
+//  Updated by 김주희 on 4/16/26.
 //
 
 import UIKit
@@ -11,7 +12,24 @@ import Dependencies
 
 final class AuthService {
 
+    private enum Message {
+        static let appleLoginFailed = "Apple 로그인에 실패했어요. 잠시 후 다시 시도해주세요."
+        static let appleTokenStoreFailed = "Apple 로그인 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+        static let withdrawalFailed = "회원탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해주세요."
+    }
+
     private struct WithdrawResponse: Decodable {
+        let success: Bool
+    }
+
+    // Apple 토큰 저장 함수에 전달할 요청 모델
+    private struct StoreAppleTokenRequest: Encodable {
+        let authorizationCode: String
+        let userIdentifier: String
+    }
+
+    // Edge Function의 응답
+    private struct StoreAppleTokenResponse: Decodable {
         let success: Bool
     }
     
@@ -56,19 +74,64 @@ final class AuthService {
     // MARK: - Apple Login
     func startAppleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
         let credential = try await appleProvider.fetchCredential(presentingViewController: presentingViewController)
-        try await supabase.auth.signInWithIdToken(
-            credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
+
+        do {
+            try await supabase.auth.signInWithIdToken(
+                credentials: .init(provider: .apple, idToken: credential.idToken, nonce: credential.rawNonce)
+            )
+        } catch {
+            throw AuthError.sessionFailed(Message.appleLoginFailed)
+        }
+
+        let session = try await supabase.auth.session
+        
+        do {
+            try await storeAppleToken(credential: credential, accessToken: session.accessToken)
+        } catch FunctionsError.httpError {
+            await signOutLocalSession()
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        } catch {
+            await signOutLocalSession()
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        }
+
+        let user = try await supabase.auth.user()
+        try await ensureProfileExists(for: user)
+        return user
+    }
+
+    private func storeAppleToken(
+        credential: AppleAuthProvider.AppleCredential,
+        accessToken: String
+    ) async throws {
+        let request = StoreAppleTokenRequest(
+            authorizationCode: credential.authorizationCode,
+            userIdentifier: credential.userIdentifier
         )
-        return try await supabase.auth.user()
+
+        let response: StoreAppleTokenResponse = try await supabase.functions.invoke(
+            "store-apple-token",
+            options: .init(
+                method: .post,
+                headers: authorizationHeaders(accessToken: accessToken),
+                body: request
+            )
+        )
+
+        guard response.success else {
+            throw AuthError.sessionFailed(Message.appleTokenStoreFailed)
+        }
     }
 
     
     // MARK: - Google Login
     func startGoogleNativeLogin(presentingViewController: UIViewController) async throws -> Supabase.User {
         let credential = try await googleProvider.fetchCredential(presentingViewController: presentingViewController)
+
         try await supabase.auth.signInWithIdToken(
             credentials: .init(provider: .google, idToken: credential.idToken, nonce: credential.rawNonce)
         )
+
         let user = try await supabase.auth.user()
         try await ensureProfileExists(for: user)
         return user
@@ -128,21 +191,26 @@ final class AuthService {
                 "delete-user", // DB에서 유저 데이터 삭제
                 options: .init(
                     method: .post,
-                    headers: [
-                        "Authorization": "Bearer \(session.accessToken)"
-                    ]
+                    headers: authorizationHeaders(accessToken: session.accessToken)
                 )
             )
-        } catch FunctionsError.httpError(_, let data) {
-            let body = String(data: data, encoding: .utf8) ?? "응답 본문을 읽을 수 없어요."
-            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(body)")
+        } catch FunctionsError.httpError {
+            throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         } catch {
-            throw AuthError.withdrawalFailed("회원탈퇴를 처리하지 못했어요. \(error.localizedDescription)")
+            throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         }
 
         // 로그아웃
         try? await supabase.auth.signOut(scope: .local)
         await signOutProvider(for: user)
+    }
+
+    private func authorizationHeaders(accessToken: String) -> [String: String] {
+        ["Authorization": "Bearer \(accessToken)"]
+    }
+
+    private func signOutLocalSession() async {
+        try? await supabase.auth.signOut(scope: .local)
     }
 
     

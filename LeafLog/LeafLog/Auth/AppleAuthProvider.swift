@@ -15,6 +15,8 @@ final class AppleAuthProvider {
     // 서버에 넘겨줄 데이터 바구니
     struct AppleCredential {
         let idToken: String
+        let authorizationCode: String
+        let userIdentifier: String
         let rawNonce: String
         let email: String? // 이메일, 이름은 최초 로그인 시에만 제공
         let fullName: PersonNameComponents?
@@ -111,14 +113,21 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
         }
 
         guard let identityToken = appleIDCredential.identityToken,
-              let idToken = String(data: identityToken, encoding: .utf8) else {
-            finish(with: .failure(AuthError.loginFailed("Apple ID Token을 가져올 수 없습니다.")))
+              let idToken = String(data: identityToken, encoding: .utf8),
+              let authorizationCodeData = appleIDCredential.authorizationCode,
+              let authorizationCode = String(data: authorizationCodeData, encoding: .utf8)
+        else {
+            finish(with: .failure(AuthError.loginFailed("Apple 인증 정보를 가져올 수 없습니다.")))
             return
         }
+        
+        let userIdentifier = appleIDCredential.user
 
         finish(with: .success(
             AppleAuthProvider.AppleCredential(
                 idToken: idToken,
+                authorizationCode: authorizationCode,
+                userIdentifier: userIdentifier,
                 rawNonce: rawNonce,
                 email: appleIDCredential.email,
                 fullName: appleIDCredential.fullName

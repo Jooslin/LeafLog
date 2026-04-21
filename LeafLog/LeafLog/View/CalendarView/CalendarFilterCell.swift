@@ -8,16 +8,16 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CalendarFilterCell: UICollectionViewCell {
-    
-    //TODO: 추후 component 교체 필요
-    private let buttons = [
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain()),
-        UIButton(configuration: .plain())
+        
+    fileprivate let buttons = [
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
+        SelectionButton(title: ""),
     ]
     
     override init(frame: CGRect) {
@@ -33,8 +33,8 @@ final class CalendarFilterCell: UICollectionViewCell {
 
 extension CalendarFilterCell {
     private func setButtonAttributes() {
-        for i in 0..<buttons.count {
-            buttons[i].tag = i
+        buttons.enumerated().forEach { button in
+            button.element.tag = button.offset
         }
     }
     
@@ -64,10 +64,33 @@ extension CalendarFilterCell {
     func configure(_ data: [String]) {
         buttons.forEach {
             if $0.tag < data.count {
-                $0.setTitle(data[$0.tag], for: .normal)
+                $0.setup(title: data[$0.tag])
             } else {
                 $0.isHidden = true
             }
         }
+    }
+}
+
+extension Reactive where Base: CalendarFilterCell {
+    var filterItemSelected: ControlEvent<[Badge]> {
+        let taps = Observable.merge(
+            base.buttons.map { button in
+                button.rx.tap
+                    .map { [weak base] in
+                        guard let base else { return [Badge]() }
+                        
+                        button.isSelected.toggle()
+                        
+                        return base.buttons.compactMap {
+                            guard $0.isSelected,
+                                  let title = $0.titleLabel?.text else { return nil }
+                            return Badge(rawValue: title)
+                        }
+                    }
+            }
+        )
+        
+        return ControlEvent(events: taps)
     }
 }

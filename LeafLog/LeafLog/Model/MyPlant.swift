@@ -82,7 +82,7 @@ struct PlantUpdateInput {
 }
 
 // MARK: - 앱 내에서 전반적으로 사용할 내 식물 모델
-struct MyPlant: Codable {
+struct MyPlant: Codable, Hashable {
     let id: UUID // 식물 자체 고유 ID
     let userID: UUID
     let category: PlantCategory

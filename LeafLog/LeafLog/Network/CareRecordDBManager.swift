@@ -31,6 +31,21 @@ final class CareRecordDBManager {
             throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
     }
+
+    // MARK: - 특정 식물의 전체 관리 기록 조회
+    func fetchCareRecords(plantID: UUID) async throws -> [CareRecord] {
+        do {
+            return try await supabaseManager.client
+                .from("care_records")
+                .select()
+                .eq("plant_id", value: plantID)
+                .order("record_date", ascending: false)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.careFailed("타임라인 기록을 불러오지 못했어요: \(error.localizedDescription)")
+        }
+    }
     
     
     // MARK: - 식물 관리 기록 upsert
@@ -66,6 +81,31 @@ final class CareRecordDBManager {
             throw error
         } catch {
             throw AuthError.careFailed("식물 상태 기록을 저장하지 못했어요: \(error.localizedDescription)")
+        }
+    }
+    
+    //MARK: - 특정 기간에 해당하는 관리 기록을 DB에서 불러옴
+    func fetchAllCareRecordWithin(start: Date, end: Date, plants: [UUID]) async throws -> [CareRecord] {
+        do {
+            let startDate = LocalDate(date: start)
+            let endDate = LocalDate(date: end)
+            
+            guard !plants.isEmpty else { return [] }
+            let plantIds = plants
+                .map { "\"\($0.uuidString)\"" }
+                        .joined(separator: ",")
+            
+            return try await supabaseManager.client
+                .from("care_records")
+                .select()
+                .gte("record_date", value: startDate.rawValue)
+                .lte("record_date", value: endDate.rawValue)
+                .filter("plant_id", operator: "in", value: "(\(plantIds))")
+                .execute()
+                .value
+
+        } catch {
+            throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
     }
     

@@ -8,11 +8,18 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CalendarHeaderCell: UICollectionViewCell {
-    let previousButton = UIButton(configuration: .plain())
-    let nextButton = UIButton(configuration: .plain())
-    let dateLabel = UILabel(text: "", config: .label16)
+    private(set) var disposeBag = DisposeBag()
+    
+    fileprivate let previousButton = UIButton(configuration: .plain())
+    fileprivate let nextButton = UIButton(configuration: .plain())
+    
+    private var year: Int = 0
+    private var month: Int = 0
+    private let dateLabel = UILabel(text: "", config: .label16)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -22,6 +29,11 @@ final class CalendarHeaderCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        disposeBag = DisposeBag()
     }
 }
 
@@ -64,7 +76,17 @@ extension CalendarHeaderCell {
 }
 
 extension CalendarHeaderCell {
-    func configure(_ string: String) {
-        dateLabel.text = string
+    func configure(year: Int, month: Int) {
+        dateLabel.text = "\(year)년 \(month)월"
+    }
+}
+
+extension Reactive where Base: CalendarHeaderCell {
+    var headerPreviousButtonTap: ControlEvent<Void> {
+        base.previousButton.rx.tap
+    }
+    
+    var headerNextButtonTap: ControlEvent<Void> {
+        base.nextButton.rx.tap
     }
 }
