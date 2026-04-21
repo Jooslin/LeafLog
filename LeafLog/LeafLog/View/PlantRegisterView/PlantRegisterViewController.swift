@@ -315,6 +315,17 @@ final class PlantRegisterViewController: BaseViewController, View {
     }
 }
 
+extension PlantRegisterViewController {
+    private func makeImagePicker() -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images // 라이브러리에서 보여줄 asset의 종류 지정
+        config.selectionLimit = 1 // 선택 개수 설정 (0은 무제한)
+        
+        let imagePicker = PHPickerViewController(configuration: config)
+        return imagePicker
+    }
+}
+
 extension PlantRegisterViewController: PHPickerViewControllerDelegate {
     //TODO: 추후 수정 필요!!!
     //    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
