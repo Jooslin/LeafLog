@@ -31,6 +31,21 @@ final class CareRecordDBManager {
             throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
     }
+
+    // MARK: - 특정 식물의 전체 관리 기록 조회
+    func fetchCareRecords(plantID: UUID) async throws -> [CareRecord] {
+        do {
+            return try await supabaseManager.client
+                .from("care_records")
+                .select()
+                .eq("plant_id", value: plantID)
+                .order("record_date", ascending: false)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.careFailed("타임라인 기록을 불러오지 못했어요: \(error.localizedDescription)")
+        }
+    }
     
     
     // MARK: - 식물 관리 기록 upsert

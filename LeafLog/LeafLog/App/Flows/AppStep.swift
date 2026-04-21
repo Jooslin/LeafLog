@@ -6,6 +6,7 @@
 //
 
 import RxFlow
+import Foundation
 
 /*
  - Step: 각 Step은 '앱의 네비게이션 상태(state)'를 의미합니다.
@@ -27,6 +28,7 @@ enum AppStep: Step {
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
+    case record(plantID: UUID)
     
     // Global
     case alert(String, String) // (타이틀, 메세지)

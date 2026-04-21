@@ -100,6 +100,10 @@ extension HomeView {
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }
+    
+    func item(at indexPath: IndexPath) -> Item? {
+        dataSource.itemIdentifier(for: indexPath)
+    }
 }
 
 //MARK: CollectionView - Section, Item
@@ -124,50 +128,17 @@ extension HomeView {
         let emptyShelf: EmptyShelf
         let shelfOrder: ShelfOrder
     }
-    
-    nonisolated
-    enum EmptyShelf {
-        case none
-        case first, second, third
-    }
-    
-    nonisolated
-    enum ShelfOrder {
-        case first
-        case second
-        case third
-    }
 }
 
-//TODO: 추후 삭제 필요 - 전역 모델 사용
-extension HomeView {
-    enum PlantCategory: String, Codable, CaseIterable {
-        case upright = "직립형"
-        case shrub = "관목형"
-        case vine = "덩굴성"
-        case grass = "풀모양"
-        case rosette = "로제트형"
-        case succulent = "다육형"
-        case other = "기타"
+nonisolated
+enum EmptyShelf {
+    case none
+    case first, second, third
+}
 
-        // 카테고리 별 식물 기본 이미지 (사용자 등록 이미지가 없을 때 대체 이미지)
-        var defaultImageAssetName: String {
-            switch self {
-            case .upright:
-                return "plantCategoryUpright"
-            case .shrub:
-                return "plantCategoryShrub"
-            case .vine:
-                return "plantCategoryVine"
-            case .grass:
-                return "plantCategoryGrass"
-            case .rosette:
-                return "plantCategoryRosette"
-            case .succulent:
-                return "plantCategorySucculent"
-            case .other:
-                return "plantCategoryOther"
-            }
-        }
-    }
+nonisolated
+enum ShelfOrder {
+    case first
+    case second
+    case third
 }

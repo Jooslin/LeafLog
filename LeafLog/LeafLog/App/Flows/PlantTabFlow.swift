@@ -36,6 +36,16 @@ final class PlantTabFlow: Flow {
         case .plantTab:
             let viewController = HomeViewController()
             navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .record(let plantID):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .pageBack:
+            navigationController.popViewController(animated: true)
+            return .none
             
             //            prepareImagePicker()
             //            imagePicker?.delegate = viewController
