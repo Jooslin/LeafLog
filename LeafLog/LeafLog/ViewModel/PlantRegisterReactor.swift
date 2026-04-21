@@ -19,7 +19,6 @@ final class PlantRegisterReactor: Reactor {
 
     enum Action {
         case viewDidLoad
-        case selectPlant(SelectedPlant)
         case updateCategory(PlantCategory?)
         case updateLocation(PlantLocation?)
         case updateWateringInterval(String)
@@ -28,7 +27,6 @@ final class PlantRegisterReactor: Reactor {
     }
 
     enum Mutation {
-        case setSelectedPlant(SelectedPlant)
         case setSelectedCategory(PlantCategory?)
         case setSelectedLocation(PlantLocation?)
         case setWateringIntervalText(String)
@@ -51,14 +49,16 @@ final class PlantRegisterReactor: Reactor {
         @Pulse var errorMessage: String? = nil
     }
 
-    let initialState = State()
+    let initialState: State
+
+    init(selectedPlant: SelectedPlant? = nil) {
+        self.initialState = Self.makeInitialState(selectedPlant: selectedPlant)
+    }
 
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
             return .empty()
-        case .selectPlant(let selectedPlant):
-            return .just(.setSelectedPlant(selectedPlant))
         case .updateCategory(let category):
             return .just(.setSelectedCategory(category))
         case .updateLocation(let location):
@@ -76,10 +76,6 @@ final class PlantRegisterReactor: Reactor {
         var newState = state
 
         switch mutation {
-        case .setSelectedPlant(let selectedPlant):
-            newState.selectedPlant = selectedPlant
-            newState.selectedCategory = suggestedCategory(from: selectedPlant)
-            newState.wateringIntervalText = suggestedWateringIntervalText(from: selectedPlant.detail?.springWaterCycle)
         case .setSelectedCategory(let category):
             newState.selectedCategory = category
         case .setSelectedLocation(let location):
@@ -194,7 +190,17 @@ final class PlantRegisterReactor: Reactor {
             && isNotSaving
     }
 
-    private func suggestedCategory(from selectedPlant: SelectedPlant) -> PlantCategory? {
+    private static func makeInitialState(selectedPlant: SelectedPlant?) -> State {
+        var state = State()
+        state.selectedPlant = selectedPlant
+        state.selectedCategory = suggestedCategory(from: selectedPlant)
+        state.wateringIntervalText = suggestedWateringIntervalText(from: selectedPlant?.detail?.springWaterCycle)
+        return state
+    }
+
+    private static func suggestedCategory(from selectedPlant: SelectedPlant?) -> PlantCategory? {
+        guard let selectedPlant else { return nil }
+
         if let selectedCategory = selectedPlant.category {
             return selectedCategory
         }
@@ -209,7 +215,7 @@ final class PlantRegisterReactor: Reactor {
         }
     }
 
-    private func suggestedWateringIntervalText(from springWaterCycle: String?) -> String {
+    private static func suggestedWateringIntervalText(from springWaterCycle: String?) -> String {
         guard let springWaterCycle else { return "" }
 
         if springWaterCycle.contains("토양표면이 말랐을때 충분히 관수함")

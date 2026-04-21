@@ -115,7 +115,7 @@ final class SearchViewController: BaseViewController, View {
             }
 
             view.onRegisterOtherTap = { [weak self] in
-                self?.steps.accept(AppStep.plantSelected(.other))
+                self?.steps.accept(AppStep.plantRegister(.other))
             }
 
             return view
@@ -212,7 +212,7 @@ final class SearchViewController: BaseViewController, View {
             .compactMap { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] selectedPlant in
-                self?.steps.accept(AppStep.plantSelected(selectedPlant))
+                self?.steps.accept(AppStep.plantRegister(selectedPlant))
             })
             .disposed(by: disposeBag)
 

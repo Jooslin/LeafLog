@@ -11,7 +11,6 @@ import Dependencies
 import AVFoundation
 import RxRelay
 import PhotosUI
-import ReactorKit
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -25,8 +24,6 @@ final class PlantTabFlow: Flow {
     private let navigationController = UINavigationController()
     private let photoSelectStepper = PhotoSelectStepper()
     private var imagePicker: PHPickerViewController?
-    private let homeViewController = HomeViewController()
-    private let plantRegisterViewController = PlantRegisterViewController()
     
     var root: any RxFlow.Presentable { navigationController }
     
@@ -37,6 +34,7 @@ final class PlantTabFlow: Flow {
         
         switch step {
         case .plantTab:
+            let homeViewController = HomeViewController()
             navigationController.setViewControllers([homeViewController], animated: false)
 
             return .one(
@@ -46,12 +44,19 @@ final class PlantTabFlow: Flow {
                 )
             )
 
-        case .plantRegister:
-            if navigationController.viewControllers.isEmpty {
-                navigationController.setViewControllers([homeViewController], animated: false)
-            }
+        case .plantRegister(let selectedPlant):
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
 
-            navigationController.pushViewController(plantRegisterViewController, animated: true)
+            if navigationController.viewControllers.isEmpty {
+                let homeViewController = HomeViewController()
+                navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
+            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+                var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+                updatedViewControllers.append(plantRegisterViewController)
+                navigationController.setViewControllers(updatedViewControllers, animated: true)
+            } else {
+                navigationController.pushViewController(plantRegisterViewController, animated: true)
+            }
 
             return .one(
                 flowContributor: .contribute(
@@ -104,11 +109,6 @@ final class PlantTabFlow: Flow {
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
 
-        case .plantSelected(let selectedPlant):
-            plantRegisterViewController.reactor?.action.onNext(.selectPlant(selectedPlant))
-            navigationController.popToViewController(plantRegisterViewController, animated: true)
-            return .none
-
         case .pageBack:
             navigationController.popViewController(animated: true)
             return .none
@@ -155,6 +155,11 @@ extension PlantTabFlow {
     private func prepareImagePicker() {
         guard imagePicker == nil else { return }
         imagePicker = makeImagePicker()
+    }
+
+    private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
+        return PlantRegisterViewController(reactor: reactor)
     }
 
     private func makeImagePicker() -> PHPickerViewController {

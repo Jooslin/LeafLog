@@ -33,10 +33,9 @@ enum AppStep: Step {
     case pageBack
     
     // PlantTab
-    case plantRegister
+    case plantRegister(SelectedPlant? = nil)
     case plantSearch
     case plantSearchDetail(String)
-    case plantSelected(SelectedPlant)
     case photoSelect
     case cameraRequired
     case classificationResult([String: PlantClassificationService.Confidence])
