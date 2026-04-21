@@ -47,6 +47,9 @@ final class PlantTabFlow: Flow {
         case .plantRegister(let selectedPlant):
             let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
 
+            prepareImagePicker()
+            imagePicker?.delegate = plantRegisterViewController
+            
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
                 navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
@@ -58,12 +61,19 @@ final class PlantTabFlow: Flow {
                 navigationController.pushViewController(plantRegisterViewController, animated: true)
             }
 
+//            return .one(
+//                flowContributor: .contribute(
+//                    withNextPresentable: plantRegisterViewController,
+//                    withNextStepper: plantRegisterViewController
+//                )
+//            )
+            
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: plantRegisterViewController
-                )
-            )
+                    withNextStepper: CompositeStepper(
+                        steppers: [plantRegisterViewController, photoSelectStepper]
+                    )))
 
         case .plantSearch:
             let searchViewController = SearchViewController()
@@ -85,27 +95,7 @@ final class PlantTabFlow: Flow {
         case .record(let plantID):
             let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
-
-        case .pageBack:
-            navigationController.popViewController(animated: true)
-            return .none
-            
-            //            prepareImagePicker()
-            //            imagePicker?.delegate = viewController
-            //
-                        //TODO: 등록VC 띄우는 step으로 이관 필요
-            //            return .one(
-            //                flowContributor: .contribute(
-            //                    withNextPresentable: viewController,
-            //                    withNextStepper: CompositeStepper(
-            //                        steppers: [viewController, photoSelectStepper]
-            //                    )))
-            
-            return .one(flowContributor: .contribute(
-                withNextPresentable: viewController,
-                withNextStepper: viewController
-            ))
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
@@ -127,10 +117,6 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(camera, animated: true)
             
             return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
-
-        case .pageBack:
-            navigationController.popViewController(animated: true)
-            return .none
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))

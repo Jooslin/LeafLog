@@ -12,7 +12,8 @@ import UIKit
 
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
-
+    @Dependency(\.plantClassificationService) private var plantClassificationService
+    
     private struct ValidationError: Error {
         let message: String
     }
@@ -24,6 +25,8 @@ final class PlantRegisterReactor: Reactor {
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
         case saveTapped(nickname: String?, image: UIImage?)
+        
+        case classificationImageSelected(UIImage)
     }
 
     enum Mutation {
@@ -34,6 +37,8 @@ final class PlantRegisterReactor: Reactor {
         case setSaving(Bool)
         case setSaveCompleted
         case setErrorMessage(String)
+        
+        case analyzeResult([String: PlantClassificationService.Confidence])
     }
 
     struct State {
@@ -47,6 +52,8 @@ final class PlantRegisterReactor: Reactor {
         var isSaving = false
         @Pulse var saveCompleted = false
         @Pulse var errorMessage: String? = nil
+        
+        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
     }
 
     let initialState: State
@@ -69,6 +76,8 @@ final class PlantRegisterReactor: Reactor {
             return .just(.setLastWateredDate(date))
         case .saveTapped(let nickname, let image):
             return savePlant(nickname: nickname, image: image)
+        case .classificationImageSelected(let image):
+            return analyzeImage(image)
         }
     }
 
@@ -92,6 +101,8 @@ final class PlantRegisterReactor: Reactor {
         case .setErrorMessage(let message):
             newState.isSaving = false
             newState.errorMessage = message
+        case .analyzeResult(let result):
+            newState.classificationResult = result
         }
 
         newState.isRegisterEnabled = isRegisterEnabled(for: newState)
@@ -239,5 +250,25 @@ final class PlantRegisterReactor: Reactor {
         }
 
         return ""
+    }
+}
+
+extension PlantRegisterReactor {
+    private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            Task {
+                do {
+                    let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
+                    observer.onNext(.analyzeResult(classificationResult))
+                    observer.onCompleted()
+                } catch {
+                    print(error)
+                    observer.onNext(.analyzeResult([:]))
+                    observer.onCompleted()
+                }
+            }
+            return Disposables.create()
+        }
     }
 }

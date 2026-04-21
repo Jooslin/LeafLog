@@ -25,7 +25,7 @@ final class PlantLabelCardView: BaseCardView {
 //            $0.height.equalTo(28)
 //        }
 //    }
-    let waterButton = UIButton(config: .sSize, title: "물 줬어요")
+    let waterButton = UIButton(config: .water, title: "물 줬어요")
     
     init() {
 //        super.init(cornerRadius: 12)
