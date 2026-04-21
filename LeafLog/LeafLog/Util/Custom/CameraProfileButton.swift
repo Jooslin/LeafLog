@@ -14,7 +14,12 @@ import Then
 final class CameraProfileButton: UIControl {
     
     // MARK: - UI Components
-    let cameraImageView = UIImageView().then {
+    let backgroundImageView = UIImageView().then {
+        $0.contentMode = .scaleAspectFill
+        $0.clipsToBounds = true
+    }
+    
+    private let cameraImageView = UIImageView().then {
         $0.image = .camera.withRenderingMode(.alwaysTemplate)
         $0.tintColor = .grayScale400
         $0.contentMode = .scaleAspectFit
@@ -40,7 +45,13 @@ final class CameraProfileButton: UIControl {
             $0.size.equalTo(140)
         }
         
+        addSubview(backgroundImageView)
         addSubview(cameraImageView)
+        
+        backgroundImageView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+        
         cameraImageView.snp.makeConstraints {
             $0.center.equalToSuperview()
             $0.size.equalTo(24)

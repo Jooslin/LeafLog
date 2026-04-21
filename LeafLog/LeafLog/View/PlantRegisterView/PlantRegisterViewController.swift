@@ -152,8 +152,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] image in
                 self?.selectedImage = image
-                self?.registerView.cameraButton.layer.contents = image.cgImage
-                self?.registerView.cameraButton.layer.contentsGravity = .resizeAspectFill
+                self?.registerView.cameraButton.backgroundImageView.image = image
                 self?.registerView.cameraButton.backgroundColor = .clear
             })
             .disposed(by: disposeBag)
