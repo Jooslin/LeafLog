@@ -146,7 +146,7 @@ final class PlantRegisterViewController: BaseViewController, View {
                 return self?.makeImagePicker()
             }
             .withUnretained(self)
-            .do(onNext: { $0.present($1, animated: true) }) // $0 == self, $1 == PHPickerViewController
+            .do(onNext: { $0.present($1, animated: true) }) // $0 == self, $1 == PHPickerViewController - 이미지 피커 띄우기
             .flatMap { $1.rx.selectedImages }
             .compactMap(\.first)
             .observe(on: MainScheduler.instance)
@@ -163,6 +163,19 @@ final class PlantRegisterViewController: BaseViewController, View {
             },
             for: .touchUpInside
         )
+        
+        //TODO: 검색 카메라 버튼 구현 시 아래 주석 풀고 사용 예정입니다. (단, 이벤트 보내는 주체 변경 필요)
+//        registerView.plantTypeSearchButton.rx.tap
+//            .compactMap { [weak self] _ -> PHPickerViewController? in
+//                return self?.makeImagePicker()
+//            }
+//            .withUnretained(self)
+//            .do(onNext: { $0.present($1, animated: true) })
+//            .flatMap { $1.rx.selectedImages }
+//            .compactMap(\.first)
+//            .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
+//            .bind(to: reactor.action)
+//            .disposed(by: disposeBag)
         
         registerView.categoryButtons.forEach { button in
             button.rx.tap
