@@ -80,7 +80,7 @@ final class CareRecordDBManager {
         } catch let error as AuthError {
             throw error
         } catch {
-            throw AuthError.careFailed("식물 상태 기록을 저장하지 못했어요: \(error.localizedDescription)")
+            throw AuthError.careFailed(Self.saveFailureMessage(for: error))
         }
     }
     
@@ -129,6 +129,17 @@ final class CareRecordDBManager {
             case diaryText = "diary_text"
             case diaryPhotoPath = "diary_photo_path"
         }
+    }
+
+    private static func saveFailureMessage(for error: Error) -> String {
+        let description = error.localizedDescription
+
+        if description.contains("last_watered_at")
+            && description.contains("violates not null constraint") {
+            return "마지막 물주기 기록은 취소할 수 없어요. 다른 날짜에 물주기 기록을 추가한 뒤 다시 시도해주세요."
+        }
+
+        return "식물 상태 기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
     }
 }
 
