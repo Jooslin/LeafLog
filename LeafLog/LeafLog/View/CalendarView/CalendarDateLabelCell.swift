@@ -9,7 +9,7 @@ import UIKit
 import SnapKit
 import Then
 
-class CalendarDateFooterView: UICollectionReusableView {    
+class CalendarDateLabelCell: UICollectionViewCell {
     let label = UILabel(text: "", config: .label16)
     
     override init(frame: CGRect) {
@@ -19,8 +19,9 @@ class CalendarDateFooterView: UICollectionReusableView {
         
         label.snp.makeConstraints {
 
-            $0.leading.equalToSuperview().offset(-24)
+            $0.leading.equalToSuperview()
             $0.top.equalToSuperview().offset(32)
+            $0.bottom.equalToSuperview().inset(16)
         }
     }
     
@@ -29,7 +30,7 @@ class CalendarDateFooterView: UICollectionReusableView {
     }
 }
 
-extension CalendarDateFooterView {
+extension CalendarDateLabelCell {
     func configure(_ dateString: String) {
         label.text = dateString
     }

@@ -27,7 +27,7 @@ final class SelectionButton: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setup(title: String) {
+    func setup(title: String) {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
         configuration.baseForegroundColor = .grayScale500

@@ -48,7 +48,6 @@ enum AppStep: Step {
     )
     
     case profileImageSourceSheet
-    
     // 예시용
     case pushButtonTapped
 }

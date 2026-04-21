@@ -8,11 +8,16 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class CalendarView: UIView {
     //MARK: properties
-    private let collectionView = CalendarCollectionView()
-    private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    fileprivate let collectionView = CalendarCollectionView()
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    
+    fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
+    fileprivate let headerNextButtonTap = PublishRelay<Void>()
     
     init() {
         super.init(frame: .zero)
@@ -58,19 +63,23 @@ extension CalendarView {
             }
         }
         
-        let calendarFooterViewRegistration = UICollectionView.SupplementaryRegistration<CalendarDateFooterView>(elementKind: "footerKind") { supplementaryView, elementKind, indexPath in
-            //TODO: 수정 필요
-            supplementaryView.configure("4월 13일 월요일")
-        }
-        
         let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { cell,indexPath,item in
             
         }
         
-        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
+        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
             switch item {
-            case .header(let date):
-                cell.configure(date)
+            case .header(let year, let month):
+                cell.configure(year: year, month: month)
+                
+                cell.rx.headerPreviousButtonTap
+                    .bind(to: self.headerPreviousButtonTap)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.headerNextButtonTap
+                    .bind(to: self.headerNextButtonTap)
+                    .disposed(by: cell.disposeBag)
             default:
                 break
             }
@@ -94,6 +103,15 @@ extension CalendarView {
             }
         }
         
+        let dateLabelCellRegistration = UICollectionView.CellRegistration<CalendarDateLabelCell, Item> { cell, indexPath, item in
+            switch item {
+            case .label(let text):
+                cell.configure(text)
+            default:
+                break
+            }
+        }
+        
         let detailCellRegistration = UICollectionView.CellRegistration<CalendarDetailCell, Item> { cell, indexPath, item in
             switch item {
             case .water(let info), .grow(let info), .sprout(let info), .treat(let info):
@@ -111,6 +129,8 @@ extension CalendarView {
                 collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: item)
             case .filter:
                 collectionView.dequeueConfiguredReusableCell(using: filterCellRegistartion, for: indexPath, item: item)
+            case .label:
+                collectionView.dequeueConfiguredReusableCell(using: dateLabelCellRegistration, for: indexPath, item: item)
             case .calendar:
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
@@ -133,15 +153,12 @@ extension CalendarView {
                 default:
                     return collectionView.dequeueConfiguredReusableSupplementary(using: detailHeaderViewRegistration, for: indexPath)
                 }
-               
-            case "footerKind":
-                return collectionView.dequeueConfiguredReusableSupplementary(using: calendarFooterViewRegistration, for: indexPath)
                 
             default:
                 return UICollectionReusableView()
             }
         }
-
+        
         return dataSource
     }
     
@@ -159,43 +176,6 @@ extension CalendarView {
     }
 }
 
-//MARK: Badge enum
-extension CalendarView {
-    enum Badge: String {
-        case water = "물주기"
-        case grow = "분갈이"
-        case sprout = "비료"
-        case treat = "치료"
-        
-        var smallImage: String {
-            switch self {
-            case .water: "badgeWaterSmall"
-            case .grow: "badgeGrowSmall"
-            case .sprout: "badgeSproutSmall"
-            case .treat: "badgeTreatSmall"
-            }
-        }
-        
-        var bigImage: String {
-            switch self {
-            case .water: "badgeWaterBig"
-            case .grow: "badgeGrowBig"
-            case .sprout: "badgeSproutBig"
-            case .treat: "badgeTreatBig"
-            }
-        }
-        
-        var color: UIColor {
-            switch self {
-            case .water: .subBlue
-            case .grow: .subBrown
-            case .sprout: .primary600
-            case .treat: .subRed
-            }
-        }
-    }
-}
-
 //MARK: CollectionView - Section, Item
 extension CalendarView {
     enum Section: Int {
@@ -203,6 +183,7 @@ extension CalendarView {
         case header
         case filter
         case calendar
+        case label
         case water
         case grow
         case sprout
@@ -212,9 +193,10 @@ extension CalendarView {
     nonisolated
     enum Item: Hashable {
         case title
-        case header(String)
+        case header(Int, Int) // 년, 월
         case filter([String])
         case calendar(ManageInfoByDate)
+        case label(String)
         case water(DetailManageInfo)
         case grow(DetailManageInfo)
         case sprout(DetailManageInfo)
@@ -226,8 +208,9 @@ extension CalendarView {
 extension CalendarView {
     nonisolated
     struct ManageInfoByDate: Hashable {
-        let currentMonth: Bool // 표시되는 달 여부
+        let isCurrentMonth: Bool // 표시되는 달 여부
         let day: Int
+        let date: Date
         let badge: Set<Badge>
     }
     
@@ -236,5 +219,30 @@ extension CalendarView {
         let id: UUID // 식물의 uuid
         let name: String // 식물의 이름(별명)
         let badge: Badge
+    }
+}
+
+extension Reactive where Base: CalendarView {
+    var headerPreviousButtonTap: PublishRelay<Void> {
+        base.headerPreviousButtonTap
+    }
+    
+    var headerNextButtonTap: PublishRelay<Void> {
+        base.headerNextButtonTap
+    }
+    
+    var filterItemSelected: ControlEvent<[Badge]> {
+        let filterItemSelected = base.collectionView.rx.willDisplayCell
+            .compactMap { cell, _ in cell as? CalendarFilterCell }
+            .flatMapLatest { $0.rx.filterItemSelected.asObservable() }
+        
+        return ControlEvent(events: filterItemSelected)
+    }
+    
+    var itemSelected: Observable<CalendarView.Item> {
+        base.collectionView.rx.itemSelected
+            .compactMap {
+                base.dataSource.itemIdentifier(for: $0)
+            }
     }
 }
