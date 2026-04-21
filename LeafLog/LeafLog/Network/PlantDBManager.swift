@@ -7,18 +7,20 @@
 import Foundation
 import Supabase
 import Dependencies
+import OSLog
 
 final class PlantDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     private static let defaultSpeciesName = "익명의 식물"
+    private let logger = Logger(subsystem: "LeafLog", category: "PlantDBManager")
     
     
     private init() {}
-
+    
     // MARK: 현재 로그인한 사용자가 등록한 식물 목록 조회
     func fetchMyPlants() async throws -> [MyPlant] {
         let user = try await supabaseManager.client.auth.user()
-
+        
         do {
             return try await supabaseManager.client
                 .from("plants")
@@ -31,11 +33,11 @@ final class PlantDBManager {
             throw AuthError.plantFailed("등록한 식물 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }
-
+    
     // MARK: 현재 로그인한 사용자의 특정 식물 조회
     func fetchPlant(plantID: UUID) async throws -> MyPlant {
         let user = try await supabaseManager.client.auth.user()
-
+        
         do {
             return try await supabaseManager.client
                 .from("plants")
@@ -46,6 +48,8 @@ final class PlantDBManager {
                 .execute()
                 .value
         } catch {
+            logger.error("fetchPlant failed. plantID: \(plantID.uuidString, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+            
             throw AuthError.plantFailed("식물 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }
