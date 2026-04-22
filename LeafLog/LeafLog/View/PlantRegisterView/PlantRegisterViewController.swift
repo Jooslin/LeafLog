@@ -45,7 +45,9 @@ final class PlantRegisterViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-//        bindUI(reactor: reactor)
+        
+        guard let reactor else { return }
+        bindUI(reactor: reactor)
     }
     
     func bind(reactor: PlantRegisterReactor) {
@@ -129,8 +131,6 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("저장 실패", message))
             })
             .disposed(by: disposeBag)
-        
-        bindUI(reactor: reactor)
     }
     
     private func bindUI(reactor: PlantRegisterReactor) {
