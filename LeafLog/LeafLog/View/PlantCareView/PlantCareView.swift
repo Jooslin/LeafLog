@@ -269,11 +269,11 @@ extension PlantCareView {
         }
     }
 
-    // 식물정보 탭은 별도 화면이 붙기 전까지 빈 상태만 보여준다.
-    func setPlantInfoSnapshot(animated: Bool = true) {
+    // 식물정보 탭 Snapshot
+    func setPlantInfoSnapshot(item: PlantCarePlantInfoItem, animated: Bool = true) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         snapshot.appendSections([.plantInfo])
-        snapshot.appendItems([.plantInfoEmpty], toSection: .plantInfo)
+        snapshot.appendItems(item.rows.isEmpty ? [.plantInfoEmpty] : [.plantInfo(item)], toSection: .plantInfo)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
@@ -472,10 +472,22 @@ private extension PlantCareView {
             cell.configure(event: event)
         }
 
+        let plantDetailCellRegistration = UICollectionView.CellRegistration<PlantDetailCell, Item> { cell, _, item in
+            guard case .plantInfo(let infoItem) = item else {
+                return
+            }
+
+            cell.configure(
+                rows: infoItem.rows.map {
+                    PlantDetailCell.RowData(title: $0.title, value: $0.value)
+                }
+            )
+        }
+
         let emptyCellRegistration = UICollectionView.CellRegistration<PlantCareEmptyCell, Item> { cell, _, item in
             switch item {
             case .plantInfoEmpty:
-                cell.configure(message: "식물정보는 준비 중이에요.")
+                cell.configure(message: "식물정보를 불러오는 중이에요.")
             case .timelineEmpty:
                 cell.configure(message: "아직 기록된 타임라인이 없어요.")
             default:
@@ -527,6 +539,13 @@ private extension PlantCareView {
                     item: item
                 )
 
+            case .plantInfo:
+                return collectionView.dequeueConfiguredReusableCell(
+                    using: plantDetailCellRegistration,
+                    for: indexPath,
+                    item: item
+                )
+
             case .timelineEmpty, .plantInfoEmpty:
                 return collectionView.dequeueConfiguredReusableCell(
                     using: emptyCellRegistration,
@@ -558,6 +577,7 @@ extension PlantCareView {
         case timelineControls(PlantCareTimelineControls)
         case timelineDateHeader(PlantCareTimelineDateHeader)
         case timelineEvent(PlantCareTimelineEvent)
+        case plantInfo(PlantCarePlantInfoItem) // 식물 상세 사항
         case timelineEmpty
         case plantInfoEmpty
     }

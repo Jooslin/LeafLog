@@ -65,6 +65,7 @@ private struct PlantCareSnapshotState: Equatable {
     let dateTitle: String
     let items: [PlantCareItem]
     let diaryItem: PlantCareDiaryItem
+    let plantInfoItem: PlantCarePlantInfoItem
     let timelineControls: PlantCareTimelineControls
     let timelineEvents: [PlantCareTimelineEvent]
 }
@@ -151,6 +152,7 @@ private extension PlantCareViewController {
                     dateTitle: Self.dateTitle(from: state.selectedDate),
                     items: state.items,
                     diaryItem: state.diaryItem,
+                    plantInfoItem: PlantCarePlantInfoItem(rows: state.plantInfoRows), // 식물 상세
                     timelineControls: PlantCareTimelineControls(
                         selectedFilter: state.timelineFilter,
                         sort: state.timelineSort
@@ -176,9 +178,9 @@ private extension PlantCareViewController {
                         items: snapshot.items,
                         diaryItem: snapshot.diaryItem
                     )
-
+                    // 식물 상세 추가
                 case .plantInfo:
-                    plantCareView.setPlantInfoSnapshot()
+                    plantCareView.setPlantInfoSnapshot(item: snapshot.plantInfoItem)
 
                 case .timeline:
                     plantCareView.setTimelineSnapshot(

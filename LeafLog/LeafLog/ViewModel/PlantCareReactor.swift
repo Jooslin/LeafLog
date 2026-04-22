@@ -195,6 +195,18 @@ struct PlantCareTimelineEvent: Hashable {
     let memoText: String
 }
 
+// 식물 정보
+nonisolated
+struct PlantCarePlantInfoRow: Hashable {
+    let title: String
+    let value: String
+}
+
+nonisolated
+struct PlantCarePlantInfoItem: Hashable {
+    let rows: [PlantCarePlantInfoRow]
+}
+
 
 // MARK: - PlantCareReactor
 final class PlantCareReactor: Reactor {
@@ -233,6 +245,7 @@ final class PlantCareReactor: Reactor {
         var isLoading = false
         var items: [PlantCareItem]
         var diaryItem: PlantCareDiaryItem
+        var plantInfoRows: [PlantCarePlantInfoRow] = []
         var timelineEvents: [PlantCareTimelineEvent] = []
         var timelineFilter: PlantCareTimelineFilter = .all
         var timelineSort: PlantCareTimelineSort = .latestFirst
@@ -355,6 +368,7 @@ final class PlantCareReactor: Reactor {
 
         case .setPlant(let plant):
             newState.plant = plant
+            newState.plantInfoRows = Self.makePlantInfoRows(from: plant) // 식물 정보
 
         case .setSelectedTab(let selectedTab):
             newState.selectedTab = selectedTab
@@ -619,6 +633,30 @@ private extension PlantCareReactor {
                 )
             }
         }
+    }
+    
+    // 식물 정보 디테일
+    static func makePlantInfoRows(from plant: MyPlant) -> [PlantCarePlantInfoRow] {
+        [
+            PlantCarePlantInfoRow(title: "현재 상태", value: nonEmptyText(plant.healthStatus, fallback: "미지정")),
+            PlantCarePlantInfoRow(title: "데려온 날", value: displayDate(from: plant.createdAt)),
+            PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
+            PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))
+        ]
+    }
+
+    static func nonEmptyText(_ text: String?, fallback: String) -> String {
+        let trimmedText = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedText?.isEmpty == false ? trimmedText ?? fallback : fallback
+    }
+
+    static func displayDate(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter.string(from: date)
     }
 
     static func emptyInput(plantID: UUID, date: Date) -> CareRecordUpsertInput {
