@@ -16,9 +16,6 @@ final class CalendarView: UIView {
     fileprivate let collectionView = CalendarCollectionView()
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
-    fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
-    fileprivate let headerNextButtonTap = PublishRelay<Void>()
-    
     init() {
         super.init(frame: .zero)
         setLayout()
@@ -67,19 +64,11 @@ extension CalendarView {
             
         }
         
-        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
-            guard let self else { return }
+        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
             switch item {
             case .header(let year, let month):
                 cell.configure(year: year, month: month)
-                
-                cell.rx.headerPreviousButtonTap
-                    .bind(to: self.headerPreviousButtonTap)
-                    .disposed(by: cell.disposeBag)
-                
-                cell.rx.headerNextButtonTap
-                    .bind(to: self.headerNextButtonTap)
-                    .disposed(by: cell.disposeBag)
+
             default:
                 break
             }
@@ -225,12 +214,18 @@ extension CalendarView {
 }
 
 extension Reactive where Base: CalendarView {
-    var headerPreviousButtonTap: PublishRelay<Void> {
-        base.headerPreviousButtonTap
+    var headerPreviousButtonTap: ControlEvent<Void> {
+        let tap = base.collectionView.rx.willDisplayCell
+            .compactMap { cell, _ in cell as? CalendarHeaderCell }
+            .flatMapLatest { $0.rx.headerPreviousButtonTap.asObservable() }
+        return ControlEvent(events: tap)
     }
     
-    var headerNextButtonTap: PublishRelay<Void> {
-        base.headerNextButtonTap
+    var headerNextButtonTap: ControlEvent<Void> {
+        let tap = base.collectionView.rx.willDisplayCell
+            .compactMap { cell, _ in cell as? CalendarHeaderCell }
+            .flatMapLatest { $0.rx.headerNextButtonTap.asObservable() }
+        return ControlEvent(events: tap)
     }
     
     var filterButtonTap: ControlEvent<Int> {

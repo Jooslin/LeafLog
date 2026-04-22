@@ -12,8 +12,6 @@ import RxSwift
 import RxCocoa
 
 final class CalendarHeaderCell: UICollectionViewCell {
-    private(set) var disposeBag = DisposeBag()
-    
     fileprivate let previousButton = UIButton(configuration: .plain())
     fileprivate let nextButton = UIButton(configuration: .plain())
     
@@ -29,11 +27,6 @@ final class CalendarHeaderCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        disposeBag = DisposeBag()
     }
 }
 
