@@ -101,6 +101,23 @@ final class ProfileDBManager {
         return try makeProfile(from: profile, user: user)
     }
 
+    // MARK: - 프로필 이미지 삭제
+    func deleteMyProfileImage() async throws -> UserProfileModel {
+        let user = try await client.auth.user()
+        let payload = UserProfileImageDeletePayload()
+
+        let profile: StoredUserProfile = try await client
+            .from("profiles")
+            .update(payload)
+            .eq("id", value: user.id)
+            .select()
+            .single()
+            .execute()
+            .value
+
+        return try makeProfile(from: profile, user: user)
+    }
+
     
     // DB에서 부른 raw 데이터를 앱 Model로 변환
     private func makeProfile(from stored: StoredUserProfile, user: User) throws -> UserProfileModel {
@@ -166,6 +183,18 @@ private struct UserProfileUpdatePayload: Encodable {
     enum CodingKeys: String, CodingKey {
         case nickname
         case profileImageURL = "profile_image_url"
+    }
+}
+
+// 서버로 보내는 데이터 (프로필 이미지 삭제)
+private struct UserProfileImageDeletePayload: Encodable {
+    enum CodingKeys: String, CodingKey {
+        case profileImageURL = "profile_image_url"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeNil(forKey: .profileImageURL)
     }
 }
 

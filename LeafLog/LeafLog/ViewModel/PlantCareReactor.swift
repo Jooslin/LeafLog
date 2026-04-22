@@ -5,10 +5,13 @@
 //  Created by 김주희 on 4/20/26.
 //
 
+import Auth
 import Dependencies
 import Foundation
 import ReactorKit
 import RxSwift
+import Supabase
+import UIKit
 
 nonisolated
 enum PlantCareTab: Int, Hashable {
@@ -135,9 +138,9 @@ enum PlantCareTimelineSort: Hashable {
     var iconName: String {
         switch self {
         case .latestFirst:
-            return "arrowDown"
+            return "arrows-down-up"
         case .oldestFirst:
-            return "arrowUp"
+            return "arrows-down-up"
         }
     }
 
@@ -210,6 +213,8 @@ final class PlantCareReactor: Reactor {
         case saveMemo(PlantCareRecordType, String)
         case toggleDiary
         case saveDiary(String)
+        case saveDiaryPhoto(UIImage)
+        case deleteDiaryPhoto
     }
 
     enum Mutation {
@@ -241,6 +246,7 @@ final class PlantCareReactor: Reactor {
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.supabaseManager) private var supabaseManager
 
     let initialState: State
 
@@ -308,6 +314,17 @@ final class PlantCareReactor: Reactor {
                 return .empty()
             }
 
+            let nextIsCompleted = !item.isCompleted
+            if type == .watering,
+               !nextIsCompleted,
+               // 유일한 물주기 기록인지
+               Self.isLastRemainingWateringRecord(
+                date: currentState.selectedDate,
+                timelineEvents: currentState.timelineEvents
+               ) {
+                return .just(.setErrorMessage("마지막 물주기 기록은 취소할 수 없어요. 다른 날짜에 물주기 기록을 추가한 뒤 다시 시도해주세요."))
+            }
+
             let originalItems = currentState.items
             var nextItems = currentState.items
             if let index = nextItems.firstIndex(where: { $0.type == type }) {
@@ -318,7 +335,7 @@ final class PlantCareReactor: Reactor {
                 .just(.setItems(nextItems)),
                 saveCompletion(
                     type: type,
-                    isCompleted: !item.isCompleted,
+                    isCompleted: nextIsCompleted,
                     date: currentState.selectedDate,
                     originalItems: originalItems
                 )
@@ -340,6 +357,19 @@ final class PlantCareReactor: Reactor {
         case .saveDiary(let diaryText):
             return saveDiary(
                 diaryText: diaryText,
+                date: currentState.selectedDate,
+                originalDiaryItem: currentState.diaryItem
+            )
+
+        case .saveDiaryPhoto(let image):
+            return saveDiaryPhoto(
+                image: image,
+                date: currentState.selectedDate,
+                originalDiaryItem: currentState.diaryItem
+            )
+
+        case .deleteDiaryPhoto:
+            return deleteDiaryPhoto(
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
@@ -422,7 +452,7 @@ private extension PlantCareReactor {
         return Observable.create { [careRecordDBManager] observer in
             let task = Task {
                 do {
-                    let recordDate = Self.localDate(from: date)
+                    let recordDate = localDate(from: date)
                     let record = try await careRecordDBManager.fetchCareRecord(
                         plantID: plantID,
                         recordDate: recordDate
@@ -553,6 +583,7 @@ private extension PlantCareReactor {
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    // 타임라인 새로고침
                     try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
                     observer.onCompleted()
                 } catch let error as AuthError {
@@ -560,6 +591,87 @@ private extension PlantCareReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("오늘의 일기를 저장하지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    func saveDiaryPhoto(
+        image: UIImage,
+        date: Date,
+        originalDiaryItem: PlantCareDiaryItem
+    ) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
+            let task = Task {
+                do {
+                    let recordDate = localDate(from: date)
+                    let user = try await supabaseManager.client.auth.user()
+                    // 이미지 업로드하고 path값 받기
+                    let photoPath = try await supabaseManager.uploadDiaryImage(
+                        image,
+                        userID: user.id,
+                        plantID: plantID,
+                        recordDate: recordDate
+                    )
+
+                    var input = Self.emptyInput(plantID: plantID, date: date)
+                    input.diaryPhotoPath = photoPath
+
+                    let record = try await careRecordDBManager.upsertCareRecord(input: input)
+                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setErrorMessage("일기 사진을 저장하지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    // 사진 삭제 함수
+    func deleteDiaryPhoto(
+        date: Date,
+        originalDiaryItem: PlantCareDiaryItem
+    ) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+        let photoPath = originalDiaryItem.diaryPhotoPath // 현재 일기의 사진 경로
+
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
+            let task = Task {
+                do {
+                    var input = Self.emptyInput(plantID: plantID, date: date)
+                    input.clearsDiaryPhotoPath = true
+
+                    let record = try await careRecordDBManager.upsertCareRecord(input: input)
+
+                    // db 사진 삭제
+                    if let photoPath, !photoPath.isEmpty {
+                        try? await supabaseManager.deleteDiaryImage(path: photoPath)
+                    }
+
+                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setErrorMessage("일기 사진을 삭제하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }
@@ -674,13 +786,30 @@ private extension PlantCareReactor {
         }
     }
 
-    /// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
-    static func localDate(from date: Date) -> LocalDate {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar.current
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.timeZone = TimeZone.current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return LocalDate(rawValue: formatter.string(from: date))
+
+// 마지막 물주기 기록이 있는지 확인   
+    static func isLastRemainingWateringRecord(
+        date: Date,
+        timelineEvents: [PlantCareTimelineEvent]
+    ) -> Bool {
+        let targetDate = localDate(from: date)
+        let wateringEvents = timelineEvents.filter { $0.type == .watering }
+
+        guard !wateringEvents.isEmpty else {
+            return true
+        }
+
+        return wateringEvents.allSatisfy { $0.recordDateRaw == targetDate.rawValue }
     }
+}
+
+
+/// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
+func localDate(from date: Date) -> LocalDate {
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar.current
+    formatter.locale = Locale(identifier: "ko_KR")
+    formatter.timeZone = TimeZone.current
+    formatter.dateFormat = "yyyy-MM-dd"
+    return LocalDate(rawValue: formatter.string(from: date))
 }
