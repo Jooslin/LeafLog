@@ -26,6 +26,12 @@ final class SelectionButton: UIButton {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override var intrinsicContentSize: CGSize {
+        var size = super.intrinsicContentSize
+        size.height = 32
+        return size
+    }
 
     func setup(title: String) {
         var configuration = UIButton.Configuration.plain()
