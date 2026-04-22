@@ -160,6 +160,11 @@ final class PlantRegisterReactor: Reactor {
             return .failure(ValidationError(message: "식물 종류를 먼저 선택해주세요."))
         }
 
+        guard let nickname = nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !nickname.isEmpty else {
+            return .failure(ValidationError(message: "식물 별명을 입력해주세요."))
+        }
+
         guard let location = state.selectedLocation else {
             return .failure(ValidationError(message: "식물 위치를 선택해주세요."))
         }
@@ -178,6 +183,7 @@ final class PlantRegisterReactor: Reactor {
                 location: location,
                 nickname: nickname,
                 speciesName: speciesName,
+                contentNumber: state.selectedPlant?.contentNumber,
                 image: image,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt
