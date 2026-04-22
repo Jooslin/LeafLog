@@ -16,6 +16,13 @@ final class PlantDetailCell: UICollectionViewCell {
         let value: String
     }
 
+    struct GuideData: Equatable, Hashable {
+        let watering: String
+        let temperature: String
+        let humidity: String
+        let pest: String
+    }
+
     private let cardView = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 0
@@ -141,7 +148,7 @@ extension PlantDetailCell {
         }
     }
 
-    func configure(rows: [RowData]) {
+    func configure(rows: [RowData], guide: GuideData) {
         let defaultRows = [
             RowData(title: "현재 상태", value: ""),
             RowData(title: "데려온 날", value: ""),
@@ -160,6 +167,11 @@ extension PlantDetailCell {
                 rowView.isHidden = true
             }
         }
+
+        wateringGuideRow.configure(message: guide.watering)
+        temperatureGuideRow.configure(message: guide.temperature)
+        humidityGuideRow.configure(message: guide.humidity)
+        pestGuideRow.configure(message: guide.pest)
     }
 }
 
@@ -208,6 +220,10 @@ private final class PlantDetailGuideRowView: UIView {
         }
 
         iconImageView.tintColor = tintColor
+    }
+
+    func configure(message: String) {
+        messageLabel.text = message
     }
 }
 

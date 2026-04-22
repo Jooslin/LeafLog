@@ -490,7 +490,13 @@ private extension PlantCareView {
             cell.configure(
                 rows: infoItem.rows.map {
                     PlantDetailCell.RowData(title: $0.title, value: $0.value)
-                }
+                },
+                guide: PlantDetailCell.GuideData(
+                    watering: infoItem.guide.watering,
+                    temperature: infoItem.guide.temperature,
+                    humidity: infoItem.guide.humidity,
+                    pest: infoItem.guide.pest
+                )
             )
         }
 

@@ -161,7 +161,10 @@ private extension PlantCareViewController {
                     dateTitle: Self.dateTitle(from: state.selectedDate),
                     items: state.items,
                     diaryItem: state.diaryItem,
-                    plantInfoItem: PlantCarePlantInfoItem(rows: state.plantInfoRows), // 식물 상세
+                    plantInfoItem: PlantCarePlantInfoItem(
+                        rows: state.plantInfoRows,
+                        guide: state.plantGuideItem
+                    ), // 식물 상세
                     timelineControls: PlantCareTimelineControls(
                         selectedFilter: state.timelineFilter,
                         sort: state.timelineSort

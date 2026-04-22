@@ -208,6 +208,15 @@ struct PlantCarePlantInfoRow: Hashable {
 nonisolated
 struct PlantCarePlantInfoItem: Hashable {
     let rows: [PlantCarePlantInfoRow]
+    let guide: PlantCarePlantGuideItem
+}
+
+nonisolated
+struct PlantCarePlantGuideItem: Hashable {
+    let watering: String
+    let temperature: String
+    let humidity: String
+    let pest: String
 }
 
 
@@ -232,6 +241,7 @@ final class PlantCareReactor: Reactor {
     enum Mutation {
         case setLoading(Bool)
         case setPlant(MyPlant)
+        case setPlantDetail(PlantDetail)
         case setSelectedTab(PlantCareTab)
         case setSelectedDate(Date)
         case setItems([PlantCareItem])
@@ -251,6 +261,12 @@ final class PlantCareReactor: Reactor {
         var items: [PlantCareItem]
         var diaryItem: PlantCareDiaryItem
         var plantInfoRows: [PlantCarePlantInfoRow] = []
+        var plantGuideItem = PlantCarePlantGuideItem(
+            watering: "정보 없음",
+            temperature: "정보 없음",
+            humidity: "정보 없음",
+            pest: "정보 없음"
+        )
         var timelineEvents: [PlantCareTimelineEvent] = []
         var timelineFilter: PlantCareTimelineFilter = .all
         var timelineSort: PlantCareTimelineSort = .latestFirst
@@ -259,6 +275,7 @@ final class PlantCareReactor: Reactor {
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.networkManager) private var networkManager
     @Dependency(\.supabaseManager) private var supabaseManager
 
     let initialState: State
@@ -400,6 +417,9 @@ final class PlantCareReactor: Reactor {
             newState.plant = plant
             newState.plantInfoRows = Self.makePlantInfoRows(from: plant) // 식물 정보
 
+        case .setPlantDetail(let detail):
+            newState.plantGuideItem = Self.makePlantGuideItem(from: detail)
+
         case .setSelectedTab(let selectedTab):
             newState.selectedTab = selectedTab
 
@@ -435,11 +455,18 @@ private extension PlantCareReactor {
     func loadPlant() -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [plantDBManager] observer in
+        return Observable.create { [plantDBManager, networkManager] observer in
             let task = Task {
                 do {
                     let plant = try await plantDBManager.fetchPlant(plantID: plantID)
                     observer.onNext(.setPlant(plant))
+
+                    if let contentNumber = plant.contentNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !contentNumber.isEmpty {
+                        let detail = try await networkManager.fetchPlantDetail(contentNumber: contentNumber)
+                        observer.onNext(.setPlantDetail(detail))
+                    }
+
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -755,6 +782,15 @@ private extension PlantCareReactor {
             PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
             PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))
         ]
+    }
+
+    static func makePlantGuideItem(from detail: PlantDetail) -> PlantCarePlantGuideItem {
+        PlantCarePlantGuideItem(
+            watering: nonEmptyText(detail.springWaterCycle, fallback: "정보 없음"),
+            temperature: nonEmptyText(detail.growTemperature, fallback: "정보 없음"),
+            humidity: nonEmptyText(detail.humidity, fallback: "정보 없음"),
+            pest: nonEmptyText(detail.pest, fallback: "정보 없음")
+        )
     }
 
     static func nonEmptyText(_ text: String?, fallback: String) -> String {
