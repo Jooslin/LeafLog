@@ -41,7 +41,7 @@ final class CalendarReactor: Reactor {
         var filters: Set<Badge> = []
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
-            .filter: [.filter([Badge.water.rawValue, Badge.grow.rawValue, Badge.sprout.rawValue, Badge.treat.rawValue])]
+            .filter: [.filter(["전체", Badge.water.rawValue, Badge.grow.rawValue, Badge.sprout.rawValue, Badge.treat.rawValue])]
         ]
         @Pulse var errorMessage: String? = nil
     }

@@ -96,6 +96,7 @@ struct MyPlant: Codable, Hashable {
     let guideEnabled: Bool
     let createdAt: Date
     let updatedAt: Date
+    let contentNumber: String?
 
     // 기본 이미지
     var defaultImageAssetName: String {
@@ -116,5 +117,6 @@ struct MyPlant: Codable, Hashable {
         case guideEnabled = "guide_enabled"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case contentNumber
     }
 }

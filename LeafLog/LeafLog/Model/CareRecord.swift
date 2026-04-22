@@ -68,4 +68,5 @@ struct CareRecordUpsertInput {
     var watered, repotted, fertilized, treated: Bool?
     var wateredNote, repottedNote, fertilizedNote, treatedNote: String?
     var diaryText, diaryPhotoPath: String?
+    var clearsDiaryPhotoPath = false
 }

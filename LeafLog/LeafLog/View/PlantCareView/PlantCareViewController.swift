@@ -6,6 +6,7 @@
 //
 
 import Dependencies
+import PhotosUI
 import ReactorKit
 import RxCocoa
 import RxSwift
@@ -16,6 +17,8 @@ final class PlantCareViewController: BaseViewController, View {
 
     private let plantCareView = PlantCareView()
     private var imageLoadTask: Task<Void, Never>?
+    private var diaryImageLoadTask: Task<Void, Never>?
+    private weak var diaryPhotoPickerSourceView: UIView?
     private var didPrepareHeaderAnimator = false
 
     init(reactor: PlantCareReactor) {
@@ -51,6 +54,7 @@ final class PlantCareViewController: BaseViewController, View {
 
         if isMovingFromParent || isBeingDismissed {
             imageLoadTask?.cancel()
+            diaryImageLoadTask?.cancel()
         }
     }
 
@@ -125,6 +129,11 @@ private extension PlantCareViewController {
             reactor?.action.onNext(.saveDiary(diaryText))
         }
 
+        plantCareView.onDiaryPhotoTapped = { [weak self] sourceView in
+            self?.diaryPhotoPickerSourceView = sourceView
+            self?.steps.accept(AppStep.diaryImageSourceSheet)
+        }
+
         plantCareView.onTimelineFilterTapped = { [weak reactor] filter in
             reactor?.action.onNext(.selectTimelineFilter(filter))
         }
@@ -178,7 +187,8 @@ private extension PlantCareViewController {
                         items: snapshot.items,
                         diaryItem: snapshot.diaryItem
                     )
-                    // 식물 상세 추가
+                    loadDiaryImage(from: snapshot.diaryItem.diaryPhotoPath)
+                    
                 case .plantInfo:
                     plantCareView.setPlantInfoSnapshot(item: snapshot.plantInfoItem)
 
@@ -261,5 +271,101 @@ private extension PlantCareViewController {
                 // 이미지 로딩 실패 시 카테고리 기본 이미지를 그대로 보여준다.
             }
         }
+    }
+
+    func loadDiaryImage(from storedValue: String?) {
+        diaryImageLoadTask?.cancel()
+
+        guard let storedValue, !storedValue.isEmpty else {
+            plantCareView.setDiaryPhotoImage(nil)
+            return
+        }
+
+        diaryImageLoadTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            do {
+                guard let url = try await self.supabaseManager.resolveDiaryImageURL(from: storedValue) else {
+                    return
+                }
+
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard !Task.isCancelled, let image = UIImage(data: data) else {
+                    return
+                }
+
+                await MainActor.run {
+                    self.plantCareView.setDiaryPhotoImage(image)
+                }
+            } catch {
+                await MainActor.run {
+                    self.plantCareView.setDiaryPhotoImage(nil)
+                }
+            }
+        }
+    }
+}
+
+
+// Flow가 필요로 하는 정보 제공
+extension PlantCareViewController {
+    // 액션 시트 기준 뷰
+    var diaryImagePickerSourceView: UIView {
+        diaryPhotoPickerSourceView ?? plantCareView.diaryImagePickerSourceView
+    }
+
+    // 현재 일기 사진이 있는지 여부
+    var hasDiaryPhoto: Bool {
+        reactor?.currentState.diaryItem.diaryPhotoPath?.isEmpty == false
+    }
+
+    // 삭제 버튼 눌렀을때 Reactor로 액션 전달
+    func deleteDiaryPhoto() {
+        reactor?.action.onNext(.deleteDiaryPhoto)
+    }
+}
+
+// 앨범 선택 결과 처리
+extension PlantCareViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        guard let item = results.first,
+              item.itemProvider.canLoadObject(ofClass: UIImage.self) else {
+            picker.dismiss(animated: true)
+            return
+        }
+
+        picker.dismiss(animated: true)
+
+        item.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
+            guard let selectedImage = image as? UIImage else {
+                return
+            }
+
+            Task { @MainActor [weak self] in
+                self?.reactor?.action.onNext(.saveDiaryPhoto(selectedImage)) // 선택한 이미지 보내기
+            }
+        }
+    }
+}
+
+// 카메라 촬영 결과 처리
+extension PlantCareViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+    }
+
+    func imagePickerController(
+        _ picker: UIImagePickerController,
+        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+    ) {
+        picker.dismiss(animated: true)
+
+        guard let selectedImage = info[.originalImage] as? UIImage else {
+            return
+        }
+
+        reactor?.action.onNext(.saveDiaryPhoto(selectedImage)) // 찍은 사진 보내기
     }
 }

@@ -68,9 +68,13 @@ final class PlantCareView: UIView {
     var onMemoSaveTapped: ((PlantCareRecordType, String) -> Void)? // 메모 저장 클릭
     var onDiaryToggleTapped: (() -> Void)?
     var onDiarySaveTapped: ((String) -> Void)?
-    var onDiaryPhotoTapped: (() -> Void)?
+    var onDiaryPhotoTapped: ((UIView) -> Void)?
     var onTimelineFilterTapped: ((PlantCareTimelineFilter) -> Void)?
     var onTimelineSortTapped: (() -> Void)?
+
+    var diaryImagePickerSourceView: UIView {
+        collectionView
+    }
 
     private lazy var dataSource = makeDataSource(collectionView)
     private let headerContentLayoutGuide = UILayoutGuide()
@@ -223,6 +227,12 @@ extension PlantCareView {
 
         plantImageView.image = image
         plantImageView.tintColor = nil
+    }
+
+    func setDiaryPhotoImage(_ image: UIImage?) {
+        collectionView.visibleCells
+            .compactMap { $0 as? PlantCareDiaryCell }
+            .forEach { $0.setPhotoImage(image) }
     }
 
     func setSelectedTab(_ tab: PlantCareTab) {
@@ -387,7 +397,7 @@ private extension PlantCareView {
                 )
 
                 return NSCollectionLayoutSection(group: group).then {
-                    $0.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 0, bottom: 8, trailing: 0)
+                    $0.contentInsets = NSDirectionalEdgeInsets(top: 0.1, leading: 0, bottom: 8, trailing: 0)
                 }
             }
         }, configuration: configuration)
@@ -437,8 +447,8 @@ private extension PlantCareView {
             cell.onDiarySaveTapped = { [weak self] diaryText in
                 self?.onDiarySaveTapped?(diaryText)
             }
-            cell.onDiaryPhotoTapped = { [weak self] in
-                self?.onDiaryPhotoTapped?()
+            cell.onDiaryPhotoTapped = { [weak self] sourceView in
+                self?.onDiaryPhotoTapped?(sourceView)
             }
         }
 
@@ -583,13 +593,6 @@ extension PlantCareView {
     }
 }
 
-final class PlantCareCircularImageView: UIImageView {
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        layer.cornerRadius = max(bounds.width, bounds.height) * 0.5 // 원형
-        layer.masksToBounds = true
-    }
-}
 
 private final class PlantCareDateCell: UICollectionViewCell {
     var onPreviousTapped: (() -> Void)?
@@ -834,6 +837,7 @@ private final class PlantCareRecordCell: UICollectionViewCell {
 
     private func configureCompleteButton(isCompleted: Bool) {
         var configuration = completeButton.configuration ?? UIButton.Configuration.plain()
+        configuration.title = isCompleted ? "취소" : "완료"
         configuration.baseForegroundColor = isCompleted ? .grayScale600 : .grayScale700
         configuration.background.backgroundColor = isCompleted ? .grayScale100 : .white
         completeButton.configuration = configuration
@@ -843,7 +847,7 @@ private final class PlantCareRecordCell: UICollectionViewCell {
 private final class PlantCareDiaryCell: UICollectionViewCell {
     var onDiaryToggleTapped: (() -> Void)?
     var onDiarySaveTapped: ((String) -> Void)?
-    var onDiaryPhotoTapped: (() -> Void)?
+    var onDiaryPhotoTapped: ((UIView) -> Void)?
 
     private let cardView = UIView().then {
         $0.backgroundColor = .grayScale50
@@ -878,6 +882,40 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     private let cameraButton = UIButton(type: .system).then {
         $0.setImage(UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate), for: .normal)
         $0.tintColor = .grayScale600
+    }
+
+    private let photoImageView = UIImageView().then {
+        $0.backgroundColor = .grayScale100
+        $0.contentMode = .scaleAspectFill
+        $0.clipsToBounds = true
+        $0.layer.cornerRadius = 12
+    }
+
+    private let photoPlaceholderLabel = UILabel(text: "사진을 불러오는 중이에요.", config: .label14, color: .grayScale600).then {
+        $0.textAlignment = .center
+    }
+
+    private lazy var photoPreviewView = UIView().then {
+        $0.backgroundColor = .grayScale100
+        $0.layer.cornerRadius = 12
+        $0.clipsToBounds = true
+        $0.isHidden = true
+
+        $0.addSubview(photoImageView)
+        $0.addSubview(photoPlaceholderLabel)
+
+        photoImageView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+
+        photoPlaceholderLabel.snp.makeConstraints {
+            $0.center.equalToSuperview()
+            $0.leading.trailing.equalToSuperview().inset(16)
+        }
+
+        $0.snp.makeConstraints {
+            $0.height.equalTo(200)
+        }
     }
 
     private let diaryLabel = UILabel(text: "일기 기록", config: .label14, color: .black)
@@ -933,7 +971,15 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             UIImage(named: item.isDiaryExpanded ? "arrowUp" : "arrowDown"),
             for: .normal
         )
+        configurePhotoPreview(hasPhoto: item.diaryPhotoPath?.isEmpty == false)
         configureCompleteButton(isCompleted: item.isCompleted)
+    }
+
+    func setPhotoImage(_ image: UIImage?) {
+        photoPreviewView.isHidden = image == nil
+        photoImageView.image = image
+        photoImageView.isHidden = image == nil
+        photoPlaceholderLabel.isHidden = image != nil
     }
 
     private func setLayout() {
@@ -952,6 +998,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         let photoRow = UIView()
         photoRow.addSubview(photoLabel)
         photoRow.addSubview(cameraButton)
+
 
         photoLabel.snp.makeConstraints {
             $0.leading.centerY.equalToSuperview()
@@ -980,6 +1027,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             headerRow,
             divider,
             photoRow,
+            photoPreviewView,
             diaryRow,
             diaryContentStack
         ]).then {
@@ -1017,7 +1065,11 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     private func setActions() {
         cameraButton.addAction(UIAction { [weak self] _ in
-            self?.onDiaryPhotoTapped?()
+            guard let self else {
+                return
+            }
+
+            onDiaryPhotoTapped?(cameraButton)
         }, for: .touchUpInside)
 
         chevronButton.addAction(UIAction { [weak self] _ in
@@ -1031,6 +1083,13 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
             onDiarySaveTapped?(textView.text.trimmingCharacters(in: .whitespacesAndNewlines))
         }, for: .touchUpInside)
+    }
+
+    private func configurePhotoPreview(hasPhoto: Bool) {
+        photoPreviewView.isHidden = !hasPhoto
+        photoImageView.image = nil
+        photoImageView.isHidden = true
+        photoPlaceholderLabel.isHidden = !hasPhoto
     }
 
     private func configureCompleteButton(isCompleted: Bool) {
@@ -1055,9 +1114,7 @@ private final class PlantCareTimelineControlCell: UICollectionViewCell {
         $0.alignment = .center
     }
 
-    private let sortButton = UIButton(type: .system).then {
-        $0.tintColor = .grayScale700
-    }
+    private let sortButton = UIButton(type: .system)
 
     private var filterButtons: [PlantCareTimelineFilter: UIButton] = [:]
 
@@ -1083,6 +1140,14 @@ private final class PlantCareTimelineControlCell: UICollectionViewCell {
         configuration.imagePadding = 4
         configuration.baseForegroundColor = .grayScale700
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8)
+        
+
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+            return outgoing
+        }
+        
         sortButton.configuration = configuration
     }
 
@@ -1135,14 +1200,14 @@ private final class PlantCareTimelineControlCell: UICollectionViewCell {
         var configuration = UIButton.Configuration.plain()
         configuration.title = title
         configuration.baseForegroundColor = isSelected ? .primary700 : .grayScale500
-        configuration.background.backgroundColor = isSelected ? .primary50 : .white
+        configuration.background.backgroundColor = isSelected ? .primary100 : .white
         configuration.background.strokeColor = isSelected ? .primary600 : .grayScale100
         configuration.background.strokeWidth = 1
-        configuration.background.cornerRadius = 16
+        configuration.background.cornerRadius = 12
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12)
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
-            outgoing.font = UIFont.systemFont(ofSize: 13, weight: .medium)
+            outgoing.font = UIFont.systemFont(ofSize: 14, weight: .medium)
             return outgoing
         }
         button.configuration = configuration
@@ -1156,7 +1221,7 @@ private final class PlantCareTimelineDateCell: UICollectionViewCell {
 
     private let dotView = UIView().then {
         $0.backgroundColor = .primary600
-        $0.layer.cornerRadius = 3
+        $0.layer.cornerRadius = 4
     }
 
     private let dateLabel = UILabel(text: "", config: .title14, color: .grayScale800)
@@ -1186,7 +1251,7 @@ private final class PlantCareTimelineDateCell: UICollectionViewCell {
         }
 
         lineView.snp.makeConstraints {
-            $0.top.equalTo(dotView.snp.bottom).offset(12)
+            $0.top.equalTo(dotView.snp.bottom).offset(16)
             $0.bottom.equalToSuperview()
             $0.centerX.equalTo(dotView)
             $0.width.equalTo(2)
@@ -1304,5 +1369,13 @@ private final class PlantCareEmptyCell: UICollectionViewCell {
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.bottom.equalToSuperview().inset(32)
         }
+    }
+}
+
+final class PlantCareCircularImageView: UIImageView {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layer.cornerRadius = min(bounds.width, bounds.height) * 0.5
+        clipsToBounds = true
     }
 }

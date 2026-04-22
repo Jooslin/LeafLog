@@ -26,6 +26,12 @@ final class SelectionButton: UIButton {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override var intrinsicContentSize: CGSize {
+        var size = super.intrinsicContentSize
+        size.height = 32
+        return size
+    }
 
     func setup(title: String) {
         var configuration = UIButton.Configuration.plain()
@@ -54,8 +60,8 @@ final class SelectionButton: UIButton {
 
             if button.isSelected {
                 config.baseForegroundColor = .primary700
-                config.background.backgroundColor = .primary400
-                config.background.strokeColor = .primary700
+                config.background.backgroundColor = .primary100
+                config.background.strokeColor = .primary400
             } else {
                 config.baseForegroundColor = .grayScale500
                 config.background.backgroundColor = .white
