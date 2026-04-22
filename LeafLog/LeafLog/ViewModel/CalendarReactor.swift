@@ -91,7 +91,8 @@ final class CalendarReactor: Reactor {
             let newFilter = newFilters(tag: tag)
             return Observable.concat([
                 .just(.updateFilters(newFilter)),
-                calendarItems(of: benchmark, filters: newFilter)
+                calendarItems(of: benchmark, filters: newFilter),
+                calendarFilterItem(filters: newFilter)
             ])
             
         case .dateSelected(let date):

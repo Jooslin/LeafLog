@@ -68,7 +68,7 @@ extension CalendarFilterCell {
 extension CalendarFilterCell {
     func configure(selectedTags: Set<Int>) {
         buttons.forEach { button in
-            if selectedTags.isEmpty || selectedTags.count == buttons.count - 1 {
+            if selectedTags.isEmpty {
                 button.isSelected = button.tag == buttons.count ? true : false
             } else {
                 button.isSelected = button.tag == buttons.count ? false
