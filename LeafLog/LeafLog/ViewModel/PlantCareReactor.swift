@@ -5,10 +5,13 @@
 //  Created by 김주희 on 4/20/26.
 //
 
+import Auth
 import Dependencies
 import Foundation
 import ReactorKit
 import RxSwift
+import Supabase
+import UIKit
 
 nonisolated
 enum PlantCareTab: Int, Hashable {
@@ -135,9 +138,9 @@ enum PlantCareTimelineSort: Hashable {
     var iconName: String {
         switch self {
         case .latestFirst:
-            return "arrowDown"
+            return "arrows-down-up"
         case .oldestFirst:
-            return "arrowUp"
+            return "arrows-down-up"
         }
     }
 
@@ -210,6 +213,7 @@ final class PlantCareReactor: Reactor {
         case saveMemo(PlantCareRecordType, String)
         case toggleDiary
         case saveDiary(String)
+        case saveDiaryPhoto(UIImage)
     }
 
     enum Mutation {
@@ -241,6 +245,7 @@ final class PlantCareReactor: Reactor {
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.supabaseManager) private var supabaseManager
 
     let initialState: State
 
@@ -351,6 +356,13 @@ final class PlantCareReactor: Reactor {
         case .saveDiary(let diaryText):
             return saveDiary(
                 diaryText: diaryText,
+                date: currentState.selectedDate,
+                originalDiaryItem: currentState.diaryItem
+            )
+
+        case .saveDiaryPhoto(let image):
+            return saveDiaryPhoto(
+                image: image,
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
@@ -564,6 +576,7 @@ private extension PlantCareReactor {
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    // 타임라인 새로고침
                     try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
                     observer.onCompleted()
                 } catch let error as AuthError {
@@ -571,6 +584,48 @@ private extension PlantCareReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("오늘의 일기를 저장하지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    func saveDiaryPhoto(
+        image: UIImage,
+        date: Date,
+        originalDiaryItem: PlantCareDiaryItem
+    ) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
+            let task = Task {
+                do {
+                    let recordDate = localDate(from: date)
+                    let user = try await supabaseManager.client.auth.user()
+                    // 이미지 업로드하고 path값 받기
+                    let photoPath = try await supabaseManager.uploadDiaryImage(
+                        image,
+                        userID: user.id,
+                        plantID: plantID,
+                        recordDate: recordDate
+                    )
+
+                    var input = Self.emptyInput(plantID: plantID, date: date)
+                    input.diaryPhotoPath = photoPath
+
+                    let record = try await careRecordDBManager.upsertCareRecord(input: input)
+                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setErrorMessage("일기 사진을 저장하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }
@@ -686,7 +741,7 @@ private extension PlantCareReactor {
     }
 
 
-    // 마지막 물주기 기록이 있는지 확인
+// 마지막 물주기 기록이 있는지 확인   
     static func isLastRemainingWateringRecord(
         date: Date,
         timelineEvents: [PlantCareTimelineEvent]
