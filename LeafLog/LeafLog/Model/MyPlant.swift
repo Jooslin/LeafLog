@@ -58,8 +58,9 @@ struct PlantCreateInput {
     let id: UUID = UUID()
     let category: PlantCategory
     let location: PlantLocation?
-    let nickname: String?
+    let nickname: String
     let speciesName: String?
+    let contentNumber: String?
     let image: UIImage?
     let wateringIntervalDays: Int
     let lastWateredAt: Date
