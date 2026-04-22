@@ -60,6 +60,7 @@ final class CalendarReactor: Reactor {
     private var monthlyRecordCache: [MonthKey: [CareRecord]] = [:]
     private var monthlyRecordCacheOrder: [MonthKey] = []
     private let cacheLimit = 3
+    private var myPlants: [MyPlant] = []
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
@@ -76,7 +77,7 @@ final class CalendarReactor: Reactor {
             return filterCalendar(tag: tag)
             
         case .dateSelected(let date):
-            return detailItmes(of: date)
+            return detailItems(of: date)
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
@@ -152,6 +153,9 @@ extension CalendarReactor {
             
             let task = Task {
                 do {
+                    // 등록 식물 업데이트 - 나중에 reloadCalendar 로직과 분리 리팩토링 고려
+                    try await self.updateMyPlants()
+                    
                     // 월간 기록
                     let key = self.currentKeyMonth(of: benchmark)
                     try await self.updateMonthlyRecordCache(of: benchmark, key: key) // 캐시 업데이트
@@ -165,7 +169,6 @@ extension CalendarReactor {
                     observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
                     observer.onNext(.setCalendarItem(items))
                     observer.onCompleted()
-                    
                 } catch {
                     if let authError = error as? AuthError {
                         observer.onNext(.error(authError.userMessage))
@@ -251,44 +254,73 @@ extension CalendarReactor {
 //        }
 //    }
     
-    private func detailItmes(of date: Date) -> Observable<Mutation> {
-        Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            let task = Task {
-                do {
-                    let dateString = self.dateToString(date, forLabel: true)
-                    let labelItem = [CalendarView.Item.label(dateString)]
-                    
-                    let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
-                    
-                    let water = self.dailyRecordConvertToItem(records, kind: .water)
-                    let grow = self.dailyRecordConvertToItem(records, kind: .grow)
-                    let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
-                    let treat = self.dailyRecordConvertToItem(records, kind: .treat)
-                    
-                    observer.onNext(.setLabelItem(labelItem))
-                    observer.onNext(.setDetailWaterItem(water))
-                    observer.onNext(.setDetailGrowItem(grow))
-                    observer.onNext(.setDetailSproutItem(sprout))
-                    observer.onNext(.setDetailTreatItem(treat))
-                    observer.onCompleted()
-                }
-                catch {
-                    if let authError = error as? AuthError {
-                        observer.onNext(.error(authError.userMessage))
-                        observer.onCompleted()
-                    } else {
-                        observer.onNext(.error("알 수 없는 에러입니다."))
-                        observer.onCompleted()
-                    }
-                }
-            }
-            
-            return Disposables.create {
-                task.cancel()
+    private func detailItems(of date: Date) -> Observable<Mutation> {
+        // 선택 날짜 레이블
+        let dateString = self.dateToString(date, forLabel: true)
+        let labelItem = [CalendarView.Item.label(dateString)]
+        
+        // 선택 날짜 기록
+        let records = dailyPlantRecords(of: date) // 특정 날짜의 기록들
+        
+        let filters = currentState.filters // 필터
+        
+        var detailRecords: [[CalendarView.Item]] = []
+        
+        for badge in [Badge.water, Badge.sprout, Badge.grow, Badge.treat] {
+            if filters.contains(badge.rawValue) || filters.isEmpty {
+                detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
+            } else {
+                detailRecords.append([])
             }
         }
+        
+        return Observable.concat([
+            .just(.setLabelItem(labelItem)),
+            .just(.setDetailWaterItem(detailRecords[Badge.water.rawValue])),
+            .just(.setDetailGrowItem(detailRecords[Badge.grow.rawValue])),
+            .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
+            .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
+        ])
     }
+    
+//    private func detailItmes(of date: Date) -> Observable<Mutation> {
+//        Observable.create { [weak self] observer in
+//            guard let self else { return Disposables.create() }
+//            let task = Task {
+//                do {
+//                    let dateString = self.dateToString(date, forLabel: true)
+//                    let labelItem = [CalendarView.Item.label(dateString)]
+//                    
+//                    let records = try await self.dailyPlantRecords(of: date) // 특정 날짜의 기록들
+//                    
+//                    let water = self.dailyRecordConvertToItem(records, kind: .water)
+//                    let grow = self.dailyRecordConvertToItem(records, kind: .grow)
+//                    let sprout = self.dailyRecordConvertToItem(records, kind: .sprout)
+//                    let treat = self.dailyRecordConvertToItem(records, kind: .treat)
+//                    
+//                    observer.onNext(.setLabelItem(labelItem))
+//                    observer.onNext(.setDetailWaterItem(water))
+//                    observer.onNext(.setDetailGrowItem(grow))
+//                    observer.onNext(.setDetailSproutItem(sprout))
+//                    observer.onNext(.setDetailTreatItem(treat))
+//                    observer.onCompleted()
+//                }
+//                catch {
+//                    if let authError = error as? AuthError {
+//                        observer.onNext(.error(authError.userMessage))
+//                        observer.onCompleted()
+//                    } else {
+//                        observer.onNext(.error("알 수 없는 에러입니다."))
+//                        observer.onCompleted()
+//                    }
+//                }
+//            }
+//            
+//            return Disposables.create {
+//                task.cancel()
+//            }
+//        }
+//    }
 }
 
 extension CalendarReactor {
@@ -406,6 +438,27 @@ extension CalendarReactor {
         }
     }
     
+    private func dailyPlantRecords(of date: Date) -> [MyPlant: CareRecord] {
+        let dateRawValue = dateToString(date, forLabel: false)
+        
+        guard !dateRawValue.isEmpty else { return [:] }
+        let targetDate = LocalDate(rawValue: dateRawValue)
+        
+        let key = currentKeyMonth(of: date)
+        let monthlyRecords = monthlyRecordCache[key] ?? []
+        
+        print(myPlants)
+        
+        var records: [MyPlant: CareRecord] = [:]
+        for plant in myPlants {
+            let filtered = monthlyRecords.filter { $0.plantID == plant.id && $0.recordDate == targetDate }
+            guard let record = filtered.first else { continue }
+            records[plant] = record
+        }
+        
+        return records
+    }
+    
     private func dailyPlantRecords(of date: Date) async throws -> [MyPlant: CareRecord] {
         let dateRawValue = dateToString(date, forLabel: false)
         
@@ -491,6 +544,11 @@ extension CalendarReactor {
         } else { // Cache Miss, Limit Enough
             return true
         }
+    }
+    
+    private func updateMyPlants() async throws {
+        let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
+        myPlants = plants
     }
 }
 
