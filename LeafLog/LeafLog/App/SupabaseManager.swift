@@ -61,6 +61,19 @@ extension SupabaseManager {
         )
     }
 
+    // 일기 사진을 private bucket에 업로드하고, DB에는 storage path만 저장
+    func uploadDiaryImage(_ image: UIImage, userID: UUID, plantID: UUID, recordDate: LocalDate) async throws -> String {
+        let normalizedUserID = userID.uuidString.lowercased()
+        let normalizedPlantID = plantID.uuidString.lowercased()
+        let objectPath = "users/\(normalizedUserID)/plants/\(normalizedPlantID)/diaries/\(recordDate.rawValue).jpg"
+        return try await uploadImage(
+            image,
+            bucket: StorageBucket.plantImages,
+            objectPath: objectPath,
+            conversionError: .careFailed("일기 사진을 변환하지 못했어요.")
+        )
+    }
+
     // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
     // private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용
     func resolveProfileImageURL(from storedValue: String?) async throws -> URL? {
@@ -69,6 +82,10 @@ extension SupabaseManager {
 
     // DB에 저장된 식물 이미지 값을 실제 접근 가능한 URL로 변환
     func resolvePlantImageURL(from storedValue: String?) async throws -> URL? {
+        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
+    }
+
+    func resolveDiaryImageURL(from storedValue: String?) async throws -> URL? {
         try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
     }
 
