@@ -2,7 +2,7 @@
 //  ProfileEditReactor.swift
 //  LeafLog
 //
-//  Created by OpenAI Codex on 4/13/26.
+//  Created by 김주희 on 4/13/26.
 //
 
 import UIKit
@@ -19,6 +19,7 @@ final class ProfileEditReactor: Reactor {
         case viewWillAppear
         case updateNickname(String)
         case updateImage(UIImage)
+        case deleteImage
         case saveTapped
     }
 
@@ -28,6 +29,7 @@ final class ProfileEditReactor: Reactor {
         case setProfile(UserProfileModel)
         case setNickname(String)
         case setSelectedImage(UIImage?)
+        case setProfileImageDeleted(UserProfileModel)
         case setSaveCompleted(Bool)
         case setErrorMessage(String?)
     }
@@ -55,6 +57,9 @@ final class ProfileEditReactor: Reactor {
         case .updateImage(let image):
             return .just(.setSelectedImage(image))
 
+        case .deleteImage:
+            return deleteProfileImage()
+
         case .saveTapped:
             return saveProfile()
         }
@@ -80,6 +85,11 @@ final class ProfileEditReactor: Reactor {
 
         case .setSelectedImage(let image):
             newState.selectedImage = image
+
+        case .setProfileImageDeleted(let profile):
+            newState.isSaving = false
+            newState.profile = profile
+            newState.selectedImage = nil
 
         case .setSaveCompleted(let completed):
             newState.isSaving = false
@@ -155,6 +165,48 @@ final class ProfileEditReactor: Reactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("프로필을 저장하지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func deleteProfileImage() -> Observable<Mutation> {
+        Observable.create { observer in
+            guard let profile = self.currentState.profile else {
+                observer.onNext(.setSelectedImage(nil))
+                observer.onCompleted()
+                return Disposables.create()
+            }
+
+            let storedImagePath = profile.profileImageURL
+            guard storedImagePath?.isEmpty == false else {
+                observer.onNext(.setSelectedImage(nil))
+                observer.onCompleted()
+                return Disposables.create()
+            }
+
+            observer.onNext(.setSaving(true))
+
+            let task = Task {
+                do {
+                    let updatedProfile = try await self.profileDBManager.deleteMyProfileImage()
+
+                    if let storedImagePath, !storedImagePath.isEmpty {
+                        try? await self.supabaseManager.deleteProfileImage(path: storedImagePath)
+                    }
+
+                    observer.onNext(.setProfileImageDeleted(updatedProfile))
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setErrorMessage("프로필 사진을 삭제하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }

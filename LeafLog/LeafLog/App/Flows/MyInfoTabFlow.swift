@@ -25,7 +25,7 @@ final class MyInfoTabFlow: Flow {
             viewController.reactor = MyPageReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
-
+            
         case .profileEdit:
             let viewController = ProfileEditViewController()
             viewController.reactor = ProfileEditReactor()
@@ -38,19 +38,19 @@ final class MyInfoTabFlow: Flow {
                 message: message,
                 preferredStyle: .alert
             )
-
+            
             alert.addAction(UIAlertAction(title: "취소", style: .cancel))
             alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
                 onConfirm()
             })
-
+            
             navigationController.present(alert, animated: true)
             return .none
             
         case .profileImageSourceSheet:
             presentProfileImageSourceSheet()
             return .none
-
+            
         case .loginRequired:
             return .end(forwardToParentFlowWithStep: step)
             
@@ -66,11 +66,16 @@ private extension MyInfoTabFlow {
         guard let profileEditVC = navigationController.topViewController as? ProfileEditViewController else {
             return
         }
-
+        
+        // 공용 presenter 호출
         ImageSourcePickerPresenter.present(
             from: navigationController,
             sourceView: profileEditVC.profileImagePickerSourceView,
-            delegate: profileEditVC
+            delegate: profileEditVC,
+            deleteTitle: profileEditVC.hasProfileImage ? "사진 삭제" : nil,
+            onDelete: { [weak profileEditVC] in
+                profileEditVC?.deleteProfileImage()
+            }
         )
     }
 }

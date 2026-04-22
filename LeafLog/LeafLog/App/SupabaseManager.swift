@@ -135,6 +135,20 @@ extension SupabaseManager {
             .remove(paths: [path])
     }
 
+    // Storage에서 프로필 이미지 삭제
+    func deleteProfileImage(path: String) async throws {
+        try await client.storage
+            .from(StorageBucket.profileImages)
+            .remove(paths: [path])
+    }
+
+    // Storage에서 일기 사진 삭제
+    func deleteDiaryImage(path: String) async throws {
+        try await client.storage
+            .from(StorageBucket.plantImages)
+            .remove(paths: [path])
+    }
+
     //TODO: ProfileDBManager 병합 시 이관 필요
     // 유저 fcm 토큰 업데이트
     func updateFCMToken(_ validToken: String) {

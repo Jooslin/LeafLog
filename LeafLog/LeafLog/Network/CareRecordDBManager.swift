@@ -67,7 +67,8 @@ final class CareRecordDBManager {
                 fertilizedNote: input.fertilizedNote ?? existing?.fertilizedNote,
                 treatedNote: input.treatedNote ?? existing?.treatedNote,
                 diaryText: input.diaryText ?? existing?.diaryText,
-                diaryPhotoPath: input.diaryPhotoPath ?? existing?.diaryPhotoPath
+                diaryPhotoPath: input.clearsDiaryPhotoPath ? nil : input.diaryPhotoPath ?? existing?.diaryPhotoPath,
+                clearsDiaryPhotoPath: input.clearsDiaryPhotoPath
             )
 
             return try await supabaseManager.client
@@ -116,6 +117,7 @@ final class CareRecordDBManager {
         let status: String?
         let watered, repotted, fertilized, treated: Bool
         let wateredNote, repottedNote, fertilizedNote, treatedNote, diaryText, diaryPhotoPath: String?
+        let clearsDiaryPhotoPath: Bool
         
         enum CodingKeys: String, CodingKey {
             case status, watered, repotted, fertilized, treated
@@ -128,6 +130,30 @@ final class CareRecordDBManager {
             case treatedNote = "treated_note"
             case diaryText = "diary_text"
             case diaryPhotoPath = "diary_photo_path"
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+
+            try container.encode(plantID, forKey: .plantID)
+            try container.encode(recordDate, forKey: .recordDate)
+            try container.encodeIfPresent(recordedAt, forKey: .recordedAt)
+            try container.encodeIfPresent(status, forKey: .status)
+            try container.encode(watered, forKey: .watered)
+            try container.encode(repotted, forKey: .repotted)
+            try container.encode(fertilized, forKey: .fertilized)
+            try container.encode(treated, forKey: .treated)
+            try container.encodeIfPresent(wateredNote, forKey: .wateredNote)
+            try container.encodeIfPresent(repottedNote, forKey: .repottedNote)
+            try container.encodeIfPresent(fertilizedNote, forKey: .fertilizedNote)
+            try container.encodeIfPresent(treatedNote, forKey: .treatedNote)
+            try container.encodeIfPresent(diaryText, forKey: .diaryText)
+
+            if clearsDiaryPhotoPath {
+                try container.encodeNil(forKey: .diaryPhotoPath)
+            } else {
+                try container.encodeIfPresent(diaryPhotoPath, forKey: .diaryPhotoPath)
+            }
         }
     }
 

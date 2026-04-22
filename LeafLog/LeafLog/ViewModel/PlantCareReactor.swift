@@ -214,6 +214,7 @@ final class PlantCareReactor: Reactor {
         case toggleDiary
         case saveDiary(String)
         case saveDiaryPhoto(UIImage)
+        case deleteDiaryPhoto
     }
 
     enum Mutation {
@@ -363,6 +364,12 @@ final class PlantCareReactor: Reactor {
         case .saveDiaryPhoto(let image):
             return saveDiaryPhoto(
                 image: image,
+                date: currentState.selectedDate,
+                originalDiaryItem: currentState.diaryItem
+            )
+
+        case .deleteDiaryPhoto:
+            return deleteDiaryPhoto(
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
@@ -626,6 +633,45 @@ private extension PlantCareReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("일기 사진을 저장하지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    // 사진 삭제 함수
+    func deleteDiaryPhoto(
+        date: Date,
+        originalDiaryItem: PlantCareDiaryItem
+    ) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+        let photoPath = originalDiaryItem.diaryPhotoPath // 현재 일기의 사진 경로
+
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
+            let task = Task {
+                do {
+                    var input = Self.emptyInput(plantID: plantID, date: date)
+                    input.clearsDiaryPhotoPath = true
+
+                    let record = try await careRecordDBManager.upsertCareRecord(input: input)
+
+                    // db 사진 삭제
+                    if let photoPath, !photoPath.isEmpty {
+                        try? await supabaseManager.deleteDiaryImage(path: photoPath)
+                    }
+
+                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setErrorMessage("일기 사진을 삭제하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }
