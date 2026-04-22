@@ -23,7 +23,7 @@ final class CalendarReactor: Reactor {
     enum Mutation {
         case updateBenchmarkDate(Date)
         case updateFilters(Set<Int>)
-        case updateMonthlyData(KeyMonth, [CareRecord])
+        case updateMonthlyData(MonthKey, [CareRecord])
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
@@ -41,7 +41,7 @@ final class CalendarReactor: Reactor {
     struct State {
         var benchmarkDate: Date = Date()
         var filters: Set<Int> = []
-        var cacheData: [KeyMonth: [CareRecord]] = [:]
+        var cacheData: [MonthKey: [CareRecord]] = [:]
         
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
@@ -53,46 +53,28 @@ final class CalendarReactor: Reactor {
     let initialState = State()
     
     //MARK: properties
-    private let calendar = Calendar.current
     @Dependency(\.plantDBManager) private var plantDBManager
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
+    
+    private let calendar = Calendar.current
+    private var monthlyRecordCache: [MonthKey: [CareRecord]] = [:]
+    private var monthlyRecordCacheOrder: [MonthKey] = []
+    private let cacheLimit = 3
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            let benchmark = currentState.benchmarkDate
-            let filters = currentState.filters
-            
-//            return Observable.concat([
-//                .just(.updateBenchmarkDate(benchmark)),
-//                calendarHeaderItem(of: benchmark),
-//                calendarItems(of: benchmark, filters: filters)
-//            ])
-            return reloadCalendar(benchmark: benchmark, filters: filters)
+            return reloadCalendar(moveBenchmark: .none)
         case .previousMonth:
-            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: .previous)
-            let filters = currentState.filters
-            
-//            return Observable.concat([
-//                .just(.updateBenchmarkDate(benchmark)),
-//                calendarHeaderItem(of: benchmark),
-//                calendarItems(of: benchmark, filters: filters)
-//            ])
-            return reloadCalendar(benchmark: benchmark, filters: filters)
+            return reloadCalendar(moveBenchmark: .previous)
         case .nextMonth:
-            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: .next)
-            let filters = currentState.filters
-            
-//            return Observable.concat([
-//                .just(.updateBenchmarkDate(benchmark)),
-//                calendarHeaderItem(of: benchmark),
-//                calendarItems(of: benchmark, filters: filters)
-//            ])
-            return reloadCalendar(benchmark: benchmark, filters: filters)
+            return reloadCalendar(moveBenchmark: .next)
             
         case .updateFilter(let tag):
             let benchmark = currentState.benchmarkDate
             let newFilter = newFilters(tag: tag)
+            let key = currentKeyMonth(of: benchmark)
+            let data = currentState.cacheData[key]
             return Observable.concat([
                 .just(.updateFilters(newFilter)),
 //                calendarItems(of: benchmark, filters: newFilter),
@@ -163,28 +145,52 @@ extension CalendarReactor {
         }
     }
     
-    private func reloadCalendar(benchmark: Date, filters: Set<Int>) -> Observable<Mutation> {
+    private func updateMonthlyRecordCache(of date: Date, key: MonthKey) async throws {
+            let data = try await self.monthlyPlantRecords(of: date)
+            guard manageCacheOrder(key: key) else { return } // 캐시 정리
+            
+            monthlyRecordCache[key] = data
+    }
+    
+    private func manageCacheOrder(key: MonthKey) -> Bool {
+        if monthlyRecordCacheOrder.contains(key) { // Cache Hit
+            guard let index = monthlyRecordCacheOrder.firstIndex(of: key) else { return false }
+            monthlyRecordCacheOrder.append(monthlyRecordCacheOrder.remove(at: index)) // 가장 후순위로 순서 변경
+            return true
+        } else if monthlyRecordCacheOrder.count >= cacheLimit { // Cache Miss, Limit full
+            let target = monthlyRecordCacheOrder.removeFirst() // 가장 오래된 키를 지우면서 반환
+            monthlyRecordCache.removeValue(forKey: target) // 캐시에서 가장 오래된 데이터 삭제
+            return true
+        } else { // Cache Miss, Limit Enough
+            return true
+        }
+    }
+    
+    private func reloadCalendar(moveBenchmark: MoveMonth) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
-            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
             
+            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
+            let filters = currentState.filters // 필터
+                
+            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
             guard let year = dateComp.year,
                   let month = dateComp.month else { return Disposables.create() }
             
-            let key = KeyMonth(year: year, month: month)
-            
             let task = Task {
                 do {
-                    let monthlyData = try await self.monthlyPlantRecords(of: benchmark) // 달력 범위의 모든 기록
-                    let dates = self.calculateDates(of: benchmark) // 달력에 표시될 날짜들
-                    let items = self.datesConvertToItems(current: benchmark, dates, records: monthlyData, filters: filters) // 컬렉션뷰에 표시될 아이템
+                    // 월간 기록
+                    let key = self.currentKeyMonth(of: benchmark)
+                    try await self.updateMonthlyRecordCache(of: benchmark, key: key) // 캐시 업데이트
+                    let records = self.monthlyRecordCache[key] ?? []
                     
+                    let dates = self.calculateDates(of: benchmark)
+                    let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
                     
                     observer.onNext(.updateBenchmarkDate(benchmark))
                     observer.onNext(.setCalendarHeader(year, month))
                     observer.onNext(.setCalendarItem(items))
-                    observer.onNext(.updateMonthlyData(key, monthlyData))
-                    observer.onCompleted()
+                    
                 } catch {
                     if let authError = error as? AuthError {
                         observer.onNext(.error(authError.userMessage))
@@ -195,6 +201,7 @@ extension CalendarReactor {
                     }
                 }
             }
+            
             return Disposables.create {
                 task.cancel()
             }
@@ -485,6 +492,15 @@ extension CalendarReactor {
         
         return forLabel ? labelString : dateRawValue
     }
+    
+    private func currentKeyMonth(of date: Date) -> MonthKey {
+        let dateComp = calendar.dateComponents([.year, .month], from: date)
+        
+        guard let year = dateComp.year,
+              let month = dateComp.month else { return MonthKey(year: 0, month: 0) }
+        
+        return MonthKey(year: year, month: month)
+    }
 }
 
 extension CalendarReactor {
@@ -494,7 +510,7 @@ extension CalendarReactor {
         case none
     }
     
-    struct KeyMonth: Hashable {
+    struct MonthKey: Hashable {
         let year: Int
         let month: Int
     }
