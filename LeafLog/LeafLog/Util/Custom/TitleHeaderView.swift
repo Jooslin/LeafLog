@@ -18,7 +18,7 @@ import RxCocoa
 ///     - hasBackButton: 뒤로가기 버튼 표시 유무입니다. true로 설정할 시 뒤로가기 버튼을 표시합니다.
 ///     - rightButtonImage: 오른쪽 버튼의 이미지 이름입니다. nil일 경우 버튼을 표시하지 않습니다. 기본값은 nil입니다.
 class TitleHeaderView: UIView {
-    private let titleLabel = UILabel(text: "", config: .title18).then {
+    let titleLabel = UILabel(text: "", config: .title18).then {
         $0.textAlignment = .center
     }
     
