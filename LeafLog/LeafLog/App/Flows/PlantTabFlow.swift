@@ -72,6 +72,19 @@ final class PlantTabFlow: Flow {
                         steppers: [plantRegisterViewController, photoSelectStepper]
                     )))
 
+        case .plantEdit(let plant):
+            let plantRegisterViewController = makePlantEditViewController(plant: plant)
+            navigationController.pushViewController(plantRegisterViewController, animated: true)
+
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: plantRegisterViewController,
+                    withNextStepper: CompositeStepper(
+                        steppers: [plantRegisterViewController, photoSelectStepper]
+                    )
+                )
+            )
+
         case .plantSearch:
             let searchViewController = SearchViewController()
             navigationController.pushViewController(searchViewController, animated: true)
@@ -177,6 +190,11 @@ extension PlantTabFlow {
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
+        return PlantRegisterViewController(reactor: reactor)
+    }
+
+    private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(mode: .edit(plant))
         return PlantRegisterViewController(reactor: reactor)
     }
 }

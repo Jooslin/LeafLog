@@ -81,6 +81,12 @@ private extension PlantCareViewController {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        rx.viewWillAppear
+            .skip(1)
+            .map { _ in PlantCareReactor.Action.viewDidLoad }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         plantCareView.collectionView.rx.contentOffset
             .observe(on: MainScheduler.instance)
             .bind { [weak self] contentOffset in
@@ -99,6 +105,12 @@ private extension PlantCareViewController {
             .subscribe(onNext: { [weak self] in
                 self?.steps.accept(AppStep.pageBack)
             })
+            .disposed(by: disposeBag)
+
+        plantCareView.headerView.rightButton.rx.tap
+            .compactMap { reactor.currentState.plant }
+            .map(AppStep.plantEdit)
+            .bind(to: steps)
             .disposed(by: disposeBag)
 
         plantCareView.onPreviousDateTapped = { [weak reactor] in

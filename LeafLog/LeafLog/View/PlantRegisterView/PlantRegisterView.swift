@@ -86,6 +86,11 @@ final class PlantRegisterView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    func configureHeader(title: String, buttonTitle: String) {
+        headerView.titleLabel.text = title
+        registerButton.setTitle(buttonTitle, for: .normal)
+    }
+
     func applySelectedPlant(
         name: String,
         growStyle: String?,

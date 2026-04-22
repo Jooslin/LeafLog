@@ -12,6 +12,11 @@ import UIKit
 import RxCocoa
 import Then
 
+private struct PlantRegisterHeaderState: Equatable {
+    let title: String
+    let buttonTitle: String
+}
+
 final class PlantRegisterViewController: BaseViewController, View {
     
     private let registerView = PlantRegisterView()
@@ -55,6 +60,18 @@ final class PlantRegisterViewController: BaseViewController, View {
             .map { PlantRegisterReactor.Action.viewDidLoad }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        reactor.state
+            .map(Self.makeHeaderState)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] headerState in
+                self?.registerView.configureHeader(
+                    title: headerState.title,
+                    buttonTitle: headerState.buttonTitle
+                )
+            })
+            .disposed(by: disposeBag)
         
         reactor.state
             .map(\.selectedPlant)
@@ -95,6 +112,16 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.applyLocationSelection(location)
             })
             .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.nicknameText)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] nickname in
+                guard self?.registerView.plantNameTextField.text != nickname else { return }
+                self?.registerView.plantNameTextField.text = nickname
+            })
+            .disposed(by: disposeBag)
         
         reactor.state
             .map(\.wateringIntervalText)
@@ -103,6 +130,17 @@ final class PlantRegisterViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] text in
                 guard self?.registerView.wateringCycleTextField.text != text else { return }
                 self?.registerView.wateringCycleTextField.text = text
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map(\.lastWateredDate)
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] date in
+                guard let self, let date else { return }
+                self.lastWateredDatePicker.date = date
+                self.updateLastWateredDateField(date: date)
             })
             .disposed(by: disposeBag)
         
@@ -199,6 +237,11 @@ final class PlantRegisterViewController: BaseViewController, View {
                 })
                 .disposed(by: disposeBag)
         }
+
+        registerView.plantNameTextField.rx.text.orEmpty
+            .map { PlantRegisterReactor.Action.updateNickname($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
         registerView.wateringCycleTextField.rx.text.orEmpty
             .map { PlantRegisterReactor.Action.updateWateringInterval($0) }
@@ -214,6 +257,13 @@ final class PlantRegisterViewController: BaseViewController, View {
         configureLastWateredDatePicker()
         syncInitialFormState()
     }
+
+    private static func makeHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
+        PlantRegisterHeaderState(
+            title: state.title,
+            buttonTitle: state.buttonTitle
+        )
+    }
     
     private func updateSingleSelection(selectedButton: UIButton, in buttons: [UIButton]) {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
@@ -228,9 +278,19 @@ final class PlantRegisterViewController: BaseViewController, View {
     }
     
     private func syncInitialFormState() {
-        notifyCategorySelectionChanged()
-        notifyLocationSelectionChanged()
-        reactor?.action.onNext(.updateWateringInterval(registerView.wateringCycleTextField.text ?? ""))
+        guard let state = reactor?.currentState else { return }
+
+        if state.selectedCategory == nil {
+            notifyCategorySelectionChanged()
+        }
+
+        if state.selectedLocation == nil {
+            notifyLocationSelectionChanged()
+        }
+
+        if state.wateringIntervalText.isEmpty {
+            reactor?.action.onNext(.updateWateringInterval(registerView.wateringCycleTextField.text ?? ""))
+        }
     }
     
     private func applyRegisterButtonState(isEnabled: Bool) {
