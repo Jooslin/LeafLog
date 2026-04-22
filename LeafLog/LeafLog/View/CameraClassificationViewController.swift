@@ -21,6 +21,11 @@ class CameraClassificationViewController: BaseViewController, View {
         view = cameraClassificationView
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        cameraClassificationView.shootButton.isEnabled = true
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
