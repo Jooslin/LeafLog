@@ -141,6 +141,10 @@ private extension PlantCareViewController {
         plantCareView.onTimelineSortTapped = { [weak reactor] in
             reactor?.action.onNext(.toggleTimelineSort)
         }
+
+        plantCareView.onGuideEnabledChanged = { [weak reactor] isEnabled in
+            reactor?.action.onNext(.setGuideEnabled(isEnabled))
+        }
     }
 
     func bindState(reactor: PlantCareReactor) {
@@ -163,7 +167,8 @@ private extension PlantCareViewController {
                     diaryItem: state.diaryItem,
                     plantInfoItem: PlantCarePlantInfoItem(
                         rows: state.plantInfoRows,
-                        guide: state.plantGuideItem
+                        guide: state.plantGuideItem,
+                        isGuideEnabled: state.plant?.guideEnabled ?? true
                     ), // 식물 상세
                     timelineControls: PlantCareTimelineControls(
                         selectedFilter: state.timelineFilter,

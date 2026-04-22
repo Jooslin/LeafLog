@@ -209,6 +209,7 @@ nonisolated
 struct PlantCarePlantInfoItem: Hashable {
     let rows: [PlantCarePlantInfoRow]
     let guide: PlantCarePlantGuideItem
+    let isGuideEnabled: Bool
 }
 
 nonisolated
@@ -236,6 +237,7 @@ final class PlantCareReactor: Reactor {
         case saveDiary(String)
         case saveDiaryPhoto(UIImage)
         case deleteDiaryPhoto
+        case setGuideEnabled(Bool)
     }
 
     enum Mutation {
@@ -403,6 +405,9 @@ final class PlantCareReactor: Reactor {
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
+
+        case .setGuideEnabled(let isEnabled):
+            return updateGuideEnabled(isEnabled)
         }
     }
 
@@ -473,6 +478,40 @@ private extension PlantCareReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("식물 정보를 불러오지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    func updateGuideEnabled(_ isEnabled: Bool) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+        let originalPlant = currentState.plant
+
+        return Observable.create { [plantDBManager] observer in
+            let task = Task {
+                do {
+                    let plant = try await plantDBManager.updateGuideEnabled(
+                        plantID: plantID,
+                        isEnabled: isEnabled
+                    )
+                    observer.onNext(.setPlant(plant))
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    if let originalPlant {
+                        observer.onNext(.setPlant(originalPlant))
+                    }
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    if let originalPlant {
+                        observer.onNext(.setPlant(originalPlant))
+                    }
+                    observer.onNext(.setErrorMessage("가이드 설정을 저장하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }

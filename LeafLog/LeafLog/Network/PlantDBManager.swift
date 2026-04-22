@@ -165,6 +165,27 @@ final class PlantDBManager {
             throw AuthError.plantFailed("식물 정보 수정에는 성공했으나, 데이터를 불러오는 데 실패했습니다.")
         }
     }
+
+    // MARK: - 가이드 표시 여부 업데이트
+    func updateGuideEnabled(plantID: UUID, isEnabled: Bool) async throws -> MyPlant {
+        let user = try await supabaseManager.client.auth.user()
+        let payload = GuideEnabledUpdatePayload(guideEnabled: isEnabled)
+
+        let response = try await supabaseManager.client
+            .from("plants")
+            .update(payload)
+            .eq("id", value: plantID)
+            .eq("user_id", value: user.id)
+            .select()
+            .single()
+            .execute()
+
+        do {
+            return try supabaseManager.client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
+        } catch {
+            throw AuthError.plantFailed("가이드 설정은 변경했으나, 식물 정보를 불러오는 데 실패했습니다.")
+        }
+    }
     
     
     // MARK: - Update Payload Model
@@ -186,6 +207,14 @@ final class PlantDBManager {
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
+        }
+    }
+
+    private struct GuideEnabledUpdatePayload: Encodable {
+        let guideEnabled: Bool
+
+        enum CodingKeys: String, CodingKey {
+            case guideEnabled = "guide_enabled"
         }
     }
     

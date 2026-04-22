@@ -11,6 +11,8 @@ import UIKit
 final class PlantDetailCell: UICollectionViewCell {
     static let reuseIdentifier = "PlantDetailCell"
 
+    var onGuideEnabledChanged: ((Bool) -> Void)?
+
     struct RowData: Equatable {
         let title: String
         let value: String
@@ -97,6 +99,7 @@ final class PlantDetailCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setLayout()
+        setActions()
     }
 
     required init?(coder: NSCoder) {
@@ -148,7 +151,7 @@ extension PlantDetailCell {
         }
     }
 
-    func configure(rows: [RowData], guide: GuideData) {
+    func configure(rows: [RowData], guide: GuideData, isGuideEnabled: Bool) {
         let defaultRows = [
             RowData(title: "현재 상태", value: ""),
             RowData(title: "데려온 날", value: ""),
@@ -172,6 +175,23 @@ extension PlantDetailCell {
         temperatureGuideRow.configure(message: guide.temperature)
         humidityGuideRow.configure(message: guide.humidity)
         pestGuideRow.configure(message: guide.pest)
+
+        guideToggleButton.setOn(isGuideEnabled, animated: false)
+        guideCardView.isHidden = !isGuideEnabled
+    }
+
+    private func setActions() {
+        guideToggleButton.addTarget(
+            self,
+            action: #selector(handleGuideToggleChanged),
+            for: .valueChanged
+        )
+    }
+
+    @objc private func handleGuideToggleChanged() {
+        let isEnabled = guideToggleButton.isOn
+        guideCardView.isHidden = !isEnabled
+        onGuideEnabledChanged?(isEnabled)
     }
 }
 

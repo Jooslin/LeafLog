@@ -71,6 +71,7 @@ final class PlantCareView: UIView {
     var onDiaryPhotoTapped: ((UIView) -> Void)?
     var onTimelineFilterTapped: ((PlantCareTimelineFilter) -> Void)?
     var onTimelineSortTapped: (() -> Void)?
+    var onGuideEnabledChanged: ((Bool) -> Void)?
 
     var diaryImagePickerSourceView: UIView {
         collectionView
@@ -496,8 +497,13 @@ private extension PlantCareView {
                     temperature: infoItem.guide.temperature,
                     humidity: infoItem.guide.humidity,
                     pest: infoItem.guide.pest
-                )
+                ),
+                isGuideEnabled: infoItem.isGuideEnabled
             )
+            cell.onGuideEnabledChanged = { [weak self] isEnabled in
+                self?.onGuideEnabledChanged?(isEnabled)
+                self?.collectionView.collectionViewLayout.invalidateLayout()
+            }
         }
 
         let emptyCellRegistration = UICollectionView.CellRegistration<PlantCareEmptyCell, Item> { cell, _, item in
