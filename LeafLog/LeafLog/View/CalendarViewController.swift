@@ -44,14 +44,6 @@ class CalendarViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-//        calendarView.rx.filterItemSelected
-//            .map { filterArray in
-//                let filters = Set(filterArray)
-//                return CalendarReactor.Action.updateFilter(filters)
-//            }
-//            .bind(to: reactor.action)
-//            .disposed(by: disposeBag)
-        
         calendarView.rx.filterButtonTap
             .map { CalendarReactor.Action.updateFilter($0) }
             .bind(to: reactor.action)

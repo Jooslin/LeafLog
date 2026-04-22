@@ -16,7 +16,6 @@ final class CalendarReactor: Reactor {
         case previousMonth
         case nextMonth
         
-//        case updateFilter(Set<Badge>)
         case updateFilter(Int)
         case dateSelected(Date)
     }
@@ -86,14 +85,6 @@ final class CalendarReactor: Reactor {
                 calendarHeaderItem(of: benchmark),
                 calendarItems(of: benchmark, filters: filters)
             ])
-            
-//        case .updateFilter(let filters):
-//            let benchmark = currentState.benchmarkDate
-//
-//            return Observable.concat([
-//                .just(.updateFilters(filters)),
-//                calendarItems(of: benchmark, filters: filters)
-//                ])
             
         case .updateFilter(let tag):
             let benchmark = currentState.benchmarkDate

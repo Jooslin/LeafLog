@@ -76,39 +76,9 @@ extension CalendarFilterCell {
             }
         }
     }
-    
-    func configure(_ data: [String]) {
-        buttons.forEach {
-            if $0.tag < data.count {
-                $0.setup(title: data[$0.tag])
-            } else {
-                $0.isHidden = true
-            }
-        }
-    }
 }
 
 extension Reactive where Base: CalendarFilterCell {
-//    var filterItemSelected: ControlEvent<[Badge]> {
-//        let taps = Observable.merge(
-//            base.buttons.map { button in
-//                button.rx.tap
-//                    .map { [weak base] in
-//                        guard let base else { return [Badge]() }
-//                        
-//                        button.isSelected.toggle()
-//                        
-//                        return base.buttons.compactMap {
-//                            guard $0.isSelected,
-//                                  let title = $0.titleLabel?.text else { return nil }
-//                            return Badge(rawValue: title)
-//                        }
-//                    }
-//            }
-//        )
-//        
-//        return ControlEvent(events: taps)
-//    }
     var filterButtonTap: ControlEvent<Int> {
         let taps = Observable.merge(
             base.buttons.map { button in
