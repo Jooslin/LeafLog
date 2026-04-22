@@ -196,7 +196,7 @@ extension CalendarReactor {
         
         var detailRecords: [[CalendarView.Item]] = []
         
-        for badge in [Badge.water, Badge.sprout, Badge.grow, Badge.treat] {
+        for badge in [Badge.water, Badge.grow, Badge.sprout, Badge.treat] {
             if filters.contains(badge.rawValue) || filters.isEmpty {
                 detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
             } else {
