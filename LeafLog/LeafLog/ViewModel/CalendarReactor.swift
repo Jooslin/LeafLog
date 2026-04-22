@@ -156,9 +156,7 @@ extension CalendarReactor {
     }
     
     private func calendarFilterItem(filters: Set<Int>) -> Observable<Mutation> {
-        Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
+        Observable.create { observer in
             let item = CalendarView.Item.filter(filters)
             
             observer.onNext(.setFilterItem([item]))
@@ -401,9 +399,17 @@ extension CalendarReactor {
     }
     
     private func newFilters(tag: Int) -> Set<Int> {
+        guard tag != 5 else { return [] } // "전체" 버튼을 선택했을 경우
+        
         var new = currentState.filters
-        new.insert(tag)
-        return new.count == 4 ? [] : new
+        
+        if new.contains(tag) {
+            new.remove(tag)
+        } else {
+            new.insert(tag)
+        }
+        
+        return new
     }
 }
 
