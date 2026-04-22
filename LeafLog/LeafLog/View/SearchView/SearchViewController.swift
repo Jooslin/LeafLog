@@ -223,6 +223,14 @@ final class SearchViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("에러", message))
             })
             .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.titleText }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] titleText in
+                self?.rootView.titleHeaderView.titleLabel.text = titleText
+            })
+            .disposed(by: disposeBag)
     }
 
     // 필터링 버튼 구현 함수

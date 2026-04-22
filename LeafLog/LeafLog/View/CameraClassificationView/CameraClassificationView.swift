@@ -35,21 +35,13 @@ class CameraClassificationView: UIView {
         config: .label14,
         color: .grayScale800
     )
-    
-    //TODO: 병합 후 주석 해제
+
     let shootButton = BottomSaveButton(title: "촬영하기").then { button in
         button.addAction(
             UIAction { _ in button.isEnabled = false },
             for: .touchUpInside
         )
     }
-//    let shootButton = UIButton(configuration: .filled()).then { button in
-//        button.setTitle("촬영하기", for: .normal)
-//        button.addAction(
-//            UIAction { _ in button.isEnabled = false },
-//            for: .touchUpInside
-//        )
-//    }
     
     fileprivate let authDeniedView = CameraAuthNoticeView().then {
         $0.isHidden = true
@@ -76,10 +68,10 @@ extension CameraClassificationView {
         
         addSubview(cameraPreview)
         layer.addSublayer(cameraFrame)
-        addSubview(titleView)
         addSubview(guideBackground)
         addSubview(shootButton)
         addSubview(authDeniedView)
+        addSubview(titleView)
         
         guideBackground.addSubview(guideLabel)
         
@@ -109,8 +101,7 @@ extension CameraClassificationView {
         }
         
         authDeniedView.snp.makeConstraints {
-            $0.top.equalTo(titleView.snp.bottom)
-            $0.horizontalEdges.bottom.equalToSuperview()
+            $0.edges.equalToSuperview()
         }
     }
     
