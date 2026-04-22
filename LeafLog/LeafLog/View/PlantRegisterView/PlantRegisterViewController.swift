@@ -45,7 +45,9 @@ final class PlantRegisterViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        bindUI()
+        
+        guard let reactor else { return }
+        bindUI(reactor: reactor)
     }
     
     func bind(reactor: PlantRegisterReactor) {
@@ -131,20 +133,29 @@ final class PlantRegisterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
     }
     
-    private func bindUI() {
-        registerView.headerView.backButton.addAction(
-            UIAction { [weak self] _ in
-                self?.steps.accept(AppStep.pageBack)
-            },
-            for: .touchUpInside
-        )
+    private func bindUI(reactor: PlantRegisterReactor) {
+        registerView.headerView.backButton.rx.tap
+            .map {
+                AppStep.pageBack
+            }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
-        registerView.cameraButton.addAction(
-            UIAction { [weak self] _ in
-                self?.presentPhotoPicker()
-            },
-            for: .touchUpInside
-        )
+        registerView.cameraButton.rx.tap
+            .compactMap { [weak self] _ -> PHPickerViewController? in
+                return self?.makeImagePicker()
+            }
+            .withUnretained(self)
+            .do(onNext: { $0.present($1, animated: true) }) // $0 == self, $1 == PHPickerViewController - 이미지 피커 띄우기
+            .flatMap { $1.rx.selectedImages }
+            .compactMap(\.first)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] image in
+                self?.selectedImage = image
+                self?.registerView.cameraButton.backgroundImageView.image = image
+                self?.registerView.cameraButton.backgroundColor = .clear
+            })
+            .disposed(by: disposeBag)
         
         registerView.plantTypeSearchButton.addAction(
             UIAction { [weak self] _ in
@@ -153,44 +164,52 @@ final class PlantRegisterViewController: BaseViewController, View {
             for: .touchUpInside
         )
         
+        //TODO: 검색 카메라 버튼 구현 시 아래 주석 풀고 사용 예정입니다. (단, 이벤트 보내는 주체 변경 필요)
+//        registerView.plantTypeSearchButton.rx.tap
+//            .compactMap { [weak self] _ -> PHPickerViewController? in
+//                return self?.makeImagePicker()
+//            }
+//            .withUnretained(self)
+//            .do(onNext: { $0.present($1, animated: true) })
+//            .flatMap { $1.rx.selectedImages }
+//            .compactMap(\.first)
+//            .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
+//            .bind(to: reactor.action)
+//            .disposed(by: disposeBag)
+        
         registerView.categoryButtons.forEach { button in
-            button.addAction(
-                UIAction { [weak self] _ in
+            button.rx.tap
+                .subscribe(onNext: { [weak self] in
                     self?.updateSingleSelection(
                         selectedButton: button,
-                        in: self?.registerView.categoryButtons ?? []
-                    )
+                        in: self?.registerView.categoryButtons ?? [])
                     self?.notifyCategorySelectionChanged()
-                },
-                for: .touchUpInside
-            )
+                })
+                .disposed(by: disposeBag)
         }
         
         registerView.locationButtons.forEach { button in
-            button.addAction(
-                UIAction { [weak self] _ in
+            button.rx.tap
+                .subscribe(onNext: { [weak self] in
                     self?.updateSingleSelection(
                         selectedButton: button,
                         in: self?.registerView.locationButtons ?? []
                     )
                     self?.notifyLocationSelectionChanged()
-                },
-                for: .touchUpInside
-            )
+                })
+                .disposed(by: disposeBag)
         }
         
-        registerView.wateringCycleTextField.addTarget(
-            self,
-            action: #selector(handleFormValueChanged),
-            for: .editingChanged
-        )
+        registerView.wateringCycleTextField.rx.text.orEmpty
+            .map { PlantRegisterReactor.Action.updateWateringInterval($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
-        registerView.registerButton.addAction(
-            UIAction { [weak self] _ in
+        registerView.registerButton.rx.tap
+            .subscribe(onNext: { [weak self] in
                 self?.handleRegisterTap()
-            },
-            for: .touchUpInside
-        )
+            })
+            .disposed(by: disposeBag)
         
         configureLastWateredDatePicker()
         syncInitialFormState()
@@ -198,12 +217,6 @@ final class PlantRegisterViewController: BaseViewController, View {
     
     private func updateSingleSelection(selectedButton: UIButton, in buttons: [UIButton]) {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
-    }
-    
-    @objc private func handleFormValueChanged() {
-        reactor?.action.onNext(
-            .updateWateringInterval(registerView.wateringCycleTextField.text ?? "")
-        )
     }
     
     private func notifyCategorySelectionChanged() {
@@ -247,16 +260,6 @@ final class PlantRegisterViewController: BaseViewController, View {
     private func handlePlantTypeSearchTap() {
         view.endEditing(true)
         steps.accept(AppStep.plantSearch)
-    }
-    
-    private func presentPhotoPicker() {
-        var configuration = PHPickerConfiguration()
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-        
-        let pickerViewController = PHPickerViewController(configuration: configuration)
-        pickerViewController.delegate = self
-        present(pickerViewController, animated: true)
     }
     
     private func configureLastWateredDatePicker() {
@@ -318,49 +321,13 @@ final class PlantRegisterViewController: BaseViewController, View {
     }
 }
 
-extension PlantRegisterViewController: PHPickerViewControllerDelegate {
-    //TODO: 추후 수정 필요!!!
-    //    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-    //        picker.dismiss(animated: true)
-    //
-    //        guard let result = results.first,
-    //              result.itemProvider.canLoadObject(ofClass: UIImage.self)
-    //        else {
-    //            return
-    //        }
-    //
-    //        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
-    //            guard let selectedImage = image as? UIImage else { return }
-    //
-    //            DispatchQueue.main.async {
-    //                self?.selectedImage = selectedImage
-    //                self?.registerView.cameraButton.layer.contents = selectedImage.cgImage
-    //                self?.registerView.cameraButton.layer.contentsGravity = .resizeAspectFill
-    //                self?.registerView.cameraButton.backgroundColor = .clear
-    //            }
-    //        }
-    //    }
-    
-    // picker에서 이미지 선택 시(picker 종료 시) 동작
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        guard let item = results.first,
-              item.itemProvider.canLoadObject(ofClass: UIImage.self) else {
-            picker.dismiss(animated: true)
-            return
-        }
+extension PlantRegisterViewController {
+    private func makeImagePicker() -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images // 라이브러리에서 보여줄 asset의 종류 지정
+        config.selectionLimit = 1 // 선택 개수 설정 (0은 무제한)
         
-        // itemProvider에서 UIImage로 로드가 가능하다면 UIImage로 선택된 사진 load
-        item.itemProvider.loadObject(ofClass: UIImage.self) { [weak self, weak picker] image, error in // loadObject는 비동기로 작동하므로 picker도 약한 참조
-            guard let image = image as? UIImage else {
-                picker?.dismiss(animated: true)
-                return
-            }
-            
-            Task { @MainActor [weak self, weak picker] in
-                picker?.dismiss(animated: true) { [weak self] in
-                    self?.reactor?.action.onNext(PlantRegisterReactor.Action.classificationImageSelected(image))
-                }
-            }
-        }
+        let imagePicker = PHPickerViewController(configuration: config)
+        return imagePicker
     }
 }

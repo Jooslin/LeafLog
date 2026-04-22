@@ -157,8 +157,7 @@ final class ProfileEditViewController: BaseViewController, View {
     }
 
     private func applyProfileImage(_ image: UIImage?) {
-        profileEditView.profileImageButton.layer.contents = image?.cgImage
-        profileEditView.profileImageButton.layer.contentsGravity = .resizeAspectFill
+        profileEditView.profileImageButton.backgroundImageView.image = image
         profileEditView.profileImageButton.backgroundColor = image == nil ? .grayScale50 : .clear
     }
 
