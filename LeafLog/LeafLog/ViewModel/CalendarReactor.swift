@@ -16,16 +16,18 @@ final class CalendarReactor: Reactor {
         case previousMonth
         case nextMonth
         
-        case updateFilter(Set<Badge>)
+//        case updateFilter(Set<Badge>)
+        case updateFilter(Int)
         case dateSelected(Date)
     }
     
     enum Mutation {
         case updateBenchmarkDate(Date)
-        case updateFilters(Set<Badge>)
+        case updateFilters(Set<Int>)
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
+        case setFilterItem([CalendarView.Item])
         case setLabelItem([CalendarView.Item])
         
         case setDetailWaterItem([CalendarView.Item])
@@ -38,10 +40,10 @@ final class CalendarReactor: Reactor {
     
     struct State {
         var benchmarkDate: Date = Date()
-        var filters: Set<Badge> = []
+        var filters: Set<Int> = []
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
-            .filter: [.filter([Badge.water.rawValue, Badge.grow.rawValue, Badge.sprout.rawValue, Badge.treat.rawValue])]
+            .filter: [.filter([])]
         ]
         @Pulse var errorMessage: String? = nil
     }
@@ -49,7 +51,7 @@ final class CalendarReactor: Reactor {
     let initialState = State()
     
     //MARK: properties
-    fileprivate let calendar = Calendar.current
+    private let calendar = Calendar.current
     @Dependency(\.plantDBManager) private var plantDBManager
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
@@ -85,13 +87,21 @@ final class CalendarReactor: Reactor {
                 calendarItems(of: benchmark, filters: filters)
             ])
             
-        case .updateFilter(let filters):
+//        case .updateFilter(let filters):
+//            let benchmark = currentState.benchmarkDate
+//
+//            return Observable.concat([
+//                .just(.updateFilters(filters)),
+//                calendarItems(of: benchmark, filters: filters)
+//                ])
+            
+        case .updateFilter(let tag):
             let benchmark = currentState.benchmarkDate
-
+            let newFilter = newFilters(tag: tag)
             return Observable.concat([
-                .just(.updateFilters(filters)),
-                calendarItems(of: benchmark, filters: filters)
-                ])
+                .just(.updateFilters(newFilter)),
+                calendarItems(of: benchmark, filters: newFilter)
+            ])
             
         case .dateSelected(let date):
             return detailItmes(of: date)
@@ -114,6 +124,9 @@ final class CalendarReactor: Reactor {
             
         case .setLabelItem(let item):
             newState.data[.label] = item
+            
+        case .setFilterItem(let item):
+            newState.data[.filter] = item
             
         case .setDetailWaterItem(let items):
             newState.data[.water] = items
@@ -151,7 +164,20 @@ extension CalendarReactor {
         }
     }
     
-    private func calendarItems(of date: Date, filters: Set<Badge>) -> Observable<Mutation> {
+    private func calendarFilterItem(filters: Set<Int>) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self else { return Disposables.create() }
+            
+            let item = CalendarView.Item.filter(filters)
+            
+            observer.onNext(.setFilterItem([item]))
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
+    }
+    
+    private func calendarItems(of date: Date, filters: Set<Int>) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             let task = Task {
@@ -264,7 +290,7 @@ extension CalendarReactor {
         return dates
     }
     
-    private func datesConvertToItems(current: Date, _ dates: [Date], records: [CareRecord], filters: Set<Badge>) -> [CalendarView.Item] {
+    private func datesConvertToItems(current: Date, _ dates: [Date], records: [CareRecord], filters: Set<Int>) -> [CalendarView.Item] {
         guard let currentMonth = calendar.dateComponents([.month], from: current).month else { return [] }
         
         // 날짜별로 기록 데이터 분류
@@ -290,19 +316,19 @@ extension CalendarReactor {
                     // 모든 뱃지가 존재할 경우
                     if badges.count == 4 { break }
                     
-                    if record.watered && (filters.contains(Badge.water) || filters.isEmpty) {
+                    if record.watered && (filters.contains(Badge.water.rawValue) || filters.isEmpty) {
                         badges.insert(Badge.water)
                     }
                     
-                    if record.repotted && (filters.contains(Badge.grow) || filters.isEmpty) {
+                    if record.repotted && (filters.contains(Badge.grow.rawValue) || filters.isEmpty) {
                         badges.insert(Badge.grow)
                     }
                     
-                    if record.fertilized && (filters.contains(Badge.sprout) || filters.isEmpty) {
+                    if record.fertilized && (filters.contains(Badge.sprout.rawValue) || filters.isEmpty) {
                         badges.insert(Badge.sprout)
                     }
                     
-                    if record.treated && (filters.contains(Badge.treat) || filters.isEmpty) {
+                    if record.treated && (filters.contains(Badge.treat.rawValue) || filters.isEmpty) {
                         badges.insert(Badge.treat)
                     }
                 }
@@ -381,7 +407,12 @@ extension CalendarReactor {
         default:
             return []
         }
-        
+    }
+    
+    private func newFilters(tag: Int) -> Set<Int> {
+        var new = currentState.filters
+        new.insert(tag)
+        return new.count == 4 ? [] : new
     }
 }
 

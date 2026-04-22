@@ -6,12 +6,22 @@
 //
 import UIKit
 
-enum Badge: String {
-    case water = "물주기"
-    case grow = "분갈이"
-    case sprout = "비료"
-    case treat = "치료"
+enum Badge: Int {
+    case water = 0
+    case grow
+    case sprout
+    case treat
     case sun, cloud, temperature, bug
+    
+    var title: String {
+        switch self {
+        case .water: "물주기"
+        case .grow: "분갈이"
+        case .sprout: "비료"
+        case .treat: "치료"
+        case .sun, .cloud, .temperature, .bug: ""
+        }
+    }
     
     var smallImage: String {
         switch self {

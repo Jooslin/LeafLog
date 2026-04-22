@@ -96,8 +96,8 @@ extension CalendarView {
         
         let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { cell, indexPath, item in
             switch item {
-            case .filter(let texts):
-                cell.configure(texts)
+            case .filter(let filters):
+                cell.configure(selectedTags: filters)
             default:
                 break
             }
@@ -194,7 +194,7 @@ extension CalendarView {
     enum Item: Hashable {
         case title
         case header(Int, Int) // 년, 월
-        case filter([String])
+        case filter(Set<Int>)
         case calendar(ManageInfoByDate)
         case label(String)
         case water(DetailManageInfo)
@@ -231,12 +231,19 @@ extension Reactive where Base: CalendarView {
         base.headerNextButtonTap
     }
     
-    var filterItemSelected: ControlEvent<[Badge]> {
-        let filterItemSelected = base.collectionView.rx.willDisplayCell
+//    var filterItemSelected: ControlEvent<[Badge]> {
+//        let filterItemSelected = base.collectionView.rx.willDisplayCell
+//            .compactMap { cell, _ in cell as? CalendarFilterCell }
+//            .flatMapLatest { $0.rx.filterItemSelected.asObservable() }
+//        
+//        return ControlEvent(events: filterItemSelected)
+//    }
+    
+    var filterButtonTap: ControlEvent<Int> {
+        let filterButtonTap = base.collectionView.rx.willDisplayCell
             .compactMap { cell, _ in cell as? CalendarFilterCell }
-            .flatMapLatest { $0.rx.filterItemSelected.asObservable() }
-        
-        return ControlEvent(events: filterItemSelected)
+            .flatMapLatest { $0.rx.filterButtonTap.asObservable() }
+        return ControlEvent(events: filterButtonTap)
     }
     
     var itemSelected: Observable<CalendarView.Item> {
