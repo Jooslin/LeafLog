@@ -121,8 +121,13 @@ extension CalendarView {
             }
         }
         
-        let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
-            switch Section(rawValue: indexPath.section) {
+        let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { [weak self] collectionView, indexPath, item in
+            
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+            }
+            
+            return switch section {
             case .title:
                 collectionView.dequeueConfiguredReusableCell(using: titleCellRegistration, for: indexPath, item: item)
             case .header:
@@ -135,8 +140,6 @@ extension CalendarView {
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
                 collectionView.dequeueConfiguredReusableCell(using: detailCellRegistration, for: indexPath, item: item)
-            default:
-                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
         }
         
@@ -171,7 +174,6 @@ extension CalendarView {
                 snapshot.appendItems(target.value, toSection: target.key)
             }
         }
-        
         dataSource.apply(snapshot, animatingDifferences: true)
     }
 }
