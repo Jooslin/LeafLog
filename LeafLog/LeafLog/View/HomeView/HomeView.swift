@@ -65,7 +65,7 @@ extension HomeView {
         }
         
         collectionView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom).offset(32)
+            $0.top.equalTo(totalPlant.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
