@@ -337,6 +337,9 @@ struct PlantDetail: Decodable, Equatable {
     let flowerSeason: String? // 꽃피는 계절
     let fruitColor: String?// 과일 색
     let fruitSeason: String? // 과일 계절
+    let pest: String? // 병충해
+    let humidity: String? // 습도
+    let growTemperature: String? // 생육 온도
 
     private enum CodingKeys: String, CodingKey {
         case contentNumber = "cntntsNo" // 넘버
@@ -356,6 +359,10 @@ struct PlantDetail: Decodable, Equatable {
         case flowerSeason = "ignSeasonCodeNm" // 꽃피는 계절
         case fruitColor = "fmldecolrCodeNm" // 과일 색
         case fruitSeason = "fmldeSeasonCodeNm" // 과일 계절
+        case pest = "dlthtsCodeNm"
+        case humidity = "hdCodeNm"
+        case growTemperature = "grwhTpCodeNm"
+        
     }
 }
 

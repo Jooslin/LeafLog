@@ -37,6 +37,7 @@ enum AppStep: Step {
     
     // PlantTab
     case plantRegister(SelectedPlant? = nil)
+    case plantEdit(MyPlant)
     case plantSearch
     case plantSearchDetail(String)
     case photoSelect

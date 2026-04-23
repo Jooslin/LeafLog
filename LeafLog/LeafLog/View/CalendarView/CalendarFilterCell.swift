@@ -12,13 +12,14 @@ import RxSwift
 import RxCocoa
 
 final class CalendarFilterCell: UICollectionViewCell {
-        
+    private(set) var disposeBag = DisposeBag()
+    
     fileprivate let buttons = [
-        SelectionButton(title: ""),
-        SelectionButton(title: ""),
-        SelectionButton(title: ""),
-        SelectionButton(title: ""),
-        SelectionButton(title: ""),
+        SelectionButton(title: "전체"),
+        SelectionButton(title: "물주기"),
+        SelectionButton(title: "분갈이"),
+        SelectionButton(title: "비료"),
+        SelectionButton(title: "치료"),
     ]
     
     override init(frame: CGRect) {
@@ -30,12 +31,21 @@ final class CalendarFilterCell: UICollectionViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        disposeBag = DisposeBag()
+    }
 }
 
 extension CalendarFilterCell {
     private func setButtonAttributes() {
         buttons.enumerated().forEach { button in
-            button.element.tag = button.offset
+            if button.offset == 0 {
+                button.element.tag = buttons.count
+                return
+            }
+            button.element.tag = button.offset - 1
         }
     }
     
@@ -63,36 +73,25 @@ extension CalendarFilterCell {
 }
 
 extension CalendarFilterCell {
-    func configure(_ data: [String]) {
-        buttons.forEach {
-            if $0.tag < data.count {
-                $0.setup(title: data[$0.tag])
+    func configure(selectedTags: Set<Int>) {
+        buttons.forEach { button in
+            if selectedTags.isEmpty {
+                button.isSelected = button.tag == buttons.count ? true : false
             } else {
-                $0.isHidden = true
+                button.isSelected = button.tag == buttons.count ? false
+                : selectedTags.contains(button.tag) ? true : false
             }
         }
     }
 }
 
 extension Reactive where Base: CalendarFilterCell {
-    var filterItemSelected: ControlEvent<[Badge]> {
+    var filterButtonTap: Observable<Int> {
         let taps = Observable.merge(
             base.buttons.map { button in
-                button.rx.tap
-                    .map { [weak base] in
-                        guard let base else { return [Badge]() }
-                        
-                        button.isSelected.toggle()
-                        
-                        return base.buttons.compactMap {
-                            guard $0.isSelected,
-                                  let title = $0.titleLabel?.text else { return nil }
-                            return Badge(rawValue: title)
-                        }
-                    }
-            }
-        )
+                button.rx.tap.map { button.tag }
+            })
         
-        return ControlEvent(events: taps)
+        return taps
     }
 }

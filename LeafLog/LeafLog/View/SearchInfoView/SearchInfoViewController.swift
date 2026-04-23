@@ -40,6 +40,7 @@ final class SearchInfoViewController: UIViewController {
             $0.centerY.equalToSuperview().priority(750)
             $0.horizontalEdges.equalToSuperview().inset(16)
             $0.verticalEdges.greaterThanOrEqualTo(view.safeAreaLayoutGuide).inset(65)
+            $0.height.lessThanOrEqualTo(view.safeAreaLayoutGuide).inset(65) // 작은 화면에서도 카드가 화면보다 카지지 않도록
         }
 
         infoView.snp.makeConstraints {

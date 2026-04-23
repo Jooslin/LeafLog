@@ -58,8 +58,9 @@ struct PlantCreateInput {
     let id: UUID = UUID()
     let category: PlantCategory
     let location: PlantLocation?
-    let nickname: String?
+    let nickname: String
     let speciesName: String?
+    let contentNumber: String?
     let image: UIImage?
     let wateringIntervalDays: Int
     let lastWateredAt: Date
@@ -73,6 +74,7 @@ struct PlantUpdateInput {
     let location: PlantLocation?
     let nickname: String?
     let speciesName: String?
+    let contentNumber: String?
     
     let image: UIImage? // 사용자가 새로 선택한 이미지 (없으면 nil)
     let existingImagePath: String? // 기존에 저장되어 있던 이미지 경로 (새 이미지가 없을 때 유지)

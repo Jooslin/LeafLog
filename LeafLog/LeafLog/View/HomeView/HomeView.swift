@@ -51,6 +51,7 @@ extension HomeView {
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
             $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(48)
         }
         
         cardStack.snp.makeConstraints {
