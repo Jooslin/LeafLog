@@ -431,24 +431,21 @@ final class PlantRegisterReactor: Reactor {
 
     private static func suggestedWateringIntervalText(from springWaterCycle: String?) -> String {
         guard let springWaterCycle else { return "" }
+        let normalizedWaterCycle = springWaterCycle.components(separatedBy: .whitespacesAndNewlines).joined()
 
-        if springWaterCycle.contains("토양표면이 말랐을때 충분히 관수함")
-            || springWaterCycle.contains("토양 표면이 말랐을때 충분히 관수함") {
+        if normalizedWaterCycle.contains("토양표면이말랐을때충분히관수") {
             return "4"
         }
 
-        if springWaterCycle.contains("화분 흙 대부분 말랐을때 충분히 관수")
-            || springWaterCycle.contains("화분 흙 대부분 말랐을때 충분히 관수함") {
+        if normalizedWaterCycle.contains("화분흙대부분말랐을때충분히관수") {
             return "7"
         }
 
-        if springWaterCycle.contains("항상 흙을 촉촉하게 유지함(물에 잠김)")
-            || springWaterCycle.contains("항상 흙을 촉촉하게 유지함") {
+        if normalizedWaterCycle.contains("항상흙을촉촉하게유지함") {
             return "0"
         }
 
-        if springWaterCycle.contains("흙을 촉촉하게 유지함(물에 잠기지 않도록 주의)")
-            || springWaterCycle.contains("흙을 촉촉하게 유지함") {
+        if normalizedWaterCycle.contains("흙을촉촉하게유지함") {
             return "3"
         }
 
