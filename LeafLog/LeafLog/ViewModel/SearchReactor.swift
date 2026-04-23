@@ -275,7 +275,12 @@ final class SearchReactor: Reactor {
             let task = Task {
                 do {
                     let detail = try await networkManager.fetchPlantDetail(contentNumber: item.contentNumber)
-                    let selectedPlant = SelectedPlant(name: item.name, detail: detail, category: nil)
+                    let selectedPlant = SelectedPlant(
+                        name: item.name,
+                        contentNumber: item.contentNumber,
+                        detail: detail,
+                        category: nil
+                    )
                     observer.onNext(.setSelectedPlant(selectedPlant))
                     observer.onCompleted()
                 } catch {

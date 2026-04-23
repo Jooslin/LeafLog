@@ -38,7 +38,7 @@ final class SearchDetailImageCell: UICollectionViewCell {
     }
 
     func configure(imageURLString: String?) {
-        let placeholderImage = UIImage(systemName: "photo")
+        let placeholderImage = UIImage(resource: .placeholder)
 
         guard let imageURLString, !imageURLString.isEmpty,
               let url = URL(string: imageURLString) else {

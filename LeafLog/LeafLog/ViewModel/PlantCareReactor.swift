@@ -221,6 +221,28 @@ struct PlantCareTimelineEvent: Hashable {
     let photoPath: String?
 }
 
+// 식물 정보
+nonisolated
+struct PlantCarePlantInfoRow: Hashable {
+    let title: String
+    let value: String
+}
+
+nonisolated
+struct PlantCarePlantInfoItem: Hashable {
+    let rows: [PlantCarePlantInfoRow]
+    let guide: PlantCarePlantGuideItem
+    let isGuideEnabled: Bool
+}
+
+nonisolated
+struct PlantCarePlantGuideItem: Hashable {
+    let watering: String
+    let temperature: String
+    let humidity: String
+    let pest: String
+}
+
 
 // MARK: - PlantCareReactor
 final class PlantCareReactor: Reactor {
@@ -238,11 +260,13 @@ final class PlantCareReactor: Reactor {
         case saveDiary(String)
         case saveDiaryPhoto(UIImage)
         case deleteDiaryPhoto
+        case setGuideEnabled(Bool)
     }
 
     enum Mutation {
         case setLoading(Bool)
         case setPlant(MyPlant)
+        case setPlantDetail(PlantDetail)
         case setSelectedTab(PlantCareTab)
         case setSelectedDate(Date)
         case setItems([PlantCareItem])
@@ -261,6 +285,13 @@ final class PlantCareReactor: Reactor {
         var isLoading = false
         var items: [PlantCareItem]
         var diaryItem: PlantCareDiaryItem
+        var plantInfoRows: [PlantCarePlantInfoRow] = []
+        var plantGuideItem = PlantCarePlantGuideItem(
+            watering: "정보 없음",
+            temperature: "정보 없음",
+            humidity: "정보 없음",
+            pest: "정보 없음"
+        )
         var timelineEvents: [PlantCareTimelineEvent] = []
         var timelineFilter: PlantCareTimelineFilter = .all
         var timelineSort: PlantCareTimelineSort = .latestFirst
@@ -269,6 +300,7 @@ final class PlantCareReactor: Reactor {
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.networkManager) private var networkManager
     @Dependency(\.supabaseManager) private var supabaseManager
 
     let initialState: State
@@ -396,6 +428,9 @@ final class PlantCareReactor: Reactor {
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
+
+        case .setGuideEnabled(let isEnabled):
+            return updateGuideEnabled(isEnabled)
         }
     }
 
@@ -408,6 +443,10 @@ final class PlantCareReactor: Reactor {
 
         case .setPlant(let plant):
             newState.plant = plant
+            newState.plantInfoRows = Self.makePlantInfoRows(from: plant) // 식물 정보
+
+        case .setPlantDetail(let detail):
+            newState.plantGuideItem = Self.makePlantGuideItem(from: detail)
 
         case .setSelectedTab(let selectedTab):
             newState.selectedTab = selectedTab
@@ -444,17 +483,58 @@ private extension PlantCareReactor {
     func loadPlant() -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [plantDBManager] observer in
+        return Observable.create { [plantDBManager, networkManager] observer in
             let task = Task {
                 do {
                     let plant = try await plantDBManager.fetchPlant(plantID: plantID)
                     observer.onNext(.setPlant(plant))
+
+                    if let contentNumber = plant.contentNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !contentNumber.isEmpty {
+                        let detail = try await networkManager.fetchPlantDetail(contentNumber: contentNumber)
+                        observer.onNext(.setPlantDetail(detail))
+                    }
+
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("식물 정보를 불러오지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    func updateGuideEnabled(_ isEnabled: Bool) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+        let originalPlant = currentState.plant
+
+        return Observable.create { [plantDBManager] observer in
+            let task = Task {
+                do {
+                    let plant = try await plantDBManager.updateGuideEnabled(
+                        plantID: plantID,
+                        isEnabled: isEnabled
+                    )
+                    observer.onNext(.setPlant(plant))
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    if let originalPlant {
+                        observer.onNext(.setPlant(originalPlant))
+                    }
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    if let originalPlant {
+                        observer.onNext(.setPlant(originalPlant))
+                    }
+                    observer.onNext(.setErrorMessage("가이드 설정을 저장하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }
@@ -776,6 +856,43 @@ private extension PlantCareReactor {
             return events
         }
     }
+    
+    // 식물 정보 디테일
+    static func makePlantInfoRows(from plant: MyPlant) -> [PlantCarePlantInfoRow] {
+        [
+            PlantCarePlantInfoRow(title: "현재 상태", value: nonEmptyText(plant.healthStatus, fallback: "미지정")),
+            PlantCarePlantInfoRow(title: "데려온 날", value: displayDate(from: plant.createdAt)),
+            PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
+            PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))
+        ]
+    }
+
+    static func makePlantGuideItem(from detail: PlantDetail) -> PlantCarePlantGuideItem {
+        PlantCarePlantGuideItem(
+            watering: nonEmptyText(detail.springWaterCycle, fallback: "정보 없음"),
+            temperature: nonEmptyText(detail.growTemperature, fallback: "정보 없음"),
+            humidity: nonEmptyText(detail.humidity, fallback: "정보 없음"),
+            pest: nonEmptyText(detail.pest, fallback: "정보 없음")
+        )
+    }
+
+    static func nonEmptyText(_ text: String?, fallback: String) -> String {
+        let trimmedText = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedText?.isEmpty == false ? trimmedText ?? fallback : fallback
+    }
+
+    static func displayDate(from date: Date) -> String {
+        plantInfoDateFormatter.string(from: date)
+    }
+
+    static let plantInfoDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
 
     static func emptyInput(plantID: UUID, date: Date) -> CareRecordUpsertInput {
         CareRecordUpsertInput(
@@ -850,10 +967,14 @@ private extension PlantCareReactor {
 
 /// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
 func localDate(from date: Date) -> LocalDate {
+    LocalDate(rawValue: plantCareLocalDateFormatter.string(from: date))
+}
+
+private let plantCareLocalDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.calendar = Calendar.current
     formatter.locale = Locale(identifier: "ko_KR")
     formatter.timeZone = TimeZone.current
     formatter.dateFormat = "yyyy-MM-dd"
-    return LocalDate(rawValue: formatter.string(from: date))
-}
+    return formatter
+}()

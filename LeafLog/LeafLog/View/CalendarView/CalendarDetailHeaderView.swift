@@ -62,6 +62,6 @@ extension CalendarDetailHeaderView {
 extension CalendarDetailHeaderView {
     func configure(_ manageCategory: Badge) {
         badge.image = UIImage(named: manageCategory.bigImage)
-        manageLabel.text = manageCategory.rawValue
+        manageLabel.text = manageCategory.title
     }
 }

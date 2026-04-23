@@ -86,6 +86,15 @@ final class PlantRegisterView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    func configureHeader(title: String, buttonTitle: String, showsDeleteButton: Bool) {
+        headerView.titleLabel.text = title
+        headerView.rightButton.isHidden = !showsDeleteButton
+        headerView.rightButton.setImage(UIImage(systemName: "trash"), for: .normal)
+        headerView.rightButton.configuration?.baseForegroundColor = .black
+        headerView.rightButton.accessibilityLabel = "식물 삭제"
+        registerButton.setTitle(buttonTitle, for: .normal)
+    }
+
     func applySelectedPlant(
         name: String,
         growStyle: String?,

@@ -18,6 +18,7 @@ final class CalendarView: UIView {
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
+    fileprivate let filterButtonTap = PublishRelay<Int>()
     
     init() {
         super.init(frame: .zero)
@@ -69,6 +70,7 @@ extension CalendarView {
         
         let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
             guard let self else { return }
+            
             switch item {
             case .header(let year, let month):
                 cell.configure(year: year, month: month)
@@ -94,10 +96,16 @@ extension CalendarView {
             }
         }
         
-        let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { cell, indexPath, item in
+        let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
+            
             switch item {
-            case .filter(let texts):
-                cell.configure(texts)
+            case .filter(let filters):
+                cell.configure(selectedTags: filters)
+                
+                cell.rx.filterButtonTap
+                    .bind(to: self.filterButtonTap)
+                    .disposed(by: cell.disposeBag)
             default:
                 break
             }
@@ -121,8 +129,13 @@ extension CalendarView {
             }
         }
         
-        let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
-            switch Section(rawValue: indexPath.section) {
+        let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { [weak self] collectionView, indexPath, item in
+            
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+            }
+            
+            return switch section {
             case .title:
                 collectionView.dequeueConfiguredReusableCell(using: titleCellRegistration, for: indexPath, item: item)
             case .header:
@@ -135,8 +148,6 @@ extension CalendarView {
                 collectionView.dequeueConfiguredReusableCell(using: dateCellRegistration, for: indexPath, item: item)
             case .water, .grow, .sprout, .treat:
                 collectionView.dequeueConfiguredReusableCell(using: detailCellRegistration, for: indexPath, item: item)
-            default:
-                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
             }
         }
         
@@ -171,7 +182,6 @@ extension CalendarView {
                 snapshot.appendItems(target.value, toSection: target.key)
             }
         }
-        
         dataSource.apply(snapshot, animatingDifferences: true)
     }
 }
@@ -194,7 +204,7 @@ extension CalendarView {
     enum Item: Hashable {
         case title
         case header(Int, Int) // 년, 월
-        case filter([String])
+        case filter(Set<Int>)
         case calendar(ManageInfoByDate)
         case label(String)
         case water(DetailManageInfo)
@@ -231,12 +241,8 @@ extension Reactive where Base: CalendarView {
         base.headerNextButtonTap
     }
     
-    var filterItemSelected: ControlEvent<[Badge]> {
-        let filterItemSelected = base.collectionView.rx.willDisplayCell
-            .compactMap { cell, _ in cell as? CalendarFilterCell }
-            .flatMapLatest { $0.rx.filterItemSelected.asObservable() }
-        
-        return ControlEvent(events: filterItemSelected)
+    var filterButtonTap: PublishRelay<Int> {
+        base.filterButtonTap
     }
     
     var itemSelected: Observable<CalendarView.Item> {
