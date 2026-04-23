@@ -363,7 +363,7 @@ private extension PlantCareView {
                     case .diary:
                         return 520
                     case .timelineRecord:
-                        return 280
+                        return 380
                     default:
                         return 100
                     }
@@ -1330,7 +1330,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         case .diary:
             iconImageView.image = UIImage(named: "sprout")
             titleLabel.text = "오늘의 일기"
-            memoLabel.text = memo.isEmpty ? "사진을 기록했어요." : memo
+            memoLabel.text = memo.isEmpty ? "" : memo
             loadPhoto(from: event.photoPath)
         }
     }
