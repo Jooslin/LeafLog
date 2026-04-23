@@ -17,8 +17,8 @@ final class HomeView: UIView {
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
-    private let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
-    private let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
+    let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
+    let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
     let emptyView = EmptyPlantView().then {
         $0.isHidden = true

@@ -13,6 +13,7 @@ import RxSwift
 
 final class HomeViewController: BaseViewController {
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
     private let homeView = HomeView()
     private var loadPlantsTask: Task<Void, Never>?
@@ -28,6 +29,7 @@ final class HomeViewController: BaseViewController {
         bindPlantSelection()
         bindPlantRegistration()
         showEmptyState()
+        bindWaterButtonTap()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -83,7 +85,23 @@ extension HomeViewController {
     private func bindWaterButtonTap() {
         homeView.rx.waterButtonTap
             .subscribe(onNext: { [weak self] id in
+                guard let self, let id else { return }
                 
+                Task {
+                    do {
+                        try await self.careRecordDBManager.upsertCareRecord(
+                            input: CareRecordUpsertInput(
+                                plantID: id,
+                                recordDate: LocalDate(date: Date()),
+                                watered: true
+                            ))
+                        self.loadPlants()
+                    } catch let error as AuthError {
+                        self.steps.accept(AppStep.alert("오류", error.userMessage))
+                    } catch {
+                        self.steps.accept(AppStep.alert("오류", "데이터를 저장할 수 없습니다. 잠시 후 다시 시도해주세요."))
+                    }
+                }
             })
             .disposed(by: disposeBag)
     }
