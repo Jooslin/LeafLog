@@ -11,6 +11,7 @@ import ReactorKit
 import RxCocoa
 import RxSwift
 import UIKit
+import RxKeyboard
 
 final class PlantCareViewController: BaseViewController, View {
     @Dependency(\.supabaseManager) private var supabaseManager
@@ -35,7 +36,8 @@ final class PlantCareViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        setKeyboardDismissGesture()
+        setKeyboardDismissGesture() // 키보드 내리기
+        bindKeyboard() // 키보드 텍스트 필드 위치 조정
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -56,6 +58,54 @@ final class PlantCareViewController: BaseViewController, View {
     func bind(reactor: PlantCareReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
+    }
+    
+    // 키보드 위로 텍스트 필드 올라오는 메서드
+    func bindKeyboard() {
+        RxKeyboard.instance.visibleHeight
+            .drive(onNext: { [weak self] keyboardHeight in
+                guard let self else { return }
+
+                let bottomInset: CGFloat = keyboardHeight > 0 ? keyboardHeight + 32 : 32
+
+                self.plantCareView.collectionView.contentInset.bottom = bottomInset
+                self.plantCareView.collectionView.verticalScrollIndicatorInsets.bottom = bottomInset
+
+                if keyboardHeight > 0 {
+                    self.scrollToCurrentResponderIfNeeded()
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // 텍스트필드까지 화면 끌어올리기
+    private func scrollToCurrentResponderIfNeeded() {
+        guard let responder = view.currentFirstResponder, // 지금 타자치고있는 필드
+              responder.isDescendant(of: plantCareView.collectionView) else {
+            return
+        }
+
+        let responderFrame = responder.convert(responder.bounds, to: plantCareView.collectionView)
+        let visibleRect = responderFrame.insetBy(dx: 0, dy: -16)
+        // 스크롤 올리기
+        plantCareView.collectionView.scrollRectToVisible(visibleRect, animated: true)
+    }
+}
+
+// 키보드를 띄우게 한 뷰 찾기
+private extension UIView {
+    var currentFirstResponder: UIView? {
+        if isFirstResponder {
+            return self
+        }
+
+        for subview in subviews {
+            if let responder = subview.currentFirstResponder {
+                return responder
+            }
+        }
+
+        return nil
     }
 }
 
