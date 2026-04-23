@@ -11,10 +11,14 @@ import Then
 import UIKit
 
 final class PlantCareView: UIView {
-    private enum Metric {
+    fileprivate enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
+        static let diaryPhotoHeight: CGFloat = 420
+        static let diaryEstimatedHeight: CGFloat = 740
+        static let timelinePhotoHeight: CGFloat = 420
+        static let timelineEstimatedHeight: CGFloat = 560
     }
 
     let headerView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "edit")
@@ -176,6 +180,10 @@ private extension PlantCareView {
 // MARK: - Header Animation
 extension PlantCareView {
     func prepareHeaderAnimator() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         resetHeaderToExpandedLayout()
 
         regularLayoutConstraints.forEach { $0.isActive = false }
@@ -194,6 +202,10 @@ extension PlantCareView {
     }
 
     func updateHeaderAnimation(with contentOffset: CGPoint) {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         // 스크롤 진행도 계산
         let progress = (contentOffset.y + Metric.headerContentInset) / -Metric.headerContentInset
         let fraction = min(max(0, -progress * 1.3), 1)
@@ -217,11 +229,19 @@ extension PlantCareView {
 
     // 사용자가 스크롤한만큼 애니메이션 동기화
     func syncHeaderAnimationWithCurrentOffset() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         updateHeaderAnimation(with: collectionView.contentOffset)
         layoutIfNeeded()
     }
 
     func resetHeaderScrollPosition(animated: Bool = false) {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         layoutIfNeeded()
 
         let topOffset = CGPoint(
@@ -247,6 +267,10 @@ extension PlantCareView {
     }
 
     private func resetHeaderToExpandedLayout() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         stopHeaderAnimator()
 
         compactLayoutConstraints.forEach { $0.isActive = false }
@@ -254,6 +278,10 @@ extension PlantCareView {
         nameLabel.transform = .identity
         plantNameLabel.alpha = 1
         layoutIfNeeded()
+    }
+
+    private var hasValidLayoutSize: Bool {
+        bounds.width > 0 && bounds.height > 0
     }
 }
 
@@ -409,9 +437,9 @@ private extension PlantCareView {
                     case .careRecord:
                         return 280
                     case .diary:
-                        return 520
+                        return Metric.diaryEstimatedHeight
                     case .timelineRecord:
-                        return 380
+                        return Metric.timelineEstimatedHeight
                     default:
                         return 100
                     }
@@ -987,7 +1015,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         $0.snp.makeConstraints {
-            $0.height.equalTo(200)
+            $0.height.equalTo(PlantCareView.Metric.diaryPhotoHeight)
         }
     }
 
@@ -1453,7 +1481,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         }
 
         photoImageView.snp.makeConstraints {
-            $0.height.equalTo(250)
+            $0.height.equalTo(PlantCareView.Metric.timelinePhotoHeight)
         }
     }
 
