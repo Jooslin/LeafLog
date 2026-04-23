@@ -45,6 +45,16 @@ final class PlantTabFlow: Flow {
             )
 
         case .plantRegister(let selectedPlant):
+            if let selectedPlant,
+               let registerViewController = navigationController.viewControllers
+                .compactMap({ $0 as? PlantRegisterViewController })
+                .last {
+                registerViewController.updateSelectedPlant(selectedPlant)
+                navigationController.popToViewController(registerViewController, animated: true)
+
+                return .none
+            }
+
             let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
             
             if navigationController.viewControllers.isEmpty {

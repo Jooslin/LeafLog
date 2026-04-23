@@ -45,6 +45,7 @@ final class PlantRegisterReactor: Reactor {
         case viewDidLoad
         case updateCategory(PlantCategory?)
         case updateLocation(PlantLocation?)
+        case updateSelectedPlant(SelectedPlant)
         case updateNickname(String)
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
@@ -55,11 +56,13 @@ final class PlantRegisterReactor: Reactor {
     }
 
     enum Mutation {
+        case setSelectedPlant(SelectedPlant)
         case setSelectedCategory(PlantCategory?)
         case setSelectedLocation(PlantLocation?)
         case setNicknameText(String)
         case setWateringIntervalText(String)
         case setLastWateredDate(Date?)
+        case setExistingImage(UIImage?)
         case setSaving(Bool)
         case setSaveCompleted
         case setDeleteCompleted
@@ -81,6 +84,7 @@ final class PlantRegisterReactor: Reactor {
         var lastWateredDate: Date? = nil
         var isRegisterEnabled = false
         var isSaving = false
+        @Pulse var existingImage: UIImage? = nil
         @Pulse var saveCompleted = false
         @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
@@ -101,11 +105,13 @@ final class PlantRegisterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
-            return .empty()
+            return loadExistingImage(state: currentState)
         case .updateCategory(let category):
             return .just(.setSelectedCategory(category))
         case .updateLocation(let location):
             return .just(.setSelectedLocation(location))
+        case .updateSelectedPlant(let selectedPlant):
+            return .just(.setSelectedPlant(selectedPlant))
         case .updateNickname(let nickname):
             return .just(.setNicknameText(nickname))
         case .updateWateringInterval(let text):
@@ -125,6 +131,13 @@ final class PlantRegisterReactor: Reactor {
         var newState = state
 
         switch mutation {
+        case .setSelectedPlant(let selectedPlant):
+            newState.selectedPlant = selectedPlant
+            newState.selectedCategory = Self.suggestedCategory(from: selectedPlant)
+            let suggestedWateringIntervalText = Self.suggestedWateringIntervalText(from: selectedPlant.detail?.springWaterCycle)
+            if !suggestedWateringIntervalText.isEmpty || newState.wateringIntervalText.isEmpty {
+                newState.wateringIntervalText = suggestedWateringIntervalText
+            }
         case .setSelectedCategory(let category):
             newState.selectedCategory = category
         case .setSelectedLocation(let location):
@@ -135,6 +148,8 @@ final class PlantRegisterReactor: Reactor {
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
+        case .setExistingImage(let image):
+            newState.existingImage = image
         case .setSaving(let isSaving):
             newState.isSaving = isSaving
         case .setSaveCompleted:
@@ -258,6 +273,28 @@ final class PlantRegisterReactor: Reactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(Mutation.setErrorMessage(error.localizedDescription))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func loadExistingImage(state: State) -> Observable<Mutation> {
+        guard case let .edit(plant) = state.mode else {
+            return .empty()
+        }
+
+        return Observable.create { [plantService] observer in
+            let task = Task {
+                do {
+                    let image = try await plantService.loadPlantImage(from: plant.imagePath)
+                    observer.onNext(.setExistingImage(image))
+                    observer.onCompleted()
+                } catch {
                     observer.onCompleted()
                 }
             }

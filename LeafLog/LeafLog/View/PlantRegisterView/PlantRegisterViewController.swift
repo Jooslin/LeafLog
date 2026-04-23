@@ -19,7 +19,6 @@ private struct PlantRegisterHeaderState: Equatable {
 }
 
 final class PlantRegisterViewController: BaseViewController, View {
-    
     private let registerView = PlantRegisterView()
     private var selectedImage: UIImage?
     private let lastWateredDatePicker = UIDatePicker().then {
@@ -43,6 +42,10 @@ final class PlantRegisterViewController: BaseViewController, View {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    func updateSelectedPlant(_ selectedPlant: SelectedPlant) {
+        reactor?.action.onNext(.updateSelectedPlant(selectedPlant))
+    }
     
     override func loadView() {
         view = registerView
@@ -55,13 +58,8 @@ final class PlantRegisterViewController: BaseViewController, View {
         guard let reactor else { return }
         bindUI(reactor: reactor)
     }
-    
-    func bind(reactor: PlantRegisterReactor) {
-        Observable.just(())
-            .map { PlantRegisterReactor.Action.viewDidLoad }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
 
+    func bind(reactor: PlantRegisterReactor) {
         // 진입에 따라서 헤더 바꾸기(등록/수정)
         reactor.state
             .map(Self.makeHeaderState)
@@ -96,6 +94,16 @@ final class PlantRegisterViewController: BaseViewController, View {
                     springWaterCycle: selectedPlant.detail?.springWaterCycle,
                     selectedCategory: selectedPlant.category
                 )
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$existingImage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] image in
+                guard let self, self.selectedImage == nil else { return }
+                self.registerView.cameraButton.backgroundImageView.image = image
+                self.registerView.cameraButton.backgroundColor = .clear
             })
             .disposed(by: disposeBag)
         
@@ -182,6 +190,10 @@ final class PlantRegisterViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] message in
                 self?.steps.accept(AppStep.alert("오류", message))
             })
+            .disposed(by: disposeBag)
+
+        Observable.just(PlantRegisterReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
     

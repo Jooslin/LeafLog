@@ -355,7 +355,7 @@ private extension PlantCareView {
 
                 return NSCollectionLayoutSection(group: group)
 
-            case .careRecord, .diary, .timelineRecord, .plantInfo:
+            case .careRecord, .diary, .timelineRecord:
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
@@ -377,6 +377,32 @@ private extension PlantCareView {
                         top: section == .careRecord ? 16 : 0,
                         leading: 0,
                         bottom: section == .careRecord ? 24 : 40,
+                        trailing: 0
+                    )
+                }
+                
+                // 레이아웃 따로 잡기
+            case .plantInfo:
+                let item = NSCollectionLayoutItem(
+                    layoutSize: NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1),
+                        heightDimension: .estimated(500)
+                    )
+                )
+
+                let group = NSCollectionLayoutGroup.vertical(
+                    layoutSize: NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1),
+                        heightDimension: .estimated(500)
+                    ),
+                    subitems: [item]
+                )
+
+                return NSCollectionLayoutSection(group: group).then {
+                    $0.contentInsets = NSDirectionalEdgeInsets(
+                        top: 0,
+                        leading: 0,
+                        bottom: 40,
                         trailing: 0
                     )
                 }

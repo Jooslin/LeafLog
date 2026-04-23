@@ -95,6 +95,15 @@ final class PlantService {
             input: input
         )
     }
+
+    func loadPlantImage(from imagePath: String?) async throws -> UIImage? {
+        guard let url = try await supabaseManager.resolvePlantImageURL(from: imagePath) else {
+            return nil
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return UIImage(data: data)
+    }
     
     // MARK: - 등록된 식물 삭제
     func deletePlant(plantID: UUID, imagePath: String?) async throws {
