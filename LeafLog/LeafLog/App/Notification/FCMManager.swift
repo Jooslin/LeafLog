@@ -29,7 +29,7 @@ final class FCMManager: NSObject {
         syncCurrentFCMToken()
     }
     
-    func syncCurentFCMTokenIfPossible() {
+    func syncCurrentFCMTokenIfPossible() {
         guard hasAPNsToken else { return }
         syncCurrentFCMToken()
     }
