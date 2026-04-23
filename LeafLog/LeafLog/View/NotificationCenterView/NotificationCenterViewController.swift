@@ -7,6 +7,7 @@
 
 import UIKit
 import ReactorKit
+import RxCocoa
 
 final class NotificationCenterViewController: BaseViewController, View {
     private let notificationCenterView = NotificationCenterView()
@@ -20,10 +21,18 @@ final class NotificationCenterViewController: BaseViewController, View {
     }
     
     private func bindAction(reactor: NotificationCenterReactor) {
-        
+        self.rx.viewWillAppear
+            .map { _ in NotificationCenterReactor.Action.viewWillAppear }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: NotificationCenterReactor) {
-        
+        reactor.state
+            .map(\.alarmItem)
+            .subscribe(onNext: { [weak self] items in
+                self?.notificationCenterView.setSnapshot(items)
+            })
+            .disposed(by: disposeBag)
     }
 }
