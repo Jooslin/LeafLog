@@ -10,15 +10,28 @@ import UserNotifications
 import FirebaseMessaging
 import Auth
 import Supabase
+import OSLog
 
 final class FCMManager: NSObject {
 
     @Dependency(\.notificationManager) private var notificationManager
     @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger(subsystem: "LeafLog", category: "FCMManager")
     
     func setConfigs() {
         notificationManager.center.delegate = self
         Messaging.messaging().delegate = self
+    }
+    
+    func syncCurrentFCMToken() {
+        Task {
+            do {
+                let token = try await Messaging.messaging().token()
+                supabaseManager.updateFCMToken(token)
+            } catch {
+                logger.error("sync fcmToken failed.\nerror: \(error.localizedDescription, privacy: .private)")
+            }
+        }
     }
 }
 

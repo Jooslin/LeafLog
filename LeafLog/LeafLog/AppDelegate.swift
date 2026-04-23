@@ -32,6 +32,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Apple의 푸시 서버(APNs)에 앱을 등록하고 디바이스 토큰 발급을 요청함
         application.registerForRemoteNotifications()
         
+        // FCM Token 갱신
+        fcmManager.syncCurrentFCMToken()
         return true
         }
     

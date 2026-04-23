@@ -16,6 +16,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     let coordinator = FlowCoordinator()
     @Dependency(\.notificationManager) private var notificationManager
+    @Dependency(\.fcmManager) private var fcmManager
     
     var window: UIWindow?
     
@@ -59,6 +60,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         //Foreground에 진입할 때마다 알림 허용 권한 업데이트
         notificationManager.updateIsNotificationEnabled()
+        
+        // Foreground에 진입할 때마다 fcmToken 업데이트
+        fcmManager.syncCurrentFCMToken()
     }
     
     func sceneWillResignActive(_ scene: UIScene) {
