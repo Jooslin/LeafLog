@@ -290,7 +290,16 @@ extension PlantCareView {
     func configure(plant: MyPlant) {
         nameLabel.text = plant.nickname
         plantNameLabel.text = plant.speciesName
-        plantImageView.image = UIImage(named: plant.defaultImageAssetName)
+        
+        // 등록된 사진이 없으면 기본 이미지
+        let hasRegisteredImage = plant.imagePath?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty == false
+
+        if !hasRegisteredImage {
+            plantImageView.image = UIImage(named: plant.defaultImageAssetName)
+            plantImageView.tintColor = nil
+        }
     }
 
     // 사진 추가하기
