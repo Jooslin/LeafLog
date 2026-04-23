@@ -10,7 +10,6 @@ import ReactorKit
 import RxSwift
 import UIKit
 import RxCocoa
-import Then
 
 private struct PlantRegisterHeaderState: Equatable {
     let title: String
@@ -21,18 +20,6 @@ private struct PlantRegisterHeaderState: Equatable {
 final class PlantRegisterViewController: BaseViewController, View {
     private let registerView = PlantRegisterView()
     private var selectedImage: UIImage?
-    private let lastWateredDatePicker = UIDatePicker().then {
-        $0.datePickerMode = .date
-        $0.preferredDatePickerStyle = .wheels
-        $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
-        $0.maximumDate = Date()
-    }
-    private let lastWateredDateFormatter = DateFormatter().then {
-        $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
-        $0.dateFormat = "yyyy / MM / dd"
-    }
     
     init(reactor: PlantRegisterReactor = PlantRegisterReactor()) {
         super.init(nibName: nil, bundle: nil)
@@ -152,8 +139,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] date in
                 guard let self, let date else { return }
-                self.lastWateredDatePicker.date = date
-                self.updateLastWateredDateField(date: date)
+                self.registerView.setLastWateredDate(date)
             })
             .disposed(by: disposeBag)
         
@@ -294,8 +280,11 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.handleRegisterTap()
             })
             .disposed(by: disposeBag)
-        
-        configureLastWateredDatePicker()
+
+        registerView.onLastWateredDateDone = { [weak reactor] date in
+            reactor?.action.onNext(.updateLastWateredDate(date))
+        }
+
         syncInitialFormState()
     }
 
@@ -371,33 +360,8 @@ final class PlantRegisterViewController: BaseViewController, View {
         steps.accept(AppStep.plantSearch)
     }
     
-    private func configureLastWateredDatePicker() {
-        registerView.lastWateredDateTextField.inputView = lastWateredDatePicker
-        registerView.lastWateredDateTextField.tintColor = .clear
-        
-        let toolbar = UIToolbar()
-        toolbar.sizeToFit()
-        toolbar.items = [
-            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
-            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapLastWateredDateDone))
-        ]
-        registerView.lastWateredDateTextField.inputAccessoryView = toolbar
-    }
-    
-    @objc private func didTapLastWateredDateDone() {
-        let selectedDate = lastWateredDatePicker.date
-        updateLastWateredDateField(date: selectedDate)
-        reactor?.action.onNext(.updateLastWateredDate(selectedDate))
-        registerView.lastWateredDateTextField.resignFirstResponder()
-    }
-    
-    private func updateLastWateredDateField(date: Date) {
-        registerView.lastWateredDateTextField.text = lastWateredDateFormatter.string(from: date)
-    }
-    
     private func resetFormUI() {
         selectedImage = nil
-        lastWateredDatePicker.date = Date()
         registerView.resetForm()
     }
     
