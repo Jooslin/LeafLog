@@ -13,7 +13,9 @@ final class NotificationAlarmCell: UICollectionViewCell {
     private let imageView = UIImageView()
     private let titleLabel = UILabel(text: "", config: .label14)
     private let descriptionLabel = UILabel(text: "", config: .body14, color: .grayScale600, lines: 0)
-    private let timeLabel = UILabel(text: "", config: .label12, color: .grayScale400, lines: 1)
+    private let timeLabel = UILabel(text: "", config: .label12, color: .grayScale400, lines: 1).then {
+        $0.textAlignment = .right
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -47,11 +49,11 @@ final class NotificationAlarmCell: UICollectionViewCell {
         
         labelStack.snp.makeConstraints {
             $0.leading.equalTo(imageView.snp.trailing).offset(12)
+            $0.trailing.equalTo(timeLabel.snp.leading).offset(-12)
             $0.verticalEdges.equalToSuperview().inset(16)
         }
         
         timeLabel.snp.makeConstraints {
-            $0.leading.equalTo(labelStack.snp.trailing).offset(12)
             $0.centerY.equalTo(labelStack)
             $0.trailing.equalToSuperview().inset(16)
         }

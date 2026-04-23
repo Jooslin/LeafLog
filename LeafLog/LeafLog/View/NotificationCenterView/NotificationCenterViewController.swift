@@ -16,6 +16,11 @@ final class NotificationCenterViewController: BaseViewController, View {
         view = notificationCenterView
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true             
+    }
+    
     func bind(reactor: NotificationCenterReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
@@ -37,6 +42,12 @@ final class NotificationCenterViewController: BaseViewController, View {
         reactor.state
             .map(\.alarmItem)
             .subscribe(onNext: { [weak self] items in
+                guard !items.isEmpty else {
+                    self?.notificationCenterView.emptyView.isHidden = false
+                    return
+                }
+                
+                self?.notificationCenterView.emptyView.isHidden = true
                 self?.notificationCenterView.setSnapshot(items)
             })
             .disposed(by: disposeBag)

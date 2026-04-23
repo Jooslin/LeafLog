@@ -17,6 +17,10 @@ final class NotificationCenterView: UIView {
         $0.showsVerticalScrollIndicator = false
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
+    let emptyView = NotificationEmptyView().then {
+        $0.isHidden = true
+    }
+    
     private lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
     
     override init(frame: CGRect) {
@@ -29,6 +33,7 @@ final class NotificationCenterView: UIView {
     }
     
     private func setLayout() {
+        addSubview(emptyView)
         addSubview(titleView)
         addSubview(listView)
         
@@ -41,6 +46,10 @@ final class NotificationCenterView: UIView {
         listView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom).offset(24)
             $0.horizontalEdges.bottom.equalToSuperview()
+        }
+        
+        emptyView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
         }
     }
 }
