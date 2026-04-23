@@ -18,6 +18,7 @@ final class CalendarView: UIView {
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
+    fileprivate let alarmButtonTap = PublishRelay<Void>()
     
     init() {
         super.init(frame: .zero)
@@ -63,8 +64,11 @@ extension CalendarView {
             }
         }
         
-        let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { cell,indexPath,item in
-            
+        let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { [weak self] cell,indexPath,item in
+            guard let self else { return }
+            cell.rx.alarmButtonTap
+                .bind(to: self.alarmButtonTap)
+                .disposed(by: cell.disposeBag)
         }
         
         let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
@@ -244,5 +248,10 @@ extension Reactive where Base: CalendarView {
             .compactMap {
                 base.dataSource.itemIdentifier(for: $0)
             }
+    }
+    
+    
+    var alarmButtonTap: ControlEvent<Void> {
+        base.titleView.rightButton.rx.tap
     }
 }

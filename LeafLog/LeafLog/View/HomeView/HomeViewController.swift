@@ -79,6 +79,13 @@ extension HomeViewController {
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
+    
+    private func bindAlarmButton() {
+        homeView.rx.alarmButtonTap
+            .map { AppStep.alarmCenter }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+    }
 }
 
 // MARK: - DB
