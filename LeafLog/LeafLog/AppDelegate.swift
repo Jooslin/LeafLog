@@ -32,8 +32,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Apple의 푸시 서버(APNs)에 앱을 등록하고 디바이스 토큰 발급을 요청함
         application.registerForRemoteNotifications()
         
-        // FCM Token 갱신
-        fcmManager.syncCurrentFCMToken()
         return true
         }
     
@@ -56,7 +54,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 extension AppDelegate {
     // APNs 토큰이 발급되었을 때 실행 - registerForRemoteNotifications()가 완료된 이후 실행
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // Firebase에 apns 토큰을 전달
-        Messaging.messaging().apnsToken = deviceToken
+        fcmManager.updateAPNsToken(deviceToken)
     }
 }
