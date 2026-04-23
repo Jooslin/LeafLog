@@ -14,6 +14,7 @@ final class PlantCareView: UIView {
     private enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
+        static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
     }
 
     let headerView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "edit")
@@ -174,13 +175,7 @@ private extension PlantCareView {
 // MARK: - Header Animation
 extension PlantCareView {
     func prepareHeaderAnimator() {
-        stopHeaderAnimator()
-
-        compactLayoutConstraints.forEach { $0.isActive = false }
-        regularLayoutConstraints.forEach { $0.isActive = true }
-        nameLabel.transform = .identity
-        plantNameLabel.alpha = 1
-        layoutIfNeeded()
+        resetHeaderToExpandedLayout()
 
         regularLayoutConstraints.forEach { $0.isActive = false }
         compactLayoutConstraints.forEach { $0.isActive = true }
@@ -200,7 +195,20 @@ extension PlantCareView {
     func updateHeaderAnimation(with contentOffset: CGPoint) {
         // 스크롤 진행도 계산
         let progress = (contentOffset.y + Metric.headerContentInset) / -Metric.headerContentInset
-        scrollAnimator?.fractionComplete = min(max(0, -progress * 1.3), 1)
+        let fraction = min(max(0, -progress * 1.3), 1)
+
+        // 임계값보다 작으면 애니메이션x
+        if fraction <= Metric.expandedHeaderFractionThreshold {
+            if scrollAnimator != nil {
+                resetHeaderToExpandedLayout()
+            }
+        } else {
+            if scrollAnimator == nil {
+                prepareHeaderAnimator()
+            }
+
+            scrollAnimator?.fractionComplete = fraction
+        }
 
         let segmentOffset = max(0, -contentOffset.y - 76)
         segmentedControlTopConstraint?.update(offset: segmentOffset) // 세그먼트 붙이기
@@ -235,6 +243,16 @@ extension PlantCareView {
         }
 
         self.scrollAnimator = nil
+    }
+
+    private func resetHeaderToExpandedLayout() {
+        stopHeaderAnimator()
+
+        compactLayoutConstraints.forEach { $0.isActive = false }
+        regularLayoutConstraints.forEach { $0.isActive = true }
+        nameLabel.transform = .identity
+        plantNameLabel.alpha = 1
+        layoutIfNeeded()
     }
 }
 

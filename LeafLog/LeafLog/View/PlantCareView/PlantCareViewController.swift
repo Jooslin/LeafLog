@@ -40,7 +40,6 @@ final class PlantCareViewController: BaseViewController, View {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        plantCareView.prepareHeaderAnimator()
         plantCareView.syncHeaderAnimationWithCurrentOffset()
     }
 
