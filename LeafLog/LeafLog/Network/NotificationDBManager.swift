@@ -11,7 +11,8 @@ import Dependencies
 
 final class NotificationDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
-
+    private let dateFormatter = ISO8601DateFormatter()
+    
     private init() {}
 
     // 알림센터 진입 시 최신 알림부터 목록을 가져온다.
@@ -36,7 +37,7 @@ final class NotificationDBManager {
         do {
             try await supabaseManager.client
                 .from("notifications")
-                .update(["read_at": ISO8601DateFormatter().string(from: Date())])
+                .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("id", value: notificationID)
                 .execute()
         } catch {
@@ -50,7 +51,7 @@ final class NotificationDBManager {
         do {
             try await supabaseManager.client
                 .from("notifications")
-                .update(["read_at": ISO8601DateFormatter().string(from: Date())])
+                .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("user_id", value: user.id)
                 .is("read_at", value: nil)
                 .execute()
