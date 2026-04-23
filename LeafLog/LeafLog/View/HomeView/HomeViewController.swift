@@ -79,6 +79,14 @@ extension HomeViewController {
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
+    
+    private func bindWaterButtonTap() {
+        homeView.rx.waterButtonTap
+            .subscribe(onNext: { [weak self] id in
+                
+            })
+            .disposed(by: disposeBag)
+    }
 }
 
 // MARK: - DB
