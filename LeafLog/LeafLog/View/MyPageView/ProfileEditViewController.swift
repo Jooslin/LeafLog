@@ -110,6 +110,7 @@ final class ProfileEditViewController: BaseViewController, View {
                     return false
                 }
             }
+            .skip(1)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] image in
                 self?.imageLoadTask?.cancel()
@@ -154,9 +155,11 @@ final class ProfileEditViewController: BaseViewController, View {
 
     private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
-        applyProfileImage(nil)
-
-        guard let storedValue, !storedValue.isEmpty else { return }
+        
+        guard let storedValue, !storedValue.isEmpty else {
+            applyProfileImage(nil)
+            return
+        }
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }

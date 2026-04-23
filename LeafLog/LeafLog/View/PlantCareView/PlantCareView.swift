@@ -40,6 +40,7 @@ final class PlantCareView: UIView {
         $0.backgroundColor = .white
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
+        $0.contentInsetAdjustmentBehavior = .never // 스크롤 여백 자동 조정 차단
         $0.contentInset = UIEdgeInsets(
             top: Metric.headerContentInset,
             left: 0,
@@ -173,6 +174,14 @@ private extension PlantCareView {
 // MARK: - Header Animation
 extension PlantCareView {
     func prepareHeaderAnimator() {
+        stopHeaderAnimator()
+
+        compactLayoutConstraints.forEach { $0.isActive = false }
+        regularLayoutConstraints.forEach { $0.isActive = true }
+        nameLabel.transform = .identity
+        plantNameLabel.alpha = 1
+        layoutIfNeeded()
+
         regularLayoutConstraints.forEach { $0.isActive = false }
         compactLayoutConstraints.forEach { $0.isActive = true }
 
@@ -197,19 +206,35 @@ extension PlantCareView {
         segmentedControlTopConstraint?.update(offset: segmentOffset) // 세그먼트 붙이기
     }
 
+    // 사용자가 스크롤한만큼 애니메이션 동기화
+    func syncHeaderAnimationWithCurrentOffset() {
+        updateHeaderAnimation(with: collectionView.contentOffset)
+        layoutIfNeeded()
+    }
+
+    func resetHeaderScrollPosition(animated: Bool = false) {
+        layoutIfNeeded()
+
+        let topOffset = CGPoint(
+            x: 0,
+            y: -collectionView.adjustedContentInset.top
+        )
+
+        collectionView.setContentOffset(topOffset, animated: animated)
+        updateHeaderAnimation(with: topOffset)
+        layoutIfNeeded()
+    }
+
     func stopHeaderAnimator() {
         guard let scrollAnimator else {
             return
         }
 
-        switch scrollAnimator.state {
-        case .active:
+        if scrollAnimator.state == .active {
             scrollAnimator.stopAnimation(true)
-        case .stopped:
-            scrollAnimator.finishAnimation(at: .current)
-        default:
-            break
         }
+
+        self.scrollAnimator = nil
     }
 }
 
@@ -260,6 +285,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 
@@ -278,6 +304,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 
@@ -289,6 +316,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 

@@ -19,7 +19,6 @@ final class PlantCareViewController: BaseViewController, View {
     private var imageLoadTask: Task<Void, Never>?
     private var diaryImageLoadTask: Task<Void, Never>?
     private weak var diaryPhotoPickerSourceView: UIView?
-    private var didPrepareHeaderAnimator = false
 
     init(reactor: PlantCareReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -41,12 +40,8 @@ final class PlantCareViewController: BaseViewController, View {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        guard !didPrepareHeaderAnimator else {
-            return
-        }
-
-        didPrepareHeaderAnimator = true
         plantCareView.prepareHeaderAnimator()
+        plantCareView.syncHeaderAnimationWithCurrentOffset()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -97,6 +92,10 @@ private extension PlantCareViewController {
         plantCareView.segmentedControl.rx.selectedSegmentIndex
             .skip(1)
             .compactMap { PlantCareTab(rawValue: $0) }
+            .do(onNext: { [weak self] _ in
+                // 탭 바뀔때마다 스크롤 맨위로 리셋
+                self?.plantCareView.resetHeaderScrollPosition()
+            })
             .map(PlantCareReactor.Action.changeTab)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
