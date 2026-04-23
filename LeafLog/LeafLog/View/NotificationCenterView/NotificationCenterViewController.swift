@@ -25,6 +25,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .map { _ in NotificationCenterReactor.Action.viewWillAppear }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        notificationCenterView.rx.backButtonTap
+            .map { _ in AppStep.pageBack }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: NotificationCenterReactor) {

@@ -250,8 +250,7 @@ extension Reactive where Base: CalendarView {
             }
     }
     
-    
-    var alarmButtonTap: ControlEvent<Void> {
-        base.titleView.rightButton.rx.tap
+    var alarmButtonTap: PublishRelay<Void> {
+        base.alarmButtonTap
     }
 }

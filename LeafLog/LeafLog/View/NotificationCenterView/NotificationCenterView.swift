@@ -8,9 +8,11 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class NotificationCenterView: UIView {
-    let title = TitleHeaderView(text: "알림 센터", hasBackButton: true)
+    fileprivate let titleView = TitleHeaderView(text: "알림 센터", hasBackButton: true)
     private lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
@@ -26,17 +28,17 @@ final class NotificationCenterView: UIView {
     }
     
     private func setLayout() {
-        addSubview(title)
+        addSubview(titleView)
         addSubview(listView)
         
-        title.snp.makeConstraints {
+        titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
             $0.horizontalEdges.equalToSuperview()
             $0.height.equalTo(48)
         }
         
         listView.snp.makeConstraints {
-            $0.top.equalTo(title).offset(24)
+            $0.top.equalTo(titleView).offset(24)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
@@ -113,5 +115,11 @@ extension NotificationCenterView {
         let body: String
         let category: AppNotificationCategory
         let sentTimeLabel: String
+    }
+}
+
+extension Reactive where Base: NotificationCenterView {
+    var backButtonTap: ControlEvent<Void> {
+        base.titleView.rx.backButtonTap
     }
 }
