@@ -9,5 +9,21 @@ import UIKit
 import ReactorKit
 
 final class NotificationCenterViewController: BaseViewController, View {
+    private let notificationCenterView = NotificationCenterView()
     
+    override func loadView() {
+        view = notificationCenterView
+    }
+    
+    func bind(reactor: NotificationCenterReactor) {
+        bindAction(reactor: reactor)
+    }
+    
+    private func bindAction(reactor: NotificationCenterReactor) {
+        
+    }
+    
+    private func bindState(reactor: NotificationCenterReactor) {
+        
+    }
 }
