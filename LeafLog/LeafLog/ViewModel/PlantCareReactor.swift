@@ -275,6 +275,7 @@ final class PlantCareReactor: Reactor {
         case setTimelineFilter(PlantCareTimelineFilter)
         case setTimelineSort(PlantCareTimelineSort)
         case setErrorMessage(String?)
+        case setSuccessMessage(String?)
     }
 
     struct State {
@@ -296,6 +297,7 @@ final class PlantCareReactor: Reactor {
         var timelineFilter: PlantCareTimelineFilter = .all
         var timelineSort: PlantCareTimelineSort = .latestFirst
         @Pulse var errorMessage: String?
+        @Pulse var successMessage: String?
     }
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
@@ -472,6 +474,9 @@ final class PlantCareReactor: Reactor {
         case .setErrorMessage(let message):
             newState.isLoading = false
             newState.errorMessage = message
+
+        case .setSuccessMessage(let message):
+            newState.successMessage = message
         }
 
         return newState
@@ -651,10 +656,12 @@ private extension PlantCareReactor {
                 do {
                     var input = Self.emptyInput(plantID: plantID, date: date)
                     Self.applyMemo(type: type, memo: memo, to: &input)
+                    Self.applyCompletion(type: type, isCompleted: true, to: &input) // 메모 저장해도 완료로
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: originalItems)))
                     try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onNext(.setSuccessMessage("\(type.title) 메모가 저장되었습니다."))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))

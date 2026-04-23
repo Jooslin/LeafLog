@@ -227,6 +227,14 @@ private extension PlantCareViewController {
                 self?.steps.accept(AppStep.alert("오류", message))
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$successMessage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("알림", message))
+            })
+            .disposed(by: disposeBag)
     }
 }
 
