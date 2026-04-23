@@ -97,6 +97,21 @@ final class PlantDBManager {
         }
     }
     
+    func updateLastWateredAt(plantID: UUID, date: Date) async throws {
+        struct Payload: Encodable {
+            let lastWateredAt: Date
+            
+            enum CodingKeys: String, CodingKey {
+                case lastWateredAt = "last_watered_at"
+            }
+        }
+        
+        try await supabaseManager.client
+            .from("plants")
+            .update(Payload(lastWateredAt: date))
+            .eq("id", value: plantID)
+            .execute()
+    }
     
     // MARK: - Payload Model
     /// Supabase Insert 전용 구조체 (요청용)
@@ -166,12 +181,12 @@ final class PlantDBManager {
             throw AuthError.plantFailed("식물 정보 수정에는 성공했으나, 데이터를 불러오는 데 실패했습니다.")
         }
     }
-
+    
     // MARK: - 가이드 표시 여부 업데이트
     func updateGuideEnabled(plantID: UUID, isEnabled: Bool) async throws -> MyPlant {
         let user = try await supabaseManager.client.auth.user()
         let payload = GuideEnabledUpdatePayload(guideEnabled: isEnabled)
-
+        
         let response = try await supabaseManager.client
             .from("plants")
             .update(payload)
@@ -180,7 +195,7 @@ final class PlantDBManager {
             .select()
             .single()
             .execute()
-
+        
         do {
             return try supabaseManager.client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
         } catch {
@@ -212,10 +227,10 @@ final class PlantDBManager {
             case lastWateredAt = "last_watered_at"
         }
     }
-
+    
     private struct GuideEnabledUpdatePayload: Encodable {
         let guideEnabled: Bool
-
+        
         enum CodingKeys: String, CodingKey {
             case guideEnabled = "guide_enabled"
         }

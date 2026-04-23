@@ -85,15 +85,19 @@ extension HomeViewController {
         homeView.rx.waterButtonTap
             .subscribe(onNext: { [weak self] id in
                 guard let self, let id else { return }
-                
                 Task {
                     do {
+                        let date = Date()
                         try await self.careRecordDBManager.upsertCareRecord(
                             input: CareRecordUpsertInput(
                                 plantID: id,
-                                recordDate: LocalDate(date: Date()),
+                                recordDate: localDate(from: date),
+                                recordedAt: date,
                                 watered: true
                             ))
+                        
+                        try await self.plantDBManager.updateLastWateredAt(plantID: id, date: date)
+                        
                         self.loadPlants()
                     } catch let error as AuthError {
                         self.steps.accept(AppStep.alert("오류", error.userMessage))
