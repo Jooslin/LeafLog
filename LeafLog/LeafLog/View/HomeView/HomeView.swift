@@ -14,11 +14,7 @@ final class HomeView: UIView {
     let collectionView = PlantCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
-    let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell").then {
-        $0.snp.makeConstraints {
-            $0.height.equalTo(48)
-        }
-    }
+    let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
     let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
@@ -53,6 +49,7 @@ extension HomeView {
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
             $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(48)
         }
         
         cardStack.snp.makeConstraints {
