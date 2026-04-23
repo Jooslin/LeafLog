@@ -30,7 +30,7 @@ enum PlantCategory: String, Codable, CaseIterable {
         case .grass:
             return "plantCategoryGrass"
         case .rosette:
-            return "plantCategoryRosette"
+            return "plantCategoryRossette"
         case .succulent:
             return "plantCategorySucculent"
         case .other:
