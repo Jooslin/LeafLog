@@ -221,16 +221,13 @@ private extension PlantCareViewController {
     }
 
     static func visibleTimelineEvents(from state: PlantCareReactor.State) -> [PlantCareTimelineEvent] {
-        let filteredEvents: [PlantCareTimelineEvent]
-        if let selectedType = state.timelineFilter.recordType {
-            filteredEvents = state.timelineEvents.filter { $0.type == selectedType }
-        } else {
-            filteredEvents = state.timelineEvents
+        let filteredEvents = state.timelineEvents.filter {
+            state.timelineFilter.matches($0)
         }
 
         return filteredEvents.sorted { lhs, rhs in
             if lhs.date == rhs.date {
-                return lhs.type.rawValue < rhs.type.rawValue
+                return lhs.kind.sortOrder < rhs.kind.sortOrder
             }
 
             switch state.timelineSort {

@@ -5,6 +5,7 @@
 //  Created by 김주희 on 4/20/26.
 //
 
+import Dependencies
 import SnapKit
 import Then
 import UIKit
@@ -1246,6 +1247,8 @@ private final class PlantCareTimelineDateCell: UICollectionViewCell {
 }
 
 private final class PlantCareTimelineEventCell: UICollectionViewCell {
+    @Dependency(\.supabaseManager) private var supabaseManager
+
     private let lineView = UIView().then {
         $0.backgroundColor = .grayScale100
     }
@@ -1265,6 +1268,16 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
     private let titleLabel = UILabel(text: "", config: .title14)
     private let memoLabel = UILabel(text: "", config: .label14, color: .black, lines: 0)
+    private let photoImageView = UIImageView().then {
+        $0.contentMode = .scaleAspectFill
+        $0.clipsToBounds = true
+        $0.layer.cornerRadius = 8
+        $0.backgroundColor = .grayScale100
+        $0.isHidden = true
+    }
+
+    private var photoLoadTask: Task<Void, Never>?
+    private var currentPhotoPath: String?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -1275,12 +1288,38 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        photoLoadTask?.cancel()
+        photoLoadTask = nil
+        currentPhotoPath = nil
+        photoImageView.image = nil
+        photoImageView.isHidden = true
+    }
+
     func configure(event: PlantCareTimelineEvent) {
-        iconImageView.image = UIImage(named: event.type.badge.smallImage)
-        titleLabel.text = event.type.title
+        photoLoadTask?.cancel()
+        currentPhotoPath = nil
+        photoImageView.image = nil
+        photoImageView.isHidden = true
 
         let memo = event.memoText.trimmingCharacters(in: .whitespacesAndNewlines)
-        memoLabel.text = memo.isEmpty ? "\(event.type.title) 완료했어요." : memo
+
+        switch event.kind {
+            // 물주기, 비료주기 등
+        case .care(let type):
+            iconImageView.image = UIImage(named: type.badge.smallImage)
+            titleLabel.text = type.title
+            memoLabel.text = memo.isEmpty ? "\(type.title) 완료했어요." : memo
+
+            // 일기
+        case .diary:
+            iconImageView.image = UIImage(named: "sprout")
+            titleLabel.text = "오늘의 일기"
+            memoLabel.text = memo.isEmpty ? "사진을 기록했어요." : memo
+            loadPhoto(from: event.photoPath)
+        }
     }
 
     private func setLayout() {
@@ -1290,7 +1329,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let stackView = UIStackView(arrangedSubviews: [titleStack, SeparateBar(), memoLabel]).then {
+        let stackView = UIStackView(arrangedSubviews: [titleStack, SeparateBar(), memoLabel, photoImageView]).then {
             $0.axis = .vertical
             $0.spacing = 8
             $0.alignment = .fill
@@ -1319,6 +1358,52 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
         titleStack.snp.makeConstraints {
             $0.height.equalTo(28)
+        }
+
+        photoImageView.snp.makeConstraints {
+            $0.height.equalTo(250)
+        }
+    }
+
+    private func loadPhoto(from storedValue: String?) {
+        guard let storedValue, !storedValue.isEmpty else {
+            return
+        }
+
+        currentPhotoPath = storedValue
+        photoImageView.isHidden = false
+
+        photoLoadTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            do {
+                guard let url = try await self.supabaseManager.resolveDiaryImageURL(from: storedValue) else {
+                    return
+                }
+
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard !Task.isCancelled, let image = UIImage(data: data) else {
+                    return
+                }
+
+                await MainActor.run {
+                    guard self.currentPhotoPath == storedValue else {
+                        return
+                    }
+
+                    self.photoImageView.image = image
+                }
+            } catch {
+                await MainActor.run {
+                    guard self.currentPhotoPath == storedValue else {
+                        return
+                    }
+
+                    self.photoImageView.isHidden = true
+                }
+            }
         }
     }
 }

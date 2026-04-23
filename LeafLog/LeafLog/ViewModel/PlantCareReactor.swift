@@ -83,12 +83,30 @@ enum PlantCareRecordType: Int, CaseIterable, Hashable {
 }
 
 nonisolated
+// 타임라인 전용 타입
+enum PlantCareTimelineEventKind: Hashable {
+    case care(PlantCareRecordType) // 식물 관리 기록
+    case diary // 일기
+
+    var sortOrder: Int {
+        switch self {
+        case .care(let type):
+            return type.rawValue
+        case .diary:
+            return PlantCareRecordType.allCases.count
+        }
+    }
+}
+
+
+nonisolated
 enum PlantCareTimelineFilter: Int, CaseIterable, Hashable {
     case all
     case watering
     case repotting
     case fertilizing
     case treating
+    case diary
 
     var title: String {
         switch self {
@@ -102,21 +120,25 @@ enum PlantCareTimelineFilter: Int, CaseIterable, Hashable {
             return "비료"
         case .treating:
             return "치료"
+        case .diary:
+            return "일기"
         }
     }
 
-    var recordType: PlantCareRecordType? {
+    func matches(_ event: PlantCareTimelineEvent) -> Bool {
         switch self {
         case .all:
-            return nil
+            return true
         case .watering:
-            return .watering
+            return event.kind == .care(.watering)
         case .repotting:
-            return .repotting
+            return event.kind == .care(.repotting)
         case .fertilizing:
-            return .fertilizing
+            return event.kind == .care(.fertilizing)
         case .treating:
-            return .treating
+            return event.kind == .care(.treating)
+        case .diary:
+            return event.kind == .diary
         }
     }
 }
@@ -194,8 +216,9 @@ struct PlantCareTimelineEvent: Hashable {
     let id: String
     let recordDateRaw: String
     let date: Date
-    let type: PlantCareRecordType
+    let kind: PlantCareTimelineEventKind
     let memoText: String
+    let photoPath: String?
 }
 
 
@@ -579,7 +602,7 @@ private extension PlantCareReactor {
             let task = Task {
                 do {
                     var input = Self.emptyInput(plantID: plantID, date: date)
-                    input.diaryText = diaryText
+                    input.diaryText = diaryText // 일기 텍스트 저장
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
@@ -601,6 +624,7 @@ private extension PlantCareReactor {
         }
     }
 
+    // 사진 경로 저장
     func saveDiaryPhoto(
         image: UIImage,
         date: Date,
@@ -717,7 +741,7 @@ private extension PlantCareReactor {
 
     static func makeTimelineEvents(from records: [CareRecord]) -> [PlantCareTimelineEvent] {
         records.flatMap { record in
-            PlantCareRecordType.allCases.compactMap { type in
+            var events = PlantCareRecordType.allCases.compactMap { type -> PlantCareTimelineEvent? in
                 guard type.isCompleted(in: record) else {
                     return nil
                 }
@@ -726,10 +750,30 @@ private extension PlantCareReactor {
                     id: "\(record.id.uuidString)-\(type.rawValue)",
                     recordDateRaw: record.recordDate.rawValue,
                     date: record.recordDate.date ?? record.recordedAt,
-                    type: type,
-                    memoText: type.memo(in: record)
+                    kind: .care(type),
+                    memoText: type.memo(in: record),
+                    photoPath: nil
                 )
             }
+            
+            // 오늘의 일기 이벤트 추가
+            let diaryText = record.diaryText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let diaryPhotoPath = record.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if !diaryText.isEmpty || diaryPhotoPath?.isEmpty == false {
+                events.append(
+                    PlantCareTimelineEvent(
+                        id: "\(record.id.uuidString)-diary",
+                        recordDateRaw: record.recordDate.rawValue,
+                        date: record.recordDate.date ?? record.recordedAt,
+                        kind: .diary,
+                        memoText: diaryText,
+                        photoPath: diaryPhotoPath
+                    )
+                )
+            }
+            
+            return events
         }
     }
 
@@ -793,7 +837,7 @@ private extension PlantCareReactor {
         timelineEvents: [PlantCareTimelineEvent]
     ) -> Bool {
         let targetDate = localDate(from: date)
-        let wateringEvents = timelineEvents.filter { $0.type == .watering }
+        let wateringEvents = timelineEvents.filter { $0.kind == .care(.watering) }
 
         guard !wateringEvents.isEmpty else {
             return true
