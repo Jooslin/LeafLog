@@ -39,6 +39,14 @@ final class MainFlow: Flow {
             pop(animated: true)
             return .none
             
+        case .alarmCenter:
+            let notificationCenterViewController = NotificationCenterViewController()
+            let reactor = NotificationCenterReactor()
+            notificationCenterViewController.reactor = reactor
+            
+            navigate(to: notificationCenterViewController, animated: true)
+            return .none
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
