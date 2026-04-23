@@ -358,8 +358,10 @@ private extension PlantCareView {
             case .careRecord, .diary, .timelineRecord, .plantInfo:
                 let estimatedHeight: CGFloat = {
                     switch section {
+                    case .careRecord:
+                        return 280
                     case .diary:
-                        return 500
+                        return 520
                     case .timelineRecord:
                         return 280
                     default:
