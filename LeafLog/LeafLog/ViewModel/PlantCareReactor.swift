@@ -190,6 +190,7 @@ nonisolated
 struct PlantCareDiaryItem: Hashable {
     var diaryText: String
     var diaryPhotoPath: String?
+    var diaryPhotoURL: URL?
     var isDiaryExpanded: Bool
 
     var isCompleted: Bool {
@@ -316,7 +317,12 @@ final class PlantCareReactor: Reactor {
             plant: nil,
             selectedDate: startDate,
             items: Self.makeItems(from: nil, previousItems: []),
-            diaryItem: Self.makeDiaryItem(from: nil, previousItem: nil)
+            diaryItem: PlantCareDiaryItem(
+                diaryText: "",
+                diaryPhotoPath: nil,
+                diaryPhotoURL: nil,
+                isDiaryExpanded: false
+            )
         )
     }
 
@@ -558,7 +564,7 @@ private extension PlantCareReactor {
     ) -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     let recordDate = localDate(from: date)
@@ -568,7 +574,13 @@ private extension PlantCareReactor {
                     )
 
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: previousItems)))
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: previousDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: previousDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -707,7 +719,13 @@ private extension PlantCareReactor {
                     input.diaryText = diaryText // 일기 텍스트 저장
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     // 타임라인 새로고침
                     try? await Self.syncTimelineEvents(
                         plantID: plantID,
@@ -757,7 +775,13 @@ private extension PlantCareReactor {
                     input.diaryPhotoPath = photoPath
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     try? await Self.syncTimelineEvents(
                         plantID: plantID,
                         manager: careRecordDBManager,
@@ -801,7 +825,13 @@ private extension PlantCareReactor {
                         try? await supabaseManager.deleteDiaryImage(path: photoPath)
                     }
 
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     try? await Self.syncTimelineEvents(
                         plantID: plantID,
                         manager: careRecordDBManager,
@@ -854,10 +884,18 @@ private extension PlantCareReactor {
         }
     }
 
-    static func makeDiaryItem(from record: CareRecord?, previousItem: PlantCareDiaryItem?) -> PlantCareDiaryItem {
-        PlantCareDiaryItem(
+    static func makeDiaryItem(
+        from record: CareRecord?,
+        previousItem: PlantCareDiaryItem?,
+        supabaseManager: SupabaseManager
+    ) async throws -> PlantCareDiaryItem {
+        let diaryPhotoPath = record?.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(from: diaryPhotoPath)
+
+        return PlantCareDiaryItem(
             diaryText: record?.diaryText ?? "",
-            diaryPhotoPath: record?.diaryPhotoPath,
+            diaryPhotoPath: diaryPhotoPath,
+            diaryPhotoURL: diaryPhotoURL,
             isDiaryExpanded: previousItem?.isDiaryExpanded ?? false
         )
     }

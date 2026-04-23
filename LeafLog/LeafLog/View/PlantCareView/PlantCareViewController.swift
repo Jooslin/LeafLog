@@ -18,7 +18,6 @@ final class PlantCareViewController: BaseViewController, View {
 
     private let plantCareView = PlantCareView()
     private var imageLoadTask: Task<Void, Never>?
-    private var diaryImageLoadTask: Task<Void, Never>?
     private weak var diaryPhotoPickerSourceView: UIView?
 
     init(reactor: PlantCareReactor) {
@@ -51,7 +50,6 @@ final class PlantCareViewController: BaseViewController, View {
 
         if isMovingFromParent || isBeingDismissed {
             imageLoadTask?.cancel()
-            diaryImageLoadTask?.cancel()
         }
     }
 
@@ -260,7 +258,6 @@ private extension PlantCareViewController {
                         items: snapshot.items,
                         diaryItem: snapshot.diaryItem
                     )
-                    loadDiaryImage(from: snapshot.diaryItem.diaryPhotoPath)
                     
                 case .plantInfo:
                     plantCareView.setPlantInfoSnapshot(item: snapshot.plantInfoItem)
@@ -361,48 +358,6 @@ private extension PlantCareViewController {
                         nil,
                         cacheKey: nil,
                         fallbackImage: fallbackImage
-                    )
-                }
-            }
-        }
-    }
-
-    func loadDiaryImage(from storedValue: String?) {
-        diaryImageLoadTask?.cancel()
-
-        let normalizedValue = storedValue?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let hasPhoto = normalizedValue?.isEmpty == false
-
-        guard let normalizedValue, !normalizedValue.isEmpty else {
-            plantCareView.setDiaryPhotoImageURL(nil, cacheKey: nil, hasPhoto: false)
-            return
-        }
-
-        diaryImageLoadTask = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            do {
-                let resolvedURL = try await self.supabaseManager.resolveDiaryImageURL(from: normalizedValue)
-                guard !Task.isCancelled else { return }
-
-                await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImageURL(
-                        resolvedURL,
-                        cacheKey: normalizedValue,
-                        hasPhoto: hasPhoto
-                    )
-                }
-            } catch {
-                guard !Task.isCancelled else { return }
-
-                await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImageURL(
-                        nil,
-                        cacheKey: nil,
-                        hasPhoto: hasPhoto
                     )
                 }
             }

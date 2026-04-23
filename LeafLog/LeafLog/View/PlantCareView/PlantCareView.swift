@@ -1113,7 +1113,11 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             UIImage(named: item.isDiaryExpanded ? "arrowUp" : "arrowDown"),
             for: .normal
         )
-        configurePhotoPreview(hasPhoto: item.diaryPhotoPath?.isEmpty == false)
+        setPhotoImageURL(
+            item.diaryPhotoURL,
+            cacheKey: item.diaryPhotoPath,
+            hasPhoto: item.diaryPhotoPath?.isEmpty == false
+        )
     }
 
     func setPhotoImageURL(_ photoURL: URL?, cacheKey: String?, hasPhoto: Bool) {
