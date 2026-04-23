@@ -36,21 +36,21 @@ final class NotificationCenterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return .just(.setAlarm([]))
+            return notifications()
+        }
+    }
+    
+    func reduce(state: State, mutation: Mutation) -> State {
+        var newState = state
+        
+        switch mutation {
+        case .setAlarm(let items):
+            newState.alarmItem = items
+        case .error(let message):
+            newState.errorMessage = message
         }
         
-        func reduce(state: State, mutation: Mutation) -> State {
-            var newState = state
-            
-            switch mutation {
-            case .setAlarm(let items):
-                newState.alarmItem = items
-            case .error(let message):
-                newState.errorMessage = message
-            }
-            
-            return newState
-        }
+        return newState
     }
 }
 
@@ -67,13 +67,12 @@ extension NotificationCenterReactor {
                     let items = notifications.reduce([NotificationCenterView.Item]()) {
                         let time = self.calculateExcessAlarmTime(from: $1.sentAt, to: now)
                         
-                        let timeString = time > 24 ? "\(Int(time))시간 전"
-                        : "\(Int(time / 24))일 전"
+                        let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
                         
                         let alarm = NotificationCenterView.Alarm(
                             id: $1.id,
                             title: $1.title,
-                            body: $1.body,
+                            body: $1.plantNamesText ?? "",
                             category: $1.category,
                             sentTimeLabel: timeString
                         )
