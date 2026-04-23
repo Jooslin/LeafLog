@@ -72,7 +72,7 @@ extension NotificationCenterReactor {
                         let alarm = NotificationCenterView.Alarm(
                             id: $1.id,
                             title: $1.title,
-                            body: $1.plantNamesText ?? "",
+                            body: $1.plantNamesText ?? $1.body,
                             category: $1.category,
                             sentTimeLabel: timeString
                         )
