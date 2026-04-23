@@ -12,6 +12,8 @@ import UIKit
 import RxSwift
 
 final class SearchDetailView: UIView {
+    let titleHeaderView = TitleHeaderView(text: "식물 상세", hasBackButton: true)
+
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -97,7 +99,7 @@ final class SearchDetailView: UIView {
 
     // 버튼탭 이벤트
     var closeButtonTap: ControlEvent<Void> {
-        closeButton.rx.tap
+        ControlEvent(events: Observable.merge(closeButton.rx.tap.asObservable(), titleHeaderView.backButton.rx.tap.asObservable()))
     }
 
     var selectButtonTap: ControlEvent<Void> {
@@ -213,6 +215,7 @@ private extension SearchDetailView {
     }
     
     private func setupLayout() {
+        addSubview(titleHeaderView)
         addSubview(scrollView)
         addSubview(buttonStack)
 
@@ -233,8 +236,14 @@ private extension SearchDetailView {
         buttonStack.addArrangedSubview(closeButton)
         buttonStack.addArrangedSubview(selectButton)
 
+        titleHeaderView.snp.makeConstraints {
+            $0.top.horizontalEdges.equalTo(safeAreaLayoutGuide)
+            $0.height.equalTo(48)
+        }
+
         scrollView.snp.makeConstraints {
-            $0.top.leading.trailing.equalTo(safeAreaLayoutGuide)
+            $0.top.equalTo(titleHeaderView.snp.bottom)
+            $0.leading.trailing.equalTo(safeAreaLayoutGuide)
             $0.bottom.equalTo(buttonStack.snp.top)
         }
 
