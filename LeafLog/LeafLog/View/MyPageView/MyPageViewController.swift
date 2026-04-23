@@ -161,7 +161,7 @@ final class MyPageViewController: BaseViewController, View {
     // 프로필 사진 불러오기
     private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
-        
+
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
             
