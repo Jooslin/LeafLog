@@ -7,6 +7,7 @@
 
 
 import UIKit
+import Kingfisher
 import SnapKit
 import Then
 
@@ -265,5 +266,34 @@ final class MyPageView: UIView {
         UIView.animate(withDuration: 0.18) {
             self.profileCardView.alpha = 1
         }
+    }
+}
+
+// MARK: - Image
+extension MyPageView {
+    func setProfileImageURL(_ profileImageURL: URL?, cacheKey: String?) {
+        profileImageView.kf.cancelDownloadTask()
+
+        let placeholderImage = UIImage.userEmpty
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let profileImageURL else {
+            profileImageView.image = placeholderImage
+            return
+        }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: profileImageURL,
+            cacheKey: cacheKey
+        )
+
+        profileImageView.kf.setImage(
+            with: imageResource,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import Dependencies
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -297,25 +298,58 @@ extension PlantCareView {
             .isEmpty == false
 
         if !hasRegisteredImage {
+            plantImageView.kf.cancelDownloadTask()
             plantImageView.image = UIImage(named: plant.defaultImageAssetName)
             plantImageView.tintColor = nil
         }
     }
 
-    // 사진 추가하기
-    func setPlantImage(_ image: UIImage?) {
-        guard let image else {
+    func setPlantImageURL(_ plantImageURL: URL?, cacheKey: String?, fallbackImage: UIImage?) {
+        plantImageView.kf.cancelDownloadTask()
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let plantImageURL else {
+            if let fallbackImage {
+                plantImageView.image = fallbackImage
+                plantImageView.tintColor = nil
+            }
             return
         }
 
-        plantImageView.image = image
-        plantImageView.tintColor = nil
+        let placeholderImage = plantImageView.image ?? fallbackImage
+        let imageResource = KF.ImageResource(
+            downloadURL: plantImageURL,
+            cacheKey: cacheKey
+        )
+
+        plantImageView.kf.setImage(
+            with: imageResource,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        ) { [weak self] result in
+            guard case .failure = result,
+                  let fallbackImage else {
+                return
+            }
+
+            self?.plantImageView.image = fallbackImage
+            self?.plantImageView.tintColor = nil
+        }
     }
 
-    func setDiaryPhotoImage(_ image: UIImage?) {
+    func setDiaryPhotoImageURL(_ diaryPhotoURL: URL?, cacheKey: String?, hasPhoto: Bool) {
         collectionView.visibleCells
             .compactMap { $0 as? PlantCareDiaryCell }
-            .forEach { $0.setPhotoImage(image) }
+            .forEach {
+                $0.setPhotoImageURL(
+                    diaryPhotoURL,
+                    cacheKey: cacheKey,
+                    hasPhoto: hasPhoto
+                )
+            }
     }
 
     func setSelectedTab(_ tab: PlantCareTab) {
@@ -1061,6 +1095,17 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        photoImageView.kf.cancelDownloadTask()
+        photoImageView.image = nil
+        photoImageView.isHidden = true
+        photoPlaceholderLabel.text = "사진을 불러오는 중이에요."
+        photoPlaceholderLabel.isHidden = true
+        photoPreviewView.isHidden = true
+    }
+
     func configure(item: PlantCareDiaryItem) {
         textView.text = item.diaryText
         diaryContentStack.isHidden = !item.isDiaryExpanded
@@ -1071,11 +1116,47 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         configurePhotoPreview(hasPhoto: item.diaryPhotoPath?.isEmpty == false)
     }
 
-    func setPhotoImage(_ image: UIImage?) {
-        photoPreviewView.isHidden = image == nil
-        photoImageView.image = image
-        photoImageView.isHidden = image == nil
-        photoPlaceholderLabel.isHidden = image != nil
+    func setPhotoImageURL(_ photoURL: URL?, cacheKey: String?, hasPhoto: Bool) {
+        photoImageView.kf.cancelDownloadTask()
+        configurePhotoPreview(hasPhoto: hasPhoto)
+
+        guard hasPhoto else {
+            return
+        }
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let photoURL else {
+            photoPlaceholderLabel.text = "사진을 불러오지 못했어요."
+            return
+        }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: photoURL,
+            cacheKey: cacheKey
+        )
+
+        photoImageView.kf.setImage(
+            with: imageResource,
+            placeholder: nil,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        ) { [weak self] result in
+            guard let self else { return }
+
+            switch result {
+            case .success:
+                self.photoImageView.isHidden = false
+                self.photoPlaceholderLabel.isHidden = true
+
+            case .failure:
+                self.photoImageView.image = nil
+                self.photoImageView.isHidden = true
+                self.photoPlaceholderLabel.text = "사진을 불러오지 못했어요."
+                self.photoPlaceholderLabel.isHidden = false
+            }
+        }
     }
 
     private func setLayout() {
@@ -1182,6 +1263,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     private func configurePhotoPreview(hasPhoto: Bool) {
         photoPreviewView.isHidden = !hasPhoto
+        photoPlaceholderLabel.text = "사진을 불러오는 중이에요."
         photoImageView.image = nil
         photoImageView.isHidden = true
         photoPlaceholderLabel.isHidden = !hasPhoto
@@ -1355,8 +1437,6 @@ private final class PlantCareTimelineDateCell: UICollectionViewCell {
 }
 
 private final class PlantCareTimelineEventCell: UICollectionViewCell {
-    @Dependency(\.supabaseManager) private var supabaseManager
-
     private let lineView = UIView().then {
         $0.backgroundColor = .grayScale100
     }
@@ -1384,9 +1464,6 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         $0.isHidden = true
     }
 
-    private var photoLoadTask: Task<Void, Never>?
-    private var currentPhotoPath: String?
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         setLayout()
@@ -1399,16 +1476,13 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
 
-        photoLoadTask?.cancel()
-        photoLoadTask = nil
-        currentPhotoPath = nil
+        photoImageView.kf.cancelDownloadTask()
         photoImageView.image = nil
         photoImageView.isHidden = true
     }
 
     func configure(event: PlantCareTimelineEvent) {
-        photoLoadTask?.cancel()
-        currentPhotoPath = nil
+        photoImageView.kf.cancelDownloadTask()
         photoImageView.image = nil
         photoImageView.isHidden = true
 
@@ -1426,7 +1500,10 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
             iconImageView.image = UIImage(named: "sprout")
             titleLabel.text = "오늘의 일기"
             memoLabel.text = memo.isEmpty ? "" : memo
-            loadPhoto(from: event.photoPath)
+            configurePhotoPreview(
+                photoPath: event.photoPath,
+                photoURL: event.photoURL
+            )
         }
     }
 
@@ -1473,46 +1550,32 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         }
     }
 
-    private func loadPhoto(from storedValue: String?) {
-        guard let storedValue, !storedValue.isEmpty else {
+    private func configurePhotoPreview(photoPath: String?, photoURL: URL?) {
+        guard let photoPath, !photoPath.isEmpty else {
             return
         }
 
-        currentPhotoPath = storedValue
+        let placeholderImage = UIImage(resource: .placeholder)
         photoImageView.isHidden = false
 
-        photoLoadTask = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            do {
-                guard let url = try await self.supabaseManager.resolveDiaryImageURL(from: storedValue) else {
-                    return
-                }
-
-                let (data, _) = try await URLSession.shared.data(from: url)
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    return
-                }
-
-                await MainActor.run {
-                    guard self.currentPhotoPath == storedValue else {
-                        return
-                    }
-
-                    self.photoImageView.image = image
-                }
-            } catch {
-                await MainActor.run {
-                    guard self.currentPhotoPath == storedValue else {
-                        return
-                    }
-
-                    self.photoImageView.isHidden = true
-                }
-            }
+        guard let photoURL else {
+            photoImageView.image = placeholderImage
+            return
         }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: photoURL,
+            cacheKey: photoPath
+        )
+
+        photoImageView.kf.setImage(
+            with: imageResource,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
 }
 

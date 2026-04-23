@@ -161,32 +161,33 @@ final class MyPageViewController: BaseViewController, View {
     // 프로필 사진 불러오기
     private func loadProfileImage(from storedValue: String?) {
         imageLoadTask?.cancel()
+        
+        let normalizedValue = storedValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let normalizedValue, !normalizedValue.isEmpty else {
+            myPageView.setProfileImageURL(nil, cacheKey: nil)
+            return
+        }
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
             
             do {
-                // 1. URL이 없으면 즉시 비우고 종료
-                guard let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(from: storedValue) else {
-                    await MainActor.run { self.myPageView.profileImageView.image = .userEmpty }
-                    return
-                }
-                
-                let (data, _) = try await URLSession.shared.data(from: resolvedURL)
-                
-                // 2. 이미지 변환 실패 시 비우기
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    await MainActor.run { self.myPageView.profileImageView.image = .userEmpty }
-                    return
-                }
-                
+                let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(from: normalizedValue)
+                guard !Task.isCancelled else { return }
+
                 await MainActor.run {
-                    self.myPageView.profileImageView.image = image
+                    self.myPageView.setProfileImageURL(
+                        resolvedURL,
+                        cacheKey: normalizedValue
+                    )
                 }
             } catch {
-                // 3. 에러 발생 시 기본 이미지로
-                if !Task.isCancelled {
-                    await MainActor.run { self.myPageView.profileImageView.image = .userEmpty }
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.myPageView.setProfileImageURL(nil, cacheKey: nil)
                 }
             }
         }

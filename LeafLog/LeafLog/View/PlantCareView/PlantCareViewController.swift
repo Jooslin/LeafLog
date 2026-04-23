@@ -215,7 +215,10 @@ private extension PlantCareViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] plant in
                 self?.plantCareView.configure(plant: plant)
-                self?.loadPlantImage(from: plant.imagePath)
+                self?.loadPlantImage(
+                    from: plant.imagePath,
+                    fallbackImage: UIImage(named: plant.defaultImageAssetName)
+                )
             })
             .disposed(by: disposeBag)
 
@@ -318,10 +321,14 @@ private extension PlantCareViewController {
         }
     }
 
-    func loadPlantImage(from storedValue: String?) {
+    func loadPlantImage(from storedValue: String?, fallbackImage: UIImage?) {
         imageLoadTask?.cancel()
 
-        guard let storedValue, !storedValue.isEmpty else {
+        let normalizedValue = storedValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let normalizedValue, !normalizedValue.isEmpty else {
+            plantCareView.setPlantImageURL(nil, cacheKey: nil, fallbackImage: fallbackImage)
             return
         }
 
@@ -331,18 +338,26 @@ private extension PlantCareViewController {
             }
 
             do {
-                guard let url = try await self.supabaseManager.resolvePlantImageURL(from: storedValue) else {
-                    return
-                }
+                let resolvedURL = try await self.supabaseManager.resolvePlantImageURL(from: normalizedValue)
+                guard !Task.isCancelled else { return }
 
-                let (data, _) = try await URLSession.shared.data(from: url)
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    return
+                await MainActor.run {
+                    self.plantCareView.setPlantImageURL(
+                        resolvedURL,
+                        cacheKey: normalizedValue,
+                        fallbackImage: fallbackImage
+                    )
                 }
-
-                self.plantCareView.setPlantImage(image)
             } catch {
-                // 이미지 로딩 실패 시 카테고리 기본 이미지를 그대로 보여준다.
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.plantCareView.setPlantImageURL(
+                        nil,
+                        cacheKey: nil,
+                        fallbackImage: fallbackImage
+                    )
+                }
             }
         }
     }
@@ -350,8 +365,12 @@ private extension PlantCareViewController {
     func loadDiaryImage(from storedValue: String?) {
         diaryImageLoadTask?.cancel()
 
-        guard let storedValue, !storedValue.isEmpty else {
-            plantCareView.setDiaryPhotoImage(nil)
+        let normalizedValue = storedValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasPhoto = normalizedValue?.isEmpty == false
+
+        guard let normalizedValue, !normalizedValue.isEmpty else {
+            plantCareView.setDiaryPhotoImageURL(nil, cacheKey: nil, hasPhoto: false)
             return
         }
 
@@ -361,21 +380,25 @@ private extension PlantCareViewController {
             }
 
             do {
-                guard let url = try await self.supabaseManager.resolveDiaryImageURL(from: storedValue) else {
-                    return
-                }
-
-                let (data, _) = try await URLSession.shared.data(from: url)
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    return
-                }
+                let resolvedURL = try await self.supabaseManager.resolveDiaryImageURL(from: normalizedValue)
+                guard !Task.isCancelled else { return }
 
                 await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImage(image)
+                    self.plantCareView.setDiaryPhotoImageURL(
+                        resolvedURL,
+                        cacheKey: normalizedValue,
+                        hasPhoto: hasPhoto
+                    )
                 }
             } catch {
+                guard !Task.isCancelled else { return }
+
                 await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImage(nil)
+                    self.plantCareView.setDiaryPhotoImageURL(
+                        nil,
+                        cacheKey: nil,
+                        hasPhoto: hasPhoto
+                    )
                 }
             }
         }
