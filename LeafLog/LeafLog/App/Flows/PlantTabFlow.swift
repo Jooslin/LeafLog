@@ -108,6 +108,10 @@ final class PlantTabFlow: Flow {
             
         case .photoSelect: // 사진 선택 분기
             return presentPhotoSelect()
+
+        case .diaryImageSourceSheet:
+            presentDiaryImageSourceSheet()
+            return .none
             
         case .cameraRequired:
             let camera = CameraClassificationViewController()
@@ -153,6 +157,22 @@ extension PlantTabFlow {
         navigationController.present(alert, animated: true)
         
         return .none
+    }
+
+    private func presentDiaryImageSourceSheet() {
+        guard let viewController = navigationController.topViewController as? PlantCareViewController else {
+            return
+        }
+
+        ImageSourcePickerPresenter.present(
+            from: navigationController,
+            sourceView: viewController.diaryImagePickerSourceView,
+            delegate: viewController,
+            deleteTitle: viewController.hasDiaryPhoto ? "사진 삭제" : nil,
+            onDelete: { [weak viewController] in
+                viewController?.deleteDiaryPhoto()
+            }
+        )
     }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {

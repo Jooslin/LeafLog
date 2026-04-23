@@ -21,6 +21,15 @@ final class ProfileEditViewController: BaseViewController, View {
     var profileImagePickerSourceView: UIView {
         profileEditView.profileImageButton
     }
+
+    var hasProfileImage: Bool {
+        reactor?.currentState.selectedImage != nil
+        || reactor?.currentState.profile?.profileImageURL?.isEmpty == false
+    }
+
+    func deleteProfileImage() {
+        reactor?.action.onNext(.deleteImage)
+    }
     
     override func loadView() {
         view = profileEditView

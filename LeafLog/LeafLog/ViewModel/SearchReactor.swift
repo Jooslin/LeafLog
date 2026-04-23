@@ -33,6 +33,7 @@ final class SearchReactor: Reactor {
         case setResultText(String) // 결과가 나올때
         case setSelectedPlant(SelectedPlant)
         case setErrorMessage(String)
+        case setTitle(String) // 타이틀 헤더의 텍스트
     }
     
     // 화면이 어떤 상태인지 표현(처음 상태)
@@ -46,6 +47,7 @@ final class SearchReactor: Reactor {
         var resultText: String = "검색어를 입력해 주세요."
         @Pulse var selectedPlant: SelectedPlant? = nil
         @Pulse var errorMessage: String? = nil
+        var titleText: String = "식물 검색"
     }
     
     @Dependency(\.networkManager) private var networkManager
@@ -74,7 +76,8 @@ final class SearchReactor: Reactor {
                     .just(.setQuery("")),
                     .just(.setPlants([])),
                     .just(.setLoading(false)),
-                    .just(.setResultText("검색어를 입력해 주세요."))
+                    .just(.setResultText("검색어를 입력해 주세요.")),
+                    .just(.setTitle("식물 검색"))
                 ])
             }
             
@@ -142,7 +145,8 @@ final class SearchReactor: Reactor {
                 .just(.setSearchType(.botanicalName)),
                 .just(.setLoading(true)),
                 searchClassificationResult(classifications: classificationResult),
-                .just(.setLoading(false))
+                .just(.setLoading(false)),
+                .just(.setTitle("검색 결과"))
             ])
 
         case .selectPlant(let item):
@@ -174,6 +178,8 @@ final class SearchReactor: Reactor {
             newState.selectedPlant = selectedPlant
         case .setErrorMessage(let message):
             newState.errorMessage = message
+        case .setTitle(let text):
+            newState.titleText = text
         }
         
         return newState

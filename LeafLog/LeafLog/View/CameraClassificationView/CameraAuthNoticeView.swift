@@ -28,14 +28,12 @@ final class CameraAuthNoticeView: UIView {
     let subLabel = UILabel(text: "설정으로 이동해 카메라 권한을 허용하면 카메라를 이용할 수 있어요", config: .body14, color: .grayScale600).then {
         $0.textAlignment = .center
     }
-    //TODO: component 수정 필요
-        let settingButton = BottomSaveButton(title: "설정으로 이동")
-//    let settingButton = UIButton(configuration: .filled()).then {
-//        $0.setTitle("설정으로 이동", for: .normal)
-//        $0.snp.makeConstraints {
-//            $0.height.equalTo(24)
-//        }
-//    }
+    
+    let settingButton = BottomSaveButton(title: "설정으로 이동").then {
+        $0.snp.makeConstraints {
+            $0.height.equalTo(48)
+        }
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)

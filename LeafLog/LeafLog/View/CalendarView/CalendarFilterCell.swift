@@ -56,7 +56,8 @@ extension CalendarFilterCell {
         
         buttonStack.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
-            $0.centerY.equalToSuperview()
+            $0.top.equalToSuperview().offset(20)
+            $0.bottom.equalToSuperview().inset(36)
         }
     }
     
@@ -64,7 +65,7 @@ extension CalendarFilterCell {
         let stackView = UIStackView(arrangedSubviews: buttons).then {
             $0.axis = .horizontal
             $0.spacing = 8
-            $0.distribution = .fill
+            $0.distribution = .fillEqually
         }
         
         return stackView

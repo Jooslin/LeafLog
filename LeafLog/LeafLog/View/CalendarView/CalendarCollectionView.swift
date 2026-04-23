@@ -51,8 +51,12 @@ extension CalendarCollectionView {
             detailBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 24, trailing: 0)
             
             switch CalendarView.Section(rawValue: sectionIndex) {
-            case .title, .header, .filter:
+            case .title, .header:
                 let section = self?.singleItemSectionLayout()
+                return section
+                
+            case .filter:
+                let section = self?.singleItemSectionLayout(height: 88)
                 return section
                 
             case .calendar:
