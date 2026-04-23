@@ -119,7 +119,17 @@ final class SearchDetailView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        imageCollectionViewFlowLayout.itemSize = CGSize(width: imageCollectionView.bounds.width, height: imageCollectionView.bounds.height)
+        let imageCollectionViewSize = imageCollectionView.bounds.size
+        guard imageCollectionViewSize.width > 0, imageCollectionViewSize.height > 0 else {
+            return
+        }
+
+        guard imageCollectionViewFlowLayout.itemSize != imageCollectionViewSize else {
+            return
+        }
+
+        imageCollectionViewFlowLayout.itemSize = imageCollectionViewSize
+        imageCollectionViewFlowLayout.invalidateLayout()
     }
 }
 
