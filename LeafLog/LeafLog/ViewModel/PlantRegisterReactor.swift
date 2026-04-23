@@ -49,6 +49,7 @@ final class PlantRegisterReactor: Reactor {
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
         case saveTapped(nickname: String?, image: UIImage?)
+        case deleteTapped
         
         case classificationImageSelected(UIImage)
     }
@@ -61,6 +62,7 @@ final class PlantRegisterReactor: Reactor {
         case setLastWateredDate(Date?)
         case setSaving(Bool)
         case setSaveCompleted
+        case setDeleteCompleted
         case setErrorMessage(String)
         
         case analyzeResult([String: PlantClassificationService.Confidence])
@@ -80,6 +82,7 @@ final class PlantRegisterReactor: Reactor {
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var saveCompleted = false
+        @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
         
         var classificationResult: [String: PlantClassificationService.Confidence] = [:]
@@ -111,6 +114,8 @@ final class PlantRegisterReactor: Reactor {
             return .just(.setLastWateredDate(date))
         case .saveTapped(let nickname, let image):
             return savePlant(state: currentState, nickname: nickname, image: image)
+        case .deleteTapped:
+            return deletePlant(state: currentState)
         case .classificationImageSelected(let image):
             return analyzeImage(image)
         }
@@ -135,6 +140,9 @@ final class PlantRegisterReactor: Reactor {
         case .setSaveCompleted:
             newState = State()
             newState.saveCompleted = true
+        case .setDeleteCompleted:
+            newState.isSaving = false
+            newState.deleteCompleted = true
         case .setErrorMessage(let message):
             newState.isSaving = false
             newState.errorMessage = message
@@ -213,6 +221,37 @@ final class PlantRegisterReactor: Reactor {
                 do {
                     _ = try await plantService.updatePlant(input: input)
                     observer.onNext(Mutation.setSaveCompleted)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(Mutation.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(Mutation.setErrorMessage(error.localizedDescription))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func deletePlant(state: State) -> Observable<Mutation> {
+        guard case let .edit(plant) = state.mode else {
+            return .just(.setErrorMessage("삭제할 식물 정보를 찾지 못했어요."))
+        }
+
+        return Observable.create { [plantService] observer in
+            observer.onNext(Mutation.setSaving(true))
+
+            let task = Task {
+                do {
+                    try await plantService.deletePlant(
+                        plantID: plant.id,
+                        imagePath: plant.imagePath
+                    )
+                    observer.onNext(Mutation.setDeleteCompleted)
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(Mutation.setErrorMessage(error.userMessage))

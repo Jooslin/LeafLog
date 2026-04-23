@@ -125,6 +125,15 @@ final class PlantTabFlow: Flow {
         case .diaryImageSourceSheet:
             presentDiaryImageSourceSheet()
             return .none
+
+        case let .confirmAlert(title, message, okTitle, onConfirm):
+            presentConfirmAlert(
+                title: title,
+                message: message,
+                okTitle: okTitle,
+                onConfirm: onConfirm
+            )
+            return .none
             
         case .cameraRequired:
             let camera = CameraClassificationViewController()
@@ -186,6 +195,25 @@ extension PlantTabFlow {
                 viewController?.deleteDiaryPhoto()
             }
         )
+    }
+
+    private func presentConfirmAlert(
+        title: String,
+        message: String,
+        okTitle: String,
+        onConfirm: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: title,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+        alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
+            onConfirm()
+        })
+
+        navigationController.present(alert, animated: true)
     }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {

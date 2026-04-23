@@ -15,6 +15,7 @@ import Then
 private struct PlantRegisterHeaderState: Equatable {
     let title: String
     let buttonTitle: String
+    let showsDeleteButton: Bool
 }
 
 final class PlantRegisterViewController: BaseViewController, View {
@@ -68,7 +69,8 @@ final class PlantRegisterViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] headerState in
                 self?.registerView.configureHeader(
                     title: headerState.title,
-                    buttonTitle: headerState.buttonTitle
+                    buttonTitle: headerState.buttonTitle,
+                    showsDeleteButton: headerState.showsDeleteButton
                 )
             })
             .disposed(by: disposeBag)
@@ -161,12 +163,20 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.pageBack)
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$deleteCompleted)
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.steps.accept(AppStep.plantTab)
+            })
+            .disposed(by: disposeBag)
         
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] message in
-                self?.steps.accept(AppStep.alert("저장 실패", message))
+                self?.steps.accept(AppStep.alert("오류", message))
             })
             .disposed(by: disposeBag)
     }
@@ -177,6 +187,23 @@ final class PlantRegisterViewController: BaseViewController, View {
                 AppStep.pageBack
             }
             .bind(to: steps)
+            .disposed(by: disposeBag)
+
+        registerView.headerView.rightButton.rx.tap
+            .subscribe(onNext: { [weak self, weak reactor] in
+                guard case .edit = reactor?.currentState.mode else { return }
+
+                self?.steps.accept(
+                    AppStep.confirmAlert(
+                        title: "식물 삭제",
+                        message: "이 식물을 영구 삭제하시겠습니까?",
+                        okTitle: "삭제",
+                        onConfirm: { [weak reactor] in
+                            reactor?.action.onNext(.deleteTapped)
+                        }
+                    )
+                )
+            })
             .disposed(by: disposeBag)
         
         registerView.cameraButton.rx.tap
@@ -259,9 +286,17 @@ final class PlantRegisterViewController: BaseViewController, View {
     }
 
     private static func makeHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
-        PlantRegisterHeaderState(
+        let showsDeleteButton: Bool
+        if case .edit = state.mode {
+            showsDeleteButton = true
+        } else {
+            showsDeleteButton = false
+        }
+
+        return PlantRegisterHeaderState(
             title: state.title,
-            buttonTitle: state.buttonTitle
+            buttonTitle: state.buttonTitle,
+            showsDeleteButton: showsDeleteButton
         )
     }
     
