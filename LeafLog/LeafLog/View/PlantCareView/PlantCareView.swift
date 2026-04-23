@@ -356,17 +356,28 @@ private extension PlantCareView {
                 return NSCollectionLayoutSection(group: group)
 
             case .careRecord, .diary, .timelineRecord, .plantInfo:
+                let estimatedHeight: CGFloat = {
+                    switch section {
+                    case .diary:
+                        return 500
+                    case .timelineRecord:
+                        return 280
+                    default:
+                        return 100
+                    }
+                }()
+
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(100)
+                        heightDimension: .estimated(estimatedHeight)
                     )
                 )
 
                 let group = NSCollectionLayoutGroup.vertical(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(100)
+                        heightDimension: .estimated(estimatedHeight)
                     ),
                     subitems: [item]
                 )
