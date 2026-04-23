@@ -171,8 +171,14 @@ final class PlantRegisterViewController: BaseViewController, View {
             .filter { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.resetFormUI()
-                self?.steps.accept(AppStep.pageBack)
+                guard let self else { return }
+                self.resetFormUI()
+                switch reactor.currentState.mode {
+                case .create:
+                    self.steps.accept(AppStep.plantTab)
+                case .edit:
+                    self.steps.accept(AppStep.pageBack)
+                }
             })
             .disposed(by: disposeBag)
 

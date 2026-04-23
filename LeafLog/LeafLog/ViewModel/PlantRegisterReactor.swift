@@ -153,7 +153,7 @@ final class PlantRegisterReactor: Reactor {
         case .setSaving(let isSaving):
             newState.isSaving = isSaving
         case .setSaveCompleted:
-            newState = State()
+            newState.isSaving = false
             newState.saveCompleted = true
         case .setDeleteCompleted:
             newState.isSaving = false

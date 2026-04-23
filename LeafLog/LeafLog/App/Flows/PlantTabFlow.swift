@@ -46,11 +46,23 @@ final class PlantTabFlow: Flow {
 
         case .plantRegister(let selectedPlant):
             if let selectedPlant,
-               let registerViewController = navigationController.viewControllers
-                .compactMap({ $0 as? PlantRegisterViewController })
-                .last {
+               let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
                 registerViewController.updateSelectedPlant(selectedPlant)
-                navigationController.popToViewController(registerViewController, animated: true)
+
+                return .none
+            }
+
+            if let selectedPlant,
+               let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
+                registerViewController.updateSelectedPlant(selectedPlant)
+
+                let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+                let searchViewControllers = navigationController.viewControllers
+                    .dropFirst(registerIndex + 1)
+                    .filter { $0 is SearchViewController }
+                let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
+                navigationController.setViewControllers(updatedViewControllers, animated: true)
 
                 return .none
             }
@@ -60,7 +72,8 @@ final class PlantTabFlow: Flow {
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
                 navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
-            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+            } else if selectedPlant == nil,
+                      let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
                 var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
                 updatedViewControllers.append(plantRegisterViewController)
                 navigationController.setViewControllers(updatedViewControllers, animated: true)
