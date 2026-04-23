@@ -69,6 +69,7 @@ private struct PlantCareSnapshotState: Equatable {
     let dateTitle: String
     let items: [PlantCareItem]
     let diaryItem: PlantCareDiaryItem
+    let plantInfoItem: PlantCarePlantInfoItem
     let timelineControls: PlantCareTimelineControls
     let timelineEvents: [PlantCareTimelineEvent]
 }
@@ -77,6 +78,12 @@ private struct PlantCareSnapshotState: Equatable {
 private extension PlantCareViewController {
     func bindAction(reactor: PlantCareReactor) {
         Observable.just(PlantCareReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        rx.viewWillAppear
+            .skip(1)
+            .map { _ in PlantCareReactor.Action.viewDidLoad }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
@@ -98,6 +105,12 @@ private extension PlantCareViewController {
             .subscribe(onNext: { [weak self] in
                 self?.steps.accept(AppStep.pageBack)
             })
+            .disposed(by: disposeBag)
+
+        plantCareView.headerView.rightButton.rx.tap
+            .compactMap { reactor.currentState.plant }
+            .map(AppStep.plantEdit)
+            .bind(to: steps)
             .disposed(by: disposeBag)
 
         plantCareView.onPreviousDateTapped = { [weak reactor] in
@@ -140,6 +153,10 @@ private extension PlantCareViewController {
         plantCareView.onTimelineSortTapped = { [weak reactor] in
             reactor?.action.onNext(.toggleTimelineSort)
         }
+
+        plantCareView.onGuideEnabledChanged = { [weak reactor] isEnabled in
+            reactor?.action.onNext(.setGuideEnabled(isEnabled))
+        }
     }
 
     func bindState(reactor: PlantCareReactor) {
@@ -160,6 +177,11 @@ private extension PlantCareViewController {
                     dateTitle: Self.dateTitle(from: state.selectedDate),
                     items: state.items,
                     diaryItem: state.diaryItem,
+                    plantInfoItem: PlantCarePlantInfoItem(
+                        rows: state.plantInfoRows,
+                        guide: state.plantGuideItem,
+                        isGuideEnabled: state.plant?.guideEnabled ?? true
+                    ), // 식물 상세
                     timelineControls: PlantCareTimelineControls(
                         selectedFilter: state.timelineFilter,
                         sort: state.timelineSort
@@ -186,9 +208,9 @@ private extension PlantCareViewController {
                         diaryItem: snapshot.diaryItem
                     )
                     loadDiaryImage(from: snapshot.diaryItem.diaryPhotoPath)
-
+                    
                 case .plantInfo:
-                    plantCareView.setPlantInfoSnapshot()
+                    plantCareView.setPlantInfoSnapshot(item: snapshot.plantInfoItem)
 
                 case .timeline:
                     plantCareView.setTimelineSnapshot(

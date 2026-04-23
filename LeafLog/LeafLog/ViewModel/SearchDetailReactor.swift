@@ -65,7 +65,16 @@ final class SearchDetailReactor: Reactor {
             }
 
             let name = Self.makeSelectedPlantName(detail: detail, displayName: currentState.displayName)
-            return .just(.setSelectedPlant(SelectedPlant(name: name, detail: detail, category: nil)))
+            return .just(
+                .setSelectedPlant(
+                    SelectedPlant(
+                        name: name,
+                        contentNumber: currentState.contentNumber,
+                        detail: detail,
+                        category: nil
+                    )
+                )
+            )
         }
     }
 

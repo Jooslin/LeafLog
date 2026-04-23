@@ -13,6 +13,29 @@ import UIKit
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
+
+    enum Mode: Equatable {
+        case create(SelectedPlant?)
+        case edit(MyPlant)
+
+        var title: String {
+            switch self {
+            case .create:
+                return "식물 등록"
+            case .edit:
+                return "식물 수정"
+            }
+        }
+
+        var buttonTitle: String {
+            switch self {
+            case .create:
+                return "등록하기"
+            case .edit:
+                return "수정하기"
+            }
+        }
+    }
     
     private struct ValidationError: Error {
         let message: String
@@ -22,9 +45,11 @@ final class PlantRegisterReactor: Reactor {
         case viewDidLoad
         case updateCategory(PlantCategory?)
         case updateLocation(PlantLocation?)
+        case updateNickname(String)
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
         case saveTapped(nickname: String?, image: UIImage?)
+        case deleteTapped
         
         case classificationImageSelected(UIImage)
     }
@@ -32,10 +57,12 @@ final class PlantRegisterReactor: Reactor {
     enum Mutation {
         case setSelectedCategory(PlantCategory?)
         case setSelectedLocation(PlantLocation?)
+        case setNicknameText(String)
         case setWateringIntervalText(String)
         case setLastWateredDate(Date?)
         case setSaving(Bool)
         case setSaveCompleted
+        case setDeleteCompleted
         case setErrorMessage(String)
         
         case analyzeResult([String: PlantClassificationService.Confidence])
@@ -43,7 +70,11 @@ final class PlantRegisterReactor: Reactor {
 
     struct State {
         var isReady = false
+        var mode: Mode = .create(nil)
+        var title = "식물 등록"
+        var buttonTitle = "등록하기"
         var selectedPlant: SelectedPlant? = nil
+        var nicknameText = ""
         var selectedCategory: PlantCategory? = nil
         var selectedLocation: PlantLocation? = nil
         var wateringIntervalText = ""
@@ -51,6 +82,7 @@ final class PlantRegisterReactor: Reactor {
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var saveCompleted = false
+        @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
         
         var classificationResult: [String: PlantClassificationService.Confidence] = [:]
@@ -59,7 +91,11 @@ final class PlantRegisterReactor: Reactor {
     let initialState: State
 
     init(selectedPlant: SelectedPlant? = nil) {
-        self.initialState = Self.makeInitialState(selectedPlant: selectedPlant)
+        self.initialState = Self.makeInitialState(mode: .create(selectedPlant))
+    }
+
+    init(mode: Mode) {
+        self.initialState = Self.makeInitialState(mode: mode)
     }
 
     func mutate(action: Action) -> Observable<Mutation> {
@@ -70,12 +106,16 @@ final class PlantRegisterReactor: Reactor {
             return .just(.setSelectedCategory(category))
         case .updateLocation(let location):
             return .just(.setSelectedLocation(location))
+        case .updateNickname(let nickname):
+            return .just(.setNicknameText(nickname))
         case .updateWateringInterval(let text):
             return .just(.setWateringIntervalText(text))
         case .updateLastWateredDate(let date):
             return .just(.setLastWateredDate(date))
         case .saveTapped(let nickname, let image):
-            return savePlant(nickname: nickname, image: image)
+            return savePlant(state: currentState, nickname: nickname, image: image)
+        case .deleteTapped:
+            return deletePlant(state: currentState)
         case .classificationImageSelected(let image):
             return analyzeImage(image)
         }
@@ -89,6 +129,8 @@ final class PlantRegisterReactor: Reactor {
             newState.selectedCategory = category
         case .setSelectedLocation(let location):
             newState.selectedLocation = location
+        case .setNicknameText(let nickname):
+            newState.nicknameText = nickname
         case .setWateringIntervalText(let text):
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
@@ -98,6 +140,9 @@ final class PlantRegisterReactor: Reactor {
         case .setSaveCompleted:
             newState = State()
             newState.saveCompleted = true
+        case .setDeleteCompleted:
+            newState.isSaving = false
+            newState.deleteCompleted = true
         case .setErrorMessage(let message):
             newState.isSaving = false
             newState.errorMessage = message
@@ -105,13 +150,22 @@ final class PlantRegisterReactor: Reactor {
             newState.classificationResult = result
         }
 
-        newState.isRegisterEnabled = isRegisterEnabled(for: newState)
+        newState.isRegisterEnabled = Self.isRegisterEnabled(for: newState)
         return newState
     }
 
-    private func savePlant(nickname: String?, image: UIImage?) -> Observable<Mutation> {
+    private func savePlant(state: State, nickname: String?, image: UIImage?) -> Observable<Mutation> {
+        switch state.mode {
+        case .create:
+            return createPlant(state: state, nickname: nickname, image: image)
+        case .edit:
+            return updatePlant(state: state, nickname: nickname, image: image)
+        }
+    }
+
+    private func createPlant(state: State, nickname: String?, image: UIImage?) -> Observable<Mutation> {
         let inputResult = makePlantCreateInput(
-            from: currentState,
+            from: state,
             nickname: nickname,
             image: image
         )
@@ -146,6 +200,74 @@ final class PlantRegisterReactor: Reactor {
         }
     }
 
+    private func updatePlant(state: State, nickname: String?, image: UIImage?) -> Observable<Mutation> {
+        let inputResult = makePlantUpdateInput(
+            from: state,
+            nickname: nickname,
+            image: image
+        )
+
+        guard case let .success(input) = inputResult else {
+            if case let .failure(error) = inputResult {
+                return .just(.setErrorMessage(error.message))
+            }
+            return .empty()
+        }
+
+        return Observable.create { [plantService] observer in
+            observer.onNext(Mutation.setSaving(true))
+
+            let task = Task {
+                do {
+                    _ = try await plantService.updatePlant(input: input)
+                    observer.onNext(Mutation.setSaveCompleted)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(Mutation.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(Mutation.setErrorMessage(error.localizedDescription))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func deletePlant(state: State) -> Observable<Mutation> {
+        guard case let .edit(plant) = state.mode else {
+            return .just(.setErrorMessage("삭제할 식물 정보를 찾지 못했어요."))
+        }
+
+        return Observable.create { [plantService] observer in
+            observer.onNext(Mutation.setSaving(true))
+
+            let task = Task {
+                do {
+                    try await plantService.deletePlant(
+                        plantID: plant.id,
+                        imagePath: plant.imagePath
+                    )
+                    observer.onNext(Mutation.setDeleteCompleted)
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(Mutation.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(Mutation.setErrorMessage(error.localizedDescription))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
     private func makePlantCreateInput(
         from state: State,
         nickname: String?,
@@ -158,6 +280,11 @@ final class PlantRegisterReactor: Reactor {
         guard let speciesName = state.selectedPlant?.name.trimmingCharacters(in: .whitespacesAndNewlines),
               !speciesName.isEmpty else {
             return .failure(ValidationError(message: "식물 종류를 먼저 선택해주세요."))
+        }
+
+        guard let nickname = nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !nickname.isEmpty else {
+            return .failure(ValidationError(message: "식물 별명을 입력해주세요."))
         }
 
         guard let location = state.selectedLocation else {
@@ -178,6 +305,7 @@ final class PlantRegisterReactor: Reactor {
                 location: location,
                 nickname: nickname,
                 speciesName: speciesName,
+                contentNumber: state.selectedPlant?.contentNumber,
                 image: image,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt
@@ -185,9 +313,61 @@ final class PlantRegisterReactor: Reactor {
         )
     }
 
-    private func isRegisterEnabled(for state: State) -> Bool {
+    private func makePlantUpdateInput(
+        from state: State,
+        nickname: String?,
+        image: UIImage?
+    ) -> Result<PlantUpdateInput, ValidationError> {
+        guard case let .edit(plant) = state.mode else {
+            return .failure(ValidationError(message: "수정할 식물 정보를 찾지 못했어요."))
+        }
+
+        guard let category = state.selectedCategory else {
+            return .failure(ValidationError(message: "식물 카테고리를 선택해주세요."))
+        }
+
+        guard let speciesName = state.selectedPlant?.name.trimmingCharacters(in: .whitespacesAndNewlines),
+              !speciesName.isEmpty else {
+            return .failure(ValidationError(message: "식물 종류를 먼저 선택해주세요."))
+        }
+
+        guard let nickname = nickname?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !nickname.isEmpty else {
+            return .failure(ValidationError(message: "식물 별명을 입력해주세요."))
+        }
+
+        guard let location = state.selectedLocation else {
+            return .failure(ValidationError(message: "식물 위치를 선택해주세요."))
+        }
+
+        guard let wateringIntervalDays = Int(state.wateringIntervalText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            return .failure(ValidationError(message: "급수 주기를 올바르게 입력해주세요."))
+        }
+
+        guard let lastWateredAt = state.lastWateredDate else {
+            return .failure(ValidationError(message: "마지막 급수일을 선택해주세요."))
+        }
+
+        return .success(
+            PlantUpdateInput(
+                id: plant.id,
+                category: category,
+                location: location,
+                nickname: nickname,
+                speciesName: speciesName,
+                contentNumber: state.selectedPlant?.contentNumber,
+                image: image,
+                existingImagePath: plant.imagePath,
+                wateringIntervalDays: wateringIntervalDays,
+                lastWateredAt: lastWateredAt
+            )
+        )
+    }
+
+    private static func isRegisterEnabled(for state: State) -> Bool {
         let hasCategory = state.selectedCategory != nil
         let hasPlantName = !(state.selectedPlant?.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        let hasNickname = !state.nicknameText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasLocation = state.selectedLocation != nil
         let hasWateringInterval = Int(state.wateringIntervalText.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
         let hasLastWateredDate = state.lastWateredDate != nil
@@ -195,17 +375,40 @@ final class PlantRegisterReactor: Reactor {
 
         return hasCategory
             && hasPlantName
+            && hasNickname
             && hasLocation
             && hasWateringInterval
             && hasLastWateredDate
             && isNotSaving
     }
 
-    private static func makeInitialState(selectedPlant: SelectedPlant?) -> State {
+    private static func makeInitialState(mode: Mode) -> State {
         var state = State()
-        state.selectedPlant = selectedPlant
-        state.selectedCategory = suggestedCategory(from: selectedPlant)
-        state.wateringIntervalText = suggestedWateringIntervalText(from: selectedPlant?.detail?.springWaterCycle)
+        state.mode = mode
+        state.title = mode.title
+        state.buttonTitle = mode.buttonTitle
+
+        switch mode {
+        case .create(let selectedPlant):
+            state.selectedPlant = selectedPlant
+            state.selectedCategory = suggestedCategory(from: selectedPlant)
+            state.wateringIntervalText = suggestedWateringIntervalText(from: selectedPlant?.detail?.springWaterCycle)
+
+        case .edit(let plant):
+            state.selectedPlant = SelectedPlant(
+                name: plant.speciesName,
+                contentNumber: plant.contentNumber,
+                detail: nil,
+                category: plant.category
+            )
+            state.nicknameText = plant.nickname ?? ""
+            state.selectedCategory = plant.category
+            state.selectedLocation = plant.location
+            state.wateringIntervalText = "\(plant.wateringIntervalDays)"
+            state.lastWateredDate = plant.lastWateredAt
+        }
+
+        state.isRegisterEnabled = isRegisterEnabled(for: state)
         return state
     }
 
