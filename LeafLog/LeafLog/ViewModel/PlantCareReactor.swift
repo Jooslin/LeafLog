@@ -838,13 +838,17 @@ private extension PlantCareReactor {
     }
 
     static func displayDate(from date: Date) -> String {
+        plantInfoDateFormatter.string(from: date)
+    }
+
+    static let plantInfoDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar.current
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "yyyy.MM.dd"
-        return formatter.string(from: date)
-    }
+        return formatter
+    }()
 
     static func emptyInput(plantID: UUID, date: Date) -> CareRecordUpsertInput {
         CareRecordUpsertInput(
@@ -919,10 +923,14 @@ private extension PlantCareReactor {
 
 /// Supabase record_date는 yyyy-MM-dd 문자열이라, 사용자의 현재 캘린더 기준 날짜를 그대로 저장한다.
 func localDate(from date: Date) -> LocalDate {
+    LocalDate(rawValue: plantCareLocalDateFormatter.string(from: date))
+}
+
+private let plantCareLocalDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.calendar = Calendar.current
     formatter.locale = Locale(identifier: "ko_KR")
     formatter.timeZone = TimeZone.current
     formatter.dateFormat = "yyyy-MM-dd"
-    return LocalDate(rawValue: formatter.string(from: date))
-}
+    return formatter
+}()
