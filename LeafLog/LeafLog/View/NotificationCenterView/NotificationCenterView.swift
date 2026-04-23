@@ -104,6 +104,14 @@ extension NotificationCenterView {
     
     nonisolated
     enum Item: Hashable {
-        case alarm(AppNotification)
+        case alarm(Alarm)
+    }
+    
+    struct Alarm: Hashable {
+        let id: UUID
+        let title: String
+        let body: String
+        let category: AppNotificationCategory
+        let sentTimeLabel: String
     }
 }
