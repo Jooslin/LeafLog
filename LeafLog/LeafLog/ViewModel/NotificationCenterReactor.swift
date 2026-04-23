@@ -64,22 +64,22 @@ extension NotificationCenterReactor {
                     let now = Date()
                     let notifications = try await self.notificationDBManager.fetchMyNotifications()
                     
-                    let items = notifications.reduce([NotificationCenterView.Item]()) {
-                        let time = self.calculateExcessAlarmTime(from: $1.sentAt, to: now)
+                    let items = notifications.map {
+                        let time = self.calculateExcessAlarmTime(from: $0.sentAt, to: now)
                         
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
                         
                         let alarm = NotificationCenterView.Alarm(
-                            id: $1.id,
-                            title: $1.title,
-                            body: $1.plantNamesText ?? $1.body,
-                            category: $1.category,
+                            id: $0.id,
+                            title: $0.title,
+                            body: $0.plantNamesText ?? $0.body,
+                            category: $0.category,
                             sentTimeLabel: timeString
                         )
                         
                         let item = NotificationCenterView.Item.alarm(alarm)
                         
-                        return $0 + [item]
+                        return item
                     }
                     
                     observer.onNext(.setAlarm(items))
