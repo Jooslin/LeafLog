@@ -18,6 +18,7 @@ final class NotificationCenterViewController: BaseViewController, View {
     
     func bind(reactor: NotificationCenterReactor) {
         bindAction(reactor: reactor)
+        bindState(reactor: reactor)
     }
     
     private func bindAction(reactor: NotificationCenterReactor) {

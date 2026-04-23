@@ -21,6 +21,7 @@ final class NotificationCenterView: UIView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        setLayout()
     }
     
     required init?(coder: NSCoder) {
@@ -38,7 +39,7 @@ final class NotificationCenterView: UIView {
         }
         
         listView.snp.makeConstraints {
-            $0.top.equalTo(titleView).offset(24)
+            $0.top.equalTo(titleView.snp.bottom).offset(24)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
