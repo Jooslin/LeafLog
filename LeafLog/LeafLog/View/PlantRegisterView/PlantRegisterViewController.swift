@@ -17,6 +17,21 @@ private struct PlantRegisterHeaderState: Equatable {
     let showsDeleteButton: Bool
 }
 
+private func makePlantRegisterHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
+    let showsDeleteButton: Bool
+    if case .edit = state.mode {
+        showsDeleteButton = true
+    } else {
+        showsDeleteButton = false
+    }
+
+    return PlantRegisterHeaderState(
+        title: state.title,
+        buttonTitle: state.buttonTitle,
+        showsDeleteButton: showsDeleteButton
+    )
+}
+
 final class PlantRegisterViewController: BaseViewController, View {
     private let registerView = PlantRegisterView()
     private var selectedImage: UIImage?
@@ -49,7 +64,7 @@ final class PlantRegisterViewController: BaseViewController, View {
     func bind(reactor: PlantRegisterReactor) {
         // 진입에 따라서 헤더 바꾸기(등록/수정)
         reactor.state
-            .map(Self.makeHeaderState)
+            .map(makePlantRegisterHeaderState)
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] headerState in
@@ -288,21 +303,6 @@ final class PlantRegisterViewController: BaseViewController, View {
         syncInitialFormState()
     }
 
-    private static func makeHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
-        let showsDeleteButton: Bool
-        if case .edit = state.mode {
-            showsDeleteButton = true
-        } else {
-            showsDeleteButton = false
-        }
-
-        return PlantRegisterHeaderState(
-            title: state.title,
-            buttonTitle: state.buttonTitle,
-            showsDeleteButton: showsDeleteButton
-        )
-    }
-    
     private func updateSingleSelection(selectedButton: UIButton, in buttons: [UIButton]) {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
     }
