@@ -68,7 +68,7 @@ extension NotificationCenterView {
     }
     
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, Item> {
-        let alarmCellRegistration = UICollectionView.CellRegistration<CalendarDetailCell, Item> { cell, indexPath, item in
+        let alarmCellRegistration = UICollectionView.CellRegistration<NotificationAlarmCell, Item> { cell, indexPath, item in
             switch item {
             case .alarm(let alarm):
                 cell.configure(alarm)
