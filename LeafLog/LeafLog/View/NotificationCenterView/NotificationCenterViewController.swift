@@ -34,5 +34,13 @@ final class NotificationCenterViewController: BaseViewController, View {
                 self?.notificationCenterView.setSnapshot(items)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
     }
 }
