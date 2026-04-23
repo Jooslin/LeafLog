@@ -16,7 +16,6 @@ import FirebaseMessaging
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     @Dependency(\.fcmManager) private var fcmManager
-    @Dependency(\.notificationManager) private var notificationManager
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
@@ -32,11 +31,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Apple의 푸시 서버(APNs)에 앱을 등록하고 디바이스 토큰 발급을 요청함
         application.registerForRemoteNotifications()
-
-        // 앱이 푸시 탭으로 처음 실행된 경우에도 동일한 payload 처리 경로를 사용한다.
-        if let remoteNotification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
-            notificationManager.handleOpenedRemoteNotification(userInfo: remoteNotification)
-        }
         
         return true
         }

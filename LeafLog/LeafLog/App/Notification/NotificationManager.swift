@@ -11,8 +11,6 @@ import Dependencies
 final class NotificationManager {
     @Dependency(\.supabaseManager)private var supabaseManager
     let center = UNUserNotificationCenter.current()
-    // 최근에 탭한 원격 알림 payload를 보관해 알림센터/딥링크 구현 시 재사용한다.
-    private(set) var lastOpenedRemoteNotification: RemoteNotificationPayload?
     
     // 앱 알림 권한 요청 함수
     func requestNotificationAuthorization() {
@@ -46,26 +44,6 @@ final class NotificationManager {
             let isEnabled = await checkNotificationEnabled()
             supabaseManager.updateIsNotificationEnabled(isEnabled)
         }
-    }
-
-    @discardableResult
-    func handleOpenedRemoteNotification(
-        userInfo: [AnyHashable: Any],
-        fallbackTitle: String? = nil,
-        fallbackBody: String? = nil
-    ) -> RemoteNotificationPayload? {
-        // FCM data payload를 앱 전용 모델로 변환해 화면 전환 계층에서 공통으로 사용할 수 있게 한다.
-        guard let payload = RemoteNotificationPayload.from(
-            userInfo: userInfo,
-            fallbackTitle: fallbackTitle,
-            fallbackBody: fallbackBody
-        ) else {
-            return nil
-        }
-
-        lastOpenedRemoteNotification = payload
-        NotificationCenter.default.post(name: .leafLogDidOpenRemoteNotification, object: payload)
-        return payload
     }
 }
 

@@ -27,16 +27,6 @@ extension FCMManager: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.list, .banner])
     }
-
-    // 사용자가 푸시를 탭했을 때 payload를 앱 내부에서 재사용할 수 있는 모델로 보관한다.
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        let content = response.notification.request.content
-        notificationManager.handleOpenedRemoteNotification(
-            userInfo: content.userInfo,
-            fallbackTitle: content.title,
-            fallbackBody: content.body
-        )
-    }
 }
 
 extension FCMManager: MessagingDelegate {
