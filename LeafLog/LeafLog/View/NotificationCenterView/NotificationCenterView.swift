@@ -13,8 +13,33 @@ final class NotificationCenterView: UIView {
     let title = TitleHeaderView(text: "알림 센터", hasBackButton: true)
     private lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
+        $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     private lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setLayout() {
+        addSubview(title)
+        addSubview(listView)
+        
+        title.snp.makeConstraints {
+            $0.top.equalTo(safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(48)
+        }
+        
+        listView.snp.makeConstraints {
+            $0.top.equalTo(title).offset(24)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
+    }
 }
 
 //MARK: CollectionView
