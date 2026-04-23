@@ -32,9 +32,9 @@ final class CalendarHeaderCell: UICollectionViewCell {
     }
     
     override func prepareForReuse() {
-            super.prepareForReuse()
-            disposeBag = DisposeBag()
-        }
+        super.prepareForReuse()
+        disposeBag = DisposeBag()
+    }
 }
 
 extension CalendarHeaderCell {

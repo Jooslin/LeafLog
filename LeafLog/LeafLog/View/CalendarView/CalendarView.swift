@@ -18,6 +18,7 @@ final class CalendarView: UIView {
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
+    fileprivate let filterButtonTap = PublishRelay<Int>()
     
     init() {
         super.init(frame: .zero)
@@ -67,7 +68,9 @@ extension CalendarView {
             
         }
         
-        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { cell, indexPath, item in
+        let headerCellRegistration = UICollectionView.CellRegistration<CalendarHeaderCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
+            
             switch item {
             case .header(let year, let month):
                 cell.configure(year: year, month: month)
@@ -93,10 +96,16 @@ extension CalendarView {
             }
         }
         
-        let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { cell, indexPath, item in
+        let filterCellRegistartion = UICollectionView.CellRegistration<CalendarFilterCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
+            
             switch item {
             case .filter(let filters):
                 cell.configure(selectedTags: filters)
+                
+                cell.rx.filterButtonTap
+                    .bind(to: self.filterButtonTap)
+                    .disposed(by: cell.disposeBag)
             default:
                 break
             }
@@ -232,11 +241,8 @@ extension Reactive where Base: CalendarView {
         base.headerNextButtonTap
     }
     
-    var filterButtonTap: ControlEvent<Int> {
-        let filterButtonTap = base.collectionView.rx.willDisplayCell
-            .compactMap { cell, _ in cell as? CalendarFilterCell }
-            .flatMapLatest { $0.rx.filterButtonTap.asObservable() }
-        return ControlEvent(events: filterButtonTap)
+    var filterButtonTap: PublishRelay<Int> {
+        base.filterButtonTap
     }
     
     var itemSelected: Observable<CalendarView.Item> {

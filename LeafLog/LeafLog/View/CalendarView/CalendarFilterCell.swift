@@ -12,7 +12,8 @@ import RxSwift
 import RxCocoa
 
 final class CalendarFilterCell: UICollectionViewCell {
-        
+    private(set) var disposeBag = DisposeBag()
+    
     fileprivate let buttons = [
         SelectionButton(title: "전체"),
         SelectionButton(title: "물주기"),
@@ -29,6 +30,11 @@ final class CalendarFilterCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        disposeBag = DisposeBag()
     }
 }
 
@@ -79,12 +85,12 @@ extension CalendarFilterCell {
 }
 
 extension Reactive where Base: CalendarFilterCell {
-    var filterButtonTap: ControlEvent<Int> {
+    var filterButtonTap: Observable<Int> {
         let taps = Observable.merge(
             base.buttons.map { button in
                 button.rx.tap.map { button.tag }
             })
         
-        return ControlEvent(events: taps)
+        return taps
     }
 }
