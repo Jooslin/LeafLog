@@ -24,7 +24,6 @@ final class HomeViewController: BaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
         bindPlantSelection()
         bindPlantRegistration()

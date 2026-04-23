@@ -39,6 +39,9 @@ final class MainFlow: Flow {
             pop(animated: true)
             return .none
             
+        case .record(let plantID):
+            return navigateToPlantRecord(plantID: plantID)
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -111,5 +114,11 @@ extension MainFlow {
         
         present(alert, animated: true)
         return .none
+    }
+    
+    private func navigateToPlantRecord(plantID: UUID) -> FlowContributors {
+        let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+        navigate(to: viewController, animated: true)
+        return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
     }
 }
