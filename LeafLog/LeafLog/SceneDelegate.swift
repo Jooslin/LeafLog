@@ -62,7 +62,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         notificationManager.updateIsNotificationEnabled()
         
         // Foreground에 진입할 때마다 fcmToken 업데이트
-        fcmManager.syncCurentFCMTokenIfPossible()
+        fcmManager.syncCurrentFCMTokenIfPossible()
     }
     
     func sceneWillResignActive(_ scene: UIScene) {
