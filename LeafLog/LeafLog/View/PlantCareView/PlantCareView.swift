@@ -42,6 +42,7 @@ final class PlantCareView: UIView {
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
         $0.contentInsetAdjustmentBehavior = .never // 스크롤 여백 자동 조정 차단
+        $0.keyboardDismissMode = .onDrag
         $0.contentInset = UIEdgeInsets(
             top: Metric.headerContentInset,
             left: 0,

@@ -35,6 +35,7 @@ final class PlantCareViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setKeyboardDismissGesture()
     }
 
     override func viewDidAppear(_ animated: Bool) {

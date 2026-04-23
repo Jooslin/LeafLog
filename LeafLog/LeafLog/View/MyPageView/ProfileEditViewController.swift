@@ -37,6 +37,7 @@ final class ProfileEditViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setKeyboardDismissGesture()
     }
 
 
