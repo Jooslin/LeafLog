@@ -34,18 +34,21 @@ final class PlantDetailCell: UICollectionViewCell {
     private let contentStackView = UIStackView().then {
         $0.axis = .vertical
         $0.spacing = 24
+        $0.alignment = .fill
+        $0.distribution = .fill
     }
 
     private let stackView = UIStackView().then {
         $0.axis = .vertical
         $0.spacing = 0
-        $0.distribution = .fillEqually
+        $0.distribution = .fill
     }
 
     private let guideHeaderStackView = UIStackView().then {
         $0.axis = .horizontal
         $0.alignment = .center
         $0.spacing = 12
+        $0.distribution = .fill
     }
 
     private let guideTitleLabel = UILabel(text: "가이드", config: .title14, color: .black)
@@ -102,6 +105,11 @@ final class PlantDetailCell: UICollectionViewCell {
         setActions()
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onGuideEnabledChanged = nil
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -131,6 +139,12 @@ extension PlantDetailCell {
 
         guideTitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         guideToggleButton.setContentHuggingPriority(.required, for: .horizontal)
+        cardView.setContentHuggingPriority(.required, for: .vertical)
+        guideHeaderStackView.setContentHuggingPriority(.required, for: .vertical)
+        guideCardView.setContentHuggingPriority(.required, for: .vertical)
+        cardView.setContentCompressionResistancePriority(.required, for: .vertical)
+        guideHeaderStackView.setContentCompressionResistancePriority(.required, for: .vertical)
+        guideCardView.setContentCompressionResistancePriority(.required, for: .vertical)
 
         contentStackView.setCustomSpacing(12, after: guideHeaderStackView)
 
@@ -142,8 +156,8 @@ extension PlantDetailCell {
             $0.edges.equalToSuperview()
         }
 
-        guideCardView.snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(192)
+        guideHeaderStackView.snp.makeConstraints {
+            $0.height.equalTo(32)
         }
 
         guideStackView.snp.makeConstraints {
@@ -177,7 +191,7 @@ extension PlantDetailCell {
         pestGuideRow.configure(message: guide.pest)
 
         guideToggleButton.setOn(isGuideEnabled, animated: false)
-        guideCardView.isHidden = !isGuideEnabled
+        applyGuideVisibility(isEnabled: isGuideEnabled)
     }
 
     private func setActions() {
@@ -190,8 +204,15 @@ extension PlantDetailCell {
 
     @objc private func handleGuideToggleChanged() {
         let isEnabled = guideToggleButton.isOn
-        guideCardView.isHidden = !isEnabled
+        applyGuideVisibility(isEnabled: isEnabled)
         onGuideEnabledChanged?(isEnabled)
+    }
+
+    private func applyGuideVisibility(isEnabled: Bool) {
+        UIView.performWithoutAnimation {
+            guideCardView.isHidden = !isEnabled
+            contentView.layoutIfNeeded()
+        }
     }
 }
 
@@ -255,22 +276,17 @@ private extension PlantDetailGuideRowView {
         textStackView.addArrangedSubview(titleLabel)
         textStackView.addArrangedSubview(messageLabel)
 
-        snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(48)
-        }
-
         iconImageView.snp.makeConstraints {
             $0.leading.equalToSuperview()
-            $0.centerY.equalToSuperview()
+            $0.top.equalToSuperview()
             $0.size.equalTo(32)
+            $0.bottom.lessThanOrEqualToSuperview()
         }
 
         textStackView.snp.makeConstraints {
             $0.leading.equalTo(iconImageView.snp.trailing).offset(16)
             $0.trailing.equalToSuperview()
-            $0.centerY.equalToSuperview()
-            $0.top.greaterThanOrEqualToSuperview()
-            $0.bottom.lessThanOrEqualToSuperview()
+            $0.verticalEdges.equalToSuperview()
         }
     }
 }
