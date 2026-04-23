@@ -51,7 +51,7 @@ final class PlantRegisterViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        
+
         guard let reactor else { return }
         bindUI(reactor: reactor)
     }
@@ -62,6 +62,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        // 진입에 따라서 헤더 바꾸기(등록/수정)
         reactor.state
             .map(Self.makeHeaderState)
             .distinctUntilChanged()
@@ -75,6 +76,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        // 선택 식물 변경시 안내뷰 변경
         reactor.state
             .map(\.selectedPlant)
             .distinctUntilChanged()
@@ -97,6 +99,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        // 세부사항 채우기
         reactor.state
             .map(\.selectedCategory)
             .distinctUntilChanged()
@@ -146,6 +149,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        // 저장 가능 상태인지 검증
         reactor.state
             .map(\.isRegisterEnabled)
             .distinctUntilChanged()
@@ -229,18 +233,10 @@ final class PlantRegisterViewController: BaseViewController, View {
             for: .touchUpInside
         )
         
-        //TODO: 검색 카메라 버튼 구현 시 아래 주석 풀고 사용 예정입니다. (단, 이벤트 보내는 주체 변경 필요)
-//        registerView.plantTypeSearchButton.rx.tap
-//            .compactMap { [weak self] _ -> PHPickerViewController? in
-//                return self?.makeImagePicker()
-//            }
-//            .withUnretained(self)
-//            .do(onNext: { $0.present($1, animated: true) })
-//            .flatMap { $1.rx.selectedImages }
-//            .compactMap(\.first)
-//            .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
-//            .bind(to: reactor.action)
-//            .disposed(by: disposeBag)
+        registerView.plantTypeSearchBar.cameraButton.rx.tap
+            .map { AppStep.cameraRequired }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
         registerView.categoryButtons.forEach { button in
             button.rx.tap

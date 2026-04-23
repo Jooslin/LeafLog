@@ -27,7 +27,6 @@ final class PlantRegisterView: UIView {
     let plantTypeSearchBar = SearchBarView().then {
         $0.textField.placeholder = "식물을 검색해주세요."
         $0.textField.isUserInteractionEnabled = false
-        $0.cameraButton.isUserInteractionEnabled = false
     }
     let plantTypeSearchButton = UIButton(type: .system).then {
         $0.backgroundColor = .clear
@@ -95,6 +94,7 @@ final class PlantRegisterView: UIView {
         registerButton.setTitle(buttonTitle, for: .normal)
     }
 
+    // 선택된 식물에 대한 정보 반영
     func applySelectedPlant(
         name: String,
         growStyle: String?,
@@ -105,6 +105,7 @@ final class PlantRegisterView: UIView {
         plantTypeSearchBar.textField.text = name
         wateringCycleTextField.text = WateringGuideView.suggestedInputValue(from: springWaterCycle)
 
+        // 카테고리가 기타일 경우 비활성화
         if selectedCategory == .other {
             categoryButtons.forEach {
                 $0.isSelected = false
@@ -133,6 +134,7 @@ final class PlantRegisterView: UIView {
         wateringGuideBannerView.configure(plantName: name, springWaterCycle: springWaterCycle)
     }
 
+    // 입력화면 초기화
     func resetForm() {
         cameraButton.layer.contents = nil
         cameraButton.layer.contentsGravity = .resize
@@ -155,6 +157,7 @@ final class PlantRegisterView: UIView {
     }
 }
 
+// MARK: UI 구현
 private extension PlantRegisterView {
     func setupSelectionState() {
         categoryButtons.first?.isSelected = true
@@ -229,7 +232,8 @@ private extension PlantRegisterView {
         }
 
         plantTypeSearchButton.snp.makeConstraints {
-            $0.edges.equalTo(plantTypeSearchBar)
+            $0.top.leading.bottom.equalTo(plantTypeSearchBar)
+            $0.trailing.equalTo(plantTypeSearchBar.cameraButton.snp.leading).offset(-8)
         }
 
         categoryTitleLabel.snp.makeConstraints {
@@ -312,6 +316,7 @@ private extension PlantRegisterView {
         }
     }
 
+    // 버튼 그리드 배치하기
     func makeSelectionGrid(buttons: [UIButton]) -> UIStackView {
         let rows = stride(from: 0, to: buttons.count, by: 3).map { startIndex -> UIStackView in
             let rowButtons = Array(buttons[startIndex ..< min(startIndex + 3, buttons.count)])
