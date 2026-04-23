@@ -97,6 +97,19 @@ final class ProfileEditViewController: BaseViewController, View {
 
         reactor.state
             .map(\.selectedImage)
+            .distinctUntilChanged { lhs, rhs in
+                switch (lhs, rhs) {
+                    // 둘다 nil일때
+                case (nil, nil):
+                    return true
+                    // 둘이 같을때
+                case let (lhs?, rhs?):
+                    return lhs === rhs
+                    // 그 외
+                default:
+                    return false
+                }
+            }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] image in
                 self?.imageLoadTask?.cancel()
