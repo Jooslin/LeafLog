@@ -155,15 +155,22 @@ final class MyPageViewController: BaseViewController, View {
         
         myPageView.nicknameLabel.text = profile.nickname
         myPageView.emailLabel.text = profile.email ?? "이메일 정보가 없습니다."
-        loadProfileImage(from: profile.profileImageURL)
+        loadProfileImage(
+            from: profile.profileImageURL,
+            updatedAt: profile.updatedAt
+        )
     }
     
     // 프로필 사진 불러오기
-    private func loadProfileImage(from storedValue: String?) {
+    private func loadProfileImage(from storedValue: String?, updatedAt: Date?) {
         imageLoadTask?.cancel()
         
         let normalizedValue = storedValue?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = makeImageCacheKey(
+            from: normalizedValue,
+            updatedAt: updatedAt
+        )
 
         guard let normalizedValue, !normalizedValue.isEmpty else {
             myPageView.setProfileImageURL(nil, cacheKey: nil)
@@ -180,7 +187,7 @@ final class MyPageViewController: BaseViewController, View {
                 await MainActor.run {
                     self.myPageView.setProfileImageURL(
                         resolvedURL,
-                        cacheKey: normalizedValue
+                        cacheKey: cacheKey
                     )
                 }
             } catch {
@@ -191,6 +198,18 @@ final class MyPageViewController: BaseViewController, View {
                 }
             }
         }
+    }
+
+    private func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else {
+            return nil
+        }
+
+        guard let updatedAt else {
+            return path
+        }
+
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
     }
 }
 

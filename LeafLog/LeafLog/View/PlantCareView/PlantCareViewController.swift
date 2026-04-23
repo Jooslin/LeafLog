@@ -217,7 +217,8 @@ private extension PlantCareViewController {
                 self?.plantCareView.configure(plant: plant)
                 self?.loadPlantImage(
                     from: plant.imagePath,
-                    fallbackImage: UIImage(named: plant.defaultImageAssetName)
+                    fallbackImage: UIImage(named: plant.defaultImageAssetName),
+                    updatedAt: plant.updatedAt
                 )
             })
             .disposed(by: disposeBag)
@@ -321,11 +322,15 @@ private extension PlantCareViewController {
         }
     }
 
-    func loadPlantImage(from storedValue: String?, fallbackImage: UIImage?) {
+    func loadPlantImage(from storedValue: String?, fallbackImage: UIImage?, updatedAt: Date?) {
         imageLoadTask?.cancel()
 
         let normalizedValue = storedValue?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = makeImageCacheKey(
+            from: normalizedValue,
+            updatedAt: updatedAt
+        )
 
         guard let normalizedValue, !normalizedValue.isEmpty else {
             plantCareView.setPlantImageURL(nil, cacheKey: nil, fallbackImage: fallbackImage)
@@ -344,7 +349,7 @@ private extension PlantCareViewController {
                 await MainActor.run {
                     self.plantCareView.setPlantImageURL(
                         resolvedURL,
-                        cacheKey: normalizedValue,
+                        cacheKey: cacheKey,
                         fallbackImage: fallbackImage
                     )
                 }
@@ -402,6 +407,18 @@ private extension PlantCareViewController {
                 }
             }
         }
+    }
+
+    private func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else {
+            return nil
+        }
+
+        guard let updatedAt else {
+            return path
+        }
+
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
     }
 }
 
