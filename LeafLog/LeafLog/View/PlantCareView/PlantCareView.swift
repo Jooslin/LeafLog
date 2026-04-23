@@ -26,8 +26,8 @@ final class PlantCareView: UIView {
     let plantImageView = PlantCareCircularImageView().then {
         $0.backgroundColor = .grayScale50
         $0.contentMode = .scaleAspectFill
-        $0.image = UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate)
-        $0.tintColor = .grayScale400
+        $0.image = nil
+        $0.tintColor = nil
     }
 
     let nameLabel = UILabel(text: "name", config: .headline24).then {
