@@ -966,19 +966,6 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let titleLabel = UILabel(text: "오늘의 일기", config: .title14)
-    private let completeButton = UIButton(type: .system).then {
-        var configuration = UIButton.Configuration.plain()
-        configuration.title = "완료"
-        configuration.background.cornerRadius = 8
-        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
-            var outgoing = incoming
-            outgoing.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            return outgoing
-        }
-        $0.configuration = configuration
-        $0.isUserInteractionEnabled = false
-    }
-
     private let photoLabel = UILabel(text: "사진 기록", config: .label14, color: .black)
     private let cameraButton = UIButton(type: .system).then {
         $0.setImage(UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate), for: .normal)
@@ -1073,7 +1060,6 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             for: .normal
         )
         configurePhotoPreview(hasPhoto: item.diaryPhotoPath?.isEmpty == false)
-        configureCompleteButton(isCompleted: item.isCompleted)
     }
 
     func setPhotoImage(_ image: UIImage?) {
@@ -1090,10 +1076,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let headerRow = UIStackView(arrangedSubviews: [titleStack, completeButton]).then {
+        let headerRow = UIStackView(arrangedSubviews: [titleStack]).then {
             $0.axis = .horizontal
             $0.alignment = .center
-            $0.distribution = .equalSpacing
         }
 
         let photoRow = UIView()
@@ -1193,12 +1178,6 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         photoPlaceholderLabel.isHidden = !hasPhoto
     }
 
-    private func configureCompleteButton(isCompleted: Bool) {
-        var configuration = completeButton.configuration ?? UIButton.Configuration.plain()
-        configuration.baseForegroundColor = isCompleted ? .grayScale600 : .grayScale700
-        configuration.background.backgroundColor = isCompleted ? .grayScale100 : .white
-        completeButton.configuration = configuration
-    }
 }
 
 private final class PlantCareTimelineControlCell: UICollectionViewCell {

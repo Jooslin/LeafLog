@@ -695,6 +695,7 @@ private extension PlantCareReactor {
                     observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
                     // 타임라인 새로고침
                     try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onNext(.setSuccessMessage("오늘의 일기가 저장되었습니다."))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
