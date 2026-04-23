@@ -316,6 +316,7 @@ final class PlantRegisterReactor: Reactor {
                 location: location,
                 nickname: nickname,
                 speciesName: speciesName,
+                contentNumber: state.selectedPlant?.contentNumber,
                 image: image,
                 existingImagePath: plant.imagePath,
                 wateringIntervalDays: wateringIntervalDays,

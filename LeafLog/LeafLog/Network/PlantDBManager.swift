@@ -145,6 +145,7 @@ final class PlantDBManager {
             location: input.location?.rawValue,
             nickname: input.nickname?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
             speciesName: speciesName,
+            contentNumber: input.contentNumber,
             imagePath: imagePath,
             wateringIntervalDays: input.wateringIntervalDays,
             lastWateredAt: input.lastWateredAt
@@ -195,6 +196,7 @@ final class PlantDBManager {
         let location: String?
         let nickname: String
         let speciesName: String
+        let contentNumber: String?
         let imagePath: String?
         let wateringIntervalDays: Int
         let lastWateredAt: Date
@@ -204,6 +206,7 @@ final class PlantDBManager {
             case location
             case nickname
             case speciesName = "species_name"
+            case contentNumber
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
