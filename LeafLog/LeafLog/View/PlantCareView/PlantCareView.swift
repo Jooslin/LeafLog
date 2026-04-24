@@ -20,6 +20,8 @@ final class PlantCareView: UIView {
         static let diaryEstimatedHeight: CGFloat = 740
         static let timelinePhotoHeight: CGFloat = 420
         static let timelineEstimatedHeight: CGFloat = 560
+        // 식물정보 탭에서 헤더 접힘이 끝날 만큼 아래 여백 확보
+        static let plantInfoBottomInset: CGFloat = 120
     }
 
     let headerView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "edit")
@@ -508,12 +510,23 @@ private extension PlantCareView {
                     subitems: [item]
                 )
 
+                let bottomInset: CGFloat = {
+                    switch section {
+                    case .careRecord:
+                        return 24
+                    case .plantInfo:
+                        return Metric.plantInfoBottomInset
+                    default:
+                        return 40
+                    }
+                }()
+
                 return NSCollectionLayoutSection(group: group).then {
                     $0.interGroupSpacing = section == .careRecord ? 24 : 0
                     $0.contentInsets = NSDirectionalEdgeInsets(
                         top: section == .careRecord ? 16 : 0,
                         leading: 0,
-                        bottom: section == .careRecord ? 24 : 40,
+                        bottom: bottomInset,
                         trailing: 0
                     )
                 }
