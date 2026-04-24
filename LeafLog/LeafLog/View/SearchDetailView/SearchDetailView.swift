@@ -52,14 +52,14 @@ final class SearchDetailView: UIView {
         $0.distribution = .fillEqually
     }
 
-    private let closeButton = UIButton().then {
+    fileprivate let closeButton = UIButton().then {
         $0.setTitle("닫기", for: .normal)
         $0.backgroundColor = .grayScale50
         $0.setTitleColor(.grayScale400, for: .normal)
         $0.layer.cornerRadius = 12
     }
 
-    private let selectButton = UIButton().then {
+    fileprivate let selectButton = UIButton().then {
         $0.setTitle("선택하기", for: .normal)
         $0.backgroundColor = .primary600
         $0.layer.cornerRadius = 12
@@ -96,16 +96,6 @@ final class SearchDetailView: UIView {
     )
 
     private var imageURLs: [String] = []
-
-    // 버튼탭 이벤트
-    var closeButtonTap: ControlEvent<Void> {
-        ControlEvent(events: Observable.merge(closeButton.rx.tap.asObservable(), titleHeaderView.backButton.rx.tap.asObservable()))
-    }
-
-    var selectButtonTap: ControlEvent<Void> {
-        selectButton.rx.tap
-    }
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
@@ -325,5 +315,20 @@ extension SearchDetailView: UICollectionViewDataSource, UICollectionViewDelegate
         guard scrollView === imageCollectionView, scrollView.bounds.width > 0 else { return }
         let page = Int(round(scrollView.contentOffset.x / scrollView.bounds.width))
         pageControl.currentPage = max(0, min(page, max(pageControl.numberOfPages - 1, 0)))
+    }
+}
+
+extension Reactive where Base: SearchDetailView {
+    var closeButtonTap: ControlEvent<Void> {
+        ControlEvent(
+            events: Observable.merge(
+                base.closeButton.rx.tap.asObservable(),
+                base.titleHeaderView.backButton.rx.tap.asObservable()
+            )
+        )
+    }
+
+    var selectButtonTap: ControlEvent<Void> {
+        base.selectButton.rx.tap
     }
 }
