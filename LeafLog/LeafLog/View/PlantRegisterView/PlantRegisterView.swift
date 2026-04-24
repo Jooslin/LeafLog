@@ -27,7 +27,6 @@ final class PlantRegisterView: UIView {
     let plantTypeSearchBar = SearchBarView().then {
         $0.textField.placeholder = "식물을 검색해주세요."
         $0.textField.isUserInteractionEnabled = false
-        $0.cameraButton.isUserInteractionEnabled = false
     }
     let plantTypeSearchButton = UIButton(type: .system).then {
         $0.backgroundColor = .clear
@@ -69,8 +68,40 @@ final class PlantRegisterView: UIView {
     let lastWateredDateTextField = PlantRegisterView.makeTextField(placeholder: "년 / 월 / 일").then {
         $0.keyboardType = .numbersAndPunctuation
     }
+    private let lastWateredDatePicker = UIDatePicker().then {
+        $0.datePickerMode = .date
+        $0.preferredDatePickerStyle = .wheels
+        $0.locale = Locale(identifier: "ko_KR")
+        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.maximumDate = Date()
+    }
+    private lazy var lastWateredDateInputView = UIView(
+        frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 304)
+    ).then {
+        $0.backgroundColor = .systemBackground
+        $0.autoresizingMask = [.flexibleWidth]
 
+        let toolbar = UIToolbar()
+        toolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapLastWateredDateDone))
+        ]
+
+        $0.addSubview(toolbar)
+        $0.addSubview(lastWateredDatePicker)
+
+        toolbar.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(44)
+        }
+
+        lastWateredDatePicker.snp.makeConstraints {
+            $0.top.equalTo(toolbar.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
+    }
     let registerButton = BottomSaveButton(title: "등록하기")
+    var onLastWateredDateDone: ((Date) -> Void)?
 
     private lazy var categoryStackView = makeSelectionGrid(buttons: categoryButtons)
     private lazy var locationStackView = makeSelectionGrid(buttons: locationButtons)
@@ -80,6 +111,7 @@ final class PlantRegisterView: UIView {
         backgroundColor = .white
         setupSelectionState()
         setupUI()
+        setupLastWateredDateInputView()
     }
 
     required init?(coder: NSCoder) {
@@ -95,6 +127,7 @@ final class PlantRegisterView: UIView {
         registerButton.setTitle(buttonTitle, for: .normal)
     }
 
+    // 선택된 식물에 대한 정보 반영
     func applySelectedPlant(
         name: String,
         growStyle: String?,
@@ -103,8 +136,11 @@ final class PlantRegisterView: UIView {
         selectedCategory: PlantCategory?
     ) {
         plantTypeSearchBar.textField.text = name
-        wateringCycleTextField.text = WateringGuideView.suggestedInputValue(from: springWaterCycle)
+        if let suggestedWateringCycle = WateringGuideView.suggestedInputValue(from: springWaterCycle) {
+            wateringCycleTextField.text = suggestedWateringCycle
+        }
 
+        // 카테고리가 기타일 경우 비활성화
         if selectedCategory == .other {
             categoryButtons.forEach {
                 $0.isSelected = false
@@ -133,6 +169,7 @@ final class PlantRegisterView: UIView {
         wateringGuideBannerView.configure(plantName: name, springWaterCycle: springWaterCycle)
     }
 
+    // 입력화면 초기화
     func resetForm() {
         cameraButton.layer.contents = nil
         cameraButton.layer.contentsGravity = .resize
@@ -141,6 +178,7 @@ final class PlantRegisterView: UIView {
         plantNameTextField.text = nil
         wateringCycleTextField.text = nil
         lastWateredDateTextField.text = nil
+        lastWateredDatePicker.date = Date()
 
         categoryButtons.forEach {
             $0.isSelected = false
@@ -153,8 +191,14 @@ final class PlantRegisterView: UIView {
         lightGuideView.configure(plantName: nil, lightDemand: nil)
         wateringGuideBannerView.configure(plantName: nil, springWaterCycle: nil)
     }
+
+    func setLastWateredDate(_ date: Date, text: String) {
+        lastWateredDatePicker.date = date
+        lastWateredDateTextField.text = text
+    }
 }
 
+// MARK: UI 구현
 private extension PlantRegisterView {
     func setupSelectionState() {
         categoryButtons.first?.isSelected = true
@@ -229,7 +273,8 @@ private extension PlantRegisterView {
         }
 
         plantTypeSearchButton.snp.makeConstraints {
-            $0.edges.equalTo(plantTypeSearchBar)
+            $0.top.leading.bottom.equalTo(plantTypeSearchBar)
+            $0.trailing.equalTo(plantTypeSearchBar.cameraButton.snp.leading).offset(-8)
         }
 
         categoryTitleLabel.snp.makeConstraints {
@@ -312,6 +357,18 @@ private extension PlantRegisterView {
         }
     }
 
+    func setupLastWateredDateInputView() {
+        lastWateredDateTextField.inputView = lastWateredDateInputView
+        lastWateredDateTextField.tintColor = .clear
+    }
+
+    @objc func didTapLastWateredDateDone() {
+        let selectedDate = lastWateredDatePicker.date
+        onLastWateredDateDone?(selectedDate)
+        lastWateredDateTextField.resignFirstResponder()
+    }
+
+    // 버튼 그리드 배치하기
     func makeSelectionGrid(buttons: [UIButton]) -> UIStackView {
         let rows = stride(from: 0, to: buttons.count, by: 3).map { startIndex -> UIStackView in
             let rowButtons = Array(buttons[startIndex ..< min(startIndex + 3, buttons.count)])

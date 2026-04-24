@@ -11,10 +11,38 @@ import Supabase
 import Dependencies
 import OSLog
 
+// 생성된 Signed URL을 메모리에 임시로 저장
+private actor SignedImageURLMemoryCache {
+    private struct Entry {
+        let url: URL
+        let expiresAt: Date // 만료시간
+    }
+
+    private var entries: [String: Entry] = [:]
+
+    func url(for key: String) -> URL? {
+        guard let entry = entries[key] else {
+            return nil
+        }
+
+        guard entry.expiresAt > Date() else {
+            entries[key] = nil
+            return nil
+        }
+
+        return entry.url
+    }
+
+    func store(_ url: URL, for key: String, expiresAt: Date) {
+        entries[key] = Entry(url: url, expiresAt: expiresAt)
+    }
+}
+
 final class SupabaseManager {
     private let logger = Logger(subsystem: "LeafLog", category: "SupabaseManager")
     
     private init() {}
+    private let signedImageURLCache = SignedImageURLMemoryCache()
     
     let client: SupabaseClient = {
         guard let supabaseURL = URL(string: "https://\(AppSecrets.supabaseURL)") else {
@@ -38,7 +66,13 @@ extension SupabaseManager {
         static let profileImages = "profile-images"
         static let plantImages = "plant-images"
     }
-    
+
+    // 엣지케이스 방지
+    private enum SignedURLCache {
+        static let expiration = 60 * 60 // 서버에 요청할 유효기간
+        static let lifetime: TimeInterval = 50 * 60 // 캐시에서 URL 유지하는 시간
+    }
+
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -79,17 +113,29 @@ extension SupabaseManager {
     
     // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
     // private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용
-    func resolveProfileImageURL(from storedValue: String?) async throws -> URL? {
-        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.profileImages)
+    func resolveProfileImageURL(from storedValue: String?, cacheKey: String? = nil) async throws -> URL? {
+        try await resolveStoredImageURL(
+            from: storedValue,
+            bucket: StorageBucket.profileImages,
+            cacheKey: cacheKey
+        )
     }
     
     // DB에 저장된 식물 이미지 값을 실제 접근 가능한 URL로 변환
-    func resolvePlantImageURL(from storedValue: String?) async throws -> URL? {
-        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
+    func resolvePlantImageURL(from storedValue: String?, cacheKey: String? = nil) async throws -> URL? {
+        try await resolveStoredImageURL(
+            from: storedValue,
+            bucket: StorageBucket.plantImages,
+            cacheKey: cacheKey
+        )
     }
-    
-    func resolveDiaryImageURL(from storedValue: String?) async throws -> URL? {
-        try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
+
+    func resolveDiaryImageURL(from storedValue: String?, cacheKey: String? = nil) async throws -> URL? {
+        try await resolveStoredImageURL(
+            from: storedValue,
+            bucket: StorageBucket.plantImages,
+            cacheKey: cacheKey
+        )
     }
     
     private func uploadImage(
@@ -116,19 +162,36 @@ extension SupabaseManager {
         
         return objectPath
     }
-    
-    private func resolveStoredImageURL(from storedValue: String?, bucket: String) async throws -> URL? {
-        guard let storedValue, !storedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+
+    // URL 변환 로직
+    private func resolveStoredImageURL(from storedValue: String?, bucket: String, cacheKey: String?) async throws -> URL? {
+        guard let storedValue = storedValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !storedValue.isEmpty else {
             return nil
         }
         
         if let directURL = URL(string: storedValue), directURL.scheme != nil {
             return directURL
         }
-        
-        return try await client.storage
+
+        // 유효한 URL이 존재하면 네트워크 요청없이 즉시 반환
+        let resolvedCacheKey = "\(bucket):\(cacheKey ?? storedValue)"
+        if let cachedURL = await signedImageURLCache.url(for: resolvedCacheKey) {
+            return cachedURL
+        }
+
+        // 캐시 실패
+        let signedURL = try await client.storage
             .from(bucket)
-            .createSignedURL(path: storedValue, expiresIn: 60 * 60)
+            .createSignedURL(path: storedValue, expiresIn: SignedURLCache.expiration)
+
+        await signedImageURLCache.store(
+            signedURL,
+            for: resolvedCacheKey,
+            expiresAt: Date().addingTimeInterval(SignedURLCache.lifetime)
+        )
+
+        return signedURL
     }
     
     // Storage에서 식물 이미지 삭제

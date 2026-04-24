@@ -10,7 +10,6 @@ import ReactorKit
 import RxSwift
 import UIKit
 import RxCocoa
-import Then
 
 private struct PlantRegisterHeaderState: Equatable {
     let title: String
@@ -18,22 +17,29 @@ private struct PlantRegisterHeaderState: Equatable {
     let showsDeleteButton: Bool
 }
 
+private struct LastWateredDateViewState: Equatable {
+    let date: Date?
+    let text: String
+}
+
+private func makePlantRegisterHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
+    let showsDeleteButton: Bool
+    if case .edit = state.mode {
+        showsDeleteButton = true
+    } else {
+        showsDeleteButton = false
+    }
+
+    return PlantRegisterHeaderState(
+        title: state.title,
+        buttonTitle: state.buttonTitle,
+        showsDeleteButton: showsDeleteButton
+    )
+}
+
 final class PlantRegisterViewController: BaseViewController, View {
-    
     private let registerView = PlantRegisterView()
     private var selectedImage: UIImage?
-    private let lastWateredDatePicker = UIDatePicker().then {
-        $0.datePickerMode = .date
-        $0.preferredDatePickerStyle = .wheels
-        $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
-        $0.maximumDate = Date()
-    }
-    private let lastWateredDateFormatter = DateFormatter().then {
-        $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
-        $0.dateFormat = "yyyy / MM / dd"
-    }
     
     init(reactor: PlantRegisterReactor = PlantRegisterReactor()) {
         super.init(nibName: nil, bundle: nil)
@@ -43,6 +49,10 @@ final class PlantRegisterViewController: BaseViewController, View {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    func updateSelectedPlant(_ selectedPlant: SelectedPlant) {
+        reactor?.action.onNext(.updateSelectedPlant(selectedPlant))
+    }
     
     override func loadView() {
         view = registerView
@@ -51,19 +61,15 @@ final class PlantRegisterViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        
+
         guard let reactor else { return }
         bindUI(reactor: reactor)
     }
-    
-    func bind(reactor: PlantRegisterReactor) {
-        Observable.just(())
-            .map { PlantRegisterReactor.Action.viewDidLoad }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
 
+    func bind(reactor: PlantRegisterReactor) {
+        // 진입에 따라서 헤더 바꾸기(등록/수정)
         reactor.state
-            .map(Self.makeHeaderState)
+            .map(makePlantRegisterHeaderState)
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] headerState in
@@ -75,6 +81,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        // 선택 식물 변경시 안내뷰 변경
         reactor.state
             .map(\.selectedPlant)
             .distinctUntilChanged()
@@ -96,7 +103,18 @@ final class PlantRegisterViewController: BaseViewController, View {
                 )
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$existingImage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] image in
+                guard let self, self.selectedImage == nil else { return }
+                self.registerView.cameraButton.backgroundImageView.image = image
+                self.registerView.cameraButton.backgroundColor = .clear
+            })
+            .disposed(by: disposeBag)
         
+        // 세부사항 채우기
         reactor.state
             .map(\.selectedCategory)
             .distinctUntilChanged()
@@ -136,16 +154,16 @@ final class PlantRegisterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state
-            .map(\.lastWateredDate)
+            .map { LastWateredDateViewState(date: $0.lastWateredDate, text: $0.lastWateredDateText) }
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] date in
-                guard let self, let date else { return }
-                self.lastWateredDatePicker.date = date
-                self.updateLastWateredDateField(date: date)
+            .subscribe(onNext: { [weak self] viewState in
+                guard let self, let date = viewState.date else { return }
+                self.registerView.setLastWateredDate(date, text: viewState.text)
             })
             .disposed(by: disposeBag)
         
+        // 저장 가능 상태인지 검증
         reactor.state
             .map(\.isRegisterEnabled)
             .distinctUntilChanged()
@@ -159,8 +177,14 @@ final class PlantRegisterViewController: BaseViewController, View {
             .filter { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.resetFormUI()
-                self?.steps.accept(AppStep.pageBack)
+                guard let self else { return }
+                self.resetFormUI()
+                switch reactor.currentState.mode {
+                case .create:
+                    self.steps.accept(AppStep.plantTab)
+                case .edit:
+                    self.steps.accept(AppStep.pageBack)
+                }
             })
             .disposed(by: disposeBag)
 
@@ -178,6 +202,10 @@ final class PlantRegisterViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] message in
                 self?.steps.accept(AppStep.alert("오류", message))
             })
+            .disposed(by: disposeBag)
+
+        Observable.just(PlantRegisterReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
     
@@ -229,18 +257,10 @@ final class PlantRegisterViewController: BaseViewController, View {
             for: .touchUpInside
         )
         
-        //TODO: 검색 카메라 버튼 구현 시 아래 주석 풀고 사용 예정입니다. (단, 이벤트 보내는 주체 변경 필요)
-//        registerView.plantTypeSearchButton.rx.tap
-//            .compactMap { [weak self] _ -> PHPickerViewController? in
-//                return self?.makeImagePicker()
-//            }
-//            .withUnretained(self)
-//            .do(onNext: { $0.present($1, animated: true) })
-//            .flatMap { $1.rx.selectedImages }
-//            .compactMap(\.first)
-//            .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
-//            .bind(to: reactor.action)
-//            .disposed(by: disposeBag)
+        registerView.plantTypeSearchBar.cameraButton.rx.tap
+            .map { AppStep.cameraRequired }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
         registerView.categoryButtons.forEach { button in
             button.rx.tap
@@ -280,26 +300,14 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.handleRegisterTap()
             })
             .disposed(by: disposeBag)
-        
-        configureLastWateredDatePicker()
+
+        registerView.onLastWateredDateDone = { [weak reactor] date in
+            reactor?.action.onNext(.updateLastWateredDate(date))
+        }
+
         syncInitialFormState()
     }
 
-    private static func makeHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
-        let showsDeleteButton: Bool
-        if case .edit = state.mode {
-            showsDeleteButton = true
-        } else {
-            showsDeleteButton = false
-        }
-
-        return PlantRegisterHeaderState(
-            title: state.title,
-            buttonTitle: state.buttonTitle,
-            showsDeleteButton: showsDeleteButton
-        )
-    }
-    
     private func updateSingleSelection(selectedButton: UIButton, in buttons: [UIButton]) {
         buttons.forEach { $0.isSelected = ($0 === selectedButton) }
     }
@@ -357,33 +365,8 @@ final class PlantRegisterViewController: BaseViewController, View {
         steps.accept(AppStep.plantSearch)
     }
     
-    private func configureLastWateredDatePicker() {
-        registerView.lastWateredDateTextField.inputView = lastWateredDatePicker
-        registerView.lastWateredDateTextField.tintColor = .clear
-        
-        let toolbar = UIToolbar()
-        toolbar.sizeToFit()
-        toolbar.items = [
-            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
-            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapLastWateredDateDone))
-        ]
-        registerView.lastWateredDateTextField.inputAccessoryView = toolbar
-    }
-    
-    @objc private func didTapLastWateredDateDone() {
-        let selectedDate = lastWateredDatePicker.date
-        updateLastWateredDateField(date: selectedDate)
-        reactor?.action.onNext(.updateLastWateredDate(selectedDate))
-        registerView.lastWateredDateTextField.resignFirstResponder()
-    }
-    
-    private func updateLastWateredDateField(date: Date) {
-        registerView.lastWateredDateTextField.text = lastWateredDateFormatter.string(from: date)
-    }
-    
     private func resetFormUI() {
         selectedImage = nil
-        lastWateredDatePicker.date = Date()
         registerView.resetForm()
     }
     
