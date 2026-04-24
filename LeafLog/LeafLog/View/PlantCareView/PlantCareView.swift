@@ -15,8 +15,6 @@ final class PlantCareView: UIView {
     fileprivate enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
-        static let diaryEstimatedHeight: CGFloat = 100
-        static let timelineEstimatedHeight: CGFloat = 100
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
