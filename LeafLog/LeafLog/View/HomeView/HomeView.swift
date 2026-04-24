@@ -16,13 +16,15 @@ final class HomeView: UIView {
     let collectionView = PlantCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
-    let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
+    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
     let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     
     let emptyView = EmptyPlantView().then {
         $0.isHidden = true
     }
+    
+    fileprivate let waterButtonTap = PublishRelay<UUID?>()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -67,7 +69,7 @@ extension HomeView {
         }
         
         collectionView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom).offset(32)
+            $0.top.equalTo(totalPlant.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
@@ -76,10 +78,17 @@ extension HomeView {
 //MARK: CollectionView
 extension HomeView {
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, Item> {
-        let shelfCellRegistration = UICollectionView.CellRegistration<PlantShelfCell, Item> { cell, indexPath, item in
+        let shelfCellRegistration = UICollectionView.CellRegistration<PlantShelfCell, Item> { [weak self] cell, indexPath, item in
+            guard let self else { return }
+            
             switch item {
             case .plant(let plant):
                 cell.configure(plant)
+                
+                cell.rx.waterButtonTap
+                    .map { plant.id }
+                    .bind(to: self.waterButtonTap)
+                    .disposed(by: cell.disposeBag)
             }
         }
         
@@ -147,6 +156,10 @@ enum ShelfOrder {
 }
 
 extension Reactive where Base: HomeView {
+    var waterButtonTap: PublishRelay<UUID?> {
+        base.waterButtonTap
+    }
+  
     var alarmButtonTap: ControlEvent<Void> {
         base.titleView.rightButton.rx.tap
     }

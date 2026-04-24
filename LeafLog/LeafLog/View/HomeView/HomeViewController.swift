@@ -13,9 +13,11 @@ import RxSwift
 
 final class HomeViewController: BaseViewController {
     @Dependency(\.plantDBManager) private var plantDBManager
+    @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
     private let homeView = HomeView()
     private var loadPlantsTask: Task<Void, Never>?
+    private var waterTask: Task<Void, Never>?
     
     override func loadView() {
         view = homeView
@@ -27,6 +29,7 @@ final class HomeViewController: BaseViewController {
         bindPlantSelection()
         bindPlantRegistration()
         showEmptyState()
+        bindWaterButtonTap()
         bindAlarmButton()
     }
     
@@ -41,6 +44,7 @@ final class HomeViewController: BaseViewController {
         
         if isMovingFromParent || isBeingDismissed { // 완전히 뒤로가기/닫기
             loadPlantsTask?.cancel()
+            waterTask?.cancel()
         }
     }
 }
@@ -80,6 +84,42 @@ extension HomeViewController {
             .disposed(by: disposeBag)
     }
     
+    private func bindWaterButtonTap() {
+        homeView.rx.waterButtonTap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] id in
+                guard let self, let id else { return }
+                
+                self.waterTask?.cancel()
+                self.waterTask = Task { [weak self] in
+                    guard let self else { return }
+                    do {
+                        let date = Date()
+                        
+                        try Task.checkCancellation()
+                        try await self.careRecordDBManager.upsertCareRecord(
+                            input: CareRecordUpsertInput(
+                                plantID: id,
+                                recordDate: localDate(from: date),
+                                recordedAt: date,
+                                watered: true
+                            ))
+                        
+                        try Task.checkCancellation()
+                        try await self.plantDBManager.updateLastWateredAt(plantID: id, date: date)
+                        
+                        try Task.checkCancellation()
+                        self.loadPlants()
+                    } catch is CancellationError {
+                        return
+                    } catch let error as AuthError {
+                        self.steps.accept(AppStep.alert("오류", error.userMessage))
+                    } catch {
+                        self.steps.accept(AppStep.alert("오류", "데이터를 저장할 수 없습니다. 잠시 후 다시 시도해주세요."))
+                    }
+                }
+            })
+      
     private func bindAlarmButton() {
         homeView.rx.alarmButtonTap
             .map { AppStep.alarmCenter }
