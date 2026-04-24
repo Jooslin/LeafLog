@@ -159,6 +159,7 @@ final class MyPageViewController: BaseViewController, View {
         myPageView.nicknameLabel.text = profile.nickname
         myPageView.emailLabel.text = profile.email ?? "이메일 정보가 없습니다."
         loadProfileImage(from: profile.profileImageURL)
+        myPageView.pushAlertSwitch.isOn = profile.isNotificationEnabled
     }
 
     // 프로필 사진 불러오기

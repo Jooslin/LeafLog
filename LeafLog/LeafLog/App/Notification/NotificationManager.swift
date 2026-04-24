@@ -42,7 +42,7 @@ final class NotificationManager {
     func updateIsNotificationEnabled() {
         Task {
             let isEnabled = await checkNotificationEnabled()
-            supabaseManager.updateIsNotificationEnabled(isEnabled)
+            try await supabaseManager.updateIsNotificationEnabled(isEnabled)
         }
     }
 }
