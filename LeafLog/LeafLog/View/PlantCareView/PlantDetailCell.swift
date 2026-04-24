@@ -109,6 +109,25 @@ final class PlantDetailCell: UICollectionViewCell {
         onGuideEnabledChanged = nil
     }
 
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        let fittingAttributes = super.preferredLayoutAttributesFitting(layoutAttributes)
+        setNeedsLayout()
+        layoutIfNeeded()
+
+        let targetSize = CGSize(
+            width: layoutAttributes.size.width,
+            height: UIView.layoutFittingCompressedSize.height
+        )
+        let fittingSize = contentView.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+
+        fittingAttributes.frame.size.height = ceil(fittingSize.height)
+        return fittingAttributes
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -156,7 +175,7 @@ extension PlantDetailCell {
         }
 
         guideHeaderStackView.snp.makeConstraints {
-            $0.height.equalTo(32)
+            $0.height.equalTo(32).priority(999)
         }
 
         guideStackView.snp.makeConstraints {
@@ -201,9 +220,7 @@ extension PlantDetailCell {
     }
 
     @objc private func handleGuideToggleChanged() {
-        let isEnabled = guideCardView.isHidden
-        applyGuideVisibility(isEnabled: isEnabled)
-        onGuideEnabledChanged?(isEnabled)
+        onGuideEnabledChanged?(guideCardView.isHidden)
     }
 
     private func applyGuideVisibility(isEnabled: Bool) {
@@ -325,7 +342,7 @@ private extension PlantDetailInfoRowView {
         addSubview(separator)
 
         snp.makeConstraints {
-            $0.height.equalTo(58)
+            $0.height.equalTo(58).priority(999)
         }
 
         titleLabel.snp.makeConstraints {
