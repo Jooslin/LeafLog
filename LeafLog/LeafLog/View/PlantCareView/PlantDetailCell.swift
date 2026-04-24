@@ -34,25 +34,28 @@ final class PlantDetailCell: UICollectionViewCell {
     private let contentStackView = UIStackView().then {
         $0.axis = .vertical
         $0.spacing = 24
+        $0.alignment = .fill
+        $0.distribution = .fill
     }
 
     private let stackView = UIStackView().then {
         $0.axis = .vertical
         $0.spacing = 0
-        $0.distribution = .fillEqually
+        $0.distribution = .fill
     }
 
     private let guideHeaderStackView = UIStackView().then {
         $0.axis = .horizontal
         $0.alignment = .center
         $0.spacing = 12
+        $0.distribution = .fill
     }
 
     private let guideTitleLabel = UILabel(text: "가이드", config: .title14, color: .black)
 
-    private let guideToggleButton = UISwitch().then {
-        $0.onTintColor = .primary600
-        $0.transform = CGAffineTransform(scaleX: 0.78, y: 0.78)
+    private let guideToggleButton = UIButton(type: .system).then {
+        $0.tintColor = .grayScale500
+        $0.setImage(UIImage(named: "arrowDown"), for: .normal)
     }
 
     private let guideCardView = UIView().then {
@@ -66,7 +69,6 @@ final class PlantDetailCell: UICollectionViewCell {
         $0.spacing = 28
     }
 
-    private let currentStateRow = PlantDetailInfoRowView(title: "현재 상태", value: "", showSeparator: true)
     private let adoptedDateRow = PlantDetailInfoRowView(title: "데려온 날", value: "", showSeparator: true)
     private let locationRow = PlantDetailInfoRowView(title: "위치", value: "", showSeparator: true)
     private let lastWateredDateRow = PlantDetailInfoRowView(title: "마지막 급수일", value: "", showSeparator: false)
@@ -102,6 +104,11 @@ final class PlantDetailCell: UICollectionViewCell {
         setActions()
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onGuideEnabledChanged = nil
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -114,7 +121,7 @@ extension PlantDetailCell {
         cardView.addSubview(stackView)
         guideCardView.addSubview(guideStackView)
 
-        [currentStateRow, adoptedDateRow, locationRow, lastWateredDateRow].forEach {
+        [adoptedDateRow, locationRow, lastWateredDateRow].forEach {
             stackView.addArrangedSubview($0)
         }
 
@@ -131,6 +138,12 @@ extension PlantDetailCell {
 
         guideTitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         guideToggleButton.setContentHuggingPriority(.required, for: .horizontal)
+        cardView.setContentHuggingPriority(.required, for: .vertical)
+        guideHeaderStackView.setContentHuggingPriority(.required, for: .vertical)
+        guideCardView.setContentHuggingPriority(.required, for: .vertical)
+        cardView.setContentCompressionResistancePriority(.required, for: .vertical)
+        guideHeaderStackView.setContentCompressionResistancePriority(.required, for: .vertical)
+        guideCardView.setContentCompressionResistancePriority(.required, for: .vertical)
 
         contentStackView.setCustomSpacing(12, after: guideHeaderStackView)
 
@@ -142,8 +155,8 @@ extension PlantDetailCell {
             $0.edges.equalToSuperview()
         }
 
-        guideCardView.snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(192)
+        guideHeaderStackView.snp.makeConstraints {
+            $0.height.equalTo(32)
         }
 
         guideStackView.snp.makeConstraints {
@@ -153,14 +166,13 @@ extension PlantDetailCell {
 
     func configure(rows: [RowData], guide: GuideData, isGuideEnabled: Bool) {
         let defaultRows = [
-            RowData(title: "현재 상태", value: ""),
             RowData(title: "데려온 날", value: ""),
             RowData(title: "위치", value: ""),
             RowData(title: "마지막 급수일", value: "")
         ]
 
         let appliedRows = rows.isEmpty ? defaultRows : rows
-        let rowViews = [currentStateRow, adoptedDateRow, locationRow, lastWateredDateRow]
+        let rowViews = [adoptedDateRow, locationRow, lastWateredDateRow]
 
         for (index, rowView) in rowViews.enumerated() {
             if index < appliedRows.count {
@@ -176,22 +188,31 @@ extension PlantDetailCell {
         humidityGuideRow.configure(message: guide.humidity)
         pestGuideRow.configure(message: guide.pest)
 
-        guideToggleButton.setOn(isGuideEnabled, animated: false)
-        guideCardView.isHidden = !isGuideEnabled
+        applyGuideVisibility(isEnabled: isGuideEnabled)
     }
 
     private func setActions() {
-        guideToggleButton.addTarget(
-            self,
-            action: #selector(handleGuideToggleChanged),
-            for: .valueChanged
+        guideToggleButton.addAction(
+            UIAction { [weak self] _ in
+                self?.handleGuideToggleChanged()
+            },
+            for: .touchUpInside
         )
     }
 
     @objc private func handleGuideToggleChanged() {
-        let isEnabled = guideToggleButton.isOn
-        guideCardView.isHidden = !isEnabled
+        let isEnabled = guideCardView.isHidden
+        applyGuideVisibility(isEnabled: isEnabled)
         onGuideEnabledChanged?(isEnabled)
+    }
+
+    private func applyGuideVisibility(isEnabled: Bool) {
+        UIView.performWithoutAnimation {
+            guideCardView.isHidden = !isEnabled
+            let imageName = isEnabled ? "arrowUp" : "arrowDown"
+            guideToggleButton.setImage(UIImage(named: imageName), for: .normal)
+            contentView.layoutIfNeeded()
+        }
     }
 }
 
@@ -255,22 +276,17 @@ private extension PlantDetailGuideRowView {
         textStackView.addArrangedSubview(titleLabel)
         textStackView.addArrangedSubview(messageLabel)
 
-        snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(48)
-        }
-
         iconImageView.snp.makeConstraints {
             $0.leading.equalToSuperview()
-            $0.centerY.equalToSuperview()
+            $0.top.equalToSuperview()
             $0.size.equalTo(32)
+            $0.bottom.lessThanOrEqualToSuperview()
         }
 
         textStackView.snp.makeConstraints {
             $0.leading.equalTo(iconImageView.snp.trailing).offset(16)
             $0.trailing.equalToSuperview()
-            $0.centerY.equalToSuperview()
-            $0.top.greaterThanOrEqualToSuperview()
-            $0.bottom.lessThanOrEqualToSuperview()
+            $0.verticalEdges.equalToSuperview()
         }
     }
 }

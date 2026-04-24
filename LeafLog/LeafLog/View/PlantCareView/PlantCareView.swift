@@ -15,6 +15,8 @@ final class PlantCareView: UIView {
     fileprivate enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
+        static let diaryEstimatedHeight: CGFloat = 100
+        static let timelineEstimatedHeight: CGFloat = 100
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
@@ -66,8 +68,14 @@ final class PlantCareView: UIView {
         $0.selectedSegmentIndex = 0
         $0.backgroundColor = .grayScale50
         $0.selectedSegmentTintColor = .primary600
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.grayScale400], for: .normal)
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.grayScale400,
+            .font: UIFont.systemFont(ofSize: 14, weight: .medium)
+        ], for: .normal)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
+        ], for: .selected)
     }
 
     var onPreviousDateTapped: (() -> Void)?
@@ -483,6 +491,8 @@ private extension PlantCareView {
                         return Metric.diaryEstimatedHeight
                     case .timelineRecord:
                         return Metric.timelineEstimatedHeight
+                    case .plantInfo:
+                        return 500
                     default:
                         return 100
                     }
@@ -512,7 +522,6 @@ private extension PlantCareView {
                         trailing: 0
                     )
                 }
-
             case .timelineControl:
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
