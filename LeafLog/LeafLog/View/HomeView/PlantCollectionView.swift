@@ -38,7 +38,7 @@ extension PlantCollectionView {
             let group = NSCollectionLayoutGroup.horizontal(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .absolute(itemWidth * 1.8)
+                    heightDimension: .estimated(itemWidth * 1.8)
                 ),
                 repeatingSubitem: item,
                 count: 3

@@ -10,7 +10,7 @@ import SnapKit
 import Then
 
 final class PlantLabelCardView: BaseCardView {
-    let nameLabel = UILabel(text: "", config: .label14, lines: 1).then {
+    let nameLabel = UILabel(text: "", config: .label14, lines: 2).then {
         $0.textAlignment = .center
     }
     
@@ -60,7 +60,7 @@ extension PlantLabelCardView {
         }
         
         nextStack.snp.makeConstraints {
-            $0.top.equalTo(recentStack.snp.bottom)
+            $0.top.equalTo(recentStack.snp.bottom).offset(2)
             $0.centerX.equalToSuperview()
         }
         
