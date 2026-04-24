@@ -90,8 +90,11 @@ final class MyPageViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
-        myPageView.pushAlertSwitch.rx.tap
-            .map { MyPageReactor.Action.pushAlertSwitchTapped }
+        // 푸시 알림 허용 버튼
+        myPageView.pushAlertSwitch.rx.isOn
+            .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
 
     private func bindState(reactor: MyPageReactor) {
@@ -149,6 +152,14 @@ final class MyPageViewController: BaseViewController, View {
                         self?.presentMailComposeViewController(isError: isError)
                     })
                     .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$pushAlertIsOn)
+            .map { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isOn in
+                self?.myPageView.pushAlertSwitch.isOn = isOn
+            })
+            .disposed(by: disposeBag)
     }
 
     private func render(profile: UserProfileModel?) {
