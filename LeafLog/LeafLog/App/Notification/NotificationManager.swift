@@ -57,7 +57,9 @@ final class NotificationManager {
     
     // 알림 허용 여부 업데이트
     func updateIsNotificationEnabled(to isEnabled: Bool?) async throws {
-        guard let userId = self.supabaseManager.client.auth.currentUser?.id else { return }
+        guard let userId = self.supabaseManager.client.auth.currentUser?.id else {
+            throw NotificationError.userIDNotFound
+        }
         
         var target: Bool = false
         
@@ -94,6 +96,12 @@ final class NotificationManager {
         let key = userDefaultsBaseKey + user.uuidString
         
         userDefaults.set(isEnabled, forKey: key)
+    }
+}
+
+extension NotificationManager {
+    enum NotificationError: Error {
+        case userIDNotFound
     }
 }
 
