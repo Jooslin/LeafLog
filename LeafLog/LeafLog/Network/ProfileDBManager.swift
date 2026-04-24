@@ -132,7 +132,8 @@ final class ProfileDBManager {
             provider: provider,
             profileImageURL: stored.profileImageURL,
             createdAt: stored.createdAt,
-            updatedAt: stored.updatedAt
+            updatedAt: stored.updatedAt,
+            isNotificationEnabled: stored.isNotificationEnabled
         )
     }
 
@@ -152,12 +153,14 @@ private struct StoredUserProfile: Codable {
     let profileImageURL: String?
     let createdAt: Date?
     let updatedAt: Date?
+    let isNotificationEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, nickname, email, provider
         case profileImageURL = "profile_image_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case isNotificationEnabled = "is_notification_enabled"
     }
 }
 

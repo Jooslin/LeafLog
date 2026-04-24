@@ -10,6 +10,7 @@ import ReactorKit
 import RxSwift
 import Dependencies
 import AVFoundation
+import OSLog
 
 final class CameraClassificationReactor: Reactor {
     // 행동(트리거)
@@ -43,6 +44,7 @@ final class CameraClassificationReactor: Reactor {
     //MARK: Properties
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.plantClassificationService) private var plantClassificationService
+    private let logger = Logger.init(subsystem: "LeafLog", category: "CameraClassificationReactor")
     
     // Action -> Mutation -> State
     // Action을 Mutation으로 변환
@@ -143,13 +145,14 @@ extension CameraClassificationReactor {
                 return Disposables.create()
             }
             
-            Task {
+            Task { [weak self] in
+                guard let self else { return }
                 do {
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
                 } catch {
-                    print(error)
+                    self.logger.error("이미지 분석 실패: \(error.localizedDescription)")
                     observer.onNext(.analyzeResult([:]))
                     observer.onCompleted()
                 }

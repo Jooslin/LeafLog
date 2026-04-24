@@ -11,9 +11,10 @@ import GoogleSignIn
 import ReactorKit
 import RxFlow
 import Dependencies
+import OSLog
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    
+    private let logger = Logger(subsystem: "LeafLog", category: "SceneDelegate")
     let coordinator = FlowCoordinator()
     @Dependency(\.notificationManager) private var notificationManager
     @Dependency(\.fcmManager) private var fcmManager
@@ -59,10 +60,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
         
         //Foreground에 진입할 때마다 알림 허용 권한 업데이트
-        notificationManager.updateIsNotificationEnabled()
-        
-        // Foreground에 진입할 때마다 fcmToken 업데이트
-        fcmManager.syncCurrentFCMTokenIfPossible()
+        Task { [weak self] in
+            do {
+                try await self?.notificationManager.updateIsNotificationEnabled(to: nil)
+            } catch {
+                self?.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
+            }
+        }
     }
     
     func sceneWillResignActive(_ scene: UIScene) {

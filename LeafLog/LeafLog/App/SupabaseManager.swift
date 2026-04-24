@@ -244,25 +244,16 @@ extension SupabaseManager {
     }
     
     // 유저 알림 허용 여부 업데이트
-    func updateIsNotificationEnabled(_ isEnabled: Bool) {
-        Task {
-            do {
-                // 현재 로그인된 유저의 정보(세션)를 가져옴
-                guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
-                
-                // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
-                try await client
-                    .from("profiles")
-                    .update(["is_notification_enabled": isEnabled])
-                    .eq("id", value: currentUserId)
-                    .execute()
-                
-                logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
-            } catch {
-                // 앱을 처음 켜서 아직 로그인이 안 된 경우 - 앱을 멈추거나 유저에게 에러를 알릴 필요가 없으므로 print문으로만 출력
-                logger.error("⚠️ 알림 허용 여부 저장 보류 (로그인 전이거나 네트워크 에러): \(error.localizedDescription)")
-            }
-        }
+    func updateIsNotificationEnabled(_ isEnabled: Bool) async throws {
+        // 현재 로그인된 유저의 정보(세션)를 가져옴
+        guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
+        
+        // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
+        try await client
+            .from("profiles")
+            .update(["is_notification_enabled": isEnabled])
+            .eq("id", value: currentUserId)
+            .execute()
     }
     
     private struct DeviceTokenPayload: Encodable {
