@@ -34,6 +34,10 @@ class LoginViewController: BaseViewController, View {
     
     
     private func bindAction(reactor: LoginReactor) {
+        Observable.just(LoginReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         loginView.appleLoginButton.rx.controlEvent(.touchUpInside)
             .compactMap { [weak self] in
                 guard let self else { return nil }
@@ -64,9 +68,22 @@ class LoginViewController: BaseViewController, View {
             .map { !$0.isLoading }
             .distinctUntilChanged()
             .drive(onNext: { [weak self] isEnabled in
-                self?.loginView.appleLoginButton.isEnabled = isEnabled
                 self?.loginView.googleLoginButton.isEnabled = isEnabled
                 self?.loginView.kakaoLoginButton.isEnabled = isEnabled
+            })
+            .disposed(by: disposeBag)
+
+        state
+            .map { $0.isLoading == false && $0.isAppleLoginBlocked == false }
+            .distinctUntilChanged()
+            .drive(loginView.appleLoginButton.rx.isEnabled)
+            .disposed(by: disposeBag)
+
+        state
+            .map(\.isAppleLoginBlocked)
+            .distinctUntilChanged()
+            .drive(onNext: { [weak self] isBlocked in
+                self?.loginView.setAppleLoginCooldownVisible(isBlocked)
             })
             .disposed(by: disposeBag)
 
