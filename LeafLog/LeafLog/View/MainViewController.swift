@@ -8,9 +8,11 @@
 import UIKit
 import Dependencies
 import FirebaseMessaging
+import OSLog
 
 final class MainViewController: UITabBarController {
     @Dependency(\.notificationManager) private var notificationManager
+    private let logger = Logger(subsystem: "LeafLog", category: "MainViewController")
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,7 +22,7 @@ final class MainViewController: UITabBarController {
             do {
                 try await Messaging.messaging().token()
             } catch {
-                print("FCM 토큰 가져오기 실패: \(error.localizedDescription)")
+                logger.error("FCM 토큰 가져오기 실패: \(error.localizedDescription)")
             }
         }
     }

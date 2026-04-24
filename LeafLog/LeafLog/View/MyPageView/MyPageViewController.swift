@@ -89,6 +89,9 @@ final class MyPageViewController: BaseViewController, View {
                 self?.presentMailComposeViewController(isError: true)
             })
             .disposed(by: disposeBag)
+        
+        myPageView.pushAlertSwitch.rx.tap
+            .map { MyPageReactor.Action.pushAlertSwitchTapped }
     }
 
     private func bindState(reactor: MyPageReactor) {

@@ -9,11 +9,14 @@ import Foundation
 import ReactorKit
 import RxSwift
 import Dependencies
+import OSLog
 
 final class MyPageReactor: Reactor {
 
     @Dependency(\.authService) private var authService
     @Dependency(\.profileDBManager) private var profileDBManager
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger.init(subsystem: "LeafLog", category: "MyPageReactor")
 
     enum Action {
         case viewWillAppear // 최신 프로필 불러오기
@@ -22,6 +25,7 @@ final class MyPageReactor: Reactor {
         case withdrawalTapped
         case inquiryTapped
         case reportErrorTapped
+        case pushAlertSwitchTapped(Bool)
     }
 
     enum Mutation {
@@ -32,6 +36,7 @@ final class MyPageReactor: Reactor {
         case setMoveToLogin(Bool)
         case setErrorMessage(String?)
         case setRouteToMail(isError: Bool)
+        case setPushAlert(Bool)
     }
 
     struct State {
@@ -42,6 +47,7 @@ final class MyPageReactor: Reactor {
         @Pulse var moveToLogin = false
         @Pulse var errorMessage: String?
         @Pulse var routeToMail: Bool? // true면 오류 신고, false면 일반 문의 버전
+        @Pulse var pushAlertIsOn: Bool = true
     }
 
     let initialState = State()
@@ -72,6 +78,9 @@ final class MyPageReactor: Reactor {
             
         case .reportErrorTapped:
             return .just(.setRouteToMail(isError: true))
+            
+        case .pushAlertSwitchTapped(let isOn):
+            return updateNotificationAllowance(isOn: isOn)
         }
     }
 
@@ -103,6 +112,9 @@ final class MyPageReactor: Reactor {
             
         case .setRouteToMail(let isError):
                     newState.routeToMail = isError
+            
+        case .setPushAlert(let isOn):
+            newState.pushAlertIsOn = isOn
         }
 
         return newState
@@ -164,4 +176,25 @@ final class MyPageReactor: Reactor {
         }
     }
 
+    private func updateNotificationAllowance(isOn: Bool) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            let task = Task {
+                do {
+                    try await self?.supabaseManager.updateIsNotificationEnabled(isOn)
+                    self?.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
+                    
+                    observer.onNext(.setPushAlert(isOn))
+                    observer.onCompleted()
+                } catch {
+                    // 앱을 처음 켜서 아직 로그인이 안 된 경우
+                    self?.logger.error("⚠️ 알림 허용 여부 저장 보류 (로그인 전이거나 네트워크 에러): \(error.localizedDescription)")
+                    observer.onNext(.setErrorMessage("알림 허용 여부를 저장할 수 없습니다. 잠시 후 다시 시도해주세요."))
+                    observer.onCompleted()
+                }
+            }
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
 }
