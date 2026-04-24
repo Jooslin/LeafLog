@@ -57,8 +57,14 @@ final class PlantCareView: UIView {
         $0.selectedSegmentIndex = 0
         $0.backgroundColor = .grayScale50
         $0.selectedSegmentTintColor = .primary600
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.grayScale400], for: .normal)
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.grayScale400,
+            .font: UIFont.systemFont(ofSize: 16, weight: .medium)
+        ], for: .normal)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
+        ], for: .selected)
     }
 
     var onPreviousDateTapped: (() -> Void)?
