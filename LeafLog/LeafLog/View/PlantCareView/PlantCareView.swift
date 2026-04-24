@@ -1115,7 +1115,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         )
         setPhotoImageURL(
             item.diaryPhotoURL,
-            cacheKey: item.diaryPhotoPath,
+            cacheKey: item.diaryPhotoCacheKey ?? item.diaryPhotoPath,
             hasPhoto: item.diaryPhotoPath?.isEmpty == false
         )
     }
@@ -1506,7 +1506,8 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
             memoLabel.text = memo.isEmpty ? "" : memo
             configurePhotoPreview(
                 photoPath: event.photoPath,
-                photoURL: event.photoURL
+                photoURL: event.photoURL,
+                photoCacheKey: event.photoCacheKey
             )
         }
     }
@@ -1554,7 +1555,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         }
     }
 
-    private func configurePhotoPreview(photoPath: String?, photoURL: URL?) {
+    private func configurePhotoPreview(photoPath: String?, photoURL: URL?, photoCacheKey: String?) {
         guard let photoPath, !photoPath.isEmpty else {
             return
         }
@@ -1569,7 +1570,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
         let imageResource = KF.ImageResource(
             downloadURL: photoURL,
-            cacheKey: photoPath
+            cacheKey: photoCacheKey ?? photoPath
         )
 
         photoImageView.kf.setImage(

@@ -191,6 +191,7 @@ struct PlantCareDiaryItem: Hashable {
     var diaryText: String
     var diaryPhotoPath: String?
     var diaryPhotoURL: URL?
+    var diaryPhotoCacheKey: String?
     var isDiaryExpanded: Bool
 
     var isCompleted: Bool {
@@ -221,6 +222,7 @@ struct PlantCareTimelineEvent: Hashable {
     let memoText: String
     let photoPath: String?
     let photoURL: URL?
+    let photoCacheKey: String?
 }
 
 // 식물 정보
@@ -321,6 +323,7 @@ final class PlantCareReactor: Reactor {
                 diaryText: "",
                 diaryPhotoPath: nil,
                 diaryPhotoURL: nil,
+                diaryPhotoCacheKey: nil,
                 isDiaryExpanded: false
             )
         )
@@ -890,12 +893,17 @@ private extension PlantCareReactor {
         supabaseManager: SupabaseManager
     ) async throws -> PlantCareDiaryItem {
         let diaryPhotoPath = record?.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(from: diaryPhotoPath)
+        let diaryPhotoCacheKey = makeImageCacheKey(from: diaryPhotoPath, updatedAt: record?.updatedAt)
+        let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(
+            from: diaryPhotoPath,
+            cacheKey: diaryPhotoCacheKey
+        )
 
         return PlantCareDiaryItem(
             diaryText: record?.diaryText ?? "",
             diaryPhotoPath: diaryPhotoPath,
             diaryPhotoURL: diaryPhotoURL,
+            diaryPhotoCacheKey: diaryPhotoCacheKey,
             isDiaryExpanded: previousItem?.isDiaryExpanded ?? false
         )
     }
@@ -919,14 +927,19 @@ private extension PlantCareReactor {
                     kind: .care(type),
                     memoText: type.memo(in: record),
                     photoPath: nil,
-                    photoURL: nil
+                    photoURL: nil,
+                    photoCacheKey: nil
                 )
             }
             
             // 오늘의 일기 이벤트 추가
             let diaryText = record.diaryText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let diaryPhotoPath = record.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(from: diaryPhotoPath)
+            let diaryPhotoCacheKey = makeImageCacheKey(from: diaryPhotoPath, updatedAt: record.updatedAt)
+            let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(
+                from: diaryPhotoPath,
+                cacheKey: diaryPhotoCacheKey
+            )
 
             if !diaryText.isEmpty || diaryPhotoPath?.isEmpty == false {
                 events.append(
@@ -937,7 +950,8 @@ private extension PlantCareReactor {
                         kind: .diary,
                         memoText: diaryText,
                         photoPath: diaryPhotoPath,
-                        photoURL: diaryPhotoURL
+                        photoURL: diaryPhotoURL,
+                        photoCacheKey: diaryPhotoCacheKey
                     )
                 )
             }
@@ -1038,6 +1052,11 @@ private extension PlantCareReactor {
         }
     }
 
+    static func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        guard let updatedAt else { return path }
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
+    }
 
 // 마지막 물주기 기록이 있는지 확인   
     static func isLastRemainingWateringRecord(
