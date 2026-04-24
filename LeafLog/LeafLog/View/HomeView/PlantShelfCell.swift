@@ -58,6 +58,7 @@ extension PlantShelfCell {
         card.snp.makeConstraints {
             $0.top.equalTo(shelf.snp.bottom).offset(12)
             $0.horizontalEdges.equalToSuperview().inset(8)
+//            $0.bottom.equalToSuperview().inset(18)
         }
     }
 }
