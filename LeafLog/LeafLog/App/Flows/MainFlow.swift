@@ -39,6 +39,9 @@ final class MainFlow: Flow {
             pop(animated: true)
             return .none
             
+        case .alarmCenter:
+            return navigateToAlarmCenter()
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -111,5 +114,16 @@ extension MainFlow {
         
         present(alert, animated: true)
         return .none
+    }
+    
+    private func navigateToAlarmCenter() -> FlowContributors {
+        let notificationCenterViewController = NotificationCenterViewController()
+        let reactor = NotificationCenterReactor()
+        notificationCenterViewController.reactor = reactor
+        
+        navigate(to: notificationCenterViewController, animated: true)
+        return .one(flowContributor: .contribute(
+            withNextPresentable: notificationCenterViewController,
+            withNextStepper: notificationCenterViewController))
     }
 }

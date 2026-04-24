@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class HomeView: UIView {
     //MARK: properties
@@ -142,4 +144,10 @@ enum ShelfOrder {
     case first
     case second
     case third
+}
+
+extension Reactive where Base: HomeView {
+    var alarmButtonTap: ControlEvent<Void> {
+        base.titleView.rightButton.rx.tap
+    }
 }

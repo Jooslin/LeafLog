@@ -23,11 +23,11 @@ final class HomeViewController: BaseViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.isHidden = true //TODO: 추후 삭제
         
         bindPlantSelection()
         bindPlantRegistration()
         showEmptyState()
+        bindAlarmButton()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -76,6 +76,13 @@ extension HomeViewController {
     private func bindPlantRegistration() {
         homeView.emptyView.registerButton.rx.tap
             .map { AppStep.plantRegister() }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+    }
+    
+    private func bindAlarmButton() {
+        homeView.rx.alarmButtonTap
+            .map { AppStep.alarmCenter }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
