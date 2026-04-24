@@ -53,9 +53,9 @@ final class PlantDetailCell: UICollectionViewCell {
 
     private let guideTitleLabel = UILabel(text: "가이드", config: .title14, color: .black)
 
-    private let guideToggleButton = UISwitch().then {
-        $0.onTintColor = .primary600
-        $0.transform = CGAffineTransform(scaleX: 0.78, y: 0.78)
+    private let guideToggleButton = UIButton(type: .system).then {
+        $0.tintColor = .grayScale500
+        $0.setImage(UIImage(named: "arrowDown"), for: .normal)
     }
 
     private let guideCardView = UIView().then {
@@ -69,7 +69,6 @@ final class PlantDetailCell: UICollectionViewCell {
         $0.spacing = 28
     }
 
-    private let currentStateRow = PlantDetailInfoRowView(title: "현재 상태", value: "", showSeparator: true)
     private let adoptedDateRow = PlantDetailInfoRowView(title: "데려온 날", value: "", showSeparator: true)
     private let locationRow = PlantDetailInfoRowView(title: "위치", value: "", showSeparator: true)
     private let lastWateredDateRow = PlantDetailInfoRowView(title: "마지막 급수일", value: "", showSeparator: false)
@@ -122,7 +121,7 @@ extension PlantDetailCell {
         cardView.addSubview(stackView)
         guideCardView.addSubview(guideStackView)
 
-        [currentStateRow, adoptedDateRow, locationRow, lastWateredDateRow].forEach {
+        [adoptedDateRow, locationRow, lastWateredDateRow].forEach {
             stackView.addArrangedSubview($0)
         }
 
@@ -167,14 +166,13 @@ extension PlantDetailCell {
 
     func configure(rows: [RowData], guide: GuideData, isGuideEnabled: Bool) {
         let defaultRows = [
-            RowData(title: "현재 상태", value: ""),
             RowData(title: "데려온 날", value: ""),
             RowData(title: "위치", value: ""),
             RowData(title: "마지막 급수일", value: "")
         ]
 
         let appliedRows = rows.isEmpty ? defaultRows : rows
-        let rowViews = [currentStateRow, adoptedDateRow, locationRow, lastWateredDateRow]
+        let rowViews = [adoptedDateRow, locationRow, lastWateredDateRow]
 
         for (index, rowView) in rowViews.enumerated() {
             if index < appliedRows.count {
@@ -190,20 +188,20 @@ extension PlantDetailCell {
         humidityGuideRow.configure(message: guide.humidity)
         pestGuideRow.configure(message: guide.pest)
 
-        guideToggleButton.setOn(isGuideEnabled, animated: false)
         applyGuideVisibility(isEnabled: isGuideEnabled)
     }
 
     private func setActions() {
-        guideToggleButton.addTarget(
-            self,
-            action: #selector(handleGuideToggleChanged),
-            for: .valueChanged
+        guideToggleButton.addAction(
+            UIAction { [weak self] _ in
+                self?.handleGuideToggleChanged()
+            },
+            for: .touchUpInside
         )
     }
 
     @objc private func handleGuideToggleChanged() {
-        let isEnabled = guideToggleButton.isOn
+        let isEnabled = guideCardView.isHidden
         applyGuideVisibility(isEnabled: isEnabled)
         onGuideEnabledChanged?(isEnabled)
     }
@@ -211,6 +209,8 @@ extension PlantDetailCell {
     private func applyGuideVisibility(isEnabled: Bool) {
         UIView.performWithoutAnimation {
             guideCardView.isHidden = !isEnabled
+            let imageName = isEnabled ? "arrowUp" : "arrowDown"
+            guideToggleButton.setImage(UIImage(named: imageName), for: .normal)
             contentView.layoutIfNeeded()
         }
     }
