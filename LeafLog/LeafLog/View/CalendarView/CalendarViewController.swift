@@ -22,6 +22,11 @@ class CalendarViewController: BaseViewController, View {
         super.viewDidLoad()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = false
+    }
+    
     // MARK: - Bind
     func bind(reactor: CalendarReactor) {
         bindAction(reactor: reactor)
