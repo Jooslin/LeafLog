@@ -122,6 +122,7 @@ final class PlantTabFlow: Flow {
         case .plantSearchDetail(let contentNumber):
             let reactor = SearchDetailReactor(contentNumber: contentNumber)
             let viewController = SearchDetailViewController(reactor: reactor)
+            viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
 
@@ -241,11 +242,15 @@ extension PlantTabFlow {
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
-        return PlantRegisterViewController(reactor: reactor)
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
     }
 
     private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(mode: .edit(plant))
-        return PlantRegisterViewController(reactor: reactor)
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
     }
 }
