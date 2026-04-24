@@ -43,6 +43,10 @@ final class PlantTabFlow: Flow {
                     withNextStepper: homeViewController
                 )
             )
+            
+        case .endPlantRegister:
+            navigationController.popToRootViewController(animated: true)
+            return .none
 
         case .plantRegister(let selectedPlant):
             if let selectedPlant,
