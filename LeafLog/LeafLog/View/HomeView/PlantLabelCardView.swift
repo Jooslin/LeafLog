@@ -57,11 +57,15 @@ extension PlantLabelCardView {
         recentStack.snp.makeConstraints {
             $0.top.equalTo(nameLabel.snp.bottom).offset(4)
             $0.centerX.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview().inset(8)
+            $0.trailing.lessThanOrEqualToSuperview().inset(8)
         }
         
         nextStack.snp.makeConstraints {
             $0.top.equalTo(recentStack.snp.bottom).offset(2)
             $0.centerX.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview().inset(8)
+            $0.trailing.lessThanOrEqualToSuperview().inset(8)
         }
         
         waterButton.snp.makeConstraints {
