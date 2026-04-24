@@ -29,6 +29,9 @@ enum AuthError: Error {
     /// 식물 관리 기록 저장/조회 작업이 실패했을 때
     case careFailed(String)
 
+    /// 알림 목록 저장/조회 작업이 실패했을 때
+    case notificationFailed(String)
+
     /// 회원탈퇴 처리 중 실패했을 때
     case withdrawalFailed(String)
 }
@@ -41,6 +44,7 @@ extension AuthError {
              .profileFailed(let message),
              .plantFailed(let message),
              .careFailed(let message),
+             .notificationFailed(let message),
              .withdrawalFailed(let message):
             return message
         case .cancelled:

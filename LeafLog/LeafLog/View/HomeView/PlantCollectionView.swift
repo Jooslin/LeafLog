@@ -12,6 +12,7 @@ final class PlantCollectionView: UICollectionView {
         super.init(frame: frame, collectionViewLayout: UICollectionViewLayout())
         
         layoutMargins = .init(top: 0, left: 8, bottom: 0, right: 8)
+        contentInset = .init(top: 32, left: 0, bottom: 50, right: 0)
         backgroundColor = .grayScale50
         collectionViewLayout = makeCompositionalLayout()
         showsVerticalScrollIndicator = false

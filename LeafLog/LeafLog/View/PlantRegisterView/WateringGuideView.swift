@@ -131,13 +131,13 @@ private struct WaterCycleDescription {
 
     static let all: [WaterCycleDescription] = [
         .init(
-            keyword: "토양 표면이 말랐을때 충분히 관수함",
+            keyword: "토양 표면이 말랐을때 충분히 관수",
             inputValue: "4",
             cycleText: "4 ~ 6일",
             suffixText: "(표면이 말랐을때 충분히 급수)"
         ),
         .init(
-            keyword: "화분 흙 대부분 말랐을때 충분히 관수함",
+            keyword: "화분 흙 대부분 말랐을때 충분히 관수",
             inputValue: "7",
             cycleText: "7 ~ 10일",
             suffixText: "(흙 대부분 말랐을때 충분히 급수)"
@@ -162,7 +162,8 @@ private struct WaterCycleDescription {
             return nil
         }
 
-        return all.first { springWaterCycle.contains($0.keyword) }
+        let normalizedWaterCycle = normalized(springWaterCycle)
+        return all.first { normalizedWaterCycle.contains(normalized($0.keyword)) }
     }
 
     static func cycleText(from springWaterCycle: String?) -> String? {
@@ -175,5 +176,9 @@ private struct WaterCycleDescription {
 
     static func suffixText(from springWaterCycle: String?) -> String {
         matchedDescription(from: springWaterCycle)?.suffixText ?? ""
+    }
+
+    private static func normalized(_ text: String) -> String {
+        text.components(separatedBy: .whitespacesAndNewlines).joined()
     }
 }

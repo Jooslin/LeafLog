@@ -392,25 +392,33 @@ extension CalendarReactor {
         case .water:
             let watered = record.filter { $0.value.watered }
             return watered.map {
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .water)
+                let nickName = $0.key.nickname ?? $0.key.speciesName
+                let name = nickName.isEmpty ? $0.key.speciesName : nickName
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .water)
                 return CalendarView.Item.water(data)
             }
         case .grow:
             let repotted = record.filter { $0.value.repotted }
             return repotted.map {
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .grow)
+                let nickName = $0.key.nickname ?? $0.key.speciesName
+                let name = nickName.isEmpty ? $0.key.speciesName : nickName
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .grow)
                 return CalendarView.Item.grow(data)
             }
         case .sprout:
             let fertilized = record.filter { $0.value.fertilized }
             return fertilized.map {
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .sprout)
+                let nickName = $0.key.nickname ?? $0.key.speciesName
+                let name = nickName.isEmpty ? $0.key.speciesName : nickName
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .sprout)
                 return CalendarView.Item.sprout(data)
             }
         case .treat:
             let treated = record.filter { $0.value.treated }
             return treated.map {
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: $0.key.speciesName, badge: .treat)
+                let nickName = $0.key.nickname ?? $0.key.speciesName
+                let name = nickName.isEmpty ? $0.key.speciesName : nickName
+                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .treat)
                 return CalendarView.Item.treat(data)
             }
         default:

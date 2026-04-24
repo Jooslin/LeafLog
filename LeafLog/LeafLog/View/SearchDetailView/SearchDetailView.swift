@@ -12,6 +12,8 @@ import UIKit
 import RxSwift
 
 final class SearchDetailView: UIView {
+    let titleHeaderView = TitleHeaderView(text: "식물 상세", hasBackButton: true)
+
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
@@ -50,14 +52,14 @@ final class SearchDetailView: UIView {
         $0.distribution = .fillEqually
     }
 
-    private let closeButton = UIButton().then {
+    fileprivate let closeButton = UIButton().then {
         $0.setTitle("닫기", for: .normal)
         $0.backgroundColor = .grayScale50
         $0.setTitleColor(.grayScale400, for: .normal)
         $0.layer.cornerRadius = 12
     }
 
-    private let selectButton = UIButton().then {
+    fileprivate let selectButton = UIButton().then {
         $0.setTitle("선택하기", for: .normal)
         $0.backgroundColor = .primary600
         $0.layer.cornerRadius = 12
@@ -94,16 +96,6 @@ final class SearchDetailView: UIView {
     )
 
     private var imageURLs: [String] = []
-
-    // 버튼탭 이벤트
-    var closeButtonTap: ControlEvent<Void> {
-        closeButton.rx.tap
-    }
-
-    var selectButtonTap: ControlEvent<Void> {
-        selectButton.rx.tap
-    }
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
@@ -117,7 +109,17 @@ final class SearchDetailView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        imageCollectionViewFlowLayout.itemSize = CGSize(width: imageCollectionView.bounds.width, height: imageCollectionView.bounds.height)
+        let imageCollectionViewSize = imageCollectionView.bounds.size
+        guard imageCollectionViewSize.width > 0, imageCollectionViewSize.height > 0 else {
+            return
+        }
+
+        guard imageCollectionViewFlowLayout.itemSize != imageCollectionViewSize else {
+            return
+        }
+
+        imageCollectionViewFlowLayout.itemSize = imageCollectionViewSize
+        imageCollectionViewFlowLayout.invalidateLayout()
     }
 }
 
@@ -213,6 +215,7 @@ private extension SearchDetailView {
     }
     
     private func setupLayout() {
+        addSubview(titleHeaderView)
         addSubview(scrollView)
         addSubview(buttonStack)
 
@@ -233,8 +236,14 @@ private extension SearchDetailView {
         buttonStack.addArrangedSubview(closeButton)
         buttonStack.addArrangedSubview(selectButton)
 
+        titleHeaderView.snp.makeConstraints {
+            $0.top.horizontalEdges.equalTo(safeAreaLayoutGuide)
+            $0.height.equalTo(48)
+        }
+
         scrollView.snp.makeConstraints {
-            $0.top.leading.trailing.equalTo(safeAreaLayoutGuide)
+            $0.top.equalTo(titleHeaderView.snp.bottom)
+            $0.leading.trailing.equalTo(safeAreaLayoutGuide)
             $0.bottom.equalTo(buttonStack.snp.top)
         }
 
@@ -306,5 +315,20 @@ extension SearchDetailView: UICollectionViewDataSource, UICollectionViewDelegate
         guard scrollView === imageCollectionView, scrollView.bounds.width > 0 else { return }
         let page = Int(round(scrollView.contentOffset.x / scrollView.bounds.width))
         pageControl.currentPage = max(0, min(page, max(pageControl.numberOfPages - 1, 0)))
+    }
+}
+
+extension Reactive where Base: SearchDetailView {
+    var closeButtonTap: ControlEvent<Void> {
+        ControlEvent(
+            events: Observable.merge(
+                base.closeButton.rx.tap.asObservable(),
+                base.titleHeaderView.backButton.rx.tap.asObservable()
+            )
+        )
+    }
+
+    var selectButtonTap: ControlEvent<Void> {
+        base.selectButton.rx.tap
     }
 }

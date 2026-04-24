@@ -13,6 +13,14 @@ import OSLog
 
 // MARK: - PlantService
 
+struct RemoteDataLoader {
+    var data: @Sendable (URL) async throws -> Data
+
+    func data(from url: URL) async throws -> Data {
+        try await data(url)
+    }
+}
+
 /// 식물 등록, 수정 및 삭제 흐름을 조율하는 서비스
 /// - 이미지 업로드(Storage) → DB 저장(PlantDBManager) 순서로 실행
 /// - ViewController 사용 예시:
@@ -27,6 +35,7 @@ final class PlantService {
     @Dependency(\.supabaseManager) private var supabaseManager
     @Dependency(\.plantDBManager) private var plantDBManager
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
+    @Dependency(\.remoteDataLoader) private var remoteDataLoader
     
     private let logger = Logger(subsystem: "LeafLog", category: "PlantService")
     
@@ -95,6 +104,15 @@ final class PlantService {
             input: input
         )
     }
+
+    func loadPlantImage(from imagePath: String?) async throws -> UIImage? {
+        guard let url = try await supabaseManager.resolvePlantImageURL(from: imagePath) else {
+            return nil
+        }
+
+        let data = try await remoteDataLoader.data(from: url)
+        return UIImage(data: data)
+    }
     
     // MARK: - 등록된 식물 삭제
     func deletePlant(plantID: UUID, imagePath: String?) async throws {
@@ -124,5 +142,17 @@ extension DependencyValues {
     var plantService: PlantService {
         get { self[PlantService.self] }
         set { self[PlantService.self] = newValue }
+    }
+
+    var remoteDataLoader: RemoteDataLoader {
+        get { self[RemoteDataLoader.self] }
+        set { self[RemoteDataLoader.self] = newValue }
+    }
+}
+
+extension RemoteDataLoader: DependencyKey {
+    static let liveValue = RemoteDataLoader { url in
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return data
     }
 }

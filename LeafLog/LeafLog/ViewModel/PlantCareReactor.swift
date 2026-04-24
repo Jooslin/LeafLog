@@ -965,7 +965,6 @@ private extension PlantCareReactor {
     // 식물 정보 디테일
     static func makePlantInfoRows(from plant: MyPlant) -> [PlantCarePlantInfoRow] {
         [
-            PlantCarePlantInfoRow(title: "현재 상태", value: nonEmptyText(plant.healthStatus, fallback: "미지정")),
             PlantCarePlantInfoRow(title: "데려온 날", value: displayDate(from: plant.createdAt)),
             PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
             PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))

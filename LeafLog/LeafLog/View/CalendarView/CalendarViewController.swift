@@ -44,6 +44,11 @@ class CalendarViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        calendarView.rx.alarmButtonTap
+            .map { _ in AppStep.alarmCenter }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+
         calendarView.rx.filterButtonTap
             .map { CalendarReactor.Action.updateFilter($0) }
             .bind(to: reactor.action)

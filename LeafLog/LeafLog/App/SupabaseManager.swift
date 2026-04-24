@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 import Supabase
 import Dependencies
+import OSLog
 
 // 생성된 Signed URL을 메모리에 임시로 저장
 private actor SignedImageURLMemoryCache {
@@ -38,6 +39,8 @@ private actor SignedImageURLMemoryCache {
 }
 
 final class SupabaseManager {
+    private let logger = Logger(subsystem: "LeafLog", category: "SupabaseManager")
+    
     private init() {}
     private let signedImageURLCache = SignedImageURLMemoryCache()
     
@@ -211,28 +214,31 @@ extension SupabaseManager {
             .from(StorageBucket.plantImages)
             .remove(paths: [path])
     }
-    
-    //TODO: ProfileDBManager 병합 시 이관 필요
-    // 유저 fcm 토큰 업데이트
+}
+
+//MARK: FCM 관련
+extension SupabaseManager {
+    // 현재 기기의 FCM 토큰을 user/device 단위로 저장
     func updateFCMToken(_ validToken: String) {
-        // Supabase 서버로 토큰 쏴주기
         Task {
             do {
-                // 현재 로그인된 유저의 정보 가져오기
-                guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
+                guard let currentUserId = client.auth.currentUser?.id else { return } // 현재 로그인 된 유저 정보
+                guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { return } // 기기 정보
                 
-                // profiles 테이블에서 현재 유저의 행을 찾아 fcm_token 값을 덮어씌움
+                let payload = DeviceTokenPayload(
+                    userID: currentUserId,
+                    fcmToken: validToken,
+                    deviceID: deviceID,
+                    lastSeenAt: Date(),
+                    isActive: true
+                )
+                
                 try await client
-                    .from("profiles")
-                    .update(["fcm_token": validToken])
-                    .eq("id", value: currentUserId)
+                    .from("device_tokens")
+                    .upsert(payload, onConflict: "user_id,device_id")
                     .execute()
-                
-                print("✅ Supabase DB에 FCM 토큰이 성공적으로 저장되었습니다.")
-                
             } catch {
-                // 앱을 처음 켜서 아직 로그인이 안 된 경우 - 앱을 멈추거나 유저에게 에러를 알릴 필요가 없으므로 print문으로만 출력
-                print("⚠️ FCM 토큰 저장 보류 (로그인 전이거나 네트워크 에러): \(error.localizedDescription)")
+                logger.error("⚠️ 디바이스 토큰 저장 보류(로그인 전이거나 네트워크 에러)\nerror: \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -249,7 +255,25 @@ extension SupabaseManager {
             .eq("id", value: currentUserId)
             .execute()
     }
+    
+    private struct DeviceTokenPayload: Encodable {
+        let userID: UUID
+        let fcmToken: String
+        let deviceID: String
+        let lastSeenAt: Date
+        let isActive: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case userID = "user_id"
+            case fcmToken = "fcm_token"
+            case deviceID = "device_id"
+            case lastSeenAt = "last_seen_at"
+            case isActive = "is_active"
+        }
+    }
 }
+
+
 
 //MARK: Dependencies
 extension SupabaseManager: DependencyKey {

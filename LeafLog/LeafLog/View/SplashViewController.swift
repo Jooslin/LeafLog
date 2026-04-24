@@ -17,9 +17,7 @@ final class SplashViewController: BaseViewController {
     
     private var didStartSessionCheck = false
     
-    private let logoImageView = UIImageView(image: .launchLogo).then {
-        $0.contentMode = .scaleAspectFit
-    }
+    private let logoImageView = UIImageView(image: .launchLogoSquare)
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,9 +40,6 @@ final class SplashViewController: BaseViewController {
         logoImageView.snp.makeConstraints {
             $0.centerX.equalToSuperview()
             $0.centerY.equalToSuperview().offset(-70)
-            $0.width.equalTo(248).priority(.high) // 가능하면 너비 248
-            $0.width.lessThanOrEqualToSuperview().inset(64) // 너비보다 64씩 뺀거보다 작거나 같음
-            $0.height.equalTo(logoImageView.snp.width).multipliedBy(184.0 / 249.0) // 항상 같은 비율로 줄어듬
         }
     }
     

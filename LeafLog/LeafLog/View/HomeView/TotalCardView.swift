@@ -18,8 +18,7 @@ final class TotalCardView: BaseCardView {
     let label = UILabel(text: "", config: .label14)
     
     init(image: String, text: String) {
-//        super.init(cornerRadius: 12)
-        super.init(frame: .zero)
+        super.init(cornerRadius: 12)
         
         backgroundColor = .white
         

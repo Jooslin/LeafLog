@@ -60,14 +60,24 @@ final class LoginView: UIView {
         $0.textAlignment = .center
         $0.isHidden = true
     }
-    
-    let privacyLabel = UILabel(text: "시작하면 이용약관 및 개인정보처리방침에 동의하게 됩니다.", config: .label12, color: .grayScale800)
-    
-    
+
+    private let agreementPrefixLabel = UILabel(text: "시작하면 ", config: .label12, color: .grayScale800)
+    let termsButton = UIButton(type: .system)
+    private let agreementMiddleLabel = UILabel(text: " 및 ", config: .label12, color: .grayScale800)
+    let privacyPolicyButton = UIButton(type: .system)
+    private let agreementSuffixLabel = UILabel(text: "에 동의하게 됩니다.", config: .label12, color: .grayScale800)
+
+    private let agreementStackView = UIStackView().then {
+        $0.axis = .horizontal
+        $0.alignment = .center
+        $0.spacing = 0
+    }
+
     // MARK: -  Initialization
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .systemBackground
+        setupAgreementButtons()
         setupUI()
     }
     
@@ -83,19 +93,27 @@ final class LoginView: UIView {
             appleLoginCooldownLabel,
             kakaoLoginButton,
             googleLoginButton,
-            privacyLabel
+            agreementStackView
         ].forEach { addSubview($0) }
-        
-        privacyLabel.snp.makeConstraints {
+
+        [
+            agreementPrefixLabel,
+            termsButton,
+            agreementMiddleLabel,
+            privacyPolicyButton,
+            agreementSuffixLabel
+        ].forEach { agreementStackView.addArrangedSubview($0) }
+
+        agreementStackView.snp.makeConstraints {
             $0.centerX.equalToSuperview()
             $0.bottom.equalToSuperview().inset(70)
         }
-        
+
         googleLoginButton.snp.makeConstraints {
             $0.centerX.equalToSuperview()
             $0.height.equalTo(50)
             $0.horizontalEdges.equalToSuperview().inset(15)
-            $0.bottom.equalTo(privacyLabel.snp.top).offset(-106)
+            $0.bottom.equalTo(agreementStackView.snp.top).offset(-106)
         }
         
         kakaoLoginButton.snp.makeConstraints {
@@ -132,5 +150,29 @@ final class LoginView: UIView {
         appleLoginCooldownLabel.text = isVisible ? "Apple 계정 연결 해제 처리 중입니다. 잠시 후 다시 시도해주세요." : nil
         appleLoginCooldownLabel.isHidden = !isVisible
         appleLoginButton.alpha = isVisible ? 0.45 : 1
+    }
+
+    private func setupAgreementButtons() {
+        configureAgreementLinkButton(termsButton, title: "이용약관")
+        configureAgreementLinkButton(privacyPolicyButton, title: "개인정보처리방침")
+    }
+
+    private func configureAgreementLinkButton(_ button: UIButton, title: String) {
+        let font = UIFontMetrics(forTextStyle: .footnote).scaledFont(
+            for: .systemFont(ofSize: 12, weight: .medium)
+        )
+        let attributedTitle = NSAttributedString(
+            string: title,
+            attributes: [
+                .font: font,
+                .foregroundColor: UIColor.grayScale800,
+                .underlineStyle: NSUnderlineStyle.single.rawValue
+            ]
+        )
+
+        button.setAttributedTitle(attributedTitle, for: .normal)
+        button.backgroundColor = .clear
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
+        button.accessibilityTraits.insert(.link)
     }
 }

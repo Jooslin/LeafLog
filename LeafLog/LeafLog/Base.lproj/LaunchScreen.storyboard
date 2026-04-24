@@ -15,12 +15,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" insetsLayoutMarginsFromSafeArea="NO" image="launchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="yNi-4V-zK5">
-                                <rect key="frame" x="72.666666666666686" y="264.66666666666652" width="248" height="183.00000000000023"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="183" id="PdW-9x-l47"/>
-                                    <constraint firstAttribute="width" constant="248" id="j9K-LF-VdB"/>
-                                </constraints>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" insetsLayoutMarginsFromSafeArea="NO" image="launchLogoSquare" translatesAutoresizingMaskIntoConstraints="NO" id="yNi-4V-zK5">
+                                <rect key="frame" x="72" y="231.5" width="249" height="249"/>
                             </imageView>
                         </subviews>
                         <constraints>
@@ -36,6 +32,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="launchLogo" width="249" height="184"/>
+        <image name="launchLogoSquare" width="249" height="249"/>
     </resources>
 </document>

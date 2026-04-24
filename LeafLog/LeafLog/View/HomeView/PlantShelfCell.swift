@@ -8,11 +8,13 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class PlantShelfCell: UICollectionViewCell {
+    private(set) var disposeBag = DisposeBag()
     private let plant = UIImageView()
-    
-    private let card = PlantLabelCardView()
+    fileprivate let card = PlantLabelCardView()
     
     private let shelf = SeparateBar().then {
         $0.snp.makeConstraints {
@@ -27,6 +29,11 @@ final class PlantShelfCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        disposeBag = DisposeBag()
     }
 }
 
@@ -90,5 +97,11 @@ extension PlantShelfCell {
             shelf.clipsToBounds = true
             shelf.layer.maskedCorners = CACornerMask(arrayLiteral: .layerMaxXMinYCorner, .layerMaxXMaxYCorner)
         }
+    }
+}
+
+extension Reactive where Base: PlantShelfCell {
+    var waterButtonTap: ControlEvent<Void> {
+        base.card.waterButton.rx.tap
     }
 }

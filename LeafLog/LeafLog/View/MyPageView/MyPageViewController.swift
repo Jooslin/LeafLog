@@ -11,12 +11,15 @@ import RxSwift
 import RxCocoa
 import Dependencies
 import MessageUI
+import SafariServices
 
 final class MyPageViewController: BaseViewController, View {
     
     @Dependency(\.supabaseManager) private var supabaseManager
     private let myPageView = MyPageView()
     private var imageLoadTask: Task<Void, Never>?
+    private let privacyPolicyURLString = "https://leaflog.notion.site/LeafLog-34c4589f9d0f803eb977fb600be7bf94"
+    private let termsURLString = "https://leaflog.notion.site/LeafLog-34c4589f9d0f80b59f9fcc02fd11ca78?source=copy_link"
     
     override func loadView() {
         view = myPageView
@@ -95,6 +98,22 @@ final class MyPageViewController: BaseViewController, View {
             .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
             .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
             .bind(to: reactor.action)
+            .disposed(by: disposeBag
+
+        // 개인정보처리방침
+        myPageView.privacyPolicyButton.rx.tap
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] in
+                self?.presentWebPage(urlString: self?.privacyPolicyURLString)
+            })
+            .disposed(by: disposeBag)
+
+        // 이용약관
+        myPageView.termsButton.rx.tap
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] in
+                self?.presentWebPage(urlString: self?.termsURLString)
+            })
             .disposed(by: disposeBag)
     }
     
@@ -229,6 +248,18 @@ final class MyPageViewController: BaseViewController, View {
         }
 
         return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
+    }
+
+    private func presentWebPage(urlString: String?) {
+        guard let urlString,
+              let url = URL(string: urlString) else {
+            steps.accept(AppStep.alert("오류", "페이지 주소를 열 수 없습니다."))
+            return
+        }
+
+        let safariViewController = SFSafariViewController(url: url)
+        safariViewController.modalPresentationStyle = .pageSheet
+        present(safariViewController, animated: true)
     }
 }
 

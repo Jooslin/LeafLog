@@ -18,19 +18,10 @@ final class PlantLabelCardView: BaseCardView {
     let recentDayLabel = UILabel(text: "N일 전", config: .body12, color: .subBlue, lines: 1)
     private let nextLabel = UILabel(text: "다음 급수까지", config: .label12, color: .grayScale800, lines: 1)
     let nextDayLabel = UILabel(text: "N일", config: .label12, color: .primary700, lines: 1)
-    
-    //TODO: 추후 component 변경
-//    let waterButton = CornerRadius8Button(title: "물 줬어요", backgroundColor: .lightBlue).then {
-//        $0.snp.makeConstraints {
-//            $0.height.equalTo(28)
-//        }
-//    }
     let waterButton = UIButton(config: .water, title: "물 줬어요")
     
     init() {
-//        super.init(cornerRadius: 12)
-        super.init(frame: .zero)
-        
+        super.init(frame: .zero, cornerRadius: 12)
         backgroundColor = .white
         setLayout()
     }
@@ -67,6 +58,7 @@ extension PlantLabelCardView {
         waterButton.snp.makeConstraints {
             $0.top.equalTo(nextStack.snp.bottom).offset(4)
             $0.horizontalEdges.bottom.equalToSuperview().inset(8)
+            $0.height.equalTo(28)
         }
     }
     

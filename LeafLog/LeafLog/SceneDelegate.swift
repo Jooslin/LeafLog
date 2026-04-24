@@ -14,10 +14,10 @@ import Dependencies
 import OSLog
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    
+    private let logger = Logger(subsystem: "LeafLog", category: "SceneDelegate")
     let coordinator = FlowCoordinator()
     @Dependency(\.notificationManager) private var notificationManager
-    private let logger = Logger(subsystem: "LeafLog", category: "SceneDelegate")
+    @Dependency(\.fcmManager) private var fcmManager
     
     var window: UIWindow?
     

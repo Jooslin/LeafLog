@@ -66,8 +66,14 @@ final class PlantCareView: UIView {
         $0.selectedSegmentIndex = 0
         $0.backgroundColor = .grayScale50
         $0.selectedSegmentTintColor = .primary600
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.grayScale400], for: .normal)
-        $0.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.grayScale400,
+            .font: UIFont.systemFont(ofSize: 14, weight: .medium)
+        ], for: .normal)
+        $0.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
+        ], for: .selected)
     }
 
     var onPreviousDateTapped: (() -> Void)?
@@ -374,7 +380,6 @@ extension PlantCareView {
         snapshot.appendItems([.diary(diaryItem)], toSection: .diary)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -393,7 +398,6 @@ extension PlantCareView {
         snapshot.appendItems(timelineItems.isEmpty ? [.timelineEmpty] : timelineItems, toSection: .timelineRecord)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -405,7 +409,6 @@ extension PlantCareView {
         snapshot.appendItems(item.rows.isEmpty ? [.plantInfoEmpty] : [.plantInfo(item)], toSection: .plantInfo)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -483,6 +486,8 @@ private extension PlantCareView {
                         return Metric.diaryEstimatedHeight
                     case .timelineRecord:
                         return Metric.timelineEstimatedHeight
+                    case .plantInfo:
+                        return 700
                     default:
                         return 100
                     }
@@ -512,7 +517,6 @@ private extension PlantCareView {
                         trailing: 0
                     )
                 }
-
             case .timelineControl:
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
@@ -634,7 +638,6 @@ private extension PlantCareView {
             )
             cell.onGuideEnabledChanged = { [weak self] isEnabled in
                 self?.onGuideEnabledChanged?(isEnabled)
-                self?.collectionView.collectionViewLayout.invalidateLayout()
             }
         }
 
