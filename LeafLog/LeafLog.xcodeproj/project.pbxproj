@@ -34,6 +34,7 @@
 		B986A1902F85FC7E00EE5265 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = B986A18F2F85FC7E00EE5265 /* KakaoSDKAuth */; };
 		B986A1922F85FC7E00EE5265 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = B986A1912F85FC7E00EE5265 /* KakaoSDKCommon */; };
 		B986A1942F85FC7E00EE5265 /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = B986A1932F85FC7E00EE5265 /* KakaoSDKUser */; };
+		B9E446F02F9A320B000783C7 /* RxKeyboard in Frameworks */ = {isa = PBXBuildFile; productRef = B9E446EF2F9A320B000783C7 /* RxKeyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -77,6 +78,7 @@
 				16AD0E542F7FB0C700C98732 /* ReactorKit in Frameworks */,
 				1666DE962F88B6BF00811FBB /* FirebaseMessaging in Frameworks */,
 				16AD0E782F7FB1E600C98732 /* RxFlow in Frameworks */,
+				B9E446F02F9A320B000783C7 /* RxKeyboard in Frameworks */,
 				16AD0E572F7FB0D500C98732 /* Dependencies in Frameworks */,
 				16AD0E732F7FB17D00C98732 /* SnapKit in Frameworks */,
 				16AD0E512F7FB0BB00C98732 /* Supabase in Frameworks */,
@@ -171,6 +173,7 @@
 				B986A1932F85FC7E00EE5265 /* KakaoSDKUser */,
 				0AE522C12F85FECF0075F8D6 /* XMLCoder */,
 				1666DE952F88B6BF00811FBB /* FirebaseMessaging */,
+				B9E446EF2F9A320B000783C7 /* RxKeyboard */,
 			);
 			productName = LeafLog;
 			productReference = 16AD0E2D2F7FAFE200C98732 /* LeafLog.app */;
@@ -216,6 +219,7 @@
 				B986A18C2F85FC7E00EE5265 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 				0AE522C02F85FECF0075F8D6 /* XCRemoteSwiftPackageReference "XMLCoder" */,
 				1666DE942F88B6BF00811FBB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				B9E446EE2F9A320B000783C7 /* XCRemoteSwiftPackageReference "RxKeyboard" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16AD0E2E2F7FAFE200C98732 /* Products */;
@@ -612,6 +616,14 @@
 				minimumVersion = 2.27.2;
 			};
 		};
+		B9E446EE2F9A320B000783C7 /* XCRemoteSwiftPackageReference "RxKeyboard" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RxSwiftCommunity/RxKeyboard";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -744,6 +756,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B986A18C2F85FC7E00EE5265 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
 			productName = KakaoSDKUser;
+		};
+		B9E446EF2F9A320B000783C7 /* RxKeyboard */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9E446EE2F9A320B000783C7 /* XCRemoteSwiftPackageReference "RxKeyboard" */;
+			productName = RxKeyboard;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
