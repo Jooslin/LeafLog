@@ -17,6 +17,7 @@ final class HomeViewController: BaseViewController {
     
     private let homeView = HomeView()
     private var loadPlantsTask: Task<Void, Never>?
+    private var waterTask: Task<Void, Never>?
     
     override func loadView() {
         view = homeView
@@ -42,6 +43,7 @@ final class HomeViewController: BaseViewController {
         
         if isMovingFromParent || isBeingDismissed { // 완전히 뒤로가기/닫기
             loadPlantsTask?.cancel()
+            waterTask?.cancel()
         }
     }
 }
@@ -83,11 +85,17 @@ extension HomeViewController {
     
     private func bindWaterButtonTap() {
         homeView.rx.waterButtonTap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
             .subscribe(onNext: { [weak self] id in
                 guard let self, let id else { return }
-                Task {
+                
+                self.waterTask?.cancel()
+                self.waterTask = Task { [weak self] in
+                    guard let self else { return }
                     do {
                         let date = Date()
+                        
+                        try Task.checkCancellation()
                         try await self.careRecordDBManager.upsertCareRecord(
                             input: CareRecordUpsertInput(
                                 plantID: id,
@@ -96,9 +104,13 @@ extension HomeViewController {
                                 watered: true
                             ))
                         
+                        try Task.checkCancellation()
                         try await self.plantDBManager.updateLastWateredAt(plantID: id, date: date)
                         
+                        try Task.checkCancellation()
                         self.loadPlants()
+                    } catch is CancellationError {
+                        return
                     } catch let error as AuthError {
                         self.steps.accept(AppStep.alert("오류", error.userMessage))
                     } catch {
