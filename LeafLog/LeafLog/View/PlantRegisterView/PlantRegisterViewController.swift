@@ -17,6 +17,11 @@ private struct PlantRegisterHeaderState: Equatable {
     let showsDeleteButton: Bool
 }
 
+private struct LastWateredDateViewState: Equatable {
+    let date: Date?
+    let text: String
+}
+
 private func makePlantRegisterHeaderState(_ state: PlantRegisterReactor.State) -> PlantRegisterHeaderState {
     let showsDeleteButton: Bool
     if case .edit = state.mode {
@@ -149,14 +154,12 @@ final class PlantRegisterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state
-            .map { ($0.lastWateredDate, $0.lastWateredDateText) }
-            .distinctUntilChanged { previousDateState, currentDateState in
-                previousDateState.0 == currentDateState.0 && previousDateState.1 == currentDateState.1
-            }
+            .map { LastWateredDateViewState(date: $0.lastWateredDate, text: $0.lastWateredDateText) }
+            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] date, text in
-                guard let self, let date else { return }
-                self.registerView.setLastWateredDate(date, text: text)
+            .subscribe(onNext: { [weak self] viewState in
+                guard let self, let date = viewState.date else { return }
+                self.registerView.setLastWateredDate(date, text: viewState.text)
             })
             .disposed(by: disposeBag)
         
