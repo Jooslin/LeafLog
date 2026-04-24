@@ -149,12 +149,14 @@ final class PlantRegisterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state
-            .map(\.lastWateredDate)
-            .distinctUntilChanged()
+            .map { ($0.lastWateredDate, $0.lastWateredDateText) }
+            .distinctUntilChanged { previousDateState, currentDateState in
+                previousDateState.0 == currentDateState.0 && previousDateState.1 == currentDateState.1
+            }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] date in
+            .subscribe(onNext: { [weak self] date, text in
                 guard let self, let date else { return }
-                self.registerView.setLastWateredDate(date)
+                self.registerView.setLastWateredDate(date, text: text)
             })
             .disposed(by: disposeBag)
         

@@ -100,12 +100,6 @@ final class PlantRegisterView: UIView {
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
-    private let lastWateredDateFormatter = DateFormatter().then {
-        $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
-        $0.dateFormat = "yyyy / MM / dd"
-    }
-
     let registerButton = BottomSaveButton(title: "등록하기")
     var onLastWateredDateDone: ((Date) -> Void)?
 
@@ -198,9 +192,9 @@ final class PlantRegisterView: UIView {
         wateringGuideBannerView.configure(plantName: nil, springWaterCycle: nil)
     }
 
-    func setLastWateredDate(_ date: Date) {
+    func setLastWateredDate(_ date: Date, text: String) {
         lastWateredDatePicker.date = date
-        lastWateredDateTextField.text = lastWateredDateFormatter.string(from: date)
+        lastWateredDateTextField.text = text
     }
 }
 

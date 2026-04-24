@@ -13,6 +13,8 @@ import UIKit
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
+    private static let lastWateredDateCalendar = Calendar(identifier: .gregorian)
+    private static let lastWateredDateTimeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
 
     enum Mode: Equatable {
         case create(SelectedPlant?)
@@ -82,6 +84,7 @@ final class PlantRegisterReactor: Reactor {
         var selectedLocation: PlantLocation? = nil
         var wateringIntervalText = ""
         var lastWateredDate: Date? = nil
+        var lastWateredDateText = ""
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var existingImage: UIImage? = nil
@@ -148,6 +151,7 @@ final class PlantRegisterReactor: Reactor {
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
+            newState.lastWateredDateText = Self.makeLastWateredDateText(from: date)
         case .setExistingImage(let image):
             newState.existingImage = image
         case .setSaving(let isSaving):
@@ -443,6 +447,7 @@ final class PlantRegisterReactor: Reactor {
             state.selectedLocation = plant.location
             state.wateringIntervalText = "\(plant.wateringIntervalDays)"
             state.lastWateredDate = plant.lastWateredAt
+            state.lastWateredDateText = makeLastWateredDateText(from: plant.lastWateredAt)
         }
 
         state.isRegisterEnabled = isRegisterEnabled(for: state)
@@ -487,6 +492,21 @@ final class PlantRegisterReactor: Reactor {
         }
 
         return ""
+    }
+
+    private static func makeLastWateredDateText(from date: Date?) -> String {
+        guard let date else { return "" }
+        var calendar = lastWateredDateCalendar
+        calendar.timeZone = lastWateredDateTimeZone
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+
+        guard let year = components.year,
+              let month = components.month,
+              let day = components.day else {
+            return ""
+        }
+
+        return String(format: "%04d / %02d / %02d", year, month, day)
     }
 }
 
