@@ -32,11 +32,17 @@ final class PlantCareViewController: BaseViewController, View {
     override func loadView() {
         view = plantCareView
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setKeyboardDismissGesture() // 키보드 내리기
         bindKeyboard() // 키보드 텍스트 필드 위치 조정
+    }
+    
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true
     }
 
     override func viewDidAppear(_ animated: Bool) {
