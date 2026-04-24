@@ -13,6 +13,8 @@ final class PlantCareView: UIView {
     private enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
+        static let diaryEstimatedHeight: CGFloat = 100
+        static let timelineEstimatedHeight: CGFloat = 100
     }
 
     let headerView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "edit")
@@ -361,18 +363,33 @@ private extension PlantCareView {
 
                 return NSCollectionLayoutSection(group: group)
 
-            case .careRecord, .diary, .timelineRecord:
+            case .careRecord, .diary, .timelineRecord, .plantInfo:
+                let estimatedHeight: CGFloat = {
+                    switch section {
+                    case .careRecord:
+                        return 280
+                    case .diary:
+                        return Metric.diaryEstimatedHeight
+                    case .timelineRecord:
+                        return Metric.timelineEstimatedHeight
+                    case .plantInfo:
+                        return 500
+                    default:
+                        return 100
+                    }
+                }()
+
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(100)
+                        heightDimension: .estimated(estimatedHeight)
                     )
                 )
 
                 let group = NSCollectionLayoutGroup.vertical(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(100)
+                        heightDimension: .estimated(estimatedHeight)
                     ),
                     subitems: [item]
                 )
@@ -386,33 +403,6 @@ private extension PlantCareView {
                         trailing: 0
                     )
                 }
-                
-                // 레이아웃 따로 잡기
-            case .plantInfo:
-                let item = NSCollectionLayoutItem(
-                    layoutSize: NSCollectionLayoutSize(
-                        widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(500)
-                    )
-                )
-
-                let group = NSCollectionLayoutGroup.vertical(
-                    layoutSize: NSCollectionLayoutSize(
-                        widthDimension: .fractionalWidth(1),
-                        heightDimension: .estimated(500)
-                    ),
-                    subitems: [item]
-                )
-
-                return NSCollectionLayoutSection(group: group).then {
-                    $0.contentInsets = NSDirectionalEdgeInsets(
-                        top: 0,
-                        leading: 0,
-                        bottom: 40,
-                        trailing: 0
-                    )
-                }
-
             case .timelineControl:
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
