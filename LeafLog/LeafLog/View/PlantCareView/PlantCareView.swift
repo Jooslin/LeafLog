@@ -5,16 +5,23 @@
 //  Created by 김주희 on 4/20/26.
 //
 
+import Dependencies
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
 
 final class PlantCareView: UIView {
-    private enum Metric {
+    fileprivate enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
         static let diaryEstimatedHeight: CGFloat = 100
         static let timelineEstimatedHeight: CGFloat = 100
+        static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
+        static let diaryPhotoHeight: CGFloat = 420
+        static let diaryEstimatedHeight: CGFloat = 740
+        static let timelinePhotoHeight: CGFloat = 420
+        static let timelineEstimatedHeight: CGFloat = 560
     }
 
     let headerView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "edit")
@@ -22,8 +29,8 @@ final class PlantCareView: UIView {
     let plantImageView = PlantCareCircularImageView().then {
         $0.backgroundColor = .grayScale50
         $0.contentMode = .scaleAspectFill
-        $0.image = UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate)
-        $0.tintColor = .grayScale400
+        $0.image = nil
+        $0.tintColor = nil
     }
 
     let nameLabel = UILabel(text: "name", config: .headline24).then {
@@ -41,6 +48,8 @@ final class PlantCareView: UIView {
         $0.backgroundColor = .white
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
+        $0.contentInsetAdjustmentBehavior = .never // 스크롤 여백 자동 조정 차단
+        $0.keyboardDismissMode = .onDrag
         $0.contentInset = UIEdgeInsets(
             top: Metric.headerContentInset,
             left: 0,
@@ -180,6 +189,12 @@ private extension PlantCareView {
 // MARK: - Header Animation
 extension PlantCareView {
     func prepareHeaderAnimator() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
+        resetHeaderToExpandedLayout()
+
         regularLayoutConstraints.forEach { $0.isActive = false }
         compactLayoutConstraints.forEach { $0.isActive = true }
 
@@ -196,12 +211,56 @@ extension PlantCareView {
     }
 
     func updateHeaderAnimation(with contentOffset: CGPoint) {
+        guard hasValidLayoutSize else {
+            return
+        }
+
         // 스크롤 진행도 계산
         let progress = (contentOffset.y + Metric.headerContentInset) / -Metric.headerContentInset
-        scrollAnimator?.fractionComplete = min(max(0, -progress * 1.3), 1)
+        let fraction = min(max(0, -progress * 1.3), 1)
+
+        // 임계값보다 작으면 애니메이션x
+        if fraction <= Metric.expandedHeaderFractionThreshold {
+            if scrollAnimator != nil {
+                resetHeaderToExpandedLayout()
+            }
+        } else {
+            if scrollAnimator == nil {
+                prepareHeaderAnimator()
+            }
+
+            scrollAnimator?.fractionComplete = fraction
+        }
 
         let segmentOffset = max(0, -contentOffset.y - 76)
         segmentedControlTopConstraint?.update(offset: segmentOffset) // 세그먼트 붙이기
+    }
+
+    // 사용자가 스크롤한만큼 애니메이션 동기화
+    func syncHeaderAnimationWithCurrentOffset() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
+        updateHeaderAnimation(with: collectionView.contentOffset)
+        layoutIfNeeded()
+    }
+
+    func resetHeaderScrollPosition(animated: Bool = false) {
+        guard hasValidLayoutSize else {
+            return
+        }
+
+        layoutIfNeeded()
+
+        let topOffset = CGPoint(
+            x: 0,
+            y: -collectionView.adjustedContentInset.top
+        )
+
+        collectionView.setContentOffset(topOffset, animated: animated)
+        updateHeaderAnimation(with: topOffset)
+        layoutIfNeeded()
     }
 
     func stopHeaderAnimator() {
@@ -209,14 +268,29 @@ extension PlantCareView {
             return
         }
 
-        switch scrollAnimator.state {
-        case .active:
+        if scrollAnimator.state == .active {
             scrollAnimator.stopAnimation(true)
-        case .stopped:
-            scrollAnimator.finishAnimation(at: .current)
-        default:
-            break
         }
+
+        self.scrollAnimator = nil
+    }
+
+    private func resetHeaderToExpandedLayout() {
+        guard hasValidLayoutSize else {
+            return
+        }
+
+        stopHeaderAnimator()
+
+        compactLayoutConstraints.forEach { $0.isActive = false }
+        regularLayoutConstraints.forEach { $0.isActive = true }
+        nameLabel.transform = .identity
+        plantNameLabel.alpha = 1
+        layoutIfNeeded()
+    }
+
+    private var hasValidLayoutSize: Bool {
+        bounds.width > 0 && bounds.height > 0
     }
 }
 
@@ -225,23 +299,65 @@ extension PlantCareView {
     func configure(plant: MyPlant) {
         nameLabel.text = plant.nickname
         plantNameLabel.text = plant.speciesName
-        plantImageView.image = UIImage(named: plant.defaultImageAssetName)
+        
+        // 등록된 사진이 없으면 기본 이미지
+        let hasRegisteredImage = plant.imagePath?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty == false
+
+        if !hasRegisteredImage {
+            plantImageView.kf.cancelDownloadTask()
+            plantImageView.image = UIImage(named: plant.defaultImageAssetName)
+            plantImageView.tintColor = nil
+        }
     }
 
-    // 사진 추가하기
-    func setPlantImage(_ image: UIImage?) {
-        guard let image else {
+    func setPlantImageURL(_ plantImageURL: URL?, cacheKey: String?, fallbackImage: UIImage?) {
+        plantImageView.kf.cancelDownloadTask()
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let plantImageURL else {
+            if let fallbackImage {
+                plantImageView.image = fallbackImage
+                plantImageView.tintColor = nil
+            }
             return
         }
 
-        plantImageView.image = image
-        plantImageView.tintColor = nil
+        let placeholderImage = plantImageView.image ?? fallbackImage
+        let imageResource = KF.ImageResource(
+            downloadURL: plantImageURL,
+            cacheKey: cacheKey
+        )
+
+        plantImageView.kf.setImage(
+            with: imageResource,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        ) { [weak self] result in
+            guard case .failure = result,
+                  let fallbackImage else {
+                return
+            }
+
+            self?.plantImageView.image = fallbackImage
+            self?.plantImageView.tintColor = nil
+        }
     }
 
-    func setDiaryPhotoImage(_ image: UIImage?) {
+    func setDiaryPhotoImageURL(_ diaryPhotoURL: URL?, cacheKey: String?, hasPhoto: Bool) {
         collectionView.visibleCells
             .compactMap { $0 as? PlantCareDiaryCell }
-            .forEach { $0.setPhotoImage(image) }
+            .forEach {
+                $0.setPhotoImageURL(
+                    diaryPhotoURL,
+                    cacheKey: cacheKey,
+                    hasPhoto: hasPhoto
+                )
+            }
     }
 
     func setSelectedTab(_ tab: PlantCareTab) {
@@ -267,6 +383,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 
@@ -285,6 +402,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 
@@ -296,6 +414,7 @@ extension PlantCareView {
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
 
@@ -407,14 +526,14 @@ private extension PlantCareView {
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .absolute(80)
+                        heightDimension: .absolute(72)
                     )
                 )
 
                 let group = NSCollectionLayoutGroup.vertical(
                     layoutSize: NSCollectionLayoutSize(
                         widthDimension: .fractionalWidth(1),
-                        heightDimension: .absolute(80)
+                        heightDimension: .absolute(72)
                     ),
                     subitems: [item]
                 )
@@ -899,19 +1018,6 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let titleLabel = UILabel(text: "오늘의 일기", config: .title14)
-    private let completeButton = UIButton(type: .system).then {
-        var configuration = UIButton.Configuration.plain()
-        configuration.title = "완료"
-        configuration.background.cornerRadius = 8
-        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
-            var outgoing = incoming
-            outgoing.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            return outgoing
-        }
-        $0.configuration = configuration
-        $0.isUserInteractionEnabled = false
-    }
-
     private let photoLabel = UILabel(text: "사진 기록", config: .label14, color: .black)
     private let cameraButton = UIButton(type: .system).then {
         $0.setImage(UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate), for: .normal)
@@ -948,7 +1054,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         $0.snp.makeConstraints {
-            $0.height.equalTo(200)
+            $0.height.equalTo(PlantCareView.Metric.diaryPhotoHeight)
         }
     }
 
@@ -998,6 +1104,17 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        photoImageView.kf.cancelDownloadTask()
+        photoImageView.image = nil
+        photoImageView.isHidden = true
+        photoPlaceholderLabel.text = "사진을 불러오는 중이에요."
+        photoPlaceholderLabel.isHidden = true
+        photoPreviewView.isHidden = true
+    }
+
     func configure(item: PlantCareDiaryItem) {
         textView.text = item.diaryText
         diaryContentStack.isHidden = !item.isDiaryExpanded
@@ -1005,15 +1122,54 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             UIImage(named: item.isDiaryExpanded ? "arrowUp" : "arrowDown"),
             for: .normal
         )
-        configurePhotoPreview(hasPhoto: item.diaryPhotoPath?.isEmpty == false)
-        configureCompleteButton(isCompleted: item.isCompleted)
+        setPhotoImageURL(
+            item.diaryPhotoURL,
+            cacheKey: item.diaryPhotoCacheKey ?? item.diaryPhotoPath,
+            hasPhoto: item.diaryPhotoPath?.isEmpty == false
+        )
     }
 
-    func setPhotoImage(_ image: UIImage?) {
-        photoPreviewView.isHidden = image == nil
-        photoImageView.image = image
-        photoImageView.isHidden = image == nil
-        photoPlaceholderLabel.isHidden = image != nil
+    func setPhotoImageURL(_ photoURL: URL?, cacheKey: String?, hasPhoto: Bool) {
+        photoImageView.kf.cancelDownloadTask()
+        configurePhotoPreview(hasPhoto: hasPhoto)
+
+        guard hasPhoto else {
+            return
+        }
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let photoURL else {
+            photoPlaceholderLabel.text = "사진을 불러오지 못했어요."
+            return
+        }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: photoURL,
+            cacheKey: cacheKey
+        )
+
+        photoImageView.kf.setImage(
+            with: imageResource,
+            placeholder: nil,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        ) { [weak self] result in
+            guard let self else { return }
+
+            switch result {
+            case .success:
+                self.photoImageView.isHidden = false
+                self.photoPlaceholderLabel.isHidden = true
+
+            case .failure:
+                self.photoImageView.image = nil
+                self.photoImageView.isHidden = true
+                self.photoPlaceholderLabel.text = "사진을 불러오지 못했어요."
+                self.photoPlaceholderLabel.isHidden = false
+            }
+        }
     }
 
     private func setLayout() {
@@ -1023,10 +1179,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let headerRow = UIStackView(arrangedSubviews: [titleStack, completeButton]).then {
+        let headerRow = UIStackView(arrangedSubviews: [titleStack]).then {
             $0.axis = .horizontal
             $0.alignment = .center
-            $0.distribution = .equalSpacing
         }
 
         let photoRow = UIView()
@@ -1121,17 +1276,12 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     private func configurePhotoPreview(hasPhoto: Bool) {
         photoPreviewView.isHidden = !hasPhoto
+        photoPlaceholderLabel.text = "사진을 불러오는 중이에요."
         photoImageView.image = nil
         photoImageView.isHidden = true
         photoPlaceholderLabel.isHidden = !hasPhoto
     }
 
-    private func configureCompleteButton(isCompleted: Bool) {
-        var configuration = completeButton.configuration ?? UIButton.Configuration.plain()
-        configuration.baseForegroundColor = isCompleted ? .grayScale600 : .grayScale700
-        configuration.background.backgroundColor = isCompleted ? .grayScale100 : .white
-        completeButton.configuration = configuration
-    }
 }
 
 private final class PlantCareTimelineControlCell: UICollectionViewCell {
@@ -1319,6 +1469,13 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
     private let titleLabel = UILabel(text: "", config: .title14)
     private let memoLabel = UILabel(text: "", config: .label14, color: .black, lines: 0)
+    private let photoImageView = UIImageView().then {
+        $0.contentMode = .scaleAspectFill
+        $0.clipsToBounds = true
+        $0.layer.cornerRadius = 8
+        $0.backgroundColor = .grayScale100
+        $0.isHidden = true
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -1329,12 +1486,39 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        photoImageView.kf.cancelDownloadTask()
+        photoImageView.image = nil
+        photoImageView.isHidden = true
+    }
+
     func configure(event: PlantCareTimelineEvent) {
-        iconImageView.image = UIImage(named: event.type.badge.smallImage)
-        titleLabel.text = event.type.title
+        photoImageView.kf.cancelDownloadTask()
+        photoImageView.image = nil
+        photoImageView.isHidden = true
 
         let memo = event.memoText.trimmingCharacters(in: .whitespacesAndNewlines)
-        memoLabel.text = memo.isEmpty ? "\(event.type.title) 완료했어요." : memo
+
+        switch event.kind {
+            // 물주기, 비료주기 등
+        case .care(let type):
+            iconImageView.image = UIImage(named: type.badge.smallImage)
+            titleLabel.text = type.title
+            memoLabel.text = memo.isEmpty ? "\(type.title) 완료했어요." : memo
+
+            // 일기
+        case .diary:
+            iconImageView.image = UIImage(named: "sprout")
+            titleLabel.text = "오늘의 일기"
+            memoLabel.text = memo.isEmpty ? "" : memo
+            configurePhotoPreview(
+                photoPath: event.photoPath,
+                photoURL: event.photoURL,
+                photoCacheKey: event.photoCacheKey
+            )
+        }
     }
 
     private func setLayout() {
@@ -1344,7 +1528,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let stackView = UIStackView(arrangedSubviews: [titleStack, SeparateBar(), memoLabel]).then {
+        let stackView = UIStackView(arrangedSubviews: [titleStack, SeparateBar(), memoLabel, photoImageView]).then {
             $0.axis = .vertical
             $0.spacing = 8
             $0.alignment = .fill
@@ -1374,6 +1558,38 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
         titleStack.snp.makeConstraints {
             $0.height.equalTo(28)
         }
+
+        photoImageView.snp.makeConstraints {
+            $0.height.equalTo(PlantCareView.Metric.timelinePhotoHeight)
+        }
+    }
+
+    private func configurePhotoPreview(photoPath: String?, photoURL: URL?, photoCacheKey: String?) {
+        guard let photoPath, !photoPath.isEmpty else {
+            return
+        }
+
+        let placeholderImage = UIImage(resource: .placeholder)
+        photoImageView.isHidden = false
+
+        guard let photoURL else {
+            photoImageView.image = placeholderImage
+            return
+        }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: photoURL,
+            cacheKey: photoCacheKey ?? photoPath
+        )
+
+        photoImageView.kf.setImage(
+            with: imageResource,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
 }
 

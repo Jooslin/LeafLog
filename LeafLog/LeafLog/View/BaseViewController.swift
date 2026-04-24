@@ -9,6 +9,7 @@ import RxFlow
 import RxRelay
 import RxSwift
 import UIKit
+import RxCocoa
 
 class BaseViewController: UIViewController, Stepper {
     let steps = PublishRelay<Step>()
@@ -26,6 +27,19 @@ class BaseViewController: UIViewController, Stepper {
         
         // 화면이 나타날 때마다 네비게이션 바를 숨김
         navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    // 키보드 내리기
+    func setKeyboardDismissGesture() {
+        let tapGesture = UITapGestureRecognizer()
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+
+        tapGesture.rx.event
+            .subscribe(onNext: { [weak self] _ in
+                self?.view.endEditing(true)
+            })
+            .disposed(by: disposeBag)
     }
 }
 

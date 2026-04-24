@@ -83,12 +83,30 @@ enum PlantCareRecordType: Int, CaseIterable, Hashable {
 }
 
 nonisolated
+// 타임라인 전용 타입
+enum PlantCareTimelineEventKind: Hashable {
+    case care(PlantCareRecordType) // 식물 관리 기록
+    case diary // 일기
+
+    var sortOrder: Int {
+        switch self {
+        case .care(let type):
+            return type.rawValue
+        case .diary:
+            return PlantCareRecordType.allCases.count
+        }
+    }
+}
+
+
+nonisolated
 enum PlantCareTimelineFilter: Int, CaseIterable, Hashable {
     case all
     case watering
     case repotting
     case fertilizing
     case treating
+    case diary
 
     var title: String {
         switch self {
@@ -102,21 +120,25 @@ enum PlantCareTimelineFilter: Int, CaseIterable, Hashable {
             return "비료"
         case .treating:
             return "치료"
+        case .diary:
+            return "일기"
         }
     }
 
-    var recordType: PlantCareRecordType? {
+    func matches(_ event: PlantCareTimelineEvent) -> Bool {
         switch self {
         case .all:
-            return nil
+            return true
         case .watering:
-            return .watering
+            return event.kind == .care(.watering)
         case .repotting:
-            return .repotting
+            return event.kind == .care(.repotting)
         case .fertilizing:
-            return .fertilizing
+            return event.kind == .care(.fertilizing)
         case .treating:
-            return .treating
+            return event.kind == .care(.treating)
+        case .diary:
+            return event.kind == .diary
         }
     }
 }
@@ -168,6 +190,8 @@ nonisolated
 struct PlantCareDiaryItem: Hashable {
     var diaryText: String
     var diaryPhotoPath: String?
+    var diaryPhotoURL: URL?
+    var diaryPhotoCacheKey: String?
     var isDiaryExpanded: Bool
 
     var isCompleted: Bool {
@@ -194,8 +218,11 @@ struct PlantCareTimelineEvent: Hashable {
     let id: String
     let recordDateRaw: String
     let date: Date
-    let type: PlantCareRecordType
+    let kind: PlantCareTimelineEventKind
     let memoText: String
+    let photoPath: String?
+    let photoURL: URL?
+    let photoCacheKey: String?
 }
 
 // 식물 정보
@@ -252,6 +279,7 @@ final class PlantCareReactor: Reactor {
         case setTimelineFilter(PlantCareTimelineFilter)
         case setTimelineSort(PlantCareTimelineSort)
         case setErrorMessage(String?)
+        case setSuccessMessage(String?)
     }
 
     struct State {
@@ -273,6 +301,7 @@ final class PlantCareReactor: Reactor {
         var timelineFilter: PlantCareTimelineFilter = .all
         var timelineSort: PlantCareTimelineSort = .latestFirst
         @Pulse var errorMessage: String?
+        @Pulse var successMessage: String?
     }
 
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
@@ -290,7 +319,13 @@ final class PlantCareReactor: Reactor {
             plant: nil,
             selectedDate: startDate,
             items: Self.makeItems(from: nil, previousItems: []),
-            diaryItem: Self.makeDiaryItem(from: nil, previousItem: nil)
+            diaryItem: PlantCareDiaryItem(
+                diaryText: "",
+                diaryPhotoPath: nil,
+                diaryPhotoURL: nil,
+                diaryPhotoCacheKey: nil,
+                isDiaryExpanded: false
+            )
         )
     }
 
@@ -449,6 +484,9 @@ final class PlantCareReactor: Reactor {
         case .setErrorMessage(let message):
             newState.isLoading = false
             newState.errorMessage = message
+
+        case .setSuccessMessage(let message):
+            newState.successMessage = message
         }
 
         return newState
@@ -529,7 +567,7 @@ private extension PlantCareReactor {
     ) -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     let recordDate = localDate(from: date)
@@ -539,7 +577,13 @@ private extension PlantCareReactor {
                     )
 
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: previousItems)))
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: previousDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: previousDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -559,11 +603,15 @@ private extension PlantCareReactor {
     func loadTimelineEvents() -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     let records = try await careRecordDBManager.fetchCareRecords(plantID: plantID)
-                    observer.onNext(.setTimelineEvents(Self.makeTimelineEvents(from: records)))
+                    let events = try await Self.makeTimelineEvents(
+                        from: records,
+                        supabaseManager: supabaseManager
+                    )
+                    observer.onNext(.setTimelineEvents(events))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -588,7 +636,7 @@ private extension PlantCareReactor {
     ) -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     var input = Self.emptyInput(plantID: plantID, date: date)
@@ -596,7 +644,12 @@ private extension PlantCareReactor {
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: originalItems)))
-                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    try? await Self.syncTimelineEvents(
+                        plantID: plantID,
+                        manager: careRecordDBManager,
+                        supabaseManager: supabaseManager,
+                        observer: observer
+                    )
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setItems(originalItems))
@@ -623,15 +676,22 @@ private extension PlantCareReactor {
     ) -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     var input = Self.emptyInput(plantID: plantID, date: date)
                     Self.applyMemo(type: type, memo: memo, to: &input)
+                    Self.applyCompletion(type: type, isCompleted: true, to: &input) // 메모 저장해도 완료로
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: originalItems)))
-                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    try? await Self.syncTimelineEvents(
+                        plantID: plantID,
+                        manager: careRecordDBManager,
+                        supabaseManager: supabaseManager,
+                        observer: observer
+                    )
+                    observer.onNext(.setSuccessMessage("\(type.title) 메모가 저장되었습니다."))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -655,16 +715,28 @@ private extension PlantCareReactor {
     ) -> Observable<Mutation> {
         let plantID = currentState.plantID
 
-        return Observable.create { [careRecordDBManager] observer in
+        return Observable.create { [careRecordDBManager, supabaseManager] observer in
             let task = Task {
                 do {
                     var input = Self.emptyInput(plantID: plantID, date: date)
-                    input.diaryText = diaryText
+                    input.diaryText = diaryText // 일기 텍스트 저장
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
                     // 타임라인 새로고침
-                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    try? await Self.syncTimelineEvents(
+                        plantID: plantID,
+                        manager: careRecordDBManager,
+                        supabaseManager: supabaseManager,
+                        observer: observer
+                    )
+                    observer.onNext(.setSuccessMessage("오늘의 일기가 저장되었습니다."))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -681,6 +753,7 @@ private extension PlantCareReactor {
         }
     }
 
+    // 사진 경로 저장
     func saveDiaryPhoto(
         image: UIImage,
         date: Date,
@@ -705,8 +778,19 @@ private extension PlantCareReactor {
                     input.diaryPhotoPath = photoPath
 
                     let record = try await careRecordDBManager.upsertCareRecord(input: input)
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
-                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
+                    try? await Self.syncTimelineEvents(
+                        plantID: plantID,
+                        manager: careRecordDBManager,
+                        supabaseManager: supabaseManager,
+                        observer: observer
+                    )
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -744,8 +828,19 @@ private extension PlantCareReactor {
                         try? await supabaseManager.deleteDiaryImage(path: photoPath)
                     }
 
-                    observer.onNext(.setDiaryItem(Self.makeDiaryItem(from: record, previousItem: originalDiaryItem)))
-                    try? await Self.syncTimelineEvents(plantID: plantID, manager: careRecordDBManager, observer: observer)
+                    observer.onNext(.setDiaryItem(
+                        try await Self.makeDiaryItem(
+                            from: record,
+                            previousItem: originalDiaryItem,
+                            supabaseManager: supabaseManager
+                        )
+                    ))
+                    try? await Self.syncTimelineEvents(
+                        plantID: plantID,
+                        manager: careRecordDBManager,
+                        supabaseManager: supabaseManager,
+                        observer: observer
+                    )
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.setErrorMessage(error.userMessage))
@@ -768,10 +863,15 @@ private extension PlantCareReactor {
     static func syncTimelineEvents(
         plantID: UUID,
         manager: CareRecordDBManager,
+        supabaseManager: SupabaseManager,
         observer: AnyObserver<Mutation>
     ) async throws {
         let records = try await manager.fetchCareRecords(plantID: plantID)
-        observer.onNext(.setTimelineEvents(makeTimelineEvents(from: records)))
+        let events = try await makeTimelineEvents(
+            from: records,
+            supabaseManager: supabaseManager
+        )
+        observer.onNext(.setTimelineEvents(events))
     }
 
     static func makeItems(from record: CareRecord?, previousItems: [PlantCareItem]) -> [PlantCareItem] {
@@ -787,17 +887,35 @@ private extension PlantCareReactor {
         }
     }
 
-    static func makeDiaryItem(from record: CareRecord?, previousItem: PlantCareDiaryItem?) -> PlantCareDiaryItem {
-        PlantCareDiaryItem(
+    static func makeDiaryItem(
+        from record: CareRecord?,
+        previousItem: PlantCareDiaryItem?,
+        supabaseManager: SupabaseManager
+    ) async throws -> PlantCareDiaryItem {
+        let diaryPhotoPath = record?.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let diaryPhotoCacheKey = makeImageCacheKey(from: diaryPhotoPath, updatedAt: record?.updatedAt)
+        let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(
+            from: diaryPhotoPath,
+            cacheKey: diaryPhotoCacheKey
+        )
+
+        return PlantCareDiaryItem(
             diaryText: record?.diaryText ?? "",
-            diaryPhotoPath: record?.diaryPhotoPath,
+            diaryPhotoPath: diaryPhotoPath,
+            diaryPhotoURL: diaryPhotoURL,
+            diaryPhotoCacheKey: diaryPhotoCacheKey,
             isDiaryExpanded: previousItem?.isDiaryExpanded ?? false
         )
     }
 
-    static func makeTimelineEvents(from records: [CareRecord]) -> [PlantCareTimelineEvent] {
-        records.flatMap { record in
-            PlantCareRecordType.allCases.compactMap { type in
+    static func makeTimelineEvents(
+        from records: [CareRecord],
+        supabaseManager: SupabaseManager
+    ) async throws -> [PlantCareTimelineEvent] {
+        var timelineEvents: [PlantCareTimelineEvent] = []
+
+        for record in records {
+            var events = PlantCareRecordType.allCases.compactMap { type -> PlantCareTimelineEvent? in
                 guard type.isCompleted(in: record) else {
                     return nil
                 }
@@ -806,11 +924,42 @@ private extension PlantCareReactor {
                     id: "\(record.id.uuidString)-\(type.rawValue)",
                     recordDateRaw: record.recordDate.rawValue,
                     date: record.recordDate.date ?? record.recordedAt,
-                    type: type,
-                    memoText: type.memo(in: record)
+                    kind: .care(type),
+                    memoText: type.memo(in: record),
+                    photoPath: nil,
+                    photoURL: nil,
+                    photoCacheKey: nil
                 )
             }
+            
+            // 오늘의 일기 이벤트 추가
+            let diaryText = record.diaryText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let diaryPhotoPath = record.diaryPhotoPath?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let diaryPhotoCacheKey = makeImageCacheKey(from: diaryPhotoPath, updatedAt: record.updatedAt)
+            let diaryPhotoURL = try? await supabaseManager.resolveDiaryImageURL(
+                from: diaryPhotoPath,
+                cacheKey: diaryPhotoCacheKey
+            )
+
+            if !diaryText.isEmpty || diaryPhotoPath?.isEmpty == false {
+                events.append(
+                    PlantCareTimelineEvent(
+                        id: "\(record.id.uuidString)-diary",
+                        recordDateRaw: record.recordDate.rawValue,
+                        date: record.recordDate.date ?? record.recordedAt,
+                        kind: .diary,
+                        memoText: diaryText,
+                        photoPath: diaryPhotoPath,
+                        photoURL: diaryPhotoURL,
+                        photoCacheKey: diaryPhotoCacheKey
+                    )
+                )
+            }
+            
+            timelineEvents.append(contentsOf: events)
         }
+
+        return timelineEvents
     }
     
     // 식물 정보 디테일
@@ -902,6 +1051,11 @@ private extension PlantCareReactor {
         }
     }
 
+    static func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        guard let updatedAt else { return path }
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
+    }
 
 // 마지막 물주기 기록이 있는지 확인   
     static func isLastRemainingWateringRecord(
@@ -909,7 +1063,7 @@ private extension PlantCareReactor {
         timelineEvents: [PlantCareTimelineEvent]
     ) -> Bool {
         let targetDate = localDate(from: date)
-        let wateringEvents = timelineEvents.filter { $0.type == .watering }
+        let wateringEvents = timelineEvents.filter { $0.kind == .care(.watering) }
 
         guard !wateringEvents.isEmpty else {
             return true

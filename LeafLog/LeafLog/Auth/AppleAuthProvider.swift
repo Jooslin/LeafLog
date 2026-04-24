@@ -140,8 +140,14 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
         controller: ASAuthorizationController,
         didCompleteWithError error: Error
     ) {
-        if let authorizationError = error as? ASAuthorizationError,
-           authorizationError.code == .canceled {
+        let nsError = error as NSError
+        let isUserStoppedLogin = [
+            ASAuthorizationError.Code.canceled.rawValue,
+            ASAuthorizationError.Code.unknown.rawValue
+        ].contains(nsError.code)
+
+        if nsError.domain == ASAuthorizationError.errorDomain,
+           isUserStoppedLogin {
             finish(with: .failure(AuthError.cancelled))
             return
         }

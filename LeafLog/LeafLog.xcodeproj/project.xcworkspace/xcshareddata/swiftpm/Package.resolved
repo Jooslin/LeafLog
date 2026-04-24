@@ -1,5 +1,5 @@
 {
-  "originHash" : "5aedd1f94f4ac4bf5bc57c920b3f85d5fadcda55c918dce140d49ae42f4f2b74",
+  "originHash" : "ac08ad8da179b43874ff8f05ce613e460277d441dc6234434a7e52989f97494f",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -197,6 +197,15 @@
       "state" : {
         "revision" : "26b3e8137c6d7a1dbd98a599b3ccb1e4314293c5",
         "version" : "2.13.2"
+      }
+    },
+    {
+      "identity" : "rxkeyboard",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RxSwiftCommunity/RxKeyboard",
+      "state" : {
+        "revision" : "63f6377975c962a1d89f012a6f1e5bebb2c502b7",
+        "version" : "2.0.1"
       }
     },
     {
