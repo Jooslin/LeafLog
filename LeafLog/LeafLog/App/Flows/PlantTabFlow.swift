@@ -45,12 +45,35 @@ final class PlantTabFlow: Flow {
             )
 
         case .plantRegister(let selectedPlant):
+            if let selectedPlant,
+               let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
+                registerViewController.updateSelectedPlant(selectedPlant)
+
+                return .none
+            }
+
+            if let selectedPlant,
+               let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
+                registerViewController.updateSelectedPlant(selectedPlant)
+
+                let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+                let searchViewControllers = navigationController.viewControllers
+                    .dropFirst(registerIndex + 1)
+                    .filter { $0 is SearchViewController }
+                let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
+                navigationController.setViewControllers(updatedViewControllers, animated: true)
+
+                return .none
+            }
+
             let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
             
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
                 navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
-            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+            } else if selectedPlant == nil,
+                      let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
                 var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
                 updatedViewControllers.append(plantRegisterViewController)
                 navigationController.setViewControllers(updatedViewControllers, animated: true)
@@ -99,8 +122,15 @@ final class PlantTabFlow: Flow {
         case .plantSearchDetail(let contentNumber):
             let reactor = SearchDetailReactor(contentNumber: contentNumber)
             let viewController = SearchDetailViewController(reactor: reactor)
+            viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))           
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .record(let plantID):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+            viewController.hidesBottomBarWhenPushed = true
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
@@ -213,11 +243,15 @@ extension PlantTabFlow {
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
-        return PlantRegisterViewController(reactor: reactor)
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
     }
 
     private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(mode: .edit(plant))
-        return PlantRegisterViewController(reactor: reactor)
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
     }
 }

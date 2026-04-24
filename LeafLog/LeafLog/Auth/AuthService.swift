@@ -9,6 +9,7 @@
 import UIKit
 import Supabase
 import Dependencies
+import OSLog
 
 final class AuthService {
 
@@ -16,6 +17,11 @@ final class AuthService {
         static let appleLoginFailed = "Apple 로그인에 실패했어요. 잠시 후 다시 시도해주세요."
         static let appleTokenStoreFailed = "Apple 로그인 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요."
         static let withdrawalFailed = "회원탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해주세요."
+    }
+
+    private enum AppleLoginCooldown {
+        static let userDefaultsKey = "appleLoginCooldownExpiresAt"
+        static let duration: TimeInterval = 9 // 재가입 제한 시간
     }
 
     private struct WithdrawResponse: Decodable {
@@ -38,6 +44,7 @@ final class AuthService {
     // MARK: - Properties
     @Dependency(\.supabaseManager) private var supabaseManager
     private lazy var supabase = supabaseManager.client
+    private let logger = Logger(subsystem: "LeafLog", category: "AuthService") // 탈퇴 실패했을 때 콘솔에 로그 추가
 
     private let appleProvider: AppleAuthProvider
     private let googleProvider: GoogleAuthProvider
@@ -183,26 +190,141 @@ final class AuthService {
 
     // MARK: - 회원 탈퇴
     func withdrawAccount() async throws {
-        let user = try await supabase.auth.user()
-        let session = try await supabase.auth.session
+        let cachedUser = supabase.auth.currentUser // 앱에 저장되어있는 마지막 유저 정보
+        let context: (user: Supabase.User, accessToken: String)
 
         do {
-            let _: WithdrawResponse = try await supabase.functions.invoke(
+            // 탈퇴 시작 전에 유저, 세션 가져오기
+            let user = try await supabase.auth.user()
+            let session = try await supabase.auth.session
+            context = (user: user, accessToken: session.accessToken)
+        } catch {
+            // 실패하면 로그아웃
+            await completeLocalWithdrawal(for: cachedUser)
+            return
+        }
+
+        do {
+            let response: WithdrawResponse = try await supabase.functions.invoke(
                 "delete-user", // DB에서 유저 데이터 삭제
                 options: .init(
                     method: .post,
-                    headers: authorizationHeaders(accessToken: session.accessToken)
+                    headers: authorizationHeaders(accessToken: context.accessToken)
                 )
             )
-        } catch FunctionsError.httpError {
+
+            guard response.success else {
+                throw AuthError.withdrawalFailed(Message.withdrawalFailed)
+            }
+        } catch FunctionsError.httpError(let code, let data) {
+            // 에러가 발생해도 탈퇴된 상태면 로컬 로그아웃
+            if await shouldCompleteWithdrawalAfterFailure(code: code, data: data, accessToken: context.accessToken) {
+                await completeLocalWithdrawal(for: context.user)
+                return
+            }
+
+            // 탈퇴된 상태가 아니면 에러 로그 + 팝업
+            let responseBody = String(data: data, encoding: .utf8) ?? ""
+            logger.error("회원탈퇴 Edge Function 실패 - status: \(code, privacy: .public), body: \(responseBody, privacy: .public)")
             throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         } catch {
+            // 탈퇴 됐는지 확인
+            if await isRemoteAccountDeleted(accessToken: context.accessToken) {
+                await completeLocalWithdrawal(for: context.user)
+                return
+            }
+
+            logger.error("회원탈퇴 실패 - \(error.localizedDescription, privacy: .public)")
             throw AuthError.withdrawalFailed(Message.withdrawalFailed)
         }
 
-        // 로그아웃
+        // 정상 성공 처리
+        await completeLocalWithdrawal(for: context.user)
+    }
+
+    // 대기 시간이 남아있는지 확인
+    func isAppleLoginCooldownActive() -> Bool {
+        let expiresAt = UserDefaults.standard.double(forKey: AppleLoginCooldown.userDefaultsKey) // 기다림이 끝나는 시간
+        // 시간이 지났으면 쿨다운 종료
+        guard expiresAt > Date().timeIntervalSince1970 else {
+            // 저장된 시간 기록 삭제
+            UserDefaults.standard.removeObject(forKey: AppleLoginCooldown.userDefaultsKey)
+            return false
+        }
+
+        return true
+    }
+
+    // 앱 안에있는 로그인 흔적 지우기
+    private func completeLocalWithdrawal(for user: Supabase.User?) async {
+        if isAppleUser(user) {
+            startAppleLoginCooldown()
+        }
+
         try? await supabase.auth.signOut(scope: .local)
-        await signOutProvider(for: user)
+        if let user {
+            await signOutProvider(for: user)
+        }
+    }
+
+    // 대기 시간 타이머 작동
+    private func startAppleLoginCooldown() {
+        let expiresAt = Date().addingTimeInterval(AppleLoginCooldown.duration).timeIntervalSince1970
+        UserDefaults.standard.set(expiresAt, forKey: AppleLoginCooldown.userDefaultsKey)
+    }
+
+    // 애플 유저인지 확인
+    private func isAppleUser(_ user: Supabase.User?) -> Bool {
+        user?.appMetadata["provider"]?.stringValue == "apple"
+    }
+
+    // 실패 응답을 받아도 회원탈퇴 되었는지 판단
+    private func shouldCompleteWithdrawalAfterFailure(code: Int, data: Data, accessToken: String) async -> Bool {
+        // 응답 메시지가 이미 탈퇴, 세션 없음인지
+        if isAlreadyWithdrawnResponse(code: code, data: data) {
+            return true
+        }
+
+        // 슈파베이스 Auth 유저가 이미 삭제 되었는지
+        if await isRemoteAccountDeleted(accessToken: accessToken) {
+            return true
+        }
+
+        // profile row가 이미 삭제 되었는지
+        return await isProfileAlreadyDeleted()
+    }
+
+    // access 토큰으로 유저 정보 가져올수있는지
+    private func isRemoteAccountDeleted(accessToken: String) async -> Bool {
+        do {
+            _ = try await supabase.auth.user(jwt: accessToken)
+            return false
+        } catch {
+            return true
+        }
+    }
+
+    // 프로필 row가 이미 삭제되었는지
+    private func isProfileAlreadyDeleted() async -> Bool {
+        do {
+            let profile = try await profileDBManager.fetchMyProfile()
+            return profile == nil
+        } catch {
+            return false
+        }
+    }
+
+    // 탈퇴 상태인지 확인
+    private func isAlreadyWithdrawnResponse(code: Int, data: Data) -> Bool {
+        guard [401, 403, 404, 500].contains(code) else {
+            return false
+        }
+
+        let message = String(data: data, encoding: .utf8)?.lowercased() ?? ""
+        return message.contains("unauthorized")
+            || message.contains("not found")
+            || message.contains("session")
+            || message.contains("user")
     }
 
     private func authorizationHeaders(accessToken: String) -> [String: String] {

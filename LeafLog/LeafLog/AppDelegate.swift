@@ -54,7 +54,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 extension AppDelegate {
     // APNs 토큰이 발급되었을 때 실행 - registerForRemoteNotifications()가 완료된 이후 실행
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // Firebase에 apns 토큰을 전달
-        Messaging.messaging().apnsToken = deviceToken
+        fcmManager.updateAPNsToken(deviceToken)
     }
 }

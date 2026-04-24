@@ -30,6 +30,7 @@ final class HomeViewController: BaseViewController {
         bindPlantRegistration()
         showEmptyState()
         bindWaterButtonTap()
+        bindAlarmButton()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -118,6 +119,11 @@ extension HomeViewController {
                     }
                 }
             })
+      
+    private func bindAlarmButton() {
+        homeView.rx.alarmButtonTap
+            .map { AppStep.alarmCenter }
+            .bind(to: steps)
             .disposed(by: disposeBag)
     }
 }

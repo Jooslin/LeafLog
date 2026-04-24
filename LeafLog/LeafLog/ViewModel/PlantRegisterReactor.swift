@@ -13,6 +13,8 @@ import UIKit
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
+    private static let lastWateredDateCalendar = Calendar(identifier: .gregorian)
+    private static let lastWateredDateTimeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
 
     enum Mode: Equatable {
         case create(SelectedPlant?)
@@ -45,6 +47,7 @@ final class PlantRegisterReactor: Reactor {
         case viewDidLoad
         case updateCategory(PlantCategory?)
         case updateLocation(PlantLocation?)
+        case updateSelectedPlant(SelectedPlant)
         case updateNickname(String)
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
@@ -55,11 +58,13 @@ final class PlantRegisterReactor: Reactor {
     }
 
     enum Mutation {
+        case setSelectedPlant(SelectedPlant)
         case setSelectedCategory(PlantCategory?)
         case setSelectedLocation(PlantLocation?)
         case setNicknameText(String)
         case setWateringIntervalText(String)
         case setLastWateredDate(Date?)
+        case setExistingImage(UIImage?)
         case setSaving(Bool)
         case setSaveCompleted
         case setDeleteCompleted
@@ -79,8 +84,10 @@ final class PlantRegisterReactor: Reactor {
         var selectedLocation: PlantLocation? = nil
         var wateringIntervalText = ""
         var lastWateredDate: Date? = nil
+        var lastWateredDateText = ""
         var isRegisterEnabled = false
         var isSaving = false
+        @Pulse var existingImage: UIImage? = nil
         @Pulse var saveCompleted = false
         @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
@@ -101,11 +108,13 @@ final class PlantRegisterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
-            return .empty()
+            return loadExistingImage(state: currentState)
         case .updateCategory(let category):
             return .just(.setSelectedCategory(category))
         case .updateLocation(let location):
             return .just(.setSelectedLocation(location))
+        case .updateSelectedPlant(let selectedPlant):
+            return .just(.setSelectedPlant(selectedPlant))
         case .updateNickname(let nickname):
             return .just(.setNicknameText(nickname))
         case .updateWateringInterval(let text):
@@ -125,6 +134,13 @@ final class PlantRegisterReactor: Reactor {
         var newState = state
 
         switch mutation {
+        case .setSelectedPlant(let selectedPlant):
+            newState.selectedPlant = selectedPlant
+            newState.selectedCategory = Self.suggestedCategory(from: selectedPlant)
+            let suggestedWateringIntervalText = Self.suggestedWateringIntervalText(from: selectedPlant.detail?.springWaterCycle)
+            if !suggestedWateringIntervalText.isEmpty || newState.wateringIntervalText.isEmpty {
+                newState.wateringIntervalText = suggestedWateringIntervalText
+            }
         case .setSelectedCategory(let category):
             newState.selectedCategory = category
         case .setSelectedLocation(let location):
@@ -135,10 +151,13 @@ final class PlantRegisterReactor: Reactor {
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
+            newState.lastWateredDateText = Self.makeLastWateredDateText(from: date)
+        case .setExistingImage(let image):
+            newState.existingImage = image
         case .setSaving(let isSaving):
             newState.isSaving = isSaving
         case .setSaveCompleted:
-            newState = State()
+            newState.isSaving = false
             newState.saveCompleted = true
         case .setDeleteCompleted:
             newState.isSaving = false
@@ -258,6 +277,28 @@ final class PlantRegisterReactor: Reactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(Mutation.setErrorMessage(error.localizedDescription))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func loadExistingImage(state: State) -> Observable<Mutation> {
+        guard case let .edit(plant) = state.mode else {
+            return .empty()
+        }
+
+        return Observable.create { [plantService] observer in
+            let task = Task {
+                do {
+                    let image = try await plantService.loadPlantImage(from: plant.imagePath)
+                    observer.onNext(.setExistingImage(image))
+                    observer.onCompleted()
+                } catch {
                     observer.onCompleted()
                 }
             }
@@ -406,6 +447,7 @@ final class PlantRegisterReactor: Reactor {
             state.selectedLocation = plant.location
             state.wateringIntervalText = "\(plant.wateringIntervalDays)"
             state.lastWateredDate = plant.lastWateredAt
+            state.lastWateredDateText = makeLastWateredDateText(from: plant.lastWateredAt)
         }
 
         state.isRegisterEnabled = isRegisterEnabled(for: state)
@@ -431,28 +473,40 @@ final class PlantRegisterReactor: Reactor {
 
     private static func suggestedWateringIntervalText(from springWaterCycle: String?) -> String {
         guard let springWaterCycle else { return "" }
+        let normalizedWaterCycle = springWaterCycle.components(separatedBy: .whitespacesAndNewlines).joined()
 
-        if springWaterCycle.contains("토양표면이 말랐을때 충분히 관수함")
-            || springWaterCycle.contains("토양 표면이 말랐을때 충분히 관수함") {
+        if normalizedWaterCycle.contains("토양표면이말랐을때충분히관수") {
             return "4"
         }
 
-        if springWaterCycle.contains("화분 흙 대부분 말랐을때 충분히 관수")
-            || springWaterCycle.contains("화분 흙 대부분 말랐을때 충분히 관수함") {
+        if normalizedWaterCycle.contains("화분흙대부분말랐을때충분히관수") {
             return "7"
         }
 
-        if springWaterCycle.contains("항상 흙을 촉촉하게 유지함(물에 잠김)")
-            || springWaterCycle.contains("항상 흙을 촉촉하게 유지함") {
+        if normalizedWaterCycle.contains("항상흙을촉촉하게유지함") {
             return "0"
         }
 
-        if springWaterCycle.contains("흙을 촉촉하게 유지함(물에 잠기지 않도록 주의)")
-            || springWaterCycle.contains("흙을 촉촉하게 유지함") {
+        if normalizedWaterCycle.contains("흙을촉촉하게유지함") {
             return "3"
         }
 
         return ""
+    }
+
+    private static func makeLastWateredDateText(from date: Date?) -> String {
+        guard let date else { return "" }
+        var calendar = lastWateredDateCalendar
+        calendar.timeZone = lastWateredDateTimeZone
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+
+        guard let year = components.year,
+              let month = components.month,
+              let day = components.day else {
+            return ""
+        }
+
+        return String(format: "%04d / %02d / %02d", year, month, day)
     }
 }
 

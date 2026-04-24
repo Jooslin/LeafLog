@@ -50,6 +50,16 @@ final class LoginView: UIView {
     }
     
     let appleLoginButton = ASAuthorizationAppleIDButton(authorizationButtonType: .signIn, authorizationButtonStyle: .black)
+
+    private let appleLoginCooldownLabel = UILabel(
+        text: "",
+        config: .label12,
+        color: .subRed,
+        lines: 0
+    ).then {
+        $0.textAlignment = .center
+        $0.isHidden = true
+    }
     
     let privacyLabel = UILabel(text: "시작하면 이용약관 및 개인정보처리방침에 동의하게 됩니다.", config: .label12, color: .grayScale800)
     
@@ -66,7 +76,15 @@ final class LoginView: UIView {
     
     // MARK: - UI Setup
     private func setupUI() {
-        [logoImageView, logoLabel, appleLoginButton, kakaoLoginButton, googleLoginButton, privacyLabel].forEach { addSubview($0) }
+        [
+            logoImageView,
+            logoLabel,
+            appleLoginButton,
+            appleLoginCooldownLabel,
+            kakaoLoginButton,
+            googleLoginButton,
+            privacyLabel
+        ].forEach { addSubview($0) }
         
         privacyLabel.snp.makeConstraints {
             $0.centerX.equalToSuperview()
@@ -85,11 +103,16 @@ final class LoginView: UIView {
             $0.horizontalEdges.equalTo(googleLoginButton)
             $0.bottom.equalTo(googleLoginButton.snp.top).offset(-16)
         }
+
+        appleLoginCooldownLabel.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview().inset(20)
+            $0.bottom.equalTo(kakaoLoginButton.snp.top).offset(-8)
+        }
         
         appleLoginButton.snp.makeConstraints {
             $0.centerX.height.equalTo(googleLoginButton)
             $0.horizontalEdges.equalToSuperview().inset(15)
-            $0.bottom.equalTo(kakaoLoginButton.snp.top).offset(-16)
+            $0.bottom.equalTo(appleLoginCooldownLabel.snp.top).offset(-8)
         }
         
         logoLabel.snp.makeConstraints {
@@ -103,5 +126,11 @@ final class LoginView: UIView {
             $0.centerX.equalToSuperview()
             $0.bottom.equalTo(logoLabel.snp.top).offset(-24)
         }
+    }
+
+    func setAppleLoginCooldownVisible(_ isVisible: Bool) {
+        appleLoginCooldownLabel.text = isVisible ? "Apple 계정 연결 해제 처리 중입니다. 잠시 후 다시 시도해주세요." : nil
+        appleLoginCooldownLabel.isHidden = !isVisible
+        appleLoginButton.alpha = isVisible ? 0.45 : 1
     }
 }

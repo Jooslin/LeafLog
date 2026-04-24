@@ -37,6 +37,7 @@ final class ProfileEditViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setKeyboardDismissGesture()
     }
 
 
@@ -79,6 +80,7 @@ final class ProfileEditViewController: BaseViewController, View {
     private func bindState(reactor: ProfileEditReactor) {
         reactor.state
             .map(\.profile)
+            .distinctUntilChanged(Self.isSameRenderedProfile)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] profile in
                 self?.renderProfile(profile)
@@ -97,6 +99,20 @@ final class ProfileEditViewController: BaseViewController, View {
 
         reactor.state
             .map(\.selectedImage)
+            .distinctUntilChanged { lhs, rhs in
+                switch (lhs, rhs) {
+                    // 둘다 nil일때
+                case (nil, nil):
+                    return true
+                    // 둘이 같을때
+                case let (lhs?, rhs?):
+                    return lhs === rhs
+                    // 그 외
+                default:
+                    return false
+                }
+            }
+            .skip(1)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] image in
                 self?.imageLoadTask?.cancel()
@@ -136,28 +152,42 @@ final class ProfileEditViewController: BaseViewController, View {
         profileEditView.providerValueLabel.text = providerName
         profileEditView.providerDescriptionLabel.text = profile.email ?? "\(providerName)로 로그인됨"
         profileEditView.providerIconImageView.image = providerIcon(from: profile.provider)
-        loadProfileImage(from: profile.profileImageURL)
+        loadProfileImage(
+            from: profile.profileImageURL,
+            updatedAt: profile.updatedAt
+        )
     }
 
-    private func loadProfileImage(from storedValue: String?) {
+    private func loadProfileImage(from storedValue: String?, updatedAt: Date?) {
         imageLoadTask?.cancel()
-        applyProfileImage(nil)
 
-        guard let storedValue, !storedValue.isEmpty else { return }
+        let normalizedValue = storedValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = makeImageCacheKey(
+            from: normalizedValue,
+            updatedAt: updatedAt
+        )
+        
+        guard let normalizedValue, !normalizedValue.isEmpty else {
+            profileEditView.setProfileImageURL(nil, cacheKey: nil)
+            return
+        }
 
         imageLoadTask = Task { [weak self] in
             guard let self else { return }
 
             do {
-                guard let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(from: storedValue) else {
-                    return
-                }
-
-                let (data, _) = try await URLSession.shared.data(from: resolvedURL)
-                guard !Task.isCancelled, let image = UIImage(data: data) else { return }
+                let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(
+                    from: normalizedValue,
+                    cacheKey: cacheKey
+                )
+                guard !Task.isCancelled else { return }
 
                 await MainActor.run {
-                    self.applyProfileImage(image)
+                    self.profileEditView.setProfileImageURL(
+                        resolvedURL,
+                        cacheKey: cacheKey
+                    )
                 }
             } catch {
                 // 실패 시 기본 이미지를 유지한다.
@@ -166,8 +196,36 @@ final class ProfileEditViewController: BaseViewController, View {
     }
 
     private func applyProfileImage(_ image: UIImage?) {
-        profileEditView.profileImageButton.backgroundImageView.image = image
-        profileEditView.profileImageButton.backgroundColor = image == nil ? .grayScale50 : .clear
+        profileEditView.setProfileImage(image)
+    }
+
+    private func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else {
+            return nil
+        }
+
+        guard let updatedAt else {
+            return path
+        }
+
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
+    }
+
+    nonisolated private static func isSameRenderedProfile(_ lhs: UserProfileModel?, _ rhs: UserProfileModel?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil):
+            return true
+
+        case let (lhs?, rhs?):
+            return lhs.id == rhs.id
+            && lhs.profileImageURL == rhs.profileImageURL
+            && lhs.updatedAt == rhs.updatedAt
+            && lhs.email == rhs.email
+            && lhs.provider == rhs.provider
+
+        default:
+            return false
+        }
     }
 
     private func setControlsEnabled(_ isEnabled: Bool) {

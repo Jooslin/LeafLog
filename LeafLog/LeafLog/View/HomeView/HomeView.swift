@@ -159,4 +159,8 @@ extension Reactive where Base: HomeView {
     var waterButtonTap: PublishRelay<UUID?> {
         base.waterButtonTap
     }
+  
+    var alarmButtonTap: ControlEvent<Void> {
+        base.titleView.rightButton.rx.tap
+    }
 }

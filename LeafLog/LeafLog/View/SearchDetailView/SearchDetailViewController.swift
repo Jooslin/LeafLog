@@ -39,13 +39,13 @@ final class SearchDetailViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        detailView.closeButtonTap
+        detailView.rx.closeButtonTap
             .bind(with: self) { owner, _ in
                 owner.steps.accept(AppStep.pageBack)
             }
             .disposed(by: disposeBag)
 
-        detailView.selectButtonTap
+        detailView.rx.selectButtonTap
             .map { SearchDetailReactor.Action.selectPlant }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)

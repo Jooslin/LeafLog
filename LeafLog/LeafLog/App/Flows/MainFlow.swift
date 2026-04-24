@@ -41,6 +41,9 @@ final class MainFlow: Flow {
             
         case .record(let plantID):
             return navigateToPlantRecord(plantID: plantID)
+          
+        case .alarmCenter:
+            return navigateToAlarmCenter()
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
@@ -120,5 +123,16 @@ extension MainFlow {
         let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
         navigate(to: viewController, animated: true)
         return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+    }
+  
+    private func navigateToAlarmCenter() -> FlowContributors {
+        let notificationCenterViewController = NotificationCenterViewController()
+        let reactor = NotificationCenterReactor()
+        notificationCenterViewController.reactor = reactor
+        
+        navigate(to: notificationCenterViewController, animated: true)
+        return .one(flowContributor: .contribute(
+            withNextPresentable: notificationCenterViewController,
+            withNextStepper: notificationCenterViewController))
     }
 }
