@@ -380,9 +380,6 @@ extension PlantCareView {
         snapshot.appendItems([.diary(diaryItem)], toSection: .diary)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.performBatchUpdates({
-                self?.collectionView.collectionViewLayout.invalidateLayout()
-            })
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -401,7 +398,6 @@ extension PlantCareView {
         snapshot.appendItems(timelineItems.isEmpty ? [.timelineEmpty] : timelineItems, toSection: .timelineRecord)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -413,7 +409,6 @@ extension PlantCareView {
         snapshot.appendItems(item.rows.isEmpty ? [.plantInfoEmpty] : [.plantInfo(item)], toSection: .plantInfo)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -643,9 +638,6 @@ private extension PlantCareView {
             )
             cell.onGuideEnabledChanged = { [weak self] isEnabled in
                 self?.onGuideEnabledChanged?(isEnabled)
-                self?.collectionView.performBatchUpdates({
-                    self?.collectionView.collectionViewLayout.invalidateLayout()
-                })
             }
         }
 

@@ -111,8 +111,6 @@ final class PlantDetailCell: UICollectionViewCell {
 
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         let fittingAttributes = super.preferredLayoutAttributesFitting(layoutAttributes)
-        setNeedsLayout()
-        layoutIfNeeded()
 
         let targetSize = CGSize(
             width: layoutAttributes.size.width,
