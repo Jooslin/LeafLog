@@ -59,11 +59,11 @@ final class PlantCareView: UIView {
         $0.selectedSegmentTintColor = .primary600
         $0.setTitleTextAttributes([
             .foregroundColor: UIColor.grayScale400,
-            .font: UIFont.systemFont(ofSize: 16, weight: .medium)
+            .font: UIFont.systemFont(ofSize: 14, weight: .medium)
         ], for: .normal)
         $0.setTitleTextAttributes([
             .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
         ], for: .selected)
     }
 
