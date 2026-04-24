@@ -7,10 +7,12 @@
 
 import UserNotifications
 import Dependencies
+import OSLog
 
 final class NotificationManager {
     @Dependency(\.supabaseManager)private var supabaseManager
     let center = UNUserNotificationCenter.current()
+    private let logger = Logger.init(subsystem: "LeafLog", category: "NotificationManager")
     
     // 앱 알림 권한 요청 함수
     func requestNotificationAuthorization() {
@@ -19,10 +21,17 @@ final class NotificationManager {
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         
         center.requestAuthorization(options: authOptions) { [weak self] granted, error in
-            //TODO: 에러 처리 함수 필요
+            if let error {
+                self?.logger.error("알림 권한 요청 시 오류 발생: \(error.localizedDescription, privacy: .private)")
+                return
+            }
             
-            // 앱 알림 권한 요청 결과에 따라 supabase에 알림 허용 여부 업데이트
-            self?.updateIsNotificationEnabled()
+            // 알림 권한 허용 여부에 따라 저장
+            if granted {
+                self?.updateIsNotificationEnabled(to: true)
+            } else {
+                self?.updateIsNotificationEnabled(to: false)
+            }
         }
     }
     
@@ -38,11 +47,50 @@ final class NotificationManager {
         }
     }
     
-    //TODO: 마이페이지 알림 허용 여부와 비교하여 업데이트하는 로직 필요
-    func updateIsNotificationEnabled() {
-        Task {
-            let isEnabled = await checkNotificationEnabled()
-            try await supabaseManager.updateIsNotificationEnabled(isEnabled)
+    // 알림 허용 여부 업데이트
+    func updateIsNotificationEnabled(to isEnabled: Bool?) {
+        Task { [weak self] in
+            guard let self else { return }
+            
+            var target: Bool = false
+            
+            if let isEnabled {
+                target = isEnabled
+            } else {
+                target = await self.checkNotificationEnabled()
+            }
+            
+            let isChanged = updateUserDefaultsIsNotificationEnabled(to: target)
+            
+            guard isChanged else { return } // UserDefaults가 업데이트 되었을 경우에만 DB 업데이트
+            
+            do {
+                try await supabaseManager.updateIsNotificationEnabled(target)
+            } catch {
+                self.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
+                return
+            }
+        }
+    }
+
+    private func updateUserDefaultsIsNotificationEnabled(to isEnabled: Bool) -> Bool {
+        let userDefaults = UserDefaults.standard
+        let key = "isNotificationEnabled"
+        
+        // 저장된 값이 없을 경우 값 저장 후 리턴
+        if userDefaults.object(forKey: key) == nil {
+            UserDefaults.standard.set(isEnabled, forKey: key)
+            return true
+        }
+        
+        let current = UserDefaults.standard.bool(forKey: key)
+        
+        // 현재 값이 저장된 값과 다를 경우에만 업데이트
+        if current != isEnabled {
+            UserDefaults.standard.set(isEnabled, forKey: key)
+            return true
+        } else {
+            return false
         }
     }
 }
