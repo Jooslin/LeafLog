@@ -35,7 +35,7 @@ extension SupabaseManager {
         static let profileImages = "profile-images"
         static let plantImages = "plant-images"
     }
-
+    
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -47,7 +47,7 @@ extension SupabaseManager {
             conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요.")
         )
     }
-
+    
     // 식물 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadPlantImage(_ image: UIImage, userID: UUID, plantID: UUID) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -60,7 +60,7 @@ extension SupabaseManager {
             conversionError: .plantFailed("식물 이미지를 변환하지 못했어요.")
         )
     }
-
+    
     // 일기 사진을 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadDiaryImage(_ image: UIImage, userID: UUID, plantID: UUID, recordDate: LocalDate) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -73,22 +73,22 @@ extension SupabaseManager {
             conversionError: .careFailed("일기 사진을 변환하지 못했어요.")
         )
     }
-
+    
     // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
     // private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용
     func resolveProfileImageURL(from storedValue: String?) async throws -> URL? {
         try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.profileImages)
     }
-
+    
     // DB에 저장된 식물 이미지 값을 실제 접근 가능한 URL로 변환
     func resolvePlantImageURL(from storedValue: String?) async throws -> URL? {
         try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
     }
-
+    
     func resolveDiaryImageURL(from storedValue: String?) async throws -> URL? {
         try await resolveStoredImageURL(from: storedValue, bucket: StorageBucket.plantImages)
     }
-
+    
     private func uploadImage(
         _ image: UIImage,
         bucket: String,
@@ -98,7 +98,7 @@ extension SupabaseManager {
         guard let fileData = image.jpegData(compressionQuality: 0.8) else {
             throw conversionError
         }
-
+        
         _ = try await client.storage
             .from(bucket)
             .upload(
@@ -110,19 +110,19 @@ extension SupabaseManager {
                     upsert: true
                 )
             )
-
+        
         return objectPath
     }
-
+    
     private func resolveStoredImageURL(from storedValue: String?, bucket: String) async throws -> URL? {
         guard let storedValue, !storedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
-
+        
         if let directURL = URL(string: storedValue), directURL.scheme != nil {
             return directURL
         }
-
+        
         return try await client.storage
             .from(bucket)
             .createSignedURL(path: storedValue, expiresIn: 60 * 60)
@@ -134,21 +134,21 @@ extension SupabaseManager {
             .from(StorageBucket.plantImages)
             .remove(paths: [path])
     }
-
+    
     // Storage에서 프로필 이미지 삭제
     func deleteProfileImage(path: String) async throws {
         try await client.storage
             .from(StorageBucket.profileImages)
             .remove(paths: [path])
     }
-
+    
     // Storage에서 일기 사진 삭제
     func deleteDiaryImage(path: String) async throws {
         try await client.storage
             .from(StorageBucket.plantImages)
             .remove(paths: [path])
     }
-
+    
     //TODO: ProfileDBManager 병합 시 이관 필요
     // 유저 fcm 토큰 업데이트
     func updateFCMToken(_ validToken: String) {
@@ -176,17 +176,15 @@ extension SupabaseManager {
     
     // 유저 알림 허용 여부 업데이트
     func updateIsNotificationEnabled(_ isEnabled: Bool) async throws {
-        Task {
-            // 현재 로그인된 유저의 정보(세션)를 가져옴
-            guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
-            
-            // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
-            try await client
-                .from("profiles")
-                .update(["is_notification_enabled": isEnabled])
-                .eq("id", value: currentUserId)
-                .execute()
-        }
+        // 현재 로그인된 유저의 정보(세션)를 가져옴
+        guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
+        
+        // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
+        try await client
+            .from("profiles")
+            .update(["is_notification_enabled": isEnabled])
+            .eq("id", value: currentUserId)
+            .execute()
     }
 }
 

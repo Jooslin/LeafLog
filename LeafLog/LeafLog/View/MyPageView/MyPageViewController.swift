@@ -92,6 +92,7 @@ final class MyPageViewController: BaseViewController, View {
         
         // 푸시 알림 허용 버튼
         myPageView.pushAlertSwitch.rx.isOn
+            .skip(1) // 초기 방출값 무시
             .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)

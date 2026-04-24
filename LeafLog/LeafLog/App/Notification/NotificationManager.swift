@@ -72,7 +72,7 @@ final class NotificationManager {
             }
         }
     }
-
+    
     private func updateUserDefaultsIsNotificationEnabled(to isEnabled: Bool) -> Bool {
         let userDefaults = UserDefaults.standard
         let key = "isNotificationEnabled"
