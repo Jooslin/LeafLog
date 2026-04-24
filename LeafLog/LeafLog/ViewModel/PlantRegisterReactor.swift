@@ -522,11 +522,11 @@ extension PlantRegisterReactor {
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
                 } catch let error as PlantClassificationService.ClassificationError {
-                    self?.logger.error("PlantClassificationError: \(error.localizedDescription)")
+                    self.logger.error("PlantClassificationError: \(error.localizedDescription)")
                     observer.onNext(.analyzeResult([:]))
                     observer.onCompleted()
                 } catch {
-                    self?.logger.error("알 수 없는 에러: \(error.localizedDescription)")
+                    self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
                     observer.onNext(.analyzeResult([:]))
                     observer.onCompleted()
                 }
