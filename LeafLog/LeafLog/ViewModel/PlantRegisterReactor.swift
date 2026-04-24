@@ -9,12 +9,14 @@ import Foundation
 import ReactorKit
 import RxSwift
 import UIKit
+import OSLog
 
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
     private static let lastWateredDateCalendar = Calendar(identifier: .gregorian)
     private static let lastWateredDateTimeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+    private let logger = Logger(subsystem: "LeafLog", category: "PlantRegisterReactor")
 
     enum Mode: Equatable {
         case create(SelectedPlant?)
@@ -519,8 +521,12 @@ extension PlantRegisterReactor {
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
+                } catch let error as PlantClassificationService.ClassificationError {
+                    self?.logger.error("PlantClassificationError: \(error.localizedDescription)")
+                    observer.onNext(.analyzeResult([:]))
+                    observer.onCompleted()
                 } catch {
-                    print(error)
+                    self?.logger.error("알 수 없는 에러: \(error.localizedDescription)")
                     observer.onNext(.analyzeResult([:]))
                     observer.onCompleted()
                 }
