@@ -15,15 +15,17 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" insetsLayoutMarginsFromSafeArea="NO" image="launch_logo" translatesAutoresizingMaskIntoConstraints="NO" id="yNi-4V-zK5">
-                                <rect key="frame" x="64" y="265" width="265" height="182"/>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" insetsLayoutMarginsFromSafeArea="NO" image="launchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="yNi-4V-zK5">
+                                <rect key="frame" x="72.666666666666686" y="264.66666666666652" width="248" height="183.00000000000023"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="183" id="PdW-9x-l47"/>
+                                    <constraint firstAttribute="width" constant="248" id="j9K-LF-VdB"/>
+                                </constraints>
                             </imageView>
                         </subviews>
                         <constraints>
-                            <constraint firstItem="yNi-4V-zK5" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" constant="265" id="c1"/>
-                            <constraint firstItem="Ze5-6b-2t3" firstAttribute="bottom" secondItem="yNi-4V-zK5" secondAttribute="bottom" constant="405" id="c2"/>
-                            <constraint firstItem="yNi-4V-zK5" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" constant="64" id="c3"/>
-                            <constraint firstItem="Ze5-6b-2t3" firstAttribute="trailing" secondItem="yNi-4V-zK5" secondAttribute="trailing" constant="64" id="c4"/>
+                            <constraint firstItem="yNi-4V-zK5" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Uha-LH-15v"/>
+                            <constraint firstItem="yNi-4V-zK5" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-70" id="kcc-eO-6Wq"/>
                         </constraints>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
@@ -34,6 +36,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="launch_logo" width="249" height="184"/>
+        <image name="launchLogo" width="249" height="184"/>
     </resources>
 </document>
