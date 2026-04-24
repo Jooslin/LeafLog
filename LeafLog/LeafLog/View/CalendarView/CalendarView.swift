@@ -13,7 +13,7 @@ import RxCocoa
 
 final class CalendarView: UIView {
     //MARK: properties
-    fileprivate let collectionView = CalendarCollectionView()
+    fileprivate lazy var collectionView = CalendarCollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout())
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
@@ -235,6 +235,137 @@ extension CalendarView {
         let badge: Badge
     }
 }
+
+//MARK: CollectionView - Layout
+extension CalendarView {
+    private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
+        let configuration = UICollectionViewCompositionalLayoutConfiguration()
+        configuration.contentInsetsReference = .layoutMargins
+        
+        let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, environment in
+            guard let section = self?.dataSource.sectionIdentifier(for: sectionIndex) else { return nil }
+            
+            let calendarHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(50)
+                ),
+                elementKind: "headerKind",
+                alignment: .top
+            )
+            
+            let detailHeaderItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(48)
+                ),
+                elementKind: "headerKind",
+                alignment: .top
+            )
+  
+            let calendarBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "calendarBackground")
+            
+            let detailBackgroundItem = NSCollectionLayoutDecorationItem.background(elementKind: "detailBackground")
+            detailBackgroundItem.contentInsets = .init(top: 0, leading: 0, bottom: 24, trailing: 0)
+            
+            switch section {
+            case .title, .header:
+                let section = self?.singleItemSectionLayout()
+                return section
+                
+            case .filter:
+                let section = self?.singleItemSectionLayout(height: 88)
+                return section
+                
+            case .calendar:
+                let section = self?.calendarSectionLayout(environment)
+                section?.boundarySupplementaryItems = [calendarHeaderItem]
+                section?.decorationItems = [calendarBackgroundItem]
+                section?.contentInsets = .init(top: 0, leading: 24, bottom: 24, trailing: 24)
+                
+                return section
+                
+            case .label:
+                let section = self?.singleItemSectionLayout(height: 64)
+                return section
+                
+            case .water, .grow, .sprout, .treat:
+                let section = self?.detailSectionLayout()
+                section?.boundarySupplementaryItems = [detailHeaderItem]
+                section?.decorationItems = [detailBackgroundItem]
+                section?.contentInsets = .init(top: 0, leading: 0, bottom: 24, trailing: 0)
+                
+                return section
+            }
+            
+        }, configuration: configuration)
+        
+        layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "calendarBackground")
+        layout.register(CalendarBackgroundView.self, forDecorationViewOfKind: "detailBackground")
+        return layout
+    }
+    
+    private func singleItemSectionLayout(height: CGFloat = 48) -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(height)
+            ))
+        
+        let group = NSCollectionLayoutGroup.vertical(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(height)),
+            subitems: [item]
+        )
+        
+        let section = NSCollectionLayoutSection(group: group)
+        return section
+    }
+    
+    private func calendarSectionLayout(_ environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        let width = environment.container.effectiveContentSize.width - 48
+        let itemWidth = width / 7
+        
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .absolute(itemWidth),
+                heightDimension: .absolute(itemWidth * 1.7))
+        )
+        
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(itemWidth * 1.7)
+            ),
+            repeatingSubitem: item,
+            count: 7
+        )
+        
+        let section = NSCollectionLayoutSection(group: group)
+        
+        return section
+    }
+    
+    private func detailSectionLayout() -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(45))
+            )
+        
+        let group = NSCollectionLayoutGroup.vertical(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(45)),
+            subitems: [item])
+        
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+        return section
+    }
+}
+
 
 extension Reactive where Base: CalendarView {
     var headerPreviousButtonTap: PublishRelay<Void> {
