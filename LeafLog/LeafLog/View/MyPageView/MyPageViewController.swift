@@ -181,7 +181,10 @@ final class MyPageViewController: BaseViewController, View {
             guard let self else { return }
             
             do {
-                let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(from: normalizedValue)
+                let resolvedURL = try await self.supabaseManager.resolveProfileImageURL(
+                    from: normalizedValue,
+                    cacheKey: cacheKey
+                )
                 guard !Task.isCancelled else { return }
 
                 await MainActor.run {

@@ -340,7 +340,10 @@ private extension PlantCareViewController {
             }
 
             do {
-                let resolvedURL = try await self.supabaseManager.resolvePlantImageURL(from: normalizedValue)
+                let resolvedURL = try await self.supabaseManager.resolvePlantImageURL(
+                    from: normalizedValue,
+                    cacheKey: cacheKey
+                )
                 guard !Task.isCancelled else { return }
 
                 await MainActor.run {
