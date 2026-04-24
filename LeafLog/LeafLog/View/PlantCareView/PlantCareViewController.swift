@@ -11,15 +11,14 @@ import ReactorKit
 import RxCocoa
 import RxSwift
 import UIKit
+import RxKeyboard
 
 final class PlantCareViewController: BaseViewController, View {
     @Dependency(\.supabaseManager) private var supabaseManager
 
     private let plantCareView = PlantCareView()
     private var imageLoadTask: Task<Void, Never>?
-    private var diaryImageLoadTask: Task<Void, Never>?
     private weak var diaryPhotoPickerSourceView: UIView?
-    private var didPrepareHeaderAnimator = false
 
     init(reactor: PlantCareReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -36,17 +35,14 @@ final class PlantCareViewController: BaseViewController, View {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setKeyboardDismissGesture() // 키보드 내리기
+        bindKeyboard() // 키보드 텍스트 필드 위치 조정
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        guard !didPrepareHeaderAnimator else {
-            return
-        }
-
-        didPrepareHeaderAnimator = true
-        plantCareView.prepareHeaderAnimator()
+        plantCareView.syncHeaderAnimationWithCurrentOffset()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -54,13 +50,60 @@ final class PlantCareViewController: BaseViewController, View {
 
         if isMovingFromParent || isBeingDismissed {
             imageLoadTask?.cancel()
-            diaryImageLoadTask?.cancel()
         }
     }
 
     func bind(reactor: PlantCareReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
+    }
+    
+    // 키보드 위로 텍스트 필드 올라오는 메서드
+    func bindKeyboard() {
+        RxKeyboard.instance.visibleHeight
+            .drive(onNext: { [weak self] keyboardHeight in
+                guard let self else { return }
+
+                let bottomInset: CGFloat = keyboardHeight > 0 ? keyboardHeight + 32 : 32
+
+                self.plantCareView.collectionView.contentInset.bottom = bottomInset
+                self.plantCareView.collectionView.verticalScrollIndicatorInsets.bottom = bottomInset
+
+                if keyboardHeight > 0 {
+                    self.scrollToCurrentResponderIfNeeded()
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // 텍스트필드까지 화면 끌어올리기
+    private func scrollToCurrentResponderIfNeeded() {
+        guard let responder = view.currentFirstResponder, // 지금 타자치고있는 필드
+              responder.isDescendant(of: plantCareView.collectionView) else {
+            return
+        }
+
+        let responderFrame = responder.convert(responder.bounds, to: plantCareView.collectionView)
+        let visibleRect = responderFrame.insetBy(dx: 0, dy: -16)
+        // 스크롤 올리기
+        plantCareView.collectionView.scrollRectToVisible(visibleRect, animated: true)
+    }
+}
+
+// 키보드를 띄우게 한 뷰 찾기
+private extension UIView {
+    var currentFirstResponder: UIView? {
+        if isFirstResponder {
+            return self
+        }
+
+        for subview in subviews {
+            if let responder = subview.currentFirstResponder {
+                return responder
+            }
+        }
+
+        return nil
     }
 }
 
@@ -97,6 +140,10 @@ private extension PlantCareViewController {
         plantCareView.segmentedControl.rx.selectedSegmentIndex
             .skip(1)
             .compactMap { PlantCareTab(rawValue: $0) }
+            .do(onNext: { [weak self] _ in
+                // 탭 바뀔때마다 스크롤 맨위로 리셋
+                self?.plantCareView.resetHeaderScrollPosition()
+            })
             .map(PlantCareReactor.Action.changeTab)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
@@ -166,7 +213,11 @@ private extension PlantCareViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] plant in
                 self?.plantCareView.configure(plant: plant)
-                self?.loadPlantImage(from: plant.imagePath)
+                self?.loadPlantImage(
+                    from: plant.imagePath,
+                    fallbackImage: UIImage(named: plant.defaultImageAssetName),
+                    updatedAt: plant.updatedAt
+                )
             })
             .disposed(by: disposeBag)
 
@@ -207,7 +258,6 @@ private extension PlantCareViewController {
                         items: snapshot.items,
                         diaryItem: snapshot.diaryItem
                     )
-                    loadDiaryImage(from: snapshot.diaryItem.diaryPhotoPath)
                     
                 case .plantInfo:
                     plantCareView.setPlantInfoSnapshot(item: snapshot.plantInfoItem)
@@ -228,6 +278,14 @@ private extension PlantCareViewController {
                 self?.steps.accept(AppStep.alert("오류", message))
             })
             .disposed(by: disposeBag)
+
+        reactor.pulse(\.$successMessage)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] message in
+                self?.steps.accept(AppStep.alert("알림", message))
+            })
+            .disposed(by: disposeBag)
     }
 }
 
@@ -243,16 +301,13 @@ private extension PlantCareViewController {
     }
 
     static func visibleTimelineEvents(from state: PlantCareReactor.State) -> [PlantCareTimelineEvent] {
-        let filteredEvents: [PlantCareTimelineEvent]
-        if let selectedType = state.timelineFilter.recordType {
-            filteredEvents = state.timelineEvents.filter { $0.type == selectedType }
-        } else {
-            filteredEvents = state.timelineEvents
+        let filteredEvents = state.timelineEvents.filter {
+            state.timelineFilter.matches($0)
         }
 
         return filteredEvents.sorted { lhs, rhs in
             if lhs.date == rhs.date {
-                return lhs.type.rawValue < rhs.type.rawValue
+                return lhs.kind.sortOrder < rhs.kind.sortOrder
             }
 
             switch state.timelineSort {
@@ -264,10 +319,18 @@ private extension PlantCareViewController {
         }
     }
 
-    func loadPlantImage(from storedValue: String?) {
+    func loadPlantImage(from storedValue: String?, fallbackImage: UIImage?, updatedAt: Date?) {
         imageLoadTask?.cancel()
 
-        guard let storedValue, !storedValue.isEmpty else {
+        let normalizedValue = storedValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = makeImageCacheKey(
+            from: normalizedValue,
+            updatedAt: updatedAt
+        )
+
+        guard let normalizedValue, !normalizedValue.isEmpty else {
+            plantCareView.setPlantImageURL(nil, cacheKey: nil, fallbackImage: fallbackImage)
             return
         }
 
@@ -277,54 +340,43 @@ private extension PlantCareViewController {
             }
 
             do {
-                guard let url = try await self.supabaseManager.resolvePlantImageURL(from: storedValue) else {
-                    return
-                }
+                let resolvedURL = try await self.supabaseManager.resolvePlantImageURL(
+                    from: normalizedValue,
+                    cacheKey: cacheKey
+                )
+                guard !Task.isCancelled else { return }
 
-                let (data, _) = try await URLSession.shared.data(from: url)
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    return
+                await MainActor.run {
+                    self.plantCareView.setPlantImageURL(
+                        resolvedURL,
+                        cacheKey: cacheKey,
+                        fallbackImage: fallbackImage
+                    )
                 }
-
-                self.plantCareView.setPlantImage(image)
             } catch {
-                // 이미지 로딩 실패 시 카테고리 기본 이미지를 그대로 보여준다.
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.plantCareView.setPlantImageURL(
+                        nil,
+                        cacheKey: nil,
+                        fallbackImage: fallbackImage
+                    )
+                }
             }
         }
     }
 
-    func loadDiaryImage(from storedValue: String?) {
-        diaryImageLoadTask?.cancel()
-
-        guard let storedValue, !storedValue.isEmpty else {
-            plantCareView.setDiaryPhotoImage(nil)
-            return
+    private func makeImageCacheKey(from path: String?, updatedAt: Date?) -> String? {
+        guard let path, !path.isEmpty else {
+            return nil
         }
 
-        diaryImageLoadTask = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            do {
-                guard let url = try await self.supabaseManager.resolveDiaryImageURL(from: storedValue) else {
-                    return
-                }
-
-                let (data, _) = try await URLSession.shared.data(from: url)
-                guard !Task.isCancelled, let image = UIImage(data: data) else {
-                    return
-                }
-
-                await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImage(image)
-                }
-            } catch {
-                await MainActor.run {
-                    self.plantCareView.setDiaryPhotoImage(nil)
-                }
-            }
+        guard let updatedAt else {
+            return path
         }
+
+        return "\(path)?updatedAt=\(updatedAt.timeIntervalSince1970)"
     }
 }
 

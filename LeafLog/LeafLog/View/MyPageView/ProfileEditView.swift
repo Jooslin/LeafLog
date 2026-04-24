@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 import SnapKit
 import Then
 
@@ -157,5 +158,49 @@ final class ProfileEditView: UIView {
             $0.centerY.equalToSuperview()
             $0.trailing.equalToSuperview().inset(16)
         }
+    }
+}
+
+// MARK: - Image
+extension ProfileEditView {
+    func setProfileImageURL(_ profileImageURL: URL?, cacheKey: String?) {
+        let backgroundImageView = profileImageButton.backgroundImageView
+        backgroundImageView.kf.cancelDownloadTask()
+
+        guard let cacheKey, !cacheKey.isEmpty,
+              let profileImageURL else {
+            backgroundImageView.image = nil
+            profileImageButton.backgroundColor = .grayScale50
+            return
+        }
+
+        let imageResource = KF.ImageResource(
+            downloadURL: profileImageURL,
+            cacheKey: cacheKey
+        )
+
+        backgroundImageView.kf.setImage(
+            with: imageResource,
+            placeholder: nil,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        ) { [weak self] result in
+            switch result {
+            case .success:
+                self?.profileImageButton.backgroundColor = .clear
+
+            case .failure:
+                self?.profileImageButton.backgroundImageView.image = nil
+                self?.profileImageButton.backgroundColor = .grayScale50
+            }
+        }
+    }
+
+    func setProfileImage(_ image: UIImage?) {
+        profileImageButton.backgroundImageView.kf.cancelDownloadTask()
+        profileImageButton.backgroundImageView.image = image
+        profileImageButton.backgroundColor = image == nil ? .grayScale50 : .clear
     }
 }
