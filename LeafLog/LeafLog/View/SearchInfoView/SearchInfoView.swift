@@ -70,7 +70,7 @@ final class SearchInfoView: UIView {
                     SearchInfoImageRowView(image: "plantCategoryShrub", title: "관목형", description: "풍성하게 퍼져요"),
                     SearchInfoImageRowView(image: "plantCategoryVine", title: "덩굴성", description: "길게 늘어져요"),
                     SearchInfoImageRowView(image: "plantCategoryGrass", title: "풀모양", description: "가늘게 자라요"),
-                    SearchInfoImageRowView(image: "plantCategoryRossette", title: "로제트형", description: "납작하고 동그랗게 퍼져요"),
+                    SearchInfoImageRowView(image: "plantCategoryRosette", title: "로제트형", description: "납작하고 동그랗게 퍼져요"),
                     SearchInfoImageRowView(image: "plantCategorySucculent", title: "다육형", description: "통통하게 자라요")
                 ]
             )
