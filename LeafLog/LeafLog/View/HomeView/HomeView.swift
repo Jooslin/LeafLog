@@ -16,7 +16,7 @@ final class HomeView: UIView {
     let collectionView = PlantCollectionView()
     private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
-    private let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
+    let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
     let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
     

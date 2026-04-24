@@ -119,6 +119,8 @@ extension HomeViewController {
                     }
                 }
             })
+            .disposed(by: disposeBag)
+    }
       
     private func bindAlarmButton() {
         homeView.rx.alarmButtonTap
