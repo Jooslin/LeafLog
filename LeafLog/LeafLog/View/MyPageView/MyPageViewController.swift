@@ -98,7 +98,7 @@ final class MyPageViewController: BaseViewController, View {
             .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
             .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
             .bind(to: reactor.action)
-            .disposed(by: disposeBag
+            .disposed(by: disposeBag)
 
         // 개인정보처리방침
         myPageView.privacyPolicyButton.rx.tap
