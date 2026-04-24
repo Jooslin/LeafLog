@@ -14,6 +14,7 @@ import Dependencies
 final class LoginReactor: Reactor {
     
     @Dependency(\.authService) private var authService
+    @Dependency(\.fcmManager) private var fcmManager
     
     enum Action {
         case appleLoginTapped(UIViewController)
@@ -74,11 +75,12 @@ final class LoginReactor: Reactor {
     }
     
     private func loginFlow(_ login: @escaping () async throws -> Supabase.User) -> Observable<Mutation> {
-        return Observable.create { observer in
+        return Observable.create { [weak self] observer in
             observer.onNext(.setLoading(true))
             let task = Task {
                 do {
                     _ = try await login()
+                    self?.fcmManager.syncCurrentFCMTokenIfPossible()
                     observer.onNext(.setLoginSuccess)
                     observer.onCompleted()
                 } catch let error as AuthError {
