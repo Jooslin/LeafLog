@@ -8,11 +8,13 @@
 import UserNotifications
 import Dependencies
 import OSLog
+import Supabase
 
 final class NotificationManager {
     @Dependency(\.supabaseManager)private var supabaseManager
     let center = UNUserNotificationCenter.current()
     private let logger = Logger.init(subsystem: "LeafLog", category: "NotificationManager")
+    private let userDefaultsBaseKey = "isNotificationEnabled"
     
     // 앱 알림 권한 요청 함수
     func requestNotificationAuthorization() {
@@ -52,6 +54,8 @@ final class NotificationManager {
         Task { [weak self] in
             guard let self else { return }
             
+            guard let userId = self.supabaseManager.client.auth.currentUser?.id else { return }
+            
             var target: Bool = false
             
             if let isEnabled {
@@ -60,12 +64,12 @@ final class NotificationManager {
                 target = await self.checkNotificationEnabled()
             }
             
-            let isChanged = updateUserDefaultsIsNotificationEnabled(to: target)
-            
-            guard isChanged else { return } // UserDefaults가 업데이트 되었을 경우에만 DB 업데이트
+            let willUpdate = checkUserDefaultsWouldUpdate(to: target, user: userId)
+            guard willUpdate else { return } // UserDefaults가 업데이트될 경우
             
             do {
-                try await supabaseManager.updateIsNotificationEnabled(target)
+                try await supabaseManager.updateIsNotificationEnabled(target) // DB 업데이트
+                updateUserDefaultsIsNotificationEnabled(to: target, user: userId) // UserDefaults 업데이트
             } catch {
                 self.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
                 return
@@ -73,25 +77,26 @@ final class NotificationManager {
         }
     }
     
-    private func updateUserDefaultsIsNotificationEnabled(to isEnabled: Bool) -> Bool {
+    // UserDefaults 업데이트 여부
+    private func checkUserDefaultsWouldUpdate(to isEnabled: Bool, user: UUID) -> Bool {
         let userDefaults = UserDefaults.standard
-        let key = "isNotificationEnabled"
-        
-        // 저장된 값이 없을 경우 값 저장 후 리턴
+        let key = userDefaultsBaseKey + user.uuidString
+        // 기존에 저장된 값이 없을 경우
         if userDefaults.object(forKey: key) == nil {
-            UserDefaults.standard.set(isEnabled, forKey: key)
             return true
         }
         
-        let current = UserDefaults.standard.bool(forKey: key)
+        let current = userDefaults.bool(forKey: key)
         
-        // 현재 값이 저장된 값과 다를 경우에만 업데이트
-        if current != isEnabled {
-            UserDefaults.standard.set(isEnabled, forKey: key)
-            return true
-        } else {
-            return false
-        }
+        return current != isEnabled
+    }
+    
+    // UserDefaults 업데이트
+    private func updateUserDefaultsIsNotificationEnabled(to isEnabled: Bool, user: UUID) {
+        let userDefaults = UserDefaults.standard
+        let key = userDefaultsBaseKey + user.uuidString
+        
+        userDefaults.set(isEnabled, forKey: key)
     }
 }
 
