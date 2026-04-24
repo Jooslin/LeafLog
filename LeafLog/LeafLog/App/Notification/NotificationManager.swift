@@ -29,10 +29,16 @@ final class NotificationManager {
             }
             
             // 알림 권한 허용 여부에 따라 저장
-            if granted {
-                self?.updateIsNotificationEnabled(to: true)
-            } else {
-                self?.updateIsNotificationEnabled(to: false)
+            Task {
+                do {
+                    if granted {
+                        try await self?.updateIsNotificationEnabled(to: true)
+                    } else {
+                        try await self?.updateIsNotificationEnabled(to: false)
+                    }
+                } catch {
+                    self?.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
+                }
             }
         }
     }
@@ -50,31 +56,22 @@ final class NotificationManager {
     }
     
     // 알림 허용 여부 업데이트
-    func updateIsNotificationEnabled(to isEnabled: Bool?) {
-        Task { [weak self] in
-            guard let self else { return }
-            
-            guard let userId = self.supabaseManager.client.auth.currentUser?.id else { return }
-            
-            var target: Bool = false
-            
-            if let isEnabled {
-                target = isEnabled
-            } else {
-                target = await self.checkNotificationEnabled()
-            }
-            
-            let willUpdate = checkUserDefaultsWouldUpdate(to: target, user: userId)
-            guard willUpdate else { return } // UserDefaults가 업데이트될 경우
-            
-            do {
-                try await supabaseManager.updateIsNotificationEnabled(target) // DB 업데이트
-                updateUserDefaultsIsNotificationEnabled(to: target, user: userId) // UserDefaults 업데이트
-            } catch {
-                self.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
-                return
-            }
+    func updateIsNotificationEnabled(to isEnabled: Bool?) async throws {
+        guard let userId = self.supabaseManager.client.auth.currentUser?.id else { return }
+        
+        var target: Bool = false
+        
+        if let isEnabled {
+            target = isEnabled
+        } else {
+            target = await self.checkNotificationEnabled()
         }
+        
+        let willUpdate = checkUserDefaultsWouldUpdate(to: target, user: userId)
+        guard willUpdate else { return } // UserDefaults가 업데이트될 경우
+        
+        try await supabaseManager.updateIsNotificationEnabled(target) // DB 업데이트
+        updateUserDefaultsIsNotificationEnabled(to: target, user: userId) // UserDefaults 업데이트
     }
     
     // UserDefaults 업데이트 여부

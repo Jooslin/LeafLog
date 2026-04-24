@@ -179,11 +179,17 @@ final class MyPageReactor: Reactor {
     private func updateNotificationAllowance(isOn: Bool) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task {
-                self?.notificationManager.updateIsNotificationEnabled(to: isOn)
-                self?.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
-                
-                observer.onNext(.setPushAlert(isOn))
-                observer.onCompleted()
+                do {
+                    try await self?.notificationManager.updateIsNotificationEnabled(to: isOn)
+                    self?.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
+                    
+                    observer.onNext(.setPushAlert(isOn))
+                    observer.onCompleted()
+                } catch {
+                    self?.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
+                    observer.onNext(.setErrorMessage("알림 허용 여부를 저장하지 못했어요. 잠시 후 다시 시도해주세요."))
+                    observer.onCompleted()
+                }
             }
             return Disposables.create {
                 task.cancel()
