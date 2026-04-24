@@ -15,8 +15,6 @@ final class PlantCareView: UIView {
     fileprivate enum Metric {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
-        static let diaryEstimatedHeight: CGFloat = 100
-        static let timelineEstimatedHeight: CGFloat = 100
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
@@ -382,7 +380,6 @@ extension PlantCareView {
         snapshot.appendItems([.diary(diaryItem)], toSection: .diary)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -401,7 +398,6 @@ extension PlantCareView {
         snapshot.appendItems(timelineItems.isEmpty ? [.timelineEmpty] : timelineItems, toSection: .timelineRecord)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -413,7 +409,6 @@ extension PlantCareView {
         snapshot.appendItems(item.rows.isEmpty ? [.plantInfoEmpty] : [.plantInfo(item)], toSection: .plantInfo)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
-            self?.collectionView.collectionViewLayout.invalidateLayout()
             self?.syncHeaderAnimationWithCurrentOffset()
         }
     }
@@ -492,7 +487,7 @@ private extension PlantCareView {
                     case .timelineRecord:
                         return Metric.timelineEstimatedHeight
                     case .plantInfo:
-                        return 500
+                        return 700
                     default:
                         return 100
                     }
@@ -643,7 +638,6 @@ private extension PlantCareView {
             )
             cell.onGuideEnabledChanged = { [weak self] isEnabled in
                 self?.onGuideEnabledChanged?(isEnabled)
-                self?.collectionView.collectionViewLayout.invalidateLayout()
             }
         }
 
