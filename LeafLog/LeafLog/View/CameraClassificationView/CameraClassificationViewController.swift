@@ -35,7 +35,7 @@ class CameraClassificationViewController: BaseViewController, View {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        tabBarController?.tabBar.isHidden = false
+        tabBarController?.tabBar.isHidden = true
         
         Task { [weak self] in
             await self?.cameraService.stopRunningSession()

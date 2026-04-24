@@ -110,6 +110,7 @@ final class PlantTabFlow: Flow {
 
         case .plantSearch:
             let searchViewController = SearchViewController()
+            searchViewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(searchViewController, animated: true)
 
             return .one(
@@ -134,7 +135,7 @@ final class PlantTabFlow: Flow {
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
-            
+            searchViewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(searchViewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
             
