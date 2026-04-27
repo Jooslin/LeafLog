@@ -162,26 +162,11 @@ extension HomeViewController {
 private extension HomeViewController {
     // 화면애 배치
     func applyPlants(_ plants: [MyPlant]) {
-        homeView.totalPlant.label.text = "내 식물 \(plants.count)개"
-        homeView.totalWater.label.text = "물 준 식물 \(plants.filter(didWaterToday).count)개"
-        
-        // 식물 데이터 0개일때
-        guard !plants.isEmpty else {
-            showEmptyState()
-            return
-        }
         
         // 식물 있으면 리스트 보여주기
         homeView.emptyView.isHidden = true
         homeView.collectionView.isHidden = false
         homeView.setSnapshot([.plant: makeShelfItems(from: plants)])
-    }
-    
-    func showEmptyState() {
-        homeView.totalPlant.label.text = "내 식물 0개"
-        homeView.totalWater.label.text = "물 준 식물 0개"
-        homeView.emptyView.isHidden = false
-        homeView.collectionView.isHidden = true
     }
 }
 

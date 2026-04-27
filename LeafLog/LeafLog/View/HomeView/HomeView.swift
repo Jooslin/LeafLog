@@ -167,8 +167,8 @@ enum EmptyShelf {
 }
 
 nonisolated
-enum ShelfOrder {
-    case first
+enum ShelfOrder: Int {
+    case first = 0
     case second
     case third
 }

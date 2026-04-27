@@ -97,3 +97,39 @@ extension HomeReactor {
         }
     }
 }
+
+//MARK: Convert to Items
+extension HomeReactor {
+    private func plantConverToItem(plants: [MyPlant]) -> [HomeView.Item] {
+        guard !plants.isEmpty else { return [] }
+        
+        plants.sorted(by: {
+            
+        })
+    }
+}
+
+//MARK: Calculation
+extension HomeReactor {
+    // 최근 급수일부터 경과 일수 계산
+    private func daysFromLastWatering(from date: Date) -> Int {
+        let today = calendar.startOfDay(for: Date()) // 오늘
+        let lastWateredAt = calendar.startOfDay(for: date) // 마지막 급수일
+        
+        let distance = lastWateredAt.distance(to: today)
+        let days = Int(distance / 3600 / 24)
+        
+        return days
+    }
+    
+    // 다음 급수일까지 남은 일수 계산
+    private func daysToNextWatering(from date: Date, interval: Int) -> Int {
+        let today = calendar.startOfDay(for: Date()) // 오늘
+        guard let nextWatering = calendar.date(byAdding: .day, value: interval, to: date) else { return -1 } // 다음 급수일
+        
+        let distance = today.distance(to: nextWatering)
+        let days = Int(distance / 3600 / 24)
+        
+        return days
+    }
+}
