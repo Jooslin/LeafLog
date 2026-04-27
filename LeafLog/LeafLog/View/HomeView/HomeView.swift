@@ -149,26 +149,28 @@ extension HomeView {
     
     nonisolated
     struct ShelfPlant: Hashable {
-        let id: UUID? // 식물의 uuid
-        let category: PlantCategory?
-        let name: String? // 식물의 이름(별명)
-        let daysFromLastWatering: Int? // 최근 급수일 - N일 전
-        let daysToNextWatering: Int? // 다음 급수일 - N일 후
-        let didWater: Bool? // 금일 급수 여부
+        var id: UUID? = nil// 식물의 uuid
+        var category: PlantCategory? = nil
+        var name: String? = nil // 식물의 이름(별명)
+        var daysFromLastWatering: Int? = nil // 최근 급수일 - N일 전
+        var daysToNextWatering: Int? = nil // 다음 급수일 - N일 후
+        var didWater: Bool? = nil // 금일 급수 여부
         let emptyShelf: EmptyShelf
         let shelfOrder: ShelfOrder
     }
 }
 
 nonisolated
-enum EmptyShelf {
+enum EmptyShelf: Int {
+    case first = 0
+    case second
+    case third
     case none
-    case first, second, third
 }
 
 nonisolated
 enum ShelfOrder: Int {
-    case first = 0
+    case first
     case second
     case third
 }

@@ -100,36 +100,82 @@ extension HomeReactor {
 
 //MARK: Convert to Items
 extension HomeReactor {
-    private func plantConverToItem(plants: [MyPlant]) -> [HomeView.Item] {
+    private func plantConverToItem(plants: [MyPlant]) throws -> [HomeView.Item] {
         guard !plants.isEmpty else { return [] }
         
-        plants.sorted(by: {
+        // 다음 급수일까지 남은 일수가 적은 순으로 정렬
+        let sortedPlants = try plants.sorted(by: {
+            let lhsElapsedDays = try daysFromLastWatering(from: $0.lastWateredAt)
             
+            let rhsElapsedDays = try daysFromLastWatering(from: $1.lastWateredAt)
+            
+            return ($0.wateringIntervalDays - lhsElapsedDays) < ($1.wateringIntervalDays - rhsElapsedDays)
         })
+        
+        // 아이템 변환
+        var items: [HomeView.Item] = try sortedPlants.enumerated().map { index, element in
+            guard let shelfOrder = ShelfOrder(rawValue: index % 3)
+            else {
+                throw HomeError.invalidShelfOrder
+            }
+            
+            let elapsedDays = try daysFromLastWatering(from: element.lastWateredAt)
+            
+            let didWater = calendar.isDateInToday(element.lastWateredAt)
+            
+            let shelfPlant = HomeView.ShelfPlant(
+                id: element.id,
+                category: element.category,
+                name: element.nickname ?? element.speciesName,
+                daysFromLastWatering: elapsedDays,
+                daysToNextWatering: element.wateringIntervalDays - elapsedDays,
+                didWater: didWater,
+                emptyShelf: .none,
+                shelfOrder: shelfOrder)
+            
+            return HomeView.Item.plant(shelfPlant)
+        }
+        
+        // 3의 배수로 배열 생성
+        let emptyPlants = generateEmptyPlants(count: items.count)
+        
+        return items + emptyPlants
+    }
+    
+    private func generateEmptyPlants(count: Int) -> [HomeView.Item] {
+        let emptyIndex = count % 3 // 마지막 빈 식물의 위치
+        
+        return (0...emptyIndex).reduce([HomeView.Item]()) {
+            guard let emptyShelf = EmptyShelf(rawValue: $1),
+                  let shelfOrder = ShelfOrder(rawValue: (count + $1) % 3) else { return $0 }
+            
+            let emptyPlant = HomeView.ShelfPlant(emptyShelf: emptyShelf, shelfOrder: shelfOrder)
+            
+            let item = HomeView.Item.plant(emptyPlant)
+            
+            return $0 + [item]
+        }
     }
 }
 
 //MARK: Calculation
 extension HomeReactor {
     // 최근 급수일부터 경과 일수 계산
-    private func daysFromLastWatering(from date: Date) -> Int {
+    private func daysFromLastWatering(from date: Date) throws -> Int {
         let today = calendar.startOfDay(for: Date()) // 오늘
         let lastWateredAt = calendar.startOfDay(for: date) // 마지막 급수일
         
-        let distance = lastWateredAt.distance(to: today)
-        let days = Int(distance / 3600 / 24)
-        
+        guard let days = calendar.dateComponents([.day], from: lastWateredAt, to: today)
+            .day else {
+            throw HomeError.calculationError
+        }
         return days
     }
-    
-    // 다음 급수일까지 남은 일수 계산
-    private func daysToNextWatering(from date: Date, interval: Int) -> Int {
-        let today = calendar.startOfDay(for: Date()) // 오늘
-        guard let nextWatering = calendar.date(byAdding: .day, value: interval, to: date) else { return -1 } // 다음 급수일
-        
-        let distance = today.distance(to: nextWatering)
-        let days = Int(distance / 3600 / 24)
-        
-        return days
+}
+
+extension HomeReactor {
+    enum HomeError: Error {
+        case calculationError
+        case invalidShelfOrder
     }
 }
