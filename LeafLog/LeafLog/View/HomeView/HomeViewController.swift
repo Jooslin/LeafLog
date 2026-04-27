@@ -12,9 +12,6 @@ import RxCocoa
 import RxSwift
 
 final class HomeViewController: BaseViewController {
-    @Dependency(\.plantDBManager) private var plantDBManager
-    @Dependency(\.careRecordDBManager) private var careRecordDBManager
-    
     private let homeView = HomeView()
     private var loadPlantsTask: Task<Void, Never>?
     private var waterTask: Task<Void, Never>?
@@ -31,12 +28,6 @@ final class HomeViewController: BaseViewController {
         showEmptyState()
         bindWaterButtonTap()
         bindAlarmButton()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        
-        loadPlants() // 식물 데이터 불러오기
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -132,39 +123,6 @@ extension HomeViewController {
 
 // MARK: - DB
 private extension HomeViewController {
-    func loadPlants() {
-        loadPlantsTask?.cancel() // 기존 작업 취소
-        
-        loadPlantsTask = Task { [weak self, plantDBManager] in
-            do {
-                // DB에서 내가 등록한 식물들 가져오기
-                let plants = try await plantDBManager.fetchMyPlants()
-                
-                guard let self else {
-                    return
-                }
-                
-                self.applyPlants(plants) // 가져온 식물 데이터 화면에 뿌리기
-            } catch let error as AuthError {
-                guard let self else {
-                    return
-                }
-                
-                self.showEmptyState()
-                self.steps.accept(AppStep.alert("오류", error.userMessage))
-            } catch is CancellationError {
-                return
-            } catch {
-                guard let self else {
-                    return
-                }
-                
-                self.showEmptyState()
-                self.steps.accept(AppStep.alert("오류", "식물 목록을 불러오지 못했어요. \(error.localizedDescription)"))
-            }
-        }
-    }
-    
     // 화면애 배치
     func applyPlants(_ plants: [MyPlant]) {
         homeView.totalPlant.label.text = "내 식물 \(plants.count)개"
