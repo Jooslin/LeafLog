@@ -408,6 +408,9 @@ final class PlantCareReactor: Reactor {
             return .just(.setTimelineSort(currentState.timelineSort.toggled))
 
         case .selectStatus(let status):
+            guard currentState.statusItem.selectedStatus != status else {
+                return .empty()
+            }
             let originalStatusItem = currentState.statusItem
             return .concat([
                 .just(.setStatusItem(PlantCareStatusItem(selectedStatus: status))),
@@ -696,10 +699,10 @@ private extension PlantCareReactor {
                     observer.onNext(.setStatusItem(Self.makeStatusItem(from: record)))
 
                     do {
-                        let records = try await careRecordDBManager.fetchCareRecords(plantID: plantID)
+                        let latestStatus = try await careRecordDBManager.fetchLatestStatus(plantID: plantID)
                         let plant = try await plantDBManager.updateHealthStatus(
                             plantID: plantID,
-                            healthStatus: Self.latestHealthStatus(from: records)
+                            healthStatus: Self.latestHealthStatus(from: latestStatus)
                         )
                         observer.onNext(.setPlant(plant))
                     } catch let error as AuthError {
@@ -976,10 +979,8 @@ private extension PlantCareReactor {
         PlantCareStatusItem(selectedStatus: PlantCareStatus.make(from: record?.status))
     }
 
-    static func latestHealthStatus(from records: [CareRecord]) -> String {
-        records
-            .compactMap { PlantCareStatus.make(from: $0.status)?.rawValue }
-            .first ?? PlantCareStatus.healthy.rawValue
+    static func latestHealthStatus(from status: String?) -> String {
+        PlantCareStatus.make(from: status)?.rawValue ?? PlantCareStatus.healthy.rawValue
     }
 
     static func makeItems(from record: CareRecord?, previousItems: [PlantCareItem]) -> [PlantCareItem] {

@@ -167,6 +167,21 @@ final class CareRecordDBManager {
 
         return "식물 상태 기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
     }
+    
+    // 최신 상태 기록 하나만 가져오는 메서드
+    func fetchLatestStatus(plantID: UUID) async throws -> String? {
+        let records: [CareRecord] = try await supabaseManager.client
+            .from("care_records")
+            .select()
+            .eq("plant_id", value: plantID)
+            .not("status", operator: .is, value: "null")
+            .order("record_date", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+
+        return records.first?.status
+    }
 }
 
 
