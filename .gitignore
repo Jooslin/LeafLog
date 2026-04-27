@@ -67,3 +67,4 @@ fastlane/test_output
 LeafLog/LeafLog/Configuration/GoogleService-Info.plist
 service-account.json
 LeafLog/supabase/
+LeafLog/.vscode/
