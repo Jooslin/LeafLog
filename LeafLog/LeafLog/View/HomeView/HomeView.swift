@@ -14,7 +14,7 @@ import RxCocoa
 final class HomeView: UIView {
     //MARK: properties
     let collectionView = PlantCollectionView()
-    private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
     let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
@@ -175,5 +175,12 @@ extension Reactive where Base: HomeView {
   
     var alarmButtonTap: ControlEvent<Void> {
         base.titleView.rightButton.rx.tap
+    }
+    
+    var itemSelected: Observable<HomeView.Item> {
+        base.collectionView.rx.itemSelected
+            .compactMap {
+                base.dataSource.itemIdentifier(for: $0)
+            }
     }
 }
