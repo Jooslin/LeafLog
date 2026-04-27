@@ -51,15 +51,27 @@ extension HomeViewController {
             .map { HomeReactor.Action.viewWillAppear }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
     }
     
     private func bindState(reactor: HomeReactor) {
         let state = reactor.state
             .asDriver(onErrorJustReturn: .init())
         
+        // 등록 식물이 없을 경우
         state.map(\.isEmpty)
             .drive { [weak self] isEmpty in
                 self?.homeView.showEmpty(isEmpty)
+            }
+            .disposed(by: disposeBag)
+        
+        // 상단 카드뷰 UI 업데이트
+        let total = state.map(\.totalPlants) // 총 식물 수
+        let watered = state.map(\.totalWater)
+        
+        Driver.combineLatest(total, watered)
+            .drive { [weak self] total, watered in
+                self?.homeView.configureCards(total: total, watered: watered)
             }
             .disposed(by: disposeBag)
     }

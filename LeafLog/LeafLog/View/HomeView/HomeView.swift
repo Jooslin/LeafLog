@@ -129,6 +129,11 @@ extension HomeView {
             collectionView.isHidden = false
         }
     }
+    
+    func configureCards(total: Int, watered: Int) {
+        totalPlant.label.text = "내 식물 \(total)개"
+        totalWater.label.text = "물 준 식물 \(watered)개"
+    }
 }
 
 //MARK: CollectionView - Section, Item
