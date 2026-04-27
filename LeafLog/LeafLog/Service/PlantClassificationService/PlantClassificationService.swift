@@ -5,7 +5,7 @@
 //  Created by t2025-m0143 on 4/6/26.
 //
 
-import TensorFlowLite
+import TensorFlowLiteSwift
 import UIKit
 import Dependencies
 
