@@ -210,7 +210,7 @@ final class MyPageView: UIView {
     
     // MARK: - Component Builders
     private func makeSectionTitle(_ text: String) -> UIView {
-        let label = UILabel(text: text, config: .title14, color: .black)
+        let label = UILabel(text: text, config: .label14, color: .grayScale600)
         return label
     }
     
