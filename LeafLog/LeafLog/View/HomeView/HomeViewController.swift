@@ -11,7 +11,7 @@ import ReactorKit
 import RxCocoa
 import RxSwift
 
-final class HomeViewController: BaseViewController {
+final class HomeViewController: BaseViewController, View {
     private let homeView = HomeView()
     private var loadPlantsTask: Task<Void, Never>?
     private var waterTask: Task<Void, Never>?
@@ -37,6 +37,31 @@ final class HomeViewController: BaseViewController {
             loadPlantsTask?.cancel()
             waterTask?.cancel()
         }
+    }
+    
+    func bind(reactor: HomeReactor) {
+        bindAction(reactor: reactor)
+        bindState(reactor: reactor)
+    }
+}
+
+extension HomeViewController {
+    private func bindAction(reactor: HomeReactor) {
+        self.rx.viewWillAppear
+            .map { HomeReactor.Action.viewWillAppear }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+    }
+    
+    private func bindState(reactor: HomeReactor) {
+        let state = reactor.state
+            .asDriver(onErrorJustReturn: .init())
+        
+        state.map(\.isEmpty)
+            .drive { [weak self] isEmpty in
+                self?.homeView.showEmpty(isEmpty)
+            }
+            .disposed(by: disposeBag)
     }
 }
 

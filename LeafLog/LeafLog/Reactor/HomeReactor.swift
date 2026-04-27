@@ -38,7 +38,7 @@ final class HomeReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            
+            return loadPlants()
         }
     }
     

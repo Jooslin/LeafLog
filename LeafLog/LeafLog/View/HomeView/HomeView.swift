@@ -118,6 +118,19 @@ extension HomeView {
     }
 }
 
+//MARK: Configure
+extension HomeView {
+    func showEmpty(_ isEmpty: Bool) {
+        if isEmpty {
+            emptyView.isHidden = false
+            collectionView.isHidden = true
+        } else {
+            emptyView.isHidden = true
+            collectionView.isHidden = false
+        }
+    }
+}
+
 //MARK: CollectionView - Section, Item
 extension HomeView {
     enum Section: Int {
