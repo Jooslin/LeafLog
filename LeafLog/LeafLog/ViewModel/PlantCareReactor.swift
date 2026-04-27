@@ -186,6 +186,42 @@ struct PlantCareItem: Hashable {
 }
 
 nonisolated
+enum PlantCareStatus: String, CaseIterable, Hashable {
+    case healthy
+    case sick
+    case unrecoverable
+
+    var title: String {
+        switch self {
+        case .healthy:
+            return "건강함"
+        case .sick:
+            return "아픔"
+        case .unrecoverable:
+            return "회복불가"
+        }
+    }
+
+    static func make(from value: String?) -> PlantCareStatus? {
+        switch value?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case healthy.rawValue, healthy.title:
+            return .healthy
+        case sick.rawValue, sick.title:
+            return .sick
+        case unrecoverable.rawValue, unrecoverable.title, "dead":
+            return .unrecoverable
+        default:
+            return nil
+        }
+    }
+}
+
+nonisolated
+struct PlantCareStatusItem: Hashable {
+    var selectedStatus: PlantCareStatus?
+}
+
+nonisolated
 // 식물 일기용 데이터
 struct PlantCareDiaryItem: Hashable {
     var diaryText: String
@@ -257,6 +293,7 @@ final class PlantCareReactor: Reactor {
         case changeDate(Int)
         case selectTimelineFilter(PlantCareTimelineFilter)
         case toggleTimelineSort
+        case selectStatus(PlantCareStatus)
         case toggleMemo(PlantCareRecordType)
         case completeTapped(PlantCareRecordType)
         case saveMemo(PlantCareRecordType, String)
@@ -273,6 +310,7 @@ final class PlantCareReactor: Reactor {
         case setPlantDetail(PlantDetail)
         case setSelectedTab(PlantCareTab)
         case setSelectedDate(Date)
+        case setStatusItem(PlantCareStatusItem)
         case setItems([PlantCareItem])
         case setDiaryItem(PlantCareDiaryItem)
         case setTimelineEvents([PlantCareTimelineEvent])
@@ -288,6 +326,7 @@ final class PlantCareReactor: Reactor {
         var selectedTab: PlantCareTab = .record
         var selectedDate: Date
         var isLoading = false
+        var statusItem: PlantCareStatusItem
         var items: [PlantCareItem]
         var diaryItem: PlantCareDiaryItem
         var plantInfoRows: [PlantCarePlantInfoRow] = []
@@ -318,6 +357,7 @@ final class PlantCareReactor: Reactor {
             plantID: plantID,
             plant: nil,
             selectedDate: startDate,
+            statusItem: PlantCareStatusItem(selectedStatus: nil),
             items: Self.makeItems(from: nil, previousItems: []),
             diaryItem: PlantCareDiaryItem(
                 diaryText: "",
@@ -366,6 +406,13 @@ final class PlantCareReactor: Reactor {
 
         case .toggleTimelineSort:
             return .just(.setTimelineSort(currentState.timelineSort.toggled))
+
+        case .selectStatus(let status):
+            let originalStatusItem = currentState.statusItem
+            return .concat([
+                .just(.setStatusItem(PlantCareStatusItem(selectedStatus: status))),
+                saveStatus(status, date: currentState.selectedDate, originalStatusItem: originalStatusItem)
+            ])
 
         case .toggleMemo(let type):
             var nextItems = currentState.items
@@ -465,6 +512,9 @@ final class PlantCareReactor: Reactor {
 
         case .setSelectedDate(let selectedDate):
             newState.selectedDate = Calendar.current.startOfDay(for: selectedDate)
+
+        case .setStatusItem(let statusItem):
+            newState.statusItem = statusItem
 
         case .setItems(let items):
             newState.items = items
@@ -576,6 +626,7 @@ private extension PlantCareReactor {
                         recordDate: recordDate
                     )
 
+                    observer.onNext(.setStatusItem(Self.makeStatusItem(from: record)))
                     observer.onNext(.setItems(Self.makeItems(from: record, previousItems: previousItems)))
                     observer.onNext(.setDiaryItem(
                         try await Self.makeDiaryItem(
@@ -618,6 +669,53 @@ private extension PlantCareReactor {
                     observer.onCompleted()
                 } catch {
                     observer.onNext(.setErrorMessage("타임라인을 불러오지 못했어요. \(error.localizedDescription)"))
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    func saveStatus(
+        _ status: PlantCareStatus,
+        date: Date,
+        originalStatusItem: PlantCareStatusItem
+    ) -> Observable<Mutation> {
+        let plantID = currentState.plantID
+
+        return Observable.create { [careRecordDBManager, plantDBManager] observer in
+            let task = Task {
+                do {
+                    var input = Self.emptyInput(plantID: plantID, date: date)
+                    input.status = status.rawValue
+
+                    let record = try await careRecordDBManager.upsertCareRecord(input: input)
+                    observer.onNext(.setStatusItem(Self.makeStatusItem(from: record)))
+
+                    do {
+                        let records = try await careRecordDBManager.fetchCareRecords(plantID: plantID)
+                        let plant = try await plantDBManager.updateHealthStatus(
+                            plantID: plantID,
+                            healthStatus: Self.latestHealthStatus(from: records)
+                        )
+                        observer.onNext(.setPlant(plant))
+                    } catch let error as AuthError {
+                        observer.onNext(.setErrorMessage(error.userMessage))
+                    } catch {
+                        observer.onNext(.setErrorMessage("식물 현재 상태를 동기화하지 못했어요. \(error.localizedDescription)"))
+                    }
+
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.setStatusItem(originalStatusItem))
+                    observer.onNext(.setErrorMessage(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.setStatusItem(originalStatusItem))
+                    observer.onNext(.setErrorMessage("식물 상태를 저장하지 못했어요. \(error.localizedDescription)"))
                     observer.onCompleted()
                 }
             }
@@ -872,6 +970,16 @@ private extension PlantCareReactor {
             supabaseManager: supabaseManager
         )
         observer.onNext(.setTimelineEvents(events))
+    }
+
+    static func makeStatusItem(from record: CareRecord?) -> PlantCareStatusItem {
+        PlantCareStatusItem(selectedStatus: PlantCareStatus.make(from: record?.status))
+    }
+
+    static func latestHealthStatus(from records: [CareRecord]) -> String {
+        records
+            .compactMap { PlantCareStatus.make(from: $0.status)?.rawValue }
+            .first ?? PlantCareStatus.healthy.rawValue
     }
 
     static func makeItems(from record: CareRecord?, previousItems: [PlantCareItem]) -> [PlantCareItem] {
