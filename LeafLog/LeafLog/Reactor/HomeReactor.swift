@@ -18,6 +18,7 @@ final class HomeReactor: Reactor {
     enum Mutation {
         case setEmpty(Bool)
         case setTotalCard(Int, Int)
+        case setPlants([HomeView.Item])
         case error(String)
     }
     
@@ -25,6 +26,7 @@ final class HomeReactor: Reactor {
         var isEmpty: Bool = true
         var totalPlants: Int = 0
         var totalWater: Int = 0
+        var data: [HomeView.Section: [HomeView.Item]] = [:]
         @Pulse var errorMessage: String? = nil
     }
     
@@ -45,12 +47,15 @@ final class HomeReactor: Reactor {
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
+        case .setEmpty(let isEmpty):
+            newState.isEmpty = isEmpty
+            
         case .setTotalCard(let total, let totalWater):
             newState.totalPlants = total
             newState.totalWater = totalWater
             
-        case .setEmpty(let isEmpty):
-            newState.isEmpty = isEmpty
+        case .setPlants(let items):
+            newState.data[.plant] = items
             
         case .error(let message):
             newState.errorMessage = message
@@ -73,14 +78,18 @@ extension HomeReactor {
                         self.calendar.isDateInToday($0.lastWateredAt)
                     } // 오늘 물 준 총 식물 개수
                     
-                    observer.onNext(.setTotalCard(total, totalWater))
-                    
-                    if plants.count <= 0 {
+                    guard plants.count > 0 else {
+                        observer.onNext(.setTotalCard(total, totalWater))
                         observer.onNext(.setEmpty(true))
-                    } else {
-                        observer.onNext( .setEmpty(false))
+                        observer.onCompleted()
+                        return
                     }
                     
+                    let items = try self.plantConverToItem(plants: plants)
+                    
+                    observer.onNext(.setTotalCard(total, totalWater))
+                    observer.onNext(.setEmpty(false))
+                    observer.onNext(.setPlants(items))
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.error(error.userMessage))
@@ -113,7 +122,7 @@ extension HomeReactor {
         })
         
         // 아이템 변환
-        var items: [HomeView.Item] = try sortedPlants.enumerated().map { index, element in
+        let items: [HomeView.Item] = try sortedPlants.enumerated().map { index, element in
             guard let shelfOrder = ShelfOrder(rawValue: index % 3)
             else {
                 throw HomeError.invalidShelfOrder
@@ -128,7 +137,7 @@ extension HomeReactor {
                 category: element.category,
                 name: element.nickname ?? element.speciesName,
                 daysFromLastWatering: elapsedDays,
-                daysToNextWatering: element.wateringIntervalDays - elapsedDays,
+                daysToNextWatering: max(0, element.wateringIntervalDays - elapsedDays),
                 didWater: didWater,
                 emptyShelf: .none,
                 shelfOrder: shelfOrder)
@@ -143,9 +152,9 @@ extension HomeReactor {
     }
     
     private func generateEmptyPlants(count: Int) -> [HomeView.Item] {
-        let emptyIndex = count % 3 // 마지막 빈 식물의 위치
+        let emptyIndex = 3 - (count % 3) // 마지막 빈 식물의 위치
         
-        return (0...emptyIndex).reduce([HomeView.Item]()) {
+        return (0..<emptyIndex).reduce([HomeView.Item]()) {
             guard let emptyShelf = EmptyShelf(rawValue: $1),
                   let shelfOrder = ShelfOrder(rawValue: (count + $1) % 3) else { return $0 }
             

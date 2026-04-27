@@ -11,6 +11,7 @@ import Dependencies
 import AVFoundation
 import RxRelay
 import PhotosUI
+import ReactorKit
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -35,6 +36,7 @@ final class PlantTabFlow: Flow {
         switch step {
         case .plantTab:
             let homeViewController = HomeViewController()
+            homeViewController.reactor = HomeReactor()
             navigationController.setViewControllers([homeViewController], animated: false)
 
             return .one(
