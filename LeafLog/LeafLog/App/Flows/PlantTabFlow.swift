@@ -46,6 +46,12 @@ final class PlantTabFlow: Flow {
                 )
             )
             
+        case .record(let plantID):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+            viewController.hidesBottomBarWhenPushed = true
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+            
         case .endPlantRegister:
             navigationController.popToRootViewController(animated: true)
             return .none
@@ -97,15 +103,12 @@ final class PlantTabFlow: Flow {
         case .plantEdit(let plant):
             let plantRegisterViewController = makePlantEditViewController(plant: plant)
             navigationController.pushViewController(plantRegisterViewController, animated: true)
-
+            
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: CompositeStepper(
-                        steppers: [plantRegisterViewController, photoSelectStepper]
-                    )
-                )
-            )
+                    withNextStepper: plantRegisterViewController
+                ))
 
         case .plantSearch:
             let searchViewController = SearchViewController()

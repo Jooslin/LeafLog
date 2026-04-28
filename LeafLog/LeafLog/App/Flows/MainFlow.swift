@@ -41,6 +41,16 @@ final class MainFlow: Flow {
             
         case .record(let plantID):
             return navigateToPlantRecord(plantID: plantID)
+            
+//        case .plantEdit(let plant):
+//            let plantRegisterViewController = makePlantEditViewController(plant: plant)
+//            navigate(to: plantRegisterViewController, animated: true)
+//            
+//            return .one(
+//                flowContributor: .contribute(
+//                    withNextPresentable: plantRegisterViewController,
+//                    withNextStepper: plantRegisterViewController
+//                ))
           
         case .alarmCenter:
             return navigateToAlarmCenter()
@@ -134,5 +144,14 @@ extension MainFlow {
         return .one(flowContributor: .contribute(
             withNextPresentable: notificationCenterViewController,
             withNextStepper: notificationCenterViewController))
+    }
+}
+
+extension MainFlow {
+    private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(mode: .edit(plant))
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
     }
 }
