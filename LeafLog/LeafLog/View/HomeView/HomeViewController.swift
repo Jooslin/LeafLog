@@ -199,7 +199,6 @@ private extension HomeViewController {
             return .plant(HomeView.ShelfPlant(
                 // 식물 정보 넣기
                 id: plant.id,
-                category: plant.category,
                 defaultImageAssetName: plant.defaultImageAssetName,
                 name: plant.nickname?.isEmpty == false ? plant.nickname : plant.speciesName,
                 daysFromLastWatering: daysFromLastWatering,
@@ -225,7 +224,6 @@ private extension HomeViewController {
     func makeEmptyShelfItem(emptyShelf: EmptyShelf, index: Int) -> HomeView.Item {
         .plant(HomeView.ShelfPlant(
             id: nil,
-            category: nil,
             defaultImageAssetName: nil,
             name: nil,
             daysFromLastWatering: nil,
