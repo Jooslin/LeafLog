@@ -200,6 +200,7 @@ private extension HomeViewController {
                 // 식물 정보 넣기
                 id: plant.id,
                 category: plant.category,
+                defaultImageAssetName: plant.defaultImageAssetName,
                 name: plant.nickname?.isEmpty == false ? plant.nickname : plant.speciesName,
                 daysFromLastWatering: daysFromLastWatering,
                 daysToNextWatering: max(0, plant.wateringIntervalDays - daysFromLastWatering),
@@ -225,6 +226,7 @@ private extension HomeViewController {
         .plant(HomeView.ShelfPlant(
             id: nil,
             category: nil,
+            defaultImageAssetName: nil,
             name: nil,
             daysFromLastWatering: nil,
             daysToNextWatering: nil,

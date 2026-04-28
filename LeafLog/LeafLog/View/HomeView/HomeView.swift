@@ -133,6 +133,7 @@ extension HomeView {
     struct ShelfPlant: Hashable {
         let id: UUID? // 식물의 uuid
         let category: PlantCategory?
+        let defaultImageAssetName: String?
         let name: String? // 식물의 이름(별명)
         let daysFromLastWatering: Int? // 최근 급수일 - N일 전
         let daysToNextWatering: Int? // 다음 급수일 - N일 후
