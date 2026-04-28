@@ -25,15 +25,6 @@ final class HomeViewController: BaseViewController, View {
         tabBarController?.tabBar.isHidden = false
     }
     
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        
-        if isMovingFromParent || isBeingDismissed { // 완전히 뒤로가기/닫기
-            loadPlantsTask?.cancel()
-            waterTask?.cancel()
-        }
-    }
-    
     func bind(reactor: HomeReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
