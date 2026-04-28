@@ -118,7 +118,7 @@ struct MyPlant: Codable, Hashable {
         case .grass where normalizedSpeciesName.contains("안수리움")
             || normalizedSpeciesName.contains("안스리움")
             || normalizedSpeciesName.contains("anthurium"):
-            return "plantAnthrium"
+            return "plantAnthurium"
         default:
             return nil
         }
