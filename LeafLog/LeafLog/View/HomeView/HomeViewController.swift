@@ -20,15 +20,6 @@ final class HomeViewController: BaseViewController, View {
         view = homeView
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-//        bindPlantSelection()
-//        bindPlantRegistration()
-//        bindWaterButtonTap()
-//        bindAlarmButton()
-    }
-    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tabBarController?.tabBar.isHidden = false
@@ -150,87 +141,4 @@ extension HomeViewController {
 //            })
 //            .disposed(by: disposeBag)
 //    }
-}
-
-// MARK: - DB
-private extension HomeViewController {
-    // 화면애 배치
-    func applyPlants(_ plants: [MyPlant]) {
-        
-        // 식물 있으면 리스트 보여주기
-        homeView.emptyView.isHidden = true
-        homeView.collectionView.isHidden = false
-        homeView.setSnapshot([.plant: makeShelfItems(from: plants)])
-    }
-}
-
-// MARK: - Home Data
-private extension HomeViewController {
-    func makeShelfItems(from plants: [MyPlant]) -> [HomeView.Item] {
-        var items: [HomeView.Item] = plants.enumerated().map { index, plant in
-            let daysFromLastWatering = daysFromLastWatering(from: plant.lastWateredAt)
-            
-            return .plant(HomeView.ShelfPlant(
-                // 식물 정보 넣기
-                id: plant.id,
-                category: plant.category,
-                name: plant.nickname?.isEmpty == false ? plant.nickname : plant.speciesName,
-                daysFromLastWatering: daysFromLastWatering,
-                daysToNextWatering: max(0, plant.wateringIntervalDays - daysFromLastWatering),
-                didWater: didWaterToday(plant), // 오늘 급수 여부
-                emptyShelf: .none,
-                shelfOrder: shelfOrder(for: index)
-            ))
-        }
-        
-        let addButtonIndex = items.count
-        items.append(makeEmptyShelfItem(emptyShelf: .first, index: addButtonIndex))
-        
-        while items.count % 3 != 0 {
-            let placeholderIndex = items.count
-            let emptyShelf: EmptyShelf = items.count % 3 == 1 ? .second : .third
-            items.append(makeEmptyShelfItem(emptyShelf: emptyShelf, index: placeholderIndex))
-        }
-        
-        return items
-    }
-    
-    func makeEmptyShelfItem(emptyShelf: EmptyShelf, index: Int) -> HomeView.Item {
-        .plant(HomeView.ShelfPlant(
-            id: nil,
-            category: nil,
-            name: nil,
-            daysFromLastWatering: nil,
-            daysToNextWatering: nil,
-            didWater: nil,
-            emptyShelf: emptyShelf,
-            shelfOrder: shelfOrder(for: index)
-        ))
-    }
-    
-    // 선반 위치 지정
-    func shelfOrder(for index: Int) -> ShelfOrder {
-        switch index % 3 {
-        case 0:
-            return .first
-        case 1:
-            return .second
-        default:
-            return .third
-        }
-    }
-    
-    // 최근 급수일 계산
-    func daysFromLastWatering(from date: Date) -> Int {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let lastWateredDate = calendar.startOfDay(for: date)
-        let day = calendar.dateComponents([.day], from: lastWateredDate, to: today).day ?? 0
-        return max(0, day)
-    }
-    
-    // 오늘 물 줬는지
-    func didWaterToday(_ plant: MyPlant) -> Bool {
-        Calendar.current.isDateInToday(plant.lastWateredAt)
-    }
 }
