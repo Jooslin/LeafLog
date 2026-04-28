@@ -16,11 +16,7 @@ final class PlantShelfCell: UICollectionViewCell {
     private let plant = UIImageView()
     fileprivate let card = PlantLabelCardView()
     
-    private let shelf = SeparateBar().then {
-        $0.snp.makeConstraints {
-            $0.height.equalTo(6)
-        }
-    }
+    private let shelf = SeparateBar()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -53,6 +49,7 @@ extension PlantShelfCell {
         shelf.snp.makeConstraints {
             $0.top.equalTo(plant.snp.bottom).offset(-4)
             $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(6)
         }
         
         card.snp.makeConstraints {
