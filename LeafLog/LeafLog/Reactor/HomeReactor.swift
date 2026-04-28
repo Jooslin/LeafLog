@@ -13,6 +13,7 @@ import Dependencies
 final class HomeReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case waterButtonTap(UUID)
     }
     
     enum Mutation {
@@ -41,6 +42,12 @@ final class HomeReactor: Reactor {
         switch action {
         case .viewWillAppear:
             return loadPlants()
+            
+        case .waterButtonTap(let id):
+            return Observable.concat(
+                updateWatered(of: id),
+                loadPlants()
+            )
         }
     }
     
@@ -64,12 +71,12 @@ final class HomeReactor: Reactor {
     }
 }
 
+//MARK: Mutate
 extension HomeReactor {
     private func loadPlants() -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else { return }
                 do {
                     let plants = try await self.plantDBManger.fetchMyPlants()
                     
@@ -100,6 +107,41 @@ extension HomeReactor {
                 }
             }
             
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+    
+    private func updateWatered(of id: UUID) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            let task = Task { [weak self] in
+                guard let self else { return }
+                
+                let date = Date()
+                
+                do {
+                    // 관리 기록 업데이트
+                    try await self.careRecordDBManager.upsertCareRecord(
+                        input: CareRecordUpsertInput(
+                            plantID: id,
+                            recordDate: localDate(from: date),
+                            recordedAt: date,
+                            watered: true
+                            ))
+                    
+                    // 식물 정보 업데이트(마지막 급수 일자)
+                    try await self.plantDBManger.updateLastWateredAt(plantID: id, date: date)
+                    
+                    observer.onCompleted()
+                } catch let error as AuthError {
+                    observer.onNext(.error(error.userMessage))
+                    observer.onCompleted()
+                } catch {
+                    observer.onNext(.error("기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요."))
+                    observer.onCompleted()
+                }
+            }
             return Disposables.create {
                 task.cancel()
             }

@@ -25,13 +25,13 @@ final class CareRecordDBManager {
                 .limit(1)
                 .execute()
                 .value
-
+            
             return records.first
         } catch {
             throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
     }
-
+    
     // MARK: - 특정 식물의 전체 관리 기록 조회
     func fetchCareRecords(plantID: UUID) async throws -> [CareRecord] {
         do {
@@ -52,7 +52,7 @@ final class CareRecordDBManager {
     func upsertCareRecord(input: CareRecordUpsertInput) async throws -> CareRecord {
         do {
             let existing = try await fetchCareRecord(plantID: input.plantID, recordDate: input.recordDate)
-
+            
             let payload = CareRecordPayload(
                 plantID: input.plantID,
                 recordDate: input.recordDate,
@@ -70,10 +70,10 @@ final class CareRecordDBManager {
                 diaryPhotoPath: input.clearsDiaryPhotoPath ? nil : input.diaryPhotoPath ?? existing?.diaryPhotoPath,
                 clearsDiaryPhotoPath: input.clearsDiaryPhotoPath
             )
-
+            
             return try await supabaseManager.client
                 .from("care_records")
-                .upsert(payload, onConflict: "plant_id,record_date") // 같은 날짜, 식물이면 
+                .upsert(payload, onConflict: "plant_id,record_date") // 같은 날짜, 식물이면
                 .select()
                 .single()
                 .execute()
@@ -94,7 +94,7 @@ final class CareRecordDBManager {
             guard !plants.isEmpty else { return [] }
             let plantIds = plants
                 .map { "\"\($0.uuidString)\"" }
-                        .joined(separator: ",")
+                .joined(separator: ",")
             
             return try await supabaseManager.client
                 .from("care_records")
@@ -104,7 +104,7 @@ final class CareRecordDBManager {
                 .filter("plant_id", operator: "in", value: "(\(plantIds))")
                 .execute()
                 .value
-
+            
         } catch {
             throw AuthError.careFailed("식물 상태 기록을 불러오지 못했어요: \(error.localizedDescription)")
         }
@@ -131,10 +131,10 @@ final class CareRecordDBManager {
             case diaryText = "diary_text"
             case diaryPhotoPath = "diary_photo_path"
         }
-
+        
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
-
+            
             try container.encode(plantID, forKey: .plantID)
             try container.encode(recordDate, forKey: .recordDate)
             try container.encodeIfPresent(recordedAt, forKey: .recordedAt)
@@ -148,7 +148,7 @@ final class CareRecordDBManager {
             try container.encodeIfPresent(fertilizedNote, forKey: .fertilizedNote)
             try container.encodeIfPresent(treatedNote, forKey: .treatedNote)
             try container.encodeIfPresent(diaryText, forKey: .diaryText)
-
+            
             if clearsDiaryPhotoPath {
                 try container.encodeNil(forKey: .diaryPhotoPath)
             } else {
@@ -156,15 +156,15 @@ final class CareRecordDBManager {
             }
         }
     }
-
+    
     private static func saveFailureMessage(for error: Error) -> String {
         let description = error.localizedDescription
-
+        
         if description.contains("last_watered_at")
             && description.contains("violates not null constraint") {
             return "마지막 물주기 기록은 취소할 수 없어요. 다른 날짜에 물주기 기록을 추가한 뒤 다시 시도해주세요."
         }
-
+        
         return "식물 상태 기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
     }
 }
