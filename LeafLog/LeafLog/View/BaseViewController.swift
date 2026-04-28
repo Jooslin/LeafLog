@@ -14,9 +14,15 @@ import RxCocoa
 class BaseViewController: UIViewController, Stepper {
     let steps = PublishRelay<Step>()
     var disposeBag = DisposeBag()
+    private let minimumContentSizeCategory: UIContentSizeCategory = .large
+    private let maximumContentSizeCategory: UIContentSizeCategory = .accessibilityLarge
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        //다이나믹 폰트 최대,최소크기 설정
+        view.minimumContentSizeCategory = minimumContentSizeCategory
+        view.maximumContentSizeCategory = maximumContentSizeCategory
         
         // 네비게이션 바가 숨겨져도 스와이프로 뒤로 가기가 가능하도록 설정
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
@@ -42,4 +48,3 @@ class BaseViewController: UIViewController, Stepper {
             .disposed(by: disposeBag)
     }
 }
-
