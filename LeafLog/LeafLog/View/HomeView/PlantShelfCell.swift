@@ -67,9 +67,18 @@ extension PlantShelfCell {
             card.isHidden = false
             plant.image = UIImage(named: data.category?.defaultImageAssetName ?? "")
             card.nameLabel.text = data.name ?? ""
+            card.waterButton.isSelected = data.didWater ?? false
+            
             card.recentDayLabel.text = "\(data.daysFromLastWatering ?? 0)일 전"
             card.nextDayLabel.text = "\(data.daysToNextWatering ?? 0)일"
-            card.waterButton.isSelected = data.didWater ?? false
+            
+            guard let daysFromLastWatering = data.daysFromLastWatering,
+                  let daysToNextWatering = data.daysToNextWatering else { return }
+            
+            if daysFromLastWatering > 100 {
+                card.recentDayLabel.text = "오래전"
+            }
+            
         case .first:
             card.isHidden = true
             plant.image = .plantAdd
