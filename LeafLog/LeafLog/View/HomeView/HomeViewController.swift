@@ -51,6 +51,22 @@ extension HomeViewController {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        homeView.rx.itemSelected
+            .compactMap { item -> AppStep? in
+                switch item {
+                case .plant(let plant):
+                    if plant.emptyShelf == .none {
+                        guard let id = plant.id else { return nil }
+                        return AppStep.record(plantID: id)
+                    } else if plant.emptyShelf == .first {
+                        return AppStep.plantRegister()
+                    } else {
+                        return nil
+                    }
+                }
+            }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: HomeReactor) {
@@ -83,41 +99,7 @@ extension HomeViewController {
     }
 }
 
-extension HomeViewController {
-    private func bindPlantSelection() {
-        homeView.collectionView.rx.itemSelected
-            .compactMap { [weak self] indexPath -> AppStep? in
-                // 사용자가 누른 칸의 데이터 가져옴
-                guard case .plant(let shelfPlant) = self?.homeView.item(at: indexPath) else {
-                    return nil
-                }
-                
-                switch shelfPlant.emptyShelf {
-                case .none:
-                    guard let plantID = shelfPlant.id else {
-                        return nil
-                    }
-                    
-                    return AppStep.record(plantID: plantID)
-                    
-                case .first:
-                    return AppStep.plantRegister()
-                    
-                case .second, .third:
-                    return nil
-                }
-            }
-            .bind(to: steps)
-            .disposed(by: disposeBag)
-    }
-    
-    private func bindPlantRegistration() {
-        homeView.emptyView.registerButton.rx.tap
-            .map { AppStep.plantRegister() }
-            .bind(to: steps)
-            .disposed(by: disposeBag)
-    }
-    
+extension HomeViewController    
 //    private func bindWaterButtonTap() {
 //        homeView.rx.waterButtonTap
 //            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
