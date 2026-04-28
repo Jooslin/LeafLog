@@ -131,13 +131,7 @@ final class PlantTabFlow: Flow {
             let viewController = SearchDetailViewController(reactor: reactor)
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
-
-        case .record(let plantID):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
-            viewController.hidesBottomBarWhenPushed = true
-            navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))         
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)

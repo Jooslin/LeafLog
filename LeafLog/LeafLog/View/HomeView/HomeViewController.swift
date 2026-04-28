@@ -29,6 +29,11 @@ final class HomeViewController: BaseViewController, View {
 //        bindAlarmButton()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = false
+    }
+    
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
@@ -99,7 +104,7 @@ extension HomeViewController {
     }
 }
 
-extension HomeViewController    
+extension HomeViewController {
 //    private func bindWaterButtonTap() {
 //        homeView.rx.waterButtonTap
 //            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
