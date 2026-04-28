@@ -51,11 +51,13 @@ final class HomeViewController: BaseViewController, View {
 
 extension HomeViewController {
     private func bindAction(reactor: HomeReactor) {
+        // 화면 진입시
         self.rx.viewWillAppear
             .map { HomeReactor.Action.viewWillAppear }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        // 컬렉션뷰 아이템 선택시
         homeView.rx.itemSelected
             .compactMap { item -> AppStep? in
                 switch item {
@@ -70,6 +72,12 @@ extension HomeViewController {
                     }
                 }
             }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+        
+        // 알림 버튼 탭시
+        homeView.rx.alarmButtonTap
+            .map { AppStep.alarmCenter }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
@@ -142,13 +150,6 @@ extension HomeViewController {
 //            })
 //            .disposed(by: disposeBag)
 //    }
-      
-    private func bindAlarmButton() {
-        homeView.rx.alarmButtonTap
-            .map { AppStep.alarmCenter }
-            .bind(to: steps)
-            .disposed(by: disposeBag)
-    }
 }
 
 // MARK: - DB

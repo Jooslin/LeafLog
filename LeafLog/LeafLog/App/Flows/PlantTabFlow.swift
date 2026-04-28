@@ -86,13 +86,6 @@ final class PlantTabFlow: Flow {
             } else {
                 navigationController.pushViewController(plantRegisterViewController, animated: true)
             }
-
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: plantRegisterViewController,
-//                    withNextStepper: plantRegisterViewController
-//                )
-//            )
             
             return .one(
                 flowContributor: .contribute(
