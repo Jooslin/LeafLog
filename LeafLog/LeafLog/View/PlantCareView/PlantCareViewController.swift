@@ -116,6 +116,7 @@ private extension UIView {
 private struct PlantCareSnapshotState: Equatable {
     let selectedTab: PlantCareTab
     let dateTitle: String
+    let statusItem: PlantCareStatusItem
     let items: [PlantCareItem]
     let diaryItem: PlantCareDiaryItem
     let plantInfoItem: PlantCarePlantInfoItem
@@ -172,6 +173,10 @@ private extension PlantCareViewController {
 
         plantCareView.onNextDateTapped = { [weak reactor] in
             reactor?.action.onNext(.changeDate(1))
+        }
+
+        plantCareView.onStatusTapped = { [weak reactor] status in
+            reactor?.action.onNext(.selectStatus(status))
         }
 
         plantCareView.onCompleteTapped = { [weak reactor] type in
@@ -232,6 +237,7 @@ private extension PlantCareViewController {
                 PlantCareSnapshotState(
                     selectedTab: state.selectedTab,
                     dateTitle: Self.dateTitle(from: state.selectedDate),
+                    statusItem: state.statusItem,
                     items: state.items,
                     diaryItem: state.diaryItem,
                     plantInfoItem: PlantCarePlantInfoItem(
@@ -261,6 +267,7 @@ private extension PlantCareViewController {
                 case .record:
                     plantCareView.setRecordSnapshot(
                         dateTitle: snapshot.dateTitle,
+                        statusItem: snapshot.statusItem,
                         items: snapshot.items,
                         diaryItem: snapshot.diaryItem
                     )

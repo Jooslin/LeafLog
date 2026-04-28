@@ -202,6 +202,27 @@ final class PlantDBManager {
             throw AuthError.plantFailed("가이드 설정은 변경했으나, 식물 정보를 불러오는 데 실패했습니다.")
         }
     }
+
+    // MARK: - 식물 건강 상태 업데이트
+    func updateHealthStatus(plantID: UUID, healthStatus: String) async throws -> MyPlant {
+        let user = try await supabaseManager.client.auth.user()
+        let payload = HealthStatusUpdatePayload(healthStatus: healthStatus)
+
+        let response = try await supabaseManager.client
+            .from("plants")
+            .update(payload)
+            .eq("id", value: plantID)
+            .eq("user_id", value: user.id)
+            .select()
+            .single()
+            .execute()
+
+        do {
+            return try supabaseManager.client.database.configuration.decoder.decode(MyPlant.self, from: response.data)
+        } catch {
+            throw AuthError.plantFailed("식물 상태는 변경했으나, 식물 정보를 불러오는 데 실패했습니다.")
+        }
+    }
     
     
     // MARK: - Update Payload Model
@@ -233,6 +254,14 @@ final class PlantDBManager {
         
         enum CodingKeys: String, CodingKey {
             case guideEnabled = "guide_enabled"
+        }
+    }
+
+    private struct HealthStatusUpdatePayload: Encodable {
+        let healthStatus: String
+
+        enum CodingKeys: String, CodingKey {
+            case healthStatus = "health_status"
         }
     }
     
