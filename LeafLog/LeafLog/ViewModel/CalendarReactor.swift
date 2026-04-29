@@ -24,6 +24,7 @@ final class CalendarReactor: Reactor {
         case updateBenchmarkDate(Date)
         case updateFilters(Set<Int>)
         case updateMonthlyData(MonthKey, [CareRecord])
+        case updateSelectedDate(Date)
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
@@ -39,10 +40,11 @@ final class CalendarReactor: Reactor {
     }
     
     struct State {
-        var benchmarkDate: Date = Date()
+        var benchmarkDate: Date = Date() // 달력 표시 기준일
         var filters: Set<Int> = []
         var cacheData: [MonthKey: [CareRecord]] = [:]
         
+        var selectedDate: Date? // 선택된 날짜
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
             .filter: [.filter([])]
@@ -65,7 +67,10 @@ final class CalendarReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return reloadCalendar(moveBenchmark: .none)
+            return Observable.concat([
+                reloadCalendar(moveBenchmark: .none),
+                .just(.updateSelectedDate(Date()))
+                ])
             
         case .previousMonth:
             return reloadCalendar(moveBenchmark: .previous)
@@ -91,6 +96,9 @@ final class CalendarReactor: Reactor {
             
         case .updateMonthlyData(let key, let data):
             newState.cacheData[key] = data
+            
+        case .updateSelectedDate(let date):
+            newState.selectedDate = date
             
         case .setCalendarHeader(let year, let month):
             newState.data[.header] = [CalendarView.Item.header(year, month)]
@@ -129,14 +137,16 @@ extension CalendarReactor {
         Observable.create { [weak self] observer in
             guard let self else { return Disposables.create() }
             
-            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
+            let benchmark = self.benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
             let filters = filters.isEmpty ? currentState.filters : filters // 필터
                 
             let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
             guard let year = dateComp.year,
                   let month = dateComp.month else { return Disposables.create() }
             
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else { return }
+                
                 do {
                     // 월간 기록
                     let key = self.currentKeyMonth(of: benchmark)
@@ -339,8 +349,9 @@ extension CalendarReactor {
             recordDates[record.recordDate.rawValue, default: []] += [record]
         }
         
-        return dates.reduce([CalendarView.Item]()) { arr, targetDate in
-            let dateComp = calendar.dateComponents([.year, .month, .day], from: targetDate)
+        return dates.reduce([CalendarView.Item]()) { [weak self] arr, targetDate in
+            guard let self else { return arr }
+            let dateComp = self.calendar.dateComponents([.year, .month, .day], from: targetDate)
             
             guard let year = dateComp.year,
                   let month = dateComp.month,
@@ -348,6 +359,8 @@ extension CalendarReactor {
             
             let isCurrentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
             let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CareRecord.recordDate.rawValue와의 비교용 문자열
+            
+            let isSelected = self.calendar.isDate((self.currentState.selectedDate ?? Date()), inSameDayAs: targetDate)
             
             var badges: Set<Badge> = []
             
@@ -376,6 +389,7 @@ extension CalendarReactor {
             
             let manageInfoByDate = CalendarView.ManageInfoByDate(
                 isCurrentMonth: isCurrentMonth,
+                isSelected: isSelected,
                 day: day,
                 date: targetDate,
                 badge: badges

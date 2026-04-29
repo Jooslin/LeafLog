@@ -186,7 +186,18 @@ extension CalendarView {
                 snapshot.appendItems(target.value, toSection: target.key)
             }
         }
-        dataSource.apply(snapshot, animatingDifferences: true)
+        dataSource.apply(snapshot, animatingDifferences: true) { [weak self] in
+            guard let self else { return }
+            
+            guard let selectedItem = data[.calendar]?.first(where: {
+                guard case .calendar(let info) = $0 else { return false }
+                return info.isSelected
+            }) else { return }
+            
+            guard let indexPath = self.dataSource.indexPath(for: selectedItem) else { return }
+            
+            self.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
+        }
     }
 }
 
@@ -223,6 +234,7 @@ extension CalendarView {
     nonisolated
     struct ManageInfoByDate: Hashable {
         let isCurrentMonth: Bool // 표시되는 달 여부
+        let isSelected: Bool
         let day: Int
         let date: Date
         let badge: Set<Badge>
