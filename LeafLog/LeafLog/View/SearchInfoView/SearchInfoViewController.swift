@@ -8,7 +8,7 @@ import SnapKit
 import Then
 import UIKit
 
-final class SearchInfoViewController: UIViewController {
+final class SearchInfoViewController: BaseViewController {
     private let infoView = SearchInfoView()
     private let dimmedView = UIView().then {
         $0.backgroundColor = UIColor.black.withAlphaComponent(0.20)
@@ -20,6 +20,7 @@ final class SearchInfoViewController: UIViewController {
     }
 
     override func viewDidLoad() {
+        maximumDynamicTypeCategory = .accessibilityLarge
         super.viewDidLoad()
         modalPresentationStyle = .overFullScreen
         view.backgroundColor = .clear

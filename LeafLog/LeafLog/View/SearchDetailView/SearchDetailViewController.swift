@@ -29,6 +29,7 @@ final class SearchDetailViewController: BaseViewController, View {
     }
     
     override func viewDidLoad() {
+        maximumDynamicTypeCategory = .accessibilityLarge
         super.viewDidLoad()
         view.backgroundColor = .white
     }

@@ -21,7 +21,7 @@ class BaseViewController: UIViewController, Stepper {
             applyDynamicTypeCategoryLimitsIfNeeded()
         }
     }
-    var maximumDynamicTypeCategory: UIContentSizeCategory? = .accessibilityLarge {
+    var maximumDynamicTypeCategory: UIContentSizeCategory? = .extraLarge {
         didSet {
             applyDynamicTypeCategoryLimitsIfNeeded()
         }

@@ -41,6 +41,7 @@ final class SearchViewController: BaseViewController, View {
     }
 
     override func viewDidLoad() {
+        maximumDynamicTypeCategory = .accessibilityLarge
         super.viewDidLoad()
         configureFilters()
         configureCollectionView()
