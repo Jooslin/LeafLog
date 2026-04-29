@@ -69,6 +69,7 @@ final class PlantDetailCell: UICollectionViewCell {
         $0.spacing = 28
     }
 
+    private let healthStatusRow = PlantDetailInfoRowView(title: "식물 상태", value: "", showSeparator: true)
     private let adoptedDateRow = PlantDetailInfoRowView(title: "데려온 날", value: "", showSeparator: true)
     private let locationRow = PlantDetailInfoRowView(title: "위치", value: "", showSeparator: true)
     private let lastWateredDateRow = PlantDetailInfoRowView(title: "마지막 급수일", value: "", showSeparator: false)
@@ -138,7 +139,7 @@ extension PlantDetailCell {
         cardView.addSubview(stackView)
         guideCardView.addSubview(guideStackView)
 
-        [adoptedDateRow, locationRow, lastWateredDateRow].forEach {
+        [healthStatusRow, adoptedDateRow, locationRow, lastWateredDateRow].forEach {
             stackView.addArrangedSubview($0)
         }
 
@@ -183,13 +184,14 @@ extension PlantDetailCell {
 
     func configure(rows: [RowData], guide: GuideData, isGuideEnabled: Bool) {
         let defaultRows = [
+            RowData(title: "식물 상태", value: ""),
             RowData(title: "데려온 날", value: ""),
             RowData(title: "위치", value: ""),
             RowData(title: "마지막 급수일", value: "")
         ]
 
         let appliedRows = rows.isEmpty ? defaultRows : rows
-        let rowViews = [adoptedDateRow, locationRow, lastWateredDateRow]
+        let rowViews = [healthStatusRow, adoptedDateRow, locationRow, lastWateredDateRow]
 
         for (index, rowView) in rowViews.enumerated() {
             if index < appliedRows.count {
