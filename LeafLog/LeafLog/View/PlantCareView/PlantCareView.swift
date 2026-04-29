@@ -20,6 +20,7 @@ final class PlantCareView: UIView {
         static let compactHeadertrailingOffset: CGFloat = 16
         static let compactHeaderNameScale: CGFloat = 0.8
         static let compactHeaderNameGapTolerance: CGFloat = 4
+        static let statusEstimatedHeight: CGFloat = 160
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
         static let timelinePhotoHeight: CGFloat = 420
