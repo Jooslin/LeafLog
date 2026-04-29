@@ -23,6 +23,7 @@ final class PlantLabelCardView: BaseCardView {
     init() {
         super.init(frame: .zero, cornerRadius: 12)
         backgroundColor = .white
+        setWaterButtonConfiguration(style: .water)
         setLayout()
     }
     
@@ -76,5 +77,24 @@ extension PlantLabelCardView {
         views[1].setContentCompressionResistancePriority(.required, for: .horizontal)
         
         return stackView
+    }
+    
+    private func setWaterButtonConfiguration(style: AppButtonStyle) {
+        // 상태 변화
+        waterButton.configurationUpdateHandler = { button in
+            guard var config = button.configuration else { return }
+
+            if button.isSelected {
+                config.baseForegroundColor = style.selectedTextColor
+                config.background.backgroundColor = style.selectedBackgroundColor
+                config.title = "물 줬어요"
+            } else {
+                config.baseForegroundColor = style.normalTextColor
+                config.background.backgroundColor = style.normalBackgroundColor
+                config.title = "물 주기"
+            }
+
+            button.configuration = config
+        }
     }
 }

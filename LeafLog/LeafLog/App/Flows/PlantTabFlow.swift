@@ -11,6 +11,7 @@ import Dependencies
 import AVFoundation
 import RxRelay
 import PhotosUI
+import ReactorKit
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -35,6 +36,7 @@ final class PlantTabFlow: Flow {
         switch step {
         case .plantTab:
             let homeViewController = HomeViewController()
+            homeViewController.reactor = HomeReactor()
             navigationController.setViewControllers([homeViewController], animated: false)
 
             return .one(
@@ -43,6 +45,12 @@ final class PlantTabFlow: Flow {
                     withNextStepper: homeViewController
                 )
             )
+            
+        case .record(let plantID):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+            viewController.hidesBottomBarWhenPushed = true
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
         case .endPlantRegister:
             navigationController.popToRootViewController(animated: true)
@@ -84,13 +92,6 @@ final class PlantTabFlow: Flow {
             } else {
                 navigationController.pushViewController(plantRegisterViewController, animated: true)
             }
-
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: plantRegisterViewController,
-//                    withNextStepper: plantRegisterViewController
-//                )
-//            )
             
             return .one(
                 flowContributor: .contribute(
@@ -102,15 +103,12 @@ final class PlantTabFlow: Flow {
         case .plantEdit(let plant):
             let plantRegisterViewController = makePlantEditViewController(plant: plant)
             navigationController.pushViewController(plantRegisterViewController, animated: true)
-
+            
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: CompositeStepper(
-                        steppers: [plantRegisterViewController, photoSelectStepper]
-                    )
-                )
-            )
+                    withNextStepper: plantRegisterViewController
+                ))
 
         case .plantSearch:
             let searchViewController = SearchViewController()
@@ -129,13 +127,7 @@ final class PlantTabFlow: Flow {
             let viewController = SearchDetailViewController(reactor: reactor)
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
-
-        case .record(let plantID):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
-            viewController.hidesBottomBarWhenPushed = true
-            navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))         
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
