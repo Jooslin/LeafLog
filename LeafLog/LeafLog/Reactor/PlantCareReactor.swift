@@ -1074,6 +1074,10 @@ private extension PlantCareReactor {
     // 식물 정보 디테일
     static func makePlantInfoRows(from plant: MyPlant) -> [PlantCarePlantInfoRow] {
         [
+            PlantCarePlantInfoRow(
+                title: "식물 상태",
+                value: displayHealthStatus(from: plant.healthStatus)
+            ),
             PlantCarePlantInfoRow(title: "데려온 날", value: displayDate(from: plant.createdAt)),
             PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
             PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))
@@ -1096,6 +1100,10 @@ private extension PlantCareReactor {
 
     static func displayDate(from date: Date) -> String {
         plantInfoDateFormatter.string(from: date)
+    }
+
+    static func displayHealthStatus(from status: String) -> String {
+        PlantCareStatus.make(from: status)?.title ?? nonEmptyText(status, fallback: "정보 없음")
     }
 
     static let plantInfoDateFormatter: DateFormatter = {
