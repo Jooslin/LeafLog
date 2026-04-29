@@ -14,11 +14,10 @@ import RxCocoa
 final class HomeView: UIView {
     //MARK: properties
     let collectionView = PlantCollectionView()
-    private lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
-    let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
-    let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
+    let totalWideCard = WideTotalCardView()
     
     let emptyView = EmptyPlantView().then {
         $0.isHidden = true
@@ -39,14 +38,8 @@ final class HomeView: UIView {
 
 extension HomeView {
     private func setLayout() {
-        let cardStack = UIStackView(arrangedSubviews: [totalPlant, totalWater]).then {
-            $0.axis = .horizontal
-            $0.spacing = 16
-            $0.distribution = .fillEqually
-        }
-        
         addSubview(titleView)
-        addSubview(cardStack)
+        addSubview(totalWideCard)
         addSubview(emptyView)
         addSubview(collectionView)
         
@@ -56,20 +49,20 @@ extension HomeView {
             $0.height.equalTo(48)
         }
         
-        cardStack.snp.makeConstraints {
+        totalWideCard.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
-            $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.height.equalTo(48)
+            $0.centerX.equalToSuperview()
+            $0.width.equalTo(320)
         }
         
         emptyView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.top.equalTo(totalWideCard.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
             $0.bottom.equalTo(safeAreaLayoutGuide)
         }
         
         collectionView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.top.equalTo(totalWideCard.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
@@ -118,6 +111,24 @@ extension HomeView {
     }
 }
 
+//MARK: Configure
+extension HomeView {
+    func showEmpty(_ isEmpty: Bool) {
+        if isEmpty {
+            emptyView.isHidden = false
+            collectionView.isHidden = true
+        } else {
+            emptyView.isHidden = true
+            collectionView.isHidden = false
+        }
+    }
+    
+    func configureCards(total: Int, needWater: Int) {
+        totalWideCard.plantLabel.text = "내 식물 \(total)개"
+        totalWideCard.waterLabel.text = "물 필요 \(needWater)개"
+    }
+}
+
 //MARK: CollectionView - Section, Item
 extension HomeView {
     enum Section: Int {
@@ -131,25 +142,27 @@ extension HomeView {
     
     nonisolated
     struct ShelfPlant: Hashable {
-        let id: UUID? // 식물의 uuid
-        let defaultImageAssetName: String?
-        let name: String? // 식물의 이름(별명)
-        let daysFromLastWatering: Int? // 최근 급수일 - N일 전
-        let daysToNextWatering: Int? // 다음 급수일 - N일 후
-        let didWater: Bool? // 금일 급수 여부
+        var id: UUID? = nil // 식물의 uuid
+        var defaultImageAssetName: String? = nil
+        var name: String? = nil // 식물의 이름(별명)
+        var daysFromLastWatering: Int? = nil // 최근 급수일 - N일 전
+        var daysToNextWatering: Int? = nil // 다음 급수일 - N일 후
+        var didWater: Bool? = nil // 금일 급수 여부
         let emptyShelf: EmptyShelf
         let shelfOrder: ShelfOrder
     }
 }
 
 nonisolated
-enum EmptyShelf {
+enum EmptyShelf: Int {
+    case first = 0
+    case second
+    case third
     case none
-    case first, second, third
 }
 
 nonisolated
-enum ShelfOrder {
+enum ShelfOrder: Int {
     case first
     case second
     case third
@@ -162,5 +175,12 @@ extension Reactive where Base: HomeView {
   
     var alarmButtonTap: ControlEvent<Void> {
         base.titleView.rightButton.rx.tap
+    }
+    
+    var itemSelected: Observable<HomeView.Item> {
+        base.collectionView.rx.itemSelected
+            .compactMap {
+                base.dataSource.itemIdentifier(for: $0)
+            }
     }
 }
