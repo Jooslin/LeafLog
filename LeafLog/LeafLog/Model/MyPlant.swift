@@ -102,7 +102,26 @@ struct MyPlant: Codable, Hashable {
 
     // 기본 이미지
     var defaultImageAssetName: String {
-        category.defaultImageAssetName // 기본 이미지
+        speciesDefaultImageAssetName ?? category.defaultImageAssetName
+    }
+
+    private var speciesDefaultImageAssetName: String? {
+        let normalizedSpeciesName = speciesName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .components(separatedBy: .whitespacesAndNewlines)
+            .joined()
+
+        switch category {
+        case .vine where normalizedSpeciesName.contains("몬스테라") || normalizedSpeciesName.contains("monstera"):
+            return "plantMonstera"
+        case .grass where normalizedSpeciesName.contains("안수리움")
+            || normalizedSpeciesName.contains("안스리움")
+            || normalizedSpeciesName.contains("anthurium"):
+            return "plantAnthurium"
+        default:
+            return nil
+        }
     }
 
     enum CodingKeys: String, CodingKey {
