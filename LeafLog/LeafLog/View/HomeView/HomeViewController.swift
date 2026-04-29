@@ -87,11 +87,11 @@ extension HomeViewController {
         
         // 상단 카드뷰 UI 업데이트
         let total = state.map(\.totalPlants) // 총 식물 수
-        let watered = state.map(\.totalWater)
+        let needWater = state.map(\.totalWater)
         
-        Driver.combineLatest(total, watered)
-            .drive { [weak self] total, watered in
-                self?.homeView.configureCards(total: total, watered: watered)
+        Driver.combineLatest(total, needWater)
+            .drive { [weak self] total, needWater in
+                self?.homeView.configureCards(total: total, needWater: needWater)
             }
             .disposed(by: disposeBag)
         

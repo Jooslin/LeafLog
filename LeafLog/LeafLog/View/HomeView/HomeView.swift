@@ -17,8 +17,7 @@ final class HomeView: UIView {
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(collectionView)
     
     let titleView = TitleHeaderView(text: "", hasBackButton: false, rightButtonImage: "bell")
-    let totalPlant = TotalCardView(image: Badge.sprout.bigImage, text: "내 식물 N개")
-    let totalWater = TotalCardView(image: Badge.water.bigImage, text: "물 준 식물 N개")
+    let totalWideCard = WideTotalCardView()
     
     let emptyView = EmptyPlantView().then {
         $0.isHidden = true
@@ -39,14 +38,8 @@ final class HomeView: UIView {
 
 extension HomeView {
     private func setLayout() {
-        let cardStack = UIStackView(arrangedSubviews: [totalPlant, totalWater]).then {
-            $0.axis = .horizontal
-            $0.spacing = 16
-            $0.distribution = .fillEqually
-        }
-        
         addSubview(titleView)
-        addSubview(cardStack)
+        addSubview(totalWideCard)
         addSubview(emptyView)
         addSubview(collectionView)
         
@@ -56,20 +49,20 @@ extension HomeView {
             $0.height.equalTo(48)
         }
         
-        cardStack.snp.makeConstraints {
+        totalWideCard.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
-            $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.height.equalTo(48)
+            $0.centerX.equalToSuperview()
+            $0.width.equalTo(320)
         }
         
         emptyView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.top.equalTo(totalWideCard.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
             $0.bottom.equalTo(safeAreaLayoutGuide)
         }
         
         collectionView.snp.makeConstraints {
-            $0.top.equalTo(totalPlant.snp.bottom)
+            $0.top.equalTo(totalWideCard.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
@@ -130,10 +123,9 @@ extension HomeView {
         }
     }
     
-    func configureCards(total: Int, watered: Int) {
-        totalPlant.label.text = "내 식물 \(total)개"
-//        totalWater.label.text = "물 준 식물 \(watered)개"
-        totalWater.label.text = "급수 필요 \(watered)개"
+    func configureCards(total: Int, needWater: Int) {
+        totalWideCard.plantLabel.text = "내 식물 \(total)개"
+        totalWideCard.waterLabel.text = "물 필요 \(needWater)개"
     }
 }
 
