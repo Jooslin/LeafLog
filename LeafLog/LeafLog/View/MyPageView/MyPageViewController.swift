@@ -26,6 +26,7 @@ final class MyPageViewController: BaseViewController, View {
     }
     
     override func viewDidLoad() {
+        maximumDynamicTypeCategory = .accessibilityLarge // 다이나믹 폰트 최대 크기 지정
         super.viewDidLoad()
     }
     
