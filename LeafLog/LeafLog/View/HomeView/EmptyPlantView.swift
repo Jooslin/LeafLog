@@ -19,7 +19,7 @@ final class EmptyPlantView: UIView {
     private let subLabel = UILabel(text: "식물을 등록하고 키워보세요.", config: .body14, color: .grayScale600)
     
     let registerButton = UIButton(configuration: .filled()).then {
-        $0.setTitle("식물 등록하기")
+        $0.setTitle("첫 식물 등록")
         $0.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
         
         $0.configuration?.image = .plus
@@ -62,11 +62,17 @@ extension EmptyPlantView {
     private func generateStackView() -> UIStackView {
         let labelStack = UIStackView(arrangedSubviews: [label, subLabel]).then {
             $0.axis = .vertical
-            $0.spacing = 8
+            $0.spacing = 4
             $0.alignment = .center
         }
         
-        let stackView = UIStackView(arrangedSubviews: [imageView, labelStack, registerButton]).then {
+        let imageStack = UIStackView(arrangedSubviews: [imageView, labelStack]).then {
+            $0.axis = .vertical
+            $0.spacing = 12
+            $0.alignment = .center
+        }
+        
+        let stackView = UIStackView(arrangedSubviews: [imageStack, registerButton]).then {
             $0.axis = .vertical
             $0.spacing = 32
             $0.alignment = .center
