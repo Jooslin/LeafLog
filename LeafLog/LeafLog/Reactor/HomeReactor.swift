@@ -80,10 +80,6 @@ extension HomeReactor {
                 do {
                     let plants = try await self.plantDBManger.fetchMyPlants()
                     
-//                    let totalWater = plants.count {
-//                        self.calendar.isDateInToday($0.lastWateredAt)
-//                    } // 오늘 물 준 총 식물 개수
-                    
                     guard !plants.isEmpty else {
                         observer.onNext(.setTotalCard(0, 0))
                         observer.onNext(.setEmpty(true))
@@ -100,7 +96,6 @@ extension HomeReactor {
                         return days <= 0
                     } // 오늘 물 줘야하는 식물 개수
                     
-//                    observer.onNext(.setTotalCard(total, totalWater))
                     observer.onNext(.setTotalCard(total, needWater))
                     observer.onNext(.setEmpty(false))
                     observer.onNext(.setPlants(items))
