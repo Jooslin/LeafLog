@@ -39,8 +39,8 @@ final class MainFlow: Flow {
             pop(animated: true)
             return .none
             
-        case .record(let plantID):
-            return navigateToPlantRecord(plantID: plantID)
+        case .record(let plantID, let date):
+            return navigateToPlantRecord(plantID: plantID, date: date)
           
         case .alarmCenter:
             return navigateToAlarmCenter()
@@ -119,8 +119,8 @@ extension MainFlow {
         return .none
     }
     
-    private func navigateToPlantRecord(plantID: UUID) -> FlowContributors {
-        let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+    private func navigateToPlantRecord(plantID: UUID, date: Date) -> FlowContributors {
+        let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
         navigate(to: viewController, animated: true)
         return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
     }

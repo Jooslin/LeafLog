@@ -231,6 +231,7 @@ extension CalendarView {
     nonisolated
     struct DetailManageInfo: Hashable {
         let id: UUID // 식물의 uuid
+        let date: Date // 기록 날짜
         let name: String // 식물의 이름(별명)
         let badge: Badge
     }

@@ -394,7 +394,13 @@ extension CalendarReactor {
             return watered.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .water)
+                
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .water
+                )
                 return CalendarView.Item.water(data)
             }
         case .grow:
@@ -402,7 +408,12 @@ extension CalendarReactor {
             return repotted.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .grow)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .grow
+                )
                 return CalendarView.Item.grow(data)
             }
         case .sprout:
@@ -410,7 +421,12 @@ extension CalendarReactor {
             return fertilized.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .sprout)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .sprout
+                )
                 return CalendarView.Item.sprout(data)
             }
         case .treat:
@@ -418,7 +434,12 @@ extension CalendarReactor {
             return treated.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .treat)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .treat
+                )
                 return CalendarView.Item.treat(data)
             }
         default:

@@ -29,7 +29,7 @@ enum AppStep: Step {
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
-    case record(plantID: UUID)
+    case record(plantID: UUID, date: Date = Date())
     
     // Global
     case alert(String, String) // (타이틀, 메세지)

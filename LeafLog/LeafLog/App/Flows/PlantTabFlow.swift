@@ -131,8 +131,8 @@ final class PlantTabFlow: Flow {
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
 
-        case .record(let plantID):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+        case .record(let plantID, let date):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
