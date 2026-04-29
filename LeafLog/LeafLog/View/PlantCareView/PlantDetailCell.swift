@@ -73,6 +73,14 @@ final class PlantDetailCell: UICollectionViewCell {
     private let adoptedDateRow = PlantDetailInfoRowView(title: "데려온 날", value: "", showSeparator: true)
     private let locationRow = PlantDetailInfoRowView(title: "위치", value: "", showSeparator: true)
     private let lastWateredDateRow = PlantDetailInfoRowView(title: "마지막 급수일", value: "", showSeparator: false)
+    private var rowDefinitions: [(view: PlantDetailInfoRowView, title: String)] {
+        [
+            (healthStatusRow, "식물 상태"),
+            (adoptedDateRow, "데려온 날"),
+            (locationRow, "위치"),
+            (lastWateredDateRow, "마지막 급수일")
+        ]
+    }
 
     private let wateringGuideRow = PlantDetailGuideRowView(
         icon: .asset("badgeWaterBig"),
@@ -139,8 +147,8 @@ extension PlantDetailCell {
         cardView.addSubview(stackView)
         guideCardView.addSubview(guideStackView)
 
-        [healthStatusRow, adoptedDateRow, locationRow, lastWateredDateRow].forEach {
-            stackView.addArrangedSubview($0)
+        rowDefinitions.forEach { row in
+            stackView.addArrangedSubview(row.view)
         }
 
         [wateringGuideRow, temperatureGuideRow, humidityGuideRow, pestGuideRow].forEach {
@@ -183,22 +191,18 @@ extension PlantDetailCell {
     }
 
     func configure(rows: [RowData], guide: GuideData, isGuideEnabled: Bool) {
-        let defaultRows = [
-            RowData(title: "식물 상태", value: ""),
-            RowData(title: "데려온 날", value: ""),
-            RowData(title: "위치", value: ""),
-            RowData(title: "마지막 급수일", value: "")
-        ]
-
+        let defaultRows = rowDefinitions.map { RowData(title: $0.title, value: "") }
         let appliedRows = rows.isEmpty ? defaultRows : rows
-        let rowViews = [healthStatusRow, adoptedDateRow, locationRow, lastWateredDateRow]
 
-        for (index, rowView) in rowViews.enumerated() {
+        for (index, rowDefinition) in rowDefinitions.enumerated() {
             if index < appliedRows.count {
-                rowView.isHidden = false
-                rowView.configure(title: appliedRows[index].title, value: appliedRows[index].value)
+                rowDefinition.view.isHidden = false
+                rowDefinition.view.configure(
+                    title: appliedRows[index].title,
+                    value: appliedRows[index].value
+                )
             } else {
-                rowView.isHidden = true
+                rowDefinition.view.isHidden = true
             }
         }
 
