@@ -51,7 +51,8 @@ extension EmptyPlantView {
         addSubview(stackView)
         
         stackView.snp.makeConstraints {
-            $0.center.equalToSuperview()
+            $0.centerX.equalToSuperview()
+            $0.centerY.equalToSuperview().offset(-24)
         }
         
         registerButton.snp.makeConstraints {
