@@ -67,9 +67,11 @@ final class CalendarReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
+            let date = currentState.selectedDate ?? Date()
             return Observable.concat([
                 reloadCalendar(moveBenchmark: .none),
-                .just(.updateSelectedDate(Date()))
+                .just(.updateSelectedDate(date)),
+                detailItems(of: date)
                 ])
             
         case .previousMonth:
@@ -199,32 +201,37 @@ extension CalendarReactor {
     }
     
     private func detailItems(of date: Date) -> Observable<Mutation> {
-        // 선택 날짜 레이블
-        let dateString = self.dateToString(date, forLabel: true)
-        let labelItem = [CalendarView.Item.label(dateString)]
-        
-        // 선택 날짜 기록
-        let records = dailyPlantRecords(of: date) // 특정 날짜의 기록들
-        
-        let filters = currentState.filters // 필터
-        
-        var detailRecords: [[CalendarView.Item]] = []
-        
-        for badge in [Badge.water, Badge.grow, Badge.sprout, Badge.treat] {
-            if filters.contains(badge.rawValue) || filters.isEmpty {
-                detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
-            } else {
-                detailRecords.append([])
+        // 실제 내부 코드 실행 시점을 호출 시점이 아닌 구독 시점으로 미룸
+        Observable.deferred { [weak self] in
+            guard let self else { return .empty() }
+            // 선택 날짜 레이블
+            let dateString = self.dateToString(date, forLabel: true)
+            let labelItem = [CalendarView.Item.label(dateString)]
+            
+            // 선택 날짜 기록
+            let records = dailyPlantRecords(of: date) // 특정 날짜의 기록들
+            
+            let filters = currentState.filters // 필터
+            
+            var detailRecords: [[CalendarView.Item]] = []
+            
+            for badge in [Badge.water, Badge.grow, Badge.sprout, Badge.treat] {
+                if filters.contains(badge.rawValue) || filters.isEmpty {
+                    detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
+                } else {
+                    detailRecords.append([])
+                }
             }
+            
+            return Observable.concat([
+                .just(.setLabelItem(labelItem)),
+                .just(.setDetailWaterItem(detailRecords[Badge.water.rawValue])),
+                .just(.setDetailGrowItem(detailRecords[Badge.grow.rawValue])),
+                .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
+                .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
+            ])
         }
         
-        return Observable.concat([
-            .just(.setLabelItem(labelItem)),
-            .just(.setDetailWaterItem(detailRecords[Badge.water.rawValue])),
-            .just(.setDetailGrowItem(detailRecords[Badge.grow.rawValue])),
-            .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
-            .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
-        ])
     }
     
     private func updateSelectedItem(date: Date) -> Observable<Mutation> {
