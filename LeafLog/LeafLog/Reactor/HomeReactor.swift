@@ -162,13 +162,10 @@ extension HomeReactor {
         guard !plants.isEmpty else { return [] }
         
         // 다음 급수일까지 남은 일수가 적은 순으로 정렬
-        let sortedPlants = try plants.sorted(by: {
-            let lhsElapsedDays = try daysFromLastWatering(from: $0.lastWateredAt)
-            
-            let rhsElapsedDays = try daysFromLastWatering(from: $1.lastWateredAt)
-            
-            return ($0.wateringIntervalDays - lhsElapsedDays) < ($1.wateringIntervalDays - rhsElapsedDays)
-        })
+        let sortedPlants = try plants
+            .map { (plant: $0, remaining: try $0.wateringIntervalDays - daysFromLastWatering(from: $0.lastWateredAt)) }
+            .sorted { $0.remaining < $1.remaining }
+            .map { $0.plant }
         
         // 아이템 변환
         let items: [HomeView.Item] = try sortedPlants.enumerated().map { index, element in
