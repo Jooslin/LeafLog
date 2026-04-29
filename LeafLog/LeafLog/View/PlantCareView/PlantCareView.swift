@@ -16,6 +16,10 @@ final class PlantCareView: UIView {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
+        static let compactHeaderleadingInset: CGFloat = 56
+        static let compactHeadertrailingOffset: CGFloat = 16
+        static let compactHeaderNameScale: CGFloat = 0.8
+        static let compactHeaderNameGapTolerance: CGFloat = 4
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
         static let timelinePhotoHeight: CGFloat = 420
@@ -31,10 +35,16 @@ final class PlantCareView: UIView {
         $0.contentMode = .scaleAspectFill
         $0.image = nil
         $0.tintColor = nil
+        $0.setContentHuggingPriority(.required, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
 
     let nameLabel = UILabel(text: "name", config: .headline24).then {
         $0.textAlignment = .center
+        $0.numberOfLines = 1 // 최대 한줄
+        $0.lineBreakMode = .byTruncatingTail // 말줄임표 처리
+        $0.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     }
 
     let plantNameLabel = UILabel(text: "plant name", config: .label16, color: .grayScale600).then {
@@ -123,6 +133,8 @@ private extension PlantCareView {
         headerView.addLayoutGuide(headerContentLayoutGuide)
         headerContentLayoutGuide.snp.makeConstraints {
             $0.center.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview().offset(Metric.compactHeaderleadingInset)
+            $0.trailing.lessThanOrEqualToSuperview().inset(Metric.compactHeadertrailingOffset)
         }
 
         addSubview(headerView)
@@ -163,7 +175,7 @@ private extension PlantCareView {
         })
 
         compactLayoutConstraints.append(contentsOf: nameLabel.snp.prepareConstraints {
-            $0.leading.equalTo(plantImageView.snp.trailing)
+            $0.leading.equalTo(plantImageView.snp.trailing).offset(8)
             $0.centerY.trailing.equalTo(headerContentLayoutGuide)
         })
 
@@ -204,7 +216,7 @@ extension PlantCareView {
             guard let self else { return }
 
             self.layoutIfNeeded()
-            self.nameLabel.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+            self.nameLabel.transform = self.compactNameLabelTransform()
             self.plantNameLabel.alpha = 0
         }
         scrollAnimator?.pauseAnimation()
@@ -287,6 +299,17 @@ extension PlantCareView {
         nameLabel.transform = .identity
         plantNameLabel.alpha = 1
         layoutIfNeeded()
+    }
+
+    // 별명이 길 때 (4pt 초과)일 때 x값을 4만큼 왼쪽으로 당기기
+    private func compactNameLabelTransform() -> CGAffineTransform {
+        let scale = Metric.compactHeaderNameScale
+        let visualLeadingGap = (nameLabel.bounds.width * (1 - scale)) / 2
+        let translationX = -max(0, visualLeadingGap - Metric.compactHeaderNameGapTolerance)
+
+        let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
+        let translationTransform = CGAffineTransform(translationX: translationX, y: 0)
+        return scaleTransform.concatenating(translationTransform)
     }
 
     private var hasValidLayoutSize: Bool {
