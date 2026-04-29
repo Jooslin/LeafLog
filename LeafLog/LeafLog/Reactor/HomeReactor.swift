@@ -175,7 +175,7 @@ extension HomeReactor {
             
             let shelfPlant = HomeView.ShelfPlant(
                 id: element.id,
-                category: element.category,
+                defaultImageAssetName: element.defaultImageAssetName,
                 name: element.nickname ?? element.speciesName,
                 daysFromLastWatering: elapsedDays,
                 daysToNextWatering: max(0, element.wateringIntervalDays - elapsedDays),

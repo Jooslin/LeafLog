@@ -16,6 +16,11 @@ final class PlantCareView: UIView {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
+        static let compactHeaderleadingInset: CGFloat = 56
+        static let compactHeadertrailingOffset: CGFloat = 16
+        static let compactHeaderNameScale: CGFloat = 0.8
+        static let compactHeaderNameGapTolerance: CGFloat = 4
+        static let statusEstimatedHeight: CGFloat = 160
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
         static let timelinePhotoHeight: CGFloat = 420
@@ -31,10 +36,16 @@ final class PlantCareView: UIView {
         $0.contentMode = .scaleAspectFill
         $0.image = nil
         $0.tintColor = nil
+        $0.setContentHuggingPriority(.required, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
 
     let nameLabel = UILabel(text: "name", config: .headline24).then {
         $0.textAlignment = .center
+        $0.numberOfLines = 1 // 최대 한줄
+        $0.lineBreakMode = .byTruncatingTail // 말줄임표 처리
+        $0.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     }
 
     let plantNameLabel = UILabel(text: "plant name", config: .label16, color: .grayScale600).then {
@@ -80,6 +91,7 @@ final class PlantCareView: UIView {
 
     var onPreviousDateTapped: (() -> Void)?
     var onNextDateTapped: (() -> Void)?
+    var onStatusTapped: ((PlantCareStatus) -> Void)?
     var onCompleteTapped: ((PlantCareRecordType) -> Void)? // 완료버튼 클릭
     var onMemoToggleTapped: ((PlantCareRecordType) -> Void)? // 메모 토클 클릭
     var onMemoSaveTapped: ((PlantCareRecordType, String) -> Void)? // 메모 저장 클릭
@@ -123,6 +135,8 @@ private extension PlantCareView {
         headerView.addLayoutGuide(headerContentLayoutGuide)
         headerContentLayoutGuide.snp.makeConstraints {
             $0.center.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview().offset(Metric.compactHeaderleadingInset)
+            $0.trailing.lessThanOrEqualToSuperview().inset(Metric.compactHeadertrailingOffset)
         }
 
         addSubview(headerView)
@@ -163,7 +177,7 @@ private extension PlantCareView {
         })
 
         compactLayoutConstraints.append(contentsOf: nameLabel.snp.prepareConstraints {
-            $0.leading.equalTo(plantImageView.snp.trailing)
+            $0.leading.equalTo(plantImageView.snp.trailing).offset(8)
             $0.centerY.trailing.equalTo(headerContentLayoutGuide)
         })
 
@@ -204,7 +218,7 @@ extension PlantCareView {
             guard let self else { return }
 
             self.layoutIfNeeded()
-            self.nameLabel.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+            self.nameLabel.transform = self.compactNameLabelTransform()
             self.plantNameLabel.alpha = 0
         }
         scrollAnimator?.pauseAnimation()
@@ -289,6 +303,17 @@ extension PlantCareView {
         layoutIfNeeded()
     }
 
+    // 별명이 길 때 (4pt 초과)일 때 x값을 4만큼 왼쪽으로 당기기
+    private func compactNameLabelTransform() -> CGAffineTransform {
+        let scale = Metric.compactHeaderNameScale
+        let visualLeadingGap = (nameLabel.bounds.width * (1 - scale)) / 2
+        let translationX = -max(0, visualLeadingGap - Metric.compactHeaderNameGapTolerance)
+
+        let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
+        let translationTransform = CGAffineTransform(translationX: translationX, y: 0)
+        return scaleTransform.concatenating(translationTransform)
+    }
+
     private var hasValidLayoutSize: Bool {
         bounds.width > 0 && bounds.height > 0
     }
@@ -371,14 +396,18 @@ extension PlantCareView {
     // 기록 탭 Snapshot
     func setRecordSnapshot(
         dateTitle: String,
+        statusItem: PlantCareStatusItem,
         items: [PlantCareItem],
         diaryItem: PlantCareDiaryItem,
         animated: Bool = true
     ) {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
-        snapshot.appendSections([.date, .careRecord, .diary])
+        snapshot.appendSections([.date, .plantStatus, .statusSeparator, .careRecord, .careRecordSeparator, .diary])
         snapshot.appendItems([.date(dateTitle)], toSection: .date)
+        snapshot.appendItems([.plantStatus(statusItem)], toSection: .plantStatus)
+        snapshot.appendItems([.separator(.afterStatus)], toSection: .statusSeparator)
         snapshot.appendItems(items.map(Item.careRecord), toSection: .careRecord)
+        snapshot.appendItems([.separator(.afterCareRecord)], toSection: .careRecordSeparator)
         snapshot.appendItems([.diary(diaryItem)], toSection: .diary)
 
         dataSource.apply(snapshot, animatingDifferences: animated) { [weak self] in
@@ -479,9 +508,11 @@ private extension PlantCareView {
 
                 return NSCollectionLayoutSection(group: group)
 
-            case .careRecord, .diary, .timelineRecord, .plantInfo:
+            case .plantStatus, .careRecord, .diary, .timelineRecord, .plantInfo:
                 let estimatedHeight: CGFloat = {
                     switch section {
+                    case .plantStatus:
+                        return Metric.statusEstimatedHeight
                     case .careRecord:
                         return 280
                     case .diary:
@@ -512,8 +543,8 @@ private extension PlantCareView {
 
                 let bottomInset: CGFloat = {
                     switch section {
-                    case .careRecord:
-                        return 24
+                    case .plantStatus, .careRecord:
+                        return 32
                     case .plantInfo:
                         return Metric.plantInfoBottomInset
                     default:
@@ -524,12 +555,32 @@ private extension PlantCareView {
                 return NSCollectionLayoutSection(group: group).then {
                     $0.interGroupSpacing = section == .careRecord ? 24 : 0
                     $0.contentInsets = NSDirectionalEdgeInsets(
-                        top: section == .careRecord ? 16 : 0,
+                        top: section == .plantStatus || section == .careRecord || section == .diary ? 32 : 0,
                         leading: 0,
                         bottom: bottomInset,
                         trailing: 0
                     )
                 }
+            case .statusSeparator, .careRecordSeparator:
+                let item = NSCollectionLayoutItem(
+                    layoutSize: NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1),
+                        heightDimension: .absolute(4)
+                    )
+                )
+
+                let group = NSCollectionLayoutGroup.vertical(
+                    layoutSize: NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1),
+                        heightDimension: .absolute(4)
+                    ),
+                    subitems: [item]
+                )
+
+                return NSCollectionLayoutSection(group: group).then {
+                    $0.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: -16, bottom: 0, trailing: -16)
+                }
+
             case .timelineControl:
                 let item = NSCollectionLayoutItem(
                     layoutSize: NSCollectionLayoutSize(
@@ -566,6 +617,25 @@ private extension PlantCareView {
             cell.onNextTapped = { [weak self] in
                 self?.onNextDateTapped?() // 다음날 버튼 눌림
             }
+        }
+
+        let statusCellRegistration = UICollectionView.CellRegistration<PlantCareStatusCell, Item> { [weak self] cell, _, item in
+            guard case .plantStatus(let statusItem) = item else {
+                return
+            }
+
+            cell.configure(item: statusItem)
+            cell.onStatusTapped = { [weak self] status in
+                self?.onStatusTapped?(status)
+            }
+        }
+
+        let separatorCellRegistration = UICollectionView.CellRegistration<PlantCareSeparatorCell, Item> { cell, _, item in
+            guard case .separator = item else {
+                return
+            }
+
+            cell.configure()
         }
 
         let recordCellRegistration = UICollectionView.CellRegistration<PlantCareRecordCell, Item> { [weak self] cell, _, item in
@@ -674,6 +744,20 @@ private extension PlantCareView {
                     item: item
                 )
 
+            case .plantStatus:
+                return collectionView.dequeueConfiguredReusableCell(
+                    using: statusCellRegistration,
+                    for: indexPath,
+                    item: item
+                )
+
+            case .separator:
+                return collectionView.dequeueConfiguredReusableCell(
+                    using: separatorCellRegistration,
+                    for: indexPath,
+                    item: item
+                )
+
             case .careRecord:
                 return collectionView.dequeueConfiguredReusableCell(
                     using: recordCellRegistration,
@@ -732,7 +816,10 @@ extension PlantCareView {
     nonisolated
     enum Section: Int {
         case date // 날짜
+        case plantStatus // 식물 상태
+        case statusSeparator
         case careRecord // 기록 카드들
+        case careRecordSeparator
         case diary // 오늘의 일기
         case timelineControl // 필터, 정렬
         case timelineRecord // 날짜별 타임라인
@@ -740,8 +827,16 @@ extension PlantCareView {
     }
 
     nonisolated
+    enum SeparatorKind: Hashable {
+        case afterStatus
+        case afterCareRecord
+    }
+
+    nonisolated
     enum Item: Hashable {
         case date(String) // 날짜 구역에 들어갈 글자 데이터
+        case plantStatus(PlantCareStatusItem)
+        case separator(SeparatorKind)
         case careRecord(PlantCareItem) // 카드 구역에 들어갈 식물 관리 데이터
         case diary(PlantCareDiaryItem) // 오늘의 일기 데이터
         case timelineControls(PlantCareTimelineControls)
@@ -816,6 +911,111 @@ private final class PlantCareDateCell: UICollectionViewCell {
         nextButton.addAction(UIAction { [weak self] _ in
             self?.onNextTapped?()
         }, for: .touchUpInside)
+    }
+}
+
+private final class PlantCareStatusCell: UICollectionViewCell {
+    var onStatusTapped: ((PlantCareStatus) -> Void)?
+
+    private var statusButtons: [PlantCareStatus: SelectionButton] = [:]
+
+    private let iconImageView = UIImageView().then {
+        $0.image = UIImage(named: "plant")
+        $0.contentMode = .scaleAspectFit
+        $0.snp.makeConstraints {
+            $0.size.equalTo(64)
+        }
+    }
+
+    private let titleLabel = UILabel(text: "오늘 식물의 상태는 어떤가요?", config: .title14).then {
+        $0.textAlignment = .center
+    }
+
+    private lazy var buttonStackView = UIStackView().then { stackView in
+        stackView.axis = .horizontal
+        stackView.spacing = 8
+        stackView.alignment = .center
+        stackView.distribution = .fill
+
+        PlantCareStatus.allCases.forEach { status in
+            let button = SelectionButton(title: status.title)
+            button.setContentHuggingPriority(.required, for: .horizontal)
+            button.setContentCompressionResistancePriority(.required, for: .horizontal)
+            button.addAction(UIAction { [weak self] _ in
+                self?.onStatusTapped?(status)
+            }, for: .touchUpInside)
+
+            self.statusButtons[status] = button
+            stackView.addArrangedSubview(button)
+        }
+    }
+
+    private lazy var stackView = UIStackView(arrangedSubviews: [
+        iconImageView,
+        titleLabel,
+        buttonStackView
+    ]).then {
+        $0.axis = .vertical
+        $0.alignment = .center
+        $0.setCustomSpacing(16, after: iconImageView)
+        $0.setCustomSpacing(16, after: titleLabel)
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setLayout()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(item: PlantCareStatusItem) {
+        PlantCareStatus.allCases.forEach { status in
+            statusButtons[status]?.isSelected = item.selectedStatus == status
+        }
+    }
+
+    private func setLayout() {
+        contentView.addSubview(stackView)
+
+        stackView.snp.makeConstraints {
+            $0.top.bottom.centerX.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview()
+            $0.trailing.lessThanOrEqualToSuperview()
+        }
+
+        buttonStackView.snp.makeConstraints {
+            $0.height.equalTo(32)
+        }
+    }
+}
+
+private final class PlantCareSeparatorCell: UICollectionViewCell {
+    private let separator = SeparateBar().then {
+        $0.backgroundColor = .grayScale50
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setLayout()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure() {
+        separator.backgroundColor = .grayScale50
+    }
+
+    private func setLayout() {
+        contentView.addSubview(separator)
+
+        separator.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+            $0.height.equalTo(4)
+        }
     }
 }
 

@@ -142,8 +142,8 @@ extension HomeView {
     
     nonisolated
     struct ShelfPlant: Hashable {
-        var id: UUID? = nil// 식물의 uuid
-        var category: PlantCategory? = nil
+        var id: UUID? = nil // 식물의 uuid
+        var defaultImageAssetName: String? = nil
         var name: String? = nil // 식물의 이름(별명)
         var daysFromLastWatering: Int? = nil // 최근 급수일 - N일 전
         var daysToNextWatering: Int? = nil // 다음 급수일 - N일 후

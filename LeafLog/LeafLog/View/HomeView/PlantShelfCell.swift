@@ -65,7 +65,7 @@ extension PlantShelfCell {
         switch data.emptyShelf {
         case .none:
             card.isHidden = false
-            plant.image = UIImage(named: data.category?.defaultImageAssetName ?? "")
+            plant.image = UIImage(named: data.defaultImageAssetName ?? "")
             card.nameLabel.text = data.name ?? ""
             card.waterButton.isSelected = data.didWater ?? false
             
