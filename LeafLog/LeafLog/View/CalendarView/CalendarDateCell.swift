@@ -45,6 +45,7 @@ final class CalendarDateCell: UICollectionViewCell {
         }
         
         dateLabel.textColor = .label
+        isSelected = false
     }
     
     override var isSelected: Bool {

@@ -82,7 +82,11 @@ final class CalendarReactor: Reactor {
             return filterCalendar(tag: tag)
             
         case .dateSelected(let date):
-            return detailItems(of: date)
+            return Observable.concat([
+                detailItems(of: date),
+                updateSelectedItem(date: date),
+                .just(.updateSelectedDate(date))
+                ])
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
@@ -221,6 +225,32 @@ extension CalendarReactor {
             .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
             .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
         ])
+    }
+    
+    private func updateSelectedItem(date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self,
+                  let items = self.currentState.data[.calendar] else { return Disposables.create() }
+            
+            let newItems: [CalendarView.Item] = items.compactMap {
+                guard case .calendar(let data) = $0 else { return nil }
+                
+                let newItem = CalendarView.Item.calendar(
+                    CalendarView.ManageInfoByDate(
+                        isCurrentMonth: data.isCurrentMonth,
+                        isSelected: self.calendar.isDate(data.date, inSameDayAs: date),
+                        day: data.day,
+                        date: data.date,
+                        badge: data.badge)
+                )
+                return newItem
+            }
+            
+            observer.onNext(.setCalendarItem(newItems))
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
     }
 }
 
