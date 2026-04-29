@@ -235,15 +235,21 @@ extension CalendarReactor {
             let newItems: [CalendarView.Item] = items.compactMap {
                 guard case .calendar(let data) = $0 else { return nil }
                 
-                let newItem = CalendarView.Item.calendar(
-                    CalendarView.ManageInfoByDate(
-                        isCurrentMonth: data.isCurrentMonth,
-                        isSelected: self.calendar.isDate(data.date, inSameDayAs: date),
-                        day: data.day,
-                        date: data.date,
-                        badge: data.badge)
-                )
-                return newItem
+                let isSelected = self.calendar.isDate(data.date, inSameDayAs: date)
+                
+                if data.isSelected == isSelected {
+                    return $0
+                } else { // isSelected가 달라진 경우에만 newItem 생성
+                    let newItem = CalendarView.Item.calendar(
+                        CalendarView.ManageInfoByDate(
+                            isCurrentMonth: data.isCurrentMonth,
+                            isSelected: isSelected,
+                            day: data.day,
+                            date: data.date,
+                            badge: data.badge)
+                    )
+                    return newItem
+                }
             }
             
             observer.onNext(.setCalendarItem(newItems))
