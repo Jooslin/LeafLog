@@ -16,6 +16,11 @@ final class NotificationCenterViewController: BaseViewController, View {
         view = notificationCenterView
     }
     
+    override func viewDidLoad() {
+        maximumDynamicTypeCategory = .accessibilityLarge // 다이나믹 폰트 최대 크기 설정
+        super.viewDidLoad()
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tabBarController?.tabBar.isHidden = true             

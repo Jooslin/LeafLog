@@ -15,8 +15,22 @@ class BaseViewController: UIViewController, Stepper {
     let steps = PublishRelay<Step>()
     var disposeBag = DisposeBag()
     
+    // 다이나믹 폰트 크기 제한 지정
+    var minimumDynamicTypeCategory: UIContentSizeCategory? = .large {
+        didSet {
+            applyDynamicTypeCategoryLimitsIfNeeded()
+        }
+    }
+    var maximumDynamicTypeCategory: UIContentSizeCategory? = .extraLarge {
+        didSet {
+            applyDynamicTypeCategoryLimitsIfNeeded()
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        applyDynamicTypeCategoryLimitsIfNeeded()
         
         // 네비게이션 바가 숨겨져도 스와이프로 뒤로 가기가 가능하도록 설정
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
@@ -41,5 +55,10 @@ class BaseViewController: UIViewController, Stepper {
             })
             .disposed(by: disposeBag)
     }
-}
 
+    private func applyDynamicTypeCategoryLimitsIfNeeded() {
+        guard isViewLoaded else { return }
+        view.minimumContentSizeCategory = minimumDynamicTypeCategory
+        view.maximumContentSizeCategory = maximumDynamicTypeCategory
+    }
+}
