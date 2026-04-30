@@ -183,4 +183,8 @@ extension Reactive where Base: HomeView {
                 base.dataSource.itemIdentifier(for: $0)
             }
     }
+    
+    var registerButtonTap: ControlEvent<Void> {
+        base.emptyView.rx.registerButtonTap
+    }
 }
