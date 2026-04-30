@@ -56,59 +56,57 @@ final class PlantTabFlow: Flow {
             navigationController.popToRootViewController(animated: true)
             return .none
 
-        case .plantRegister(let selectedPlant):
-            if let selectedPlant,
-               let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
-                registerViewController.updateSelectedPlant(selectedPlant)
+            // 새 식물 등록 시작
+        case .plantRegister:
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: nil)
 
-                return .none
-            }
-
-            if let selectedPlant,
-               let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
-               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
-                registerViewController.updateSelectedPlant(selectedPlant)
-
-                let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
-                let searchViewControllers = navigationController.viewControllers
-                    .dropFirst(registerIndex + 1)
-                    .filter { $0 is SearchViewController }
-                let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
-                navigationController.setViewControllers(updatedViewControllers, animated: true)
-
-                return .none
-            }
-
-            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
-            
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
                 navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
-            } else if selectedPlant == nil,
-                      let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
                 var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
                 updatedViewControllers.append(plantRegisterViewController)
                 navigationController.setViewControllers(updatedViewControllers, animated: true)
             } else {
                 navigationController.pushViewController(plantRegisterViewController, animated: true)
             }
-            
+
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
                     withNextStepper: CompositeStepper(
                         steppers: [plantRegisterViewController, photoSelectStepper]
-                    )))
-
-        case .plantEdit(let plant):
-            let plantRegisterViewController = makePlantEditViewController(plant: plant)
-            navigationController.pushViewController(plantRegisterViewController, animated: true)
+                    )
+                )
+            )
             
+            // 검색, 상세 등에서 식물 정보 가지고 시작
+        case .plantRegisterSelectedPlant(let selectedPlant):
+            if let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
+                registerViewController.updateSelectedPlant(selectedPlant)
+                return .none
+            }
+
+            if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
+                updateAndRestorePlantRegister(
+                    registerViewController: registerViewController,
+                    selectedPlant: selectedPlant,
+                    registerIndex: registerIndex
+                )
+                return .none
+            }
+
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
+            navigationController.pushViewController(plantRegisterViewController, animated: true)
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: plantRegisterViewController
-                ))
+                    withNextStepper: CompositeStepper(
+                        steppers: [plantRegisterViewController, photoSelectStepper]
+                    )
+                )
+            )
 
         case .plantSearch:
             let searchViewController = SearchViewController()
@@ -238,15 +236,23 @@ extension PlantTabFlow {
         navigationController.present(alert, animated: true)
     }
 
-    private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
-        let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
-        let viewController = PlantRegisterViewController(reactor: reactor)
-        viewController.hidesBottomBarWhenPushed = true
-        return viewController
+    private func updateAndRestorePlantRegister(
+        registerViewController: PlantRegisterViewController,
+        selectedPlant: SelectedPlant,
+        registerIndex: Int
+    ) {
+        registerViewController.updateSelectedPlant(selectedPlant)
+
+        let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+        let searchViewControllers = navigationController.viewControllers
+            .dropFirst(registerIndex + 1)
+            .filter { $0 is SearchViewController }
+        let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
+        navigationController.setViewControllers(updatedViewControllers, animated: true)
     }
 
-    private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
-        let reactor = PlantRegisterReactor(mode: .edit(plant))
+    private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
         let viewController = PlantRegisterViewController(reactor: reactor)
         viewController.hidesBottomBarWhenPushed = true
         return viewController

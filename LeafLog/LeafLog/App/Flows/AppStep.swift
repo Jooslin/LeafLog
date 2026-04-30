@@ -37,7 +37,8 @@ enum AppStep: Step {
     case alarmCenter
     
     // PlantTab
-    case plantRegister(SelectedPlant? = nil)
+    case plantRegister
+    case plantRegisterSelectedPlant(SelectedPlant)
     case plantEdit(MyPlant)
     case plantSearch
     case plantSearchDetail(String)
