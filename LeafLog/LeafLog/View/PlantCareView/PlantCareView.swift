@@ -1052,9 +1052,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         $0.configuration = configuration
     }
     private let memoLabel = UILabel(text: "메모 추가", config: .label14, color: .black)
+    private let memoRow = UIControl()
 
     private let chevronButton = UIButton(type: .system).then {
         $0.tintColor = .grayScale600
+        $0.isUserInteractionEnabled = false
     }
 
     private let textView = UITextView().then {
@@ -1074,9 +1076,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     private let saveButton = UIButton(config: .sSize, title: "저장")
     private lazy var saveButtonRow = UIView().then {
         $0.addSubview(saveButton)
-
+        
         saveButton.snp.makeConstraints {
-            $0.top.bottom.trailing.equalToSuperview()
+            $0.bottom.equalToSuperview()
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.equalToSuperview().inset(2)
             $0.width.equalTo(49)
             $0.height.equalTo(28)
         }
@@ -1118,20 +1122,27 @@ private final class PlantCareRecordCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        // 아이콘, 제목, 완료 버튼
-        let headerRow = UIStackView(arrangedSubviews: [titleStack, completeButton]).then {
-            $0.axis = .horizontal
-            $0.alignment = .center
-            $0.distribution = .equalSpacing
+        let headerRow = UIView().then {
+            $0.addSubview(titleStack)
+            $0.addSubview(completeButton)
         }
 
-        // 메모 추가 + 토글
-        let memoRow = UIView()
+        titleStack.snp.makeConstraints {
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(2)
+        }
+
+        completeButton.snp.makeConstraints {
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.bottom.equalToSuperview().inset(2)
+        }
+
         memoRow.addSubview(memoLabel)
         memoRow.addSubview(chevronButton)
 
         memoLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         chevronButton.snp.makeConstraints {
@@ -1170,20 +1181,20 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     }
 
     private func setActions() {
+        memoRow.addAction(UIAction { [weak self] _ in
+            guard let self, let item else {
+                return
+            }
+
+            onMemoToggleTapped?(item.type)
+        }, for: .touchUpInside)
+
         completeButton.addAction(UIAction { [weak self] _ in
             guard let item = self?.item else {
                 return
             }
 
             self?.onCompleteTapped?(item.type)
-        }, for: .touchUpInside)
-
-        chevronButton.addAction(UIAction { [weak self] _ in
-            guard let item = self?.item else {
-                return
-            }
-
-            self?.onMemoToggleTapped?(item.type)
         }, for: .touchUpInside)
 
         saveButton.addAction(UIAction { [weak self] _ in
@@ -1269,7 +1280,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let diaryLabel = UILabel(text: "일기 기록", config: .label14, color: .black)
-    private let diaryRow = UIView() // 텍스트 영역 토글 접혔다 폈다하는 row
+    private let diaryRow = UIControl() // 텍스트 영역 토글 접혔다 폈다하는 row
     private let chevronButton = UIButton(type: .system).then {
         $0.tintColor = .grayScale600
         $0.isUserInteractionEnabled = false // 터치 안받음
@@ -1294,7 +1305,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         $0.addSubview(saveButton)
 
         saveButton.snp.makeConstraints {
-            $0.top.bottom.trailing.equalToSuperview()
+            $0.bottom.equalToSuperview()
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.equalToSuperview().inset(2)
             $0.width.equalTo(49)
             $0.height.equalTo(28)
         }
@@ -1391,9 +1404,13 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let headerRow = UIStackView(arrangedSubviews: [titleStack]).then {
-            $0.axis = .horizontal
-            $0.alignment = .center
+        let headerRow = UIView().then {
+            $0.addSubview(titleStack)
+        }
+
+        titleStack.snp.makeConstraints {
+            $0.leading.equalToSuperview().inset(3)
+            $0.centerY.equalToSuperview()
         }
 
         let photoRow = UIView()
@@ -1402,11 +1419,12 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
 
         photoLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         cameraButton.snp.makeConstraints {
-            $0.trailing.equalToSuperview().inset(2)
+            $0.trailing.equalToSuperview().inset(3)
             $0.centerY.equalToSuperview()
             $0.width.equalTo(48)
             $0.height.equalTo(36)
@@ -1416,7 +1434,8 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         diaryRow.addSubview(chevronButton)
 
         diaryLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         chevronButton.snp.makeConstraints {
@@ -1468,9 +1487,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private func setActions() {
-        let diaryRowTapGesture = UITapGestureRecognizer(target: self, action: #selector(diaryRowTapped))
-        diaryRow.addGestureRecognizer(diaryRowTapGesture)
-        diaryRow.isUserInteractionEnabled = true
+        diaryRow.addAction(UIAction { [weak self] _ in
+            self?.onDiaryToggleTapped?()
+        }, for: .touchUpInside)
 
         cameraButton.addAction(UIAction { [weak self] _ in
             guard let self else {
@@ -1487,10 +1506,6 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
             onDiarySaveTapped?(textView.text.trimmingCharacters(in: .whitespacesAndNewlines))
         }, for: .touchUpInside)
-    }
-
-    @objc private func diaryRowTapped() {
-        onDiaryToggleTapped?()
     }
 
     private func configurePhotoPreview(hasPhoto: Bool) {
