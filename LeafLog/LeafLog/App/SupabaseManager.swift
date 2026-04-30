@@ -199,7 +199,8 @@ extension SupabaseManager {
     }
 
     private func resizedImageForUpload(from image: UIImage) -> UIImage {
-        let longestSide = max(image.size.width, image.size.height)
+        let pixelSize = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+        let longestSide = max(pixelSize.width, pixelSize.height)
 
         // 1280보다 작으면 통과
         guard longestSide > ImageUploadCompression.maxPixelLength else {
