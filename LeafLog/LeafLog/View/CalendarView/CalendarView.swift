@@ -18,6 +18,7 @@ final class CalendarView: UIView {
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
+    fileprivate let todayButtonTap = PublishRelay<Void>()
     fileprivate let alarmButtonTap = PublishRelay<Void>()
     fileprivate let filterButtonTap = PublishRelay<Int>()
     
@@ -86,6 +87,11 @@ extension CalendarView {
                 cell.rx.headerNextButtonTap
                     .bind(to: self.headerNextButtonTap)
                     .disposed(by: cell.disposeBag)
+                
+                cell.rx.todayButtonTap
+                    .bind(to: self.todayButtonTap)
+                    .disposed(by: cell.disposeBag)
+                
             default:
                 break
             }

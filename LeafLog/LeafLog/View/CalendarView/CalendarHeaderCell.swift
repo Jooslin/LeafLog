@@ -21,6 +21,8 @@ final class CalendarHeaderCell: UICollectionViewCell {
     private var month: Int = 0
     private let dateLabel = UILabel(text: "", config: .label16)
     
+    fileprivate let todayButton = UIButton(configuration: .filled())
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setButtonAttributes()
@@ -47,16 +49,35 @@ extension CalendarHeaderCell {
         
         previousButton.configuration = config
         nextButton.configuration = config
+        
+        var todayButtonConfig = UIButton.Configuration.filled()
+        todayButtonConfig.title = "오늘"
+        todayButtonConfig.attributedTitle?.font = .systemFont(ofSize: 14, weight: .medium)
+        todayButtonConfig.baseBackgroundColor = .grayScale50
+        todayButtonConfig.baseForegroundColor = .black
+        
+        todayButtonConfig.background.cornerRadius = 8
+        todayButtonConfig.contentInsets = .init(top: 6, leading: 12, bottom: 6, trailing: 12)
+        
+        todayButton.configuration = todayButtonConfig
     }
     
     private func setLayout() {
         let stackView = generateStackView()
         
         contentView.addSubview(stackView)
+        contentView.addSubview(todayButton)
         
         stackView.snp.makeConstraints {
             $0.verticalEdges.equalToSuperview().inset(12)
             $0.centerX.equalToSuperview()
+        }
+        
+        todayButton.snp.makeConstraints {
+            $0.verticalEdges.equalToSuperview().inset(8)
+            $0.trailing.equalToSuperview()
+            $0.width.equalTo(49)
+            $0.height.equalTo(32)
         }
     }
     
@@ -88,5 +109,9 @@ extension Reactive where Base: CalendarHeaderCell {
     
     var headerNextButtonTap: ControlEvent<Void> {
         base.nextButton.rx.tap
+    }
+    
+    var todayButtonTap: ControlEvent<Void> {
+        base.todayButton.rx.tap
     }
 }
