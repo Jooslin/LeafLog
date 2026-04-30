@@ -10,6 +10,10 @@ import SnapKit
 import Then
 
 final class CalendarDateCell: UICollectionViewCell {
+    private let colorChip = ColorChip(frame: .zero, size: 5).then {
+        $0.backgroundColor = .primary700
+    }
+    
     private let selectedView = BaseCardView(cornerRadius: 12).then {
         $0.backgroundColor = .white
         $0.layer.borderWidth = 0.5
@@ -54,11 +58,17 @@ extension CalendarDateCell {
         let badgeStack = generateBadgeStack()
         
         contentView.addSubview(selectedView)
+        contentView.addSubview(colorChip)
         contentView.addSubview(dateLabel)
         contentView.addSubview(badgeStack)
         
         selectedView.snp.makeConstraints {
             $0.edges.equalToSuperview()
+        }
+        
+        colorChip.snp.makeConstraints {
+            $0.top.equalToSuperview().offset(4)
+            $0.centerX.equalToSuperview()
         }
         
         dateLabel.snp.makeConstraints {
