@@ -1025,6 +1025,8 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     var onMemoSaveTapped: ((PlantCareRecordType, String) -> Void)? // 메모 저장 누름
 
     private var item: PlantCareItem?
+    // 메모 내용이 변했는지 판단하기 위해 저장된 메모 내용을 기억하는 변수
+    private var savedMemoText = ""
 
     private let cardView = UIView().then {
         $0.backgroundColor = .grayScale50
@@ -1094,6 +1096,7 @@ private final class PlantCareRecordCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        textView.delegate = self // textview의 내용이 바뀔때마다 감지
         setLayout()
         setActions()
     }
@@ -1107,6 +1110,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         titleLabel.text = item.type.title
         iconImageView.image = UIImage(named: item.type.badge.smallImage)
         textView.text = item.memoText
+        // 현재 저장된 메모
+        savedMemoText = item.memoText.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 비어있지 않고 저장된 메모와 같으면 활성화
+        saveButton.isSelected = !savedMemoText.isEmpty
+            && textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedMemoText
         memoContentStack.isHidden = !item.isMemoExpanded
         chevronButton.setImage(
             UIImage(named: item.isMemoExpanded ? "arrowUp" : "arrowDown"),
@@ -1215,10 +1223,19 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     }
 }
 
+extension PlantCareRecordCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        saveButton.isSelected = textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedMemoText
+            && !savedMemoText.isEmpty
+    }
+}
+
 private final class PlantCareDiaryCell: UICollectionViewCell {
     var onDiaryToggleTapped: (() -> Void)?
     var onDiarySaveTapped: ((String) -> Void)?
     var onDiaryPhotoTapped: ((UIView) -> Void)?
+
+    private var savedDiaryText = ""
 
     private let cardView = UIView().then {
         $0.backgroundColor = .grayScale50
@@ -1321,6 +1338,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        textView.delegate = self
         setLayout()
         setActions()
     }
@@ -1342,6 +1360,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     func configure(item: PlantCareDiaryItem) {
         textView.text = item.diaryText
+        savedDiaryText = item.diaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        saveButton.isSelected = !savedDiaryText.isEmpty
+            && textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedDiaryText
         diaryContentStack.isHidden = !item.isDiaryExpanded
         chevronButton.setImage(
             UIImage(named: item.isDiaryExpanded ? "arrowUp" : "arrowDown"),
@@ -1516,6 +1537,14 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         photoPlaceholderLabel.isHidden = !hasPhoto
     }
 
+}
+
+// 텍스트 필드 내용이 바뀔때마다 실행
+extension PlantCareDiaryCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        saveButton.isSelected = textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedDiaryText
+            && !savedDiaryText.isEmpty
+    }
 }
 
 private final class PlantCareTimelineControlCell: UICollectionViewCell {
