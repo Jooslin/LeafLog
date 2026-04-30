@@ -45,13 +45,7 @@ final class CalendarDateCell: UICollectionViewCell {
         }
         
         dateLabel.textColor = .label
-        isSelected = false
-    }
-    
-    override var isSelected: Bool {
-        didSet {
-            selectedView.isHidden = !isSelected
-        }
+        selectedView.isHidden = true
     }
 }
 
@@ -118,5 +112,7 @@ extension CalendarDateCell {
         data.badge.prefix(badges.count).enumerated().forEach {
             badges[$0.offset].image = UIImage(named: $0.element.smallImage)
         }
+        
+        selectedView.isHidden = !data.isSelected
     }
 }
