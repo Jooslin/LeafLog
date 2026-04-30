@@ -53,6 +53,7 @@ final class PlantRegisterReactor: Reactor {
         case updateNickname(String)
         case updateWateringInterval(String)
         case updateLastWateredDate(Date?)
+        case updateFirstMetDate(Date?)
         case saveTapped(nickname: String?, image: UIImage?)
         case deleteTapped
         
@@ -66,6 +67,7 @@ final class PlantRegisterReactor: Reactor {
         case setNicknameText(String)
         case setWateringIntervalText(String)
         case setLastWateredDate(Date?)
+        case setFirstMetDate(Date?)
         case setExistingImage(UIImage?)
         case setSaving(Bool)
         case setSaveCompleted
@@ -87,6 +89,7 @@ final class PlantRegisterReactor: Reactor {
         var wateringIntervalText = ""
         var lastWateredDate: Date? = nil
         var lastWateredDateText = ""
+        var firstMetDate: Date? = nil
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var existingImage: UIImage? = nil
@@ -123,6 +126,8 @@ final class PlantRegisterReactor: Reactor {
             return .just(.setWateringIntervalText(text))
         case .updateLastWateredDate(let date):
             return .just(.setLastWateredDate(date))
+        case .updateFirstMetDate(let date):
+            return .just(.setFirstMetDate(date))
         case .saveTapped(let nickname, let image):
             return savePlant(state: currentState, nickname: nickname, image: image)
         case .deleteTapped:
@@ -154,6 +159,8 @@ final class PlantRegisterReactor: Reactor {
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
             newState.lastWateredDateText = Self.makeLastWateredDateText(from: date)
+        case .setFirstMetDate(let date):
+            newState.firstMetDate = date
         case .setExistingImage(let image):
             newState.existingImage = image
         case .setSaving(let isSaving):
@@ -351,7 +358,8 @@ final class PlantRegisterReactor: Reactor {
                 contentNumber: state.selectedPlant?.contentNumber,
                 image: image,
                 wateringIntervalDays: wateringIntervalDays,
-                lastWateredAt: lastWateredAt
+                lastWateredAt: lastWateredAt,
+                firstMetDate: state.firstMetDate
             )
         )
     }
@@ -402,7 +410,8 @@ final class PlantRegisterReactor: Reactor {
                 image: image,
                 existingImagePath: plant.imagePath,
                 wateringIntervalDays: wateringIntervalDays,
-                lastWateredAt: lastWateredAt
+                lastWateredAt: lastWateredAt,
+                firstMetDate: state.firstMetDate
             )
         )
     }
@@ -450,6 +459,7 @@ final class PlantRegisterReactor: Reactor {
             state.wateringIntervalText = "\(plant.wateringIntervalDays)"
             state.lastWateredDate = plant.lastWateredAt
             state.lastWateredDateText = makeLastWateredDateText(from: plant.lastWateredAt)
+            state.firstMetDate = plant.firstMetDate
         }
 
         state.isRegisterEnabled = isRegisterEnabled(for: state)
