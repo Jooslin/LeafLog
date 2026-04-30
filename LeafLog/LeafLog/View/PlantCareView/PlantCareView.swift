@@ -1648,10 +1648,10 @@ private final class PlantCareTimelineControlCell: UICollectionViewCell {
         configuration.title = title
         configuration.baseForegroundColor = isSelected ? .primary700 : .grayScale500
         configuration.background.backgroundColor = isSelected ? .primary100 : .white
-        configuration.background.strokeColor = isSelected ? .primary600 : .grayScale100
+        configuration.background.strokeColor = isSelected ? .primary400 : .grayScale100
         configuration.background.strokeWidth = 1
         configuration.background.cornerRadius = 12
-        configuration.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12)
+        configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
             outgoing.font = UIFont.systemFont(ofSize: 14, weight: .medium)
