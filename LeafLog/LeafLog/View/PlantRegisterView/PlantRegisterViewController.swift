@@ -182,7 +182,7 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self.resetFormUI()
                 switch reactor.currentState.mode {
                 case .create:
-                    self.steps.accept(AppStep.endPlantRegister)
+                    self.steps.accept(AppStep.endPlantRegisterEdit)
                 case .edit:
                     self.steps.accept(AppStep.pageBack)
                 }
@@ -193,7 +193,13 @@ final class PlantRegisterViewController: BaseViewController, View {
             .filter { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.endPlantRegister)
+                guard let self else { return }
+                switch reactor.currentState.mode {
+                case .create:
+                    self.steps.accept(AppStep.endPlantRegisterEdit)
+                case .edit:
+                    self.steps.accept(AppStep.endPlantDelete)
+                }
             })
             .disposed(by: disposeBag)
         

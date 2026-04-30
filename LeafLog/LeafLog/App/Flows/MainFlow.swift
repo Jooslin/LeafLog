@@ -38,6 +38,10 @@ final class MainFlow: Flow {
         case .pageBack:
             pop(animated: true)
             return .none
+
+        case .endPlantDelete:
+            popTwice(animated: true)
+            return .none
             
         case .record(let plantID):
             return navigateToPlantRecord(plantID: plantID)
@@ -51,6 +55,15 @@ final class MainFlow: Flow {
                     withNextPresentable: plantRegisterViewController,
                     withNextStepper: plantRegisterViewController
                 ))
+
+        case let .confirmAlert(title, message, okTitle, onConfirm):
+            presentConfirmAlert(
+                title: title,
+                message: message,
+                okTitle: okTitle,
+                onConfirm: onConfirm
+            )
+            return .none
           
         case .alarmCenter:
             return navigateToAlarmCenter()
@@ -77,6 +90,21 @@ final class MainFlow: Flow {
             navigationController.popViewController(animated: animated)
         } else {
             tabBarController.selectedViewController?.dismiss(animated: animated)
+        }
+    }
+
+    private func popTwice(animated: Bool) {
+        guard let navigationController = tabBarController.selectedViewController as? UINavigationController else {
+            tabBarController.selectedViewController?.dismiss(animated: animated)
+            return
+        }
+
+        let targetIndex = navigationController.viewControllers.count - 3
+        if targetIndex >= 0 {
+            let targetViewController = navigationController.viewControllers[targetIndex]
+            navigationController.popToViewController(targetViewController, animated: animated)
+        } else {
+            navigationController.popToRootViewController(animated: animated)
         }
     }
 }
@@ -127,6 +155,25 @@ extension MainFlow {
         
         present(alert, animated: true)
         return .none
+    }
+
+    private func presentConfirmAlert(
+        title: String,
+        message: String,
+        okTitle: String,
+        onConfirm: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: title,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+        alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
+            onConfirm()
+        })
+
+        present(alert, animated: true)
     }
     
     private func navigateToPlantRecord(plantID: UUID) -> FlowContributors {

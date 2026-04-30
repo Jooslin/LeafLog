@@ -25,7 +25,8 @@ enum AppStep: Step {
     
     // Tab
     case plantTab
-    case endPlantRegister
+    case endPlantRegisterEdit
+    case endPlantDelete
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
