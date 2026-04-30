@@ -448,6 +448,7 @@ extension CalendarReactor {
         switch kind {
         case .water:
             let watered = record.filter { $0.value.watered }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return watered.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
@@ -462,6 +463,7 @@ extension CalendarReactor {
             }
         case .grow:
             let repotted = record.filter { $0.value.repotted }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return repotted.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
@@ -475,6 +477,7 @@ extension CalendarReactor {
             }
         case .sprout:
             let fertilized = record.filter { $0.value.fertilized }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return fertilized.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
@@ -488,6 +491,7 @@ extension CalendarReactor {
             }
         case .treat:
             let treated = record.filter { $0.value.treated }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return treated.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
