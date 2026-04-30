@@ -187,7 +187,7 @@ extension SupabaseManager {
     }
 
     private static func isStorageSizeLimitError(_ error: Error) -> Bool {
-        let message = "\(error.localizedDescription) \(String(describing: error))".lowercased()
+        let message = (String(describing: error)).lowercased()
         return message.contains("maximum allowed size")
             || message.contains("object exceeded")
     }
