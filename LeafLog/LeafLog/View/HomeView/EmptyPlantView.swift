@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 import Then
+import RxSwift
+import RxCocoa
 
 final class EmptyPlantView: UIView {
     private let imageView = UIImageView(image: .plantCategoryShrub).then {
@@ -83,5 +85,11 @@ extension EmptyPlantView {
         subLabel.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         
         return stackView
+    }
+}
+
+extension Reactive where Base: EmptyPlantView {
+    var registerButtonTap: ControlEvent<Void> {
+        base.registerButton.rx.tap
     }
 }
