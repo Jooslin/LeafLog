@@ -42,15 +42,15 @@ final class MainFlow: Flow {
         case .record(let plantID):
             return navigateToPlantRecord(plantID: plantID)
             
-//        case .plantEdit(let plant):
-//            let plantRegisterViewController = makePlantEditViewController(plant: plant)
-//            navigate(to: plantRegisterViewController, animated: true)
-//            
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: plantRegisterViewController,
-//                    withNextStepper: plantRegisterViewController
-//                ))
+        case .plantEdit(let plant):
+            let plantRegisterViewController = makePlantEditViewController(plant: plant)
+            navigate(to: plantRegisterViewController, animated: true)
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: plantRegisterViewController,
+                    withNextStepper: plantRegisterViewController
+                ))
           
         case .alarmCenter:
             return navigateToAlarmCenter()
