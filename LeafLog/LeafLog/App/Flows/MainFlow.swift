@@ -42,7 +42,7 @@ final class MainFlow: Flow {
             return .none
 
         case .endPlantDelete:
-            popTwice(animated: true)
+            popAfterDeletePlant(animated: true)
             return .none
             
         case .record(let plantID):
@@ -116,15 +116,24 @@ final class MainFlow: Flow {
         }
     }
 
-    private func popTwice(animated: Bool) {
+    private func popAfterDeletePlant(animated: Bool) {
         guard let navigationController = tabBarController.selectedViewController as? UINavigationController else {
             tabBarController.selectedViewController?.dismiss(animated: animated)
             return
         }
 
-        let targetIndex = navigationController.viewControllers.count - 3
+        let viewControllers = navigationController.viewControllers
+
+        guard let registerIndex = viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+              registerIndex > 0,
+              viewControllers[registerIndex - 1] is PlantCareViewController else {
+            navigationController.popToRootViewController(animated: animated)
+            return
+        }
+
+        let targetIndex = registerIndex - 2
         if targetIndex >= 0 {
-            let targetViewController = navigationController.viewControllers[targetIndex]
+            let targetViewController = viewControllers[targetIndex]
             navigationController.popToViewController(targetViewController, animated: animated)
         } else {
             navigationController.popToRootViewController(animated: animated)
