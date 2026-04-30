@@ -1184,7 +1184,7 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         }
 
         saveButtonRow.snp.makeConstraints {
-            $0.height.equalTo(32)
+            $0.height.equalTo(30)
         }
     }
 
@@ -1244,7 +1244,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let iconImageView = UIImageView().then {
-        $0.image = UIImage(named: "dairy")
+        $0.image = UIImage(named: "diary")
         $0.contentMode = .scaleAspectFit
         $0.snp.makeConstraints {
             $0.size.equalTo(24)
@@ -1495,7 +1495,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         photoRow.snp.makeConstraints {
-            $0.height.equalTo(32)
+            $0.height.equalTo(36)
         }
 
         diaryRow.snp.makeConstraints {
@@ -1503,7 +1503,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         saveButtonRow.snp.makeConstraints {
-            $0.height.equalTo(32)
+            $0.height.equalTo(30)
         }
     }
 
@@ -1773,7 +1773,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
             // 일기
         case .diary:
-            iconImageView.image = UIImage(named: "dairy")
+            iconImageView.image = UIImage(named: "diary")
             titleLabel.text = "오늘의 일기"
             memoLabel.text = memo.isEmpty ? "" : memo
             configurePhotoPreview(
