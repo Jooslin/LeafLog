@@ -472,8 +472,15 @@ final class PlantCareReactor: Reactor {
             return .just(.setDiaryItem(diaryItem))
 
         case .saveDiary(let diaryText):
+            let trimmedDiaryText = diaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // 일기에 빈 문자열 입력하면 에러
+            guard !trimmedDiaryText.isEmpty else {
+                return .just(.setErrorMessage("일기 내용을 입력해주세요."))
+            }
+
             return saveDiary(
-                diaryText: diaryText,
+                diaryText: trimmedDiaryText,
                 date: currentState.selectedDate,
                 originalDiaryItem: currentState.diaryItem
             )
