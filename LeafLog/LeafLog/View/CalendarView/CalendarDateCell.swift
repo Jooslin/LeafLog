@@ -126,7 +126,7 @@ extension CalendarDateCell {
         colorChip.isHidden = !data.isToday
         
         dateLabel.textColor = data.isToday ? .primary700
-        : data.isCurrentMonth ? dateLabel.textColor
+        : data.isCurrentMonth ? .label
         : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
         
 //        if data.isToday && data.isCurrentMonth {
