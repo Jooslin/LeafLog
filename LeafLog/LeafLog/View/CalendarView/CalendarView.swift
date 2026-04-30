@@ -395,6 +395,10 @@ extension Reactive where Base: CalendarView {
         base.headerNextButtonTap
     }
     
+    var todayButtonTap: PublishRelay<Void> {
+        base.todayButtonTap
+    }
+    
     var filterButtonTap: PublishRelay<Int> {
         base.filterButtonTap
     }

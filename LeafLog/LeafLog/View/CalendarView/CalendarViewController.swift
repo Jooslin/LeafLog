@@ -54,6 +54,11 @@ class CalendarViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        calendarView.rx.todayButtonTap
+            .map { _ in CalendarReactor.Action.backToToday }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         calendarView.rx.filterButtonTap
             .map { CalendarReactor.Action.updateFilter($0) }
             .bind(to: reactor.action)

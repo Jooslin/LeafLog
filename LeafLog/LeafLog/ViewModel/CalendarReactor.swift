@@ -15,6 +15,7 @@ final class CalendarReactor: Reactor {
         case viewWillAppear
         case previousMonth
         case nextMonth
+        case backToToday
         
         case updateFilter(Int)
         case dateSelected(Date)
@@ -80,6 +81,15 @@ final class CalendarReactor: Reactor {
         case .nextMonth:
             return reloadCalendar(moveBenchmark: .next)
             
+        case .backToToday:
+            let date = Date()
+            return Observable.concat([
+                .just(.updateBenchmarkDate(date)),
+                .just(.updateSelectedDate(date)),
+                reloadCalendar(moveBenchmark: .none),
+                detailItems(of: date)
+                ])
+            
         case .updateFilter(let tag):
             return filterCalendar(tag: tag)
             
@@ -140,46 +150,48 @@ final class CalendarReactor: Reactor {
 //MARK: Mutation
 extension CalendarReactor {
     private func reloadCalendar(moveBenchmark: MoveMonth, filters: Set<Int> = []) -> Observable<Mutation> {
-        Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
-            let benchmark = self.benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
-            let filters = filters.isEmpty ? currentState.filters : filters // 필터
+        Observable.deferred {
+            Observable.create { [weak self] observer in
+                guard let self else { return Disposables.create() }
                 
-            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
-            guard let year = dateComp.year,
-                  let month = dateComp.month else { return Disposables.create() }
-            
-            let task = Task { [weak self] in
-                guard let self else { return }
+                let benchmark = self.benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
+                let filters = filters.isEmpty ? currentState.filters : filters // 필터
                 
-                do {
-                    // 월간 기록
-                    let key = self.currentKeyMonth(of: benchmark)
-                    try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트
-                    let records = self.monthlyRecordCache[key] ?? []
+                let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
+                guard let year = dateComp.year,
+                      let month = dateComp.month else { return Disposables.create() }
+                
+                let task = Task { [weak self] in
+                    guard let self else { return }
                     
-                    let dates = self.calculateDates(of: benchmark)
-                    let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
-                    
-                    observer.onNext(.updateBenchmarkDate(benchmark))
-                    observer.onNext(.setCalendarHeader(year, month))
-                    observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
-                    observer.onNext(.setCalendarItem(items))
-                    observer.onCompleted()
-                } catch {
-                    if let authError = error as? AuthError {
-                        observer.onNext(.error(authError.userMessage))
+                    do {
+                        // 월간 기록
+                        let key = self.currentKeyMonth(of: benchmark)
+                        try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트
+                        let records = self.monthlyRecordCache[key] ?? []
+                        
+                        let dates = self.calculateDates(of: benchmark)
+                        let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
+                        
+                        observer.onNext(.updateBenchmarkDate(benchmark))
+                        observer.onNext(.setCalendarHeader(year, month))
+                        observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
+                        observer.onNext(.setCalendarItem(items))
                         observer.onCompleted()
-                    } else {
-                        observer.onNext(.error("알 수 없는 에러입니다."))
-                        observer.onCompleted()
+                    } catch {
+                        if let authError = error as? AuthError {
+                            observer.onNext(.error(authError.userMessage))
+                            observer.onCompleted()
+                        } else {
+                            observer.onNext(.error("알 수 없는 에러입니다."))
+                            observer.onCompleted()
+                        }
                     }
                 }
-            }
-            
-            return Disposables.create {
-                task.cancel()
+                
+                return Disposables.create {
+                    task.cancel()
+                }
             }
         }
     }
