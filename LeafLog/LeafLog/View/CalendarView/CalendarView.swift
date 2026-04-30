@@ -240,6 +240,7 @@ extension CalendarView {
     nonisolated
     struct ManageInfoByDate: Hashable {
         let isCurrentMonth: Bool // 표시되는 달 여부
+        let isToday: Bool
         let isSelected: Bool
         let day: Int
         let date: Date

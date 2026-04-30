@@ -262,6 +262,7 @@ extension CalendarReactor {
                     let newItem = CalendarView.Item.calendar(
                         CalendarView.ManageInfoByDate(
                             isCurrentMonth: data.isCurrentMonth,
+                            isToday: data.isToday,
                             isSelected: isSelected,
                             day: data.day,
                             date: data.date,
@@ -416,6 +417,7 @@ extension CalendarReactor {
             let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CareRecord.recordDate.rawValue와의 비교용 문자열
             
             let isSelected = self.calendar.isDate((self.currentState.selectedDate ?? Date()), inSameDayAs: targetDate)
+            let isToday = self.calendar.isDateInToday(targetDate)
             
             var badges: Set<Badge> = []
             
@@ -444,6 +446,7 @@ extension CalendarReactor {
             
             let manageInfoByDate = CalendarView.ManageInfoByDate(
                 isCurrentMonth: isCurrentMonth,
+                isToday: isToday,
                 isSelected: isSelected,
                 day: day,
                 date: targetDate,
