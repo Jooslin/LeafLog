@@ -78,6 +78,11 @@ extension SupabaseManager {
         static let exceededMessage = "5MB를 초과하는 이미지는 등록할 수 없습니다."
     }
 
+    private enum ImageUploadCompression {
+        static let maxPixelLength: CGFloat = 1280 // 긴쪽이 1280 넘으면 1280으로
+        static let jpegQuality: CGFloat = 0.75 // 75% 품질로 압축
+    }
+
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -153,7 +158,7 @@ extension SupabaseManager {
         conversionError: AuthError,
         sizeLimitError: AuthError
     ) async throws -> String {
-        guard let fileData = image.jpegData(compressionQuality: 0.8) else {
+        guard let fileData = compressedImageData(from: image) else {
             throw conversionError
         }
 
@@ -184,6 +189,39 @@ extension SupabaseManager {
         }
         
         return objectPath
+    }
+
+    // MARK: - 이미지 압축하는 메서드
+    private func compressedImageData(from image: UIImage) -> Data? {
+        let resizedImage = resizedImageForUpload(from: image)
+        // 품질 압축
+        return resizedImage.jpegData(compressionQuality: ImageUploadCompression.jpegQuality)
+    }
+
+    private func resizedImageForUpload(from image: UIImage) -> UIImage {
+        let longestSide = max(image.size.width, image.size.height)
+
+        // 1280보다 작으면 통과
+        guard longestSide > ImageUploadCompression.maxPixelLength else {
+            return image
+        }
+
+        // 1280 기준으로 비율 유지해서 리사이즈
+        let ratio = ImageUploadCompression.maxPixelLength / longestSide
+        let targetSize = CGSize(
+            width: image.size.width * ratio,
+            height: image.size.height * ratio
+        )
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+
+        return UIGraphicsImageRenderer(size: targetSize, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: targetSize))
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
     }
 
     private static func isStorageSizeLimitError(_ error: Error) -> Bool {
