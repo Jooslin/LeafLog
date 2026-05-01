@@ -162,8 +162,8 @@ final class PlantRegisterViewController: BaseViewController, View {
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] viewState in
-                guard let self, let date = viewState.date else { return }
-                self.registerView.setLastWateredDate(date, text: viewState.text)
+                guard let self else { return }
+                self.registerView.updateLastWateredDate(viewState.date, text: viewState.text)
             })
             .disposed(by: disposeBag)
 
@@ -172,8 +172,8 @@ final class PlantRegisterViewController: BaseViewController, View {
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] viewState in
-                guard let self, let date = viewState.date else { return }
-                self.registerView.setFirstMetDate(date, text: viewState.text)
+                guard let self else { return }
+                self.registerView.updateFirstMetDate(viewState.date, text: viewState.text)
             })
             .disposed(by: disposeBag)
         

@@ -242,13 +242,17 @@ final class PlantRegisterView: UIView {
         wateringGuideBannerView.configure(plantName: nil, springWaterCycle: nil)
     }
 
-    func setLastWateredDate(_ date: Date, text: String) {
-        lastWateredDatePicker.date = date
+    func updateLastWateredDate(_ date: Date?, text: String) {
+        if let date {
+            lastWateredDatePicker.date = date
+        }
         lastWateredDateTextField.text = text
     }
 
-    func setFirstMetDate(_ date: Date, text: String) {
-        firstMetDatePicker.date = date
+    func updateFirstMetDate(_ date: Date?, text: String) {
+        if let date {
+            firstMetDatePicker.date = date
+        }
         firstMetDateTextField.text = text
     }
 }
