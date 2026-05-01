@@ -188,11 +188,6 @@ final class PlantRegisterView: UIView {
         selectedCategory: PlantCategory?
     ) {
         plantTypeSearchBar.textField.text = name
-        if let suggestedWateringCycle = WateringGuideView.suggestedInputValue(from: springWaterCycle) {
-            wateringCycleTextField.text = suggestedWateringCycle
-        } else {
-            wateringCycleTextField.text = nil
-        }
 
         // 카테고리가 기타일 경우 비활성화
         if selectedCategory == .other {
