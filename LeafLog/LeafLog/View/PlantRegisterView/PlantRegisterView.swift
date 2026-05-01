@@ -71,7 +71,7 @@ final class PlantRegisterView: UIView {
         $0.datePickerMode = .date
         $0.preferredDatePickerStyle = .wheels
         $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.timeZone = .current
         $0.maximumDate = Date()
     }
     private lazy var lastWateredDateInputView = UIView(
@@ -108,7 +108,7 @@ final class PlantRegisterView: UIView {
         $0.datePickerMode = .date
         $0.preferredDatePickerStyle = .wheels
         $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.timeZone = .current
         $0.maximumDate = Date()
     }
     private lazy var firstMetDateInputView = UIView(
