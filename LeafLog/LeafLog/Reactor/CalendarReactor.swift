@@ -15,6 +15,7 @@ final class CalendarReactor: Reactor {
         case viewWillAppear
         case previousMonth
         case nextMonth
+        case backToToday
         
         case updateFilter(Int)
         case dateSelected(Date)
@@ -24,6 +25,7 @@ final class CalendarReactor: Reactor {
         case updateBenchmarkDate(Date)
         case updateFilters(Set<Int>)
         case updateMonthlyData(MonthKey, [CareRecord])
+        case updateSelectedDate(Date)
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
@@ -39,10 +41,11 @@ final class CalendarReactor: Reactor {
     }
     
     struct State {
-        var benchmarkDate: Date = Date()
+        var benchmarkDate: Date = Date() // 달력 표시 기준일
         var filters: Set<Int> = []
         var cacheData: [MonthKey: [CareRecord]] = [:]
         
+        var selectedDate: Date? // 선택된 날짜
         var data: [CalendarView.Section: [CalendarView.Item]] = [
             .title: [.title],
             .filter: [.filter([])]
@@ -65,7 +68,12 @@ final class CalendarReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return reloadCalendar(moveBenchmark: .none)
+            let date = currentState.selectedDate ?? Date()
+            return Observable.concat([
+                reloadCalendar(moveBenchmark: .none),
+                .just(.updateSelectedDate(date)),
+                detailItems(of: date)
+                ])
             
         case .previousMonth:
             return reloadCalendar(moveBenchmark: .previous)
@@ -73,11 +81,24 @@ final class CalendarReactor: Reactor {
         case .nextMonth:
             return reloadCalendar(moveBenchmark: .next)
             
+        case .backToToday:
+            let date = Date()
+            return Observable.concat([
+                .just(.updateBenchmarkDate(date)),
+                .just(.updateSelectedDate(date)),
+                reloadCalendar(moveBenchmark: .none),
+                detailItems(of: date)
+                ])
+            
         case .updateFilter(let tag):
             return filterCalendar(tag: tag)
             
         case .dateSelected(let date):
-            return detailItems(of: date)
+            return Observable.concat([
+                detailItems(of: date),
+                updateSelectedItem(date: date),
+                .just(.updateSelectedDate(date))
+                ])
         }
     }
     func reduce(state: State, mutation: Mutation) -> State {
@@ -91,6 +112,9 @@ final class CalendarReactor: Reactor {
             
         case .updateMonthlyData(let key, let data):
             newState.cacheData[key] = data
+            
+        case .updateSelectedDate(let date):
+            newState.selectedDate = date
             
         case .setCalendarHeader(let year, let month):
             newState.data[.header] = [CalendarView.Item.header(year, month)]
@@ -126,44 +150,48 @@ final class CalendarReactor: Reactor {
 //MARK: Mutation
 extension CalendarReactor {
     private func reloadCalendar(moveBenchmark: MoveMonth, filters: Set<Int> = []) -> Observable<Mutation> {
-        Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
-            let benchmark = benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
-            let filters = filters.isEmpty ? currentState.filters : filters // 필터
+        Observable.deferred {
+            Observable.create { [weak self] observer in
+                guard let self else { return Disposables.create() }
                 
-            let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
-            guard let year = dateComp.year,
-                  let month = dateComp.month else { return Disposables.create() }
-            
-            let task = Task {
-                do {
-                    // 월간 기록
-                    let key = self.currentKeyMonth(of: benchmark)
-                    try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트
-                    let records = self.monthlyRecordCache[key] ?? []
+                let benchmark = self.benchmarkDate(of: currentState.benchmarkDate, moveTo: moveBenchmark) // 기준일
+                let filters = filters.isEmpty ? currentState.filters : filters // 필터
+                
+                let dateComp = calendar.dateComponents([.year, .month], from: benchmark)
+                guard let year = dateComp.year,
+                      let month = dateComp.month else { return Disposables.create() }
+                
+                let task = Task { [weak self] in
+                    guard let self else { return }
                     
-                    let dates = self.calculateDates(of: benchmark)
-                    let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
-                    
-                    observer.onNext(.updateBenchmarkDate(benchmark))
-                    observer.onNext(.setCalendarHeader(year, month))
-                    observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
-                    observer.onNext(.setCalendarItem(items))
-                    observer.onCompleted()
-                } catch {
-                    if let authError = error as? AuthError {
-                        observer.onNext(.error(authError.userMessage))
+                    do {
+                        // 월간 기록
+                        let key = self.currentKeyMonth(of: benchmark)
+                        try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트
+                        let records = self.monthlyRecordCache[key] ?? []
+                        
+                        let dates = self.calculateDates(of: benchmark)
+                        let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
+                        
+                        observer.onNext(.updateBenchmarkDate(benchmark))
+                        observer.onNext(.setCalendarHeader(year, month))
+                        observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
+                        observer.onNext(.setCalendarItem(items))
                         observer.onCompleted()
-                    } else {
-                        observer.onNext(.error("알 수 없는 에러입니다."))
-                        observer.onCompleted()
+                    } catch {
+                        if let authError = error as? AuthError {
+                            observer.onNext(.error(authError.userMessage))
+                            observer.onCompleted()
+                        } else {
+                            observer.onNext(.error("알 수 없는 에러입니다."))
+                            observer.onCompleted()
+                        }
                     }
                 }
-            }
-            
-            return Disposables.create {
-                task.cancel()
+                
+                return Disposables.create {
+                    task.cancel()
+                }
             }
         }
     }
@@ -185,32 +213,70 @@ extension CalendarReactor {
     }
     
     private func detailItems(of date: Date) -> Observable<Mutation> {
-        // 선택 날짜 레이블
-        let dateString = self.dateToString(date, forLabel: true)
-        let labelItem = [CalendarView.Item.label(dateString)]
-        
-        // 선택 날짜 기록
-        let records = dailyPlantRecords(of: date) // 특정 날짜의 기록들
-        
-        let filters = currentState.filters // 필터
-        
-        var detailRecords: [[CalendarView.Item]] = []
-        
-        for badge in [Badge.water, Badge.grow, Badge.sprout, Badge.treat] {
-            if filters.contains(badge.rawValue) || filters.isEmpty {
-                detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
-            } else {
-                detailRecords.append([])
+        // 실제 내부 코드 실행 시점을 호출 시점이 아닌 구독 시점으로 미룸
+        Observable.deferred { [weak self] in
+            guard let self else { return .empty() }
+            // 선택 날짜 레이블
+            let dateString = self.dateToString(date, forLabel: true)
+            let labelItem = [CalendarView.Item.label(dateString)]
+            
+            // 선택 날짜 기록
+            let records = dailyPlantRecords(of: date) // 특정 날짜의 기록들
+            
+            let filters = currentState.filters // 필터
+            
+            var detailRecords: [[CalendarView.Item]] = []
+            
+            for badge in [Badge.water, Badge.grow, Badge.sprout, Badge.treat] {
+                if filters.contains(badge.rawValue) || filters.isEmpty {
+                    detailRecords.append(dailyRecordConvertToItem(records, kind: badge))
+                } else {
+                    detailRecords.append([])
+                }
             }
+            
+            return Observable.concat([
+                .just(.setLabelItem(labelItem)),
+                .just(.setDetailWaterItem(detailRecords[Badge.water.rawValue])),
+                .just(.setDetailGrowItem(detailRecords[Badge.grow.rawValue])),
+                .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
+                .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
+            ])
         }
         
-        return Observable.concat([
-            .just(.setLabelItem(labelItem)),
-            .just(.setDetailWaterItem(detailRecords[Badge.water.rawValue])),
-            .just(.setDetailGrowItem(detailRecords[Badge.grow.rawValue])),
-            .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
-            .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
-        ])
+    }
+    
+    private func updateSelectedItem(date: Date) -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            guard let self,
+                  let items = self.currentState.data[.calendar] else { return Disposables.create() }
+            
+            let newItems: [CalendarView.Item] = items.compactMap {
+                guard case .calendar(let data) = $0 else { return nil }
+                
+                let isSelected = self.calendar.isDate(data.date, inSameDayAs: date)
+                
+                if data.isSelected == isSelected {
+                    return $0
+                } else { // isSelected가 달라진 경우에만 newItem 생성
+                    let newItem = CalendarView.Item.calendar(
+                        CalendarView.ManageInfoByDate(
+                            isCurrentMonth: data.isCurrentMonth,
+                            isToday: data.isToday,
+                            isSelected: isSelected,
+                            day: data.day,
+                            date: data.date,
+                            badge: data.badge)
+                    )
+                    return newItem
+                }
+            }
+            
+            observer.onNext(.setCalendarItem(newItems))
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
     }
 }
 
@@ -339,8 +405,9 @@ extension CalendarReactor {
             recordDates[record.recordDate.rawValue, default: []] += [record]
         }
         
-        return dates.reduce([CalendarView.Item]()) { arr, targetDate in
-            let dateComp = calendar.dateComponents([.year, .month, .day], from: targetDate)
+        return dates.reduce([CalendarView.Item]()) { [weak self] arr, targetDate in
+            guard let self else { return arr }
+            let dateComp = self.calendar.dateComponents([.year, .month, .day], from: targetDate)
             
             guard let year = dateComp.year,
                   let month = dateComp.month,
@@ -348,6 +415,9 @@ extension CalendarReactor {
             
             let isCurrentMonth = month == currentMonth ? true : false // 달력에 표시될 달(month)과 같은지 비교
             let targetLocalDate = String(format: "%04d-%02d-%02d", year, month, day) // CareRecord.recordDate.rawValue와의 비교용 문자열
+            
+            let isSelected = self.calendar.isDate((self.currentState.selectedDate ?? Date()), inSameDayAs: targetDate)
+            let isToday = self.calendar.isDateInToday(targetDate)
             
             var badges: Set<Badge> = []
             
@@ -376,6 +446,8 @@ extension CalendarReactor {
             
             let manageInfoByDate = CalendarView.ManageInfoByDate(
                 isCurrentMonth: isCurrentMonth,
+                isToday: isToday,
+                isSelected: isSelected,
                 day: day,
                 date: targetDate,
                 badge: badges
@@ -391,34 +463,59 @@ extension CalendarReactor {
         switch kind {
         case .water:
             let watered = record.filter { $0.value.watered }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return watered.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .water)
+                
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .water
+                )
                 return CalendarView.Item.water(data)
             }
         case .grow:
             let repotted = record.filter { $0.value.repotted }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return repotted.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .grow)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .grow
+                )
                 return CalendarView.Item.grow(data)
             }
         case .sprout:
             let fertilized = record.filter { $0.value.fertilized }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return fertilized.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .sprout)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .sprout
+                )
                 return CalendarView.Item.sprout(data)
             }
         case .treat:
             let treated = record.filter { $0.value.treated }
+                .sorted(by: { $0.key.nickname ?? $0.key.speciesName < $1.key.nickname ?? $1.key.speciesName })
             return treated.map {
                 let nickName = $0.key.nickname ?? $0.key.speciesName
                 let name = nickName.isEmpty ? $0.key.speciesName : nickName
-                let data = CalendarView.DetailManageInfo(id: $0.key.id, name: name, badge: .treat)
+                let data = CalendarView.DetailManageInfo(
+                    id: $0.key.id,
+                    date: $0.value.recordDate.date ?? Date(),
+                    name: name,
+                    badge: .treat
+                )
                 return CalendarView.Item.treat(data)
             }
         default:

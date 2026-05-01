@@ -46,8 +46,8 @@ final class PlantTabFlow: Flow {
                 )
             )
             
-        case .record(let plantID):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+        case .record(let plantID, let date):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
@@ -125,7 +125,7 @@ final class PlantTabFlow: Flow {
             let viewController = SearchDetailViewController(reactor: reactor)
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))         
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)

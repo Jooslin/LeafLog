@@ -18,6 +18,7 @@ final class CalendarView: UIView {
     
     fileprivate let headerPreviousButtonTap = PublishRelay<Void>()
     fileprivate let headerNextButtonTap = PublishRelay<Void>()
+    fileprivate let todayButtonTap = PublishRelay<Void>()
     fileprivate let alarmButtonTap = PublishRelay<Void>()
     fileprivate let filterButtonTap = PublishRelay<Int>()
     
@@ -86,6 +87,11 @@ extension CalendarView {
                 cell.rx.headerNextButtonTap
                     .bind(to: self.headerNextButtonTap)
                     .disposed(by: cell.disposeBag)
+                
+                cell.rx.todayButtonTap
+                    .bind(to: self.todayButtonTap)
+                    .disposed(by: cell.disposeBag)
+                
             default:
                 break
             }
@@ -186,7 +192,18 @@ extension CalendarView {
                 snapshot.appendItems(target.value, toSection: target.key)
             }
         }
-        dataSource.apply(snapshot, animatingDifferences: true)
+        dataSource.apply(snapshot, animatingDifferences: true) { [weak self] in
+            guard let self else { return }
+            
+            guard let selectedItem = data[.calendar]?.first(where: {
+                guard case .calendar(let info) = $0 else { return false }
+                return info.isSelected
+            }) else { return }
+            
+            guard let indexPath = self.dataSource.indexPath(for: selectedItem) else { return }
+            
+            self.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
+        }
     }
 }
 
@@ -223,6 +240,8 @@ extension CalendarView {
     nonisolated
     struct ManageInfoByDate: Hashable {
         let isCurrentMonth: Bool // 표시되는 달 여부
+        let isToday: Bool
+        let isSelected: Bool
         let day: Int
         let date: Date
         let badge: Set<Badge>
@@ -231,6 +250,7 @@ extension CalendarView {
     nonisolated
     struct DetailManageInfo: Hashable {
         let id: UUID // 식물의 uuid
+        let date: Date // 기록 날짜
         let name: String // 식물의 이름(별명)
         let badge: Badge
     }
@@ -374,6 +394,10 @@ extension Reactive where Base: CalendarView {
     
     var headerNextButtonTap: PublishRelay<Void> {
         base.headerNextButtonTap
+    }
+    
+    var todayButtonTap: PublishRelay<Void> {
+        base.todayButtonTap
     }
     
     var filterButtonTap: PublishRelay<Int> {

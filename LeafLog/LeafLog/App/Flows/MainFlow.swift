@@ -45,8 +45,8 @@ final class MainFlow: Flow {
             popAfterDeletePlant(animated: true)
             return .none
             
-        case .record(let plantID):
-            return navigateToPlantRecord(plantID: plantID)
+        case .record(let plantID, let date):
+            return navigateToPlantRecord(plantID: plantID, date: date)
             
         case .plantEdit(let plant):
             let plantRegisterViewController = makePlantEditViewController(plant: plant)
@@ -208,8 +208,8 @@ extension MainFlow {
         present(alert, animated: true)
     }
     
-    private func navigateToPlantRecord(plantID: UUID) -> FlowContributors {
-        let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
+    private func navigateToPlantRecord(plantID: UUID, date: Date) -> FlowContributors {
+        let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
         navigate(to: viewController, animated: true)
         return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
     }
