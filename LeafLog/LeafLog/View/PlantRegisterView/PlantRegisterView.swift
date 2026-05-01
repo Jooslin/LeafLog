@@ -71,7 +71,7 @@ final class PlantRegisterView: UIView {
         $0.datePickerMode = .date
         $0.preferredDatePickerStyle = .wheels
         $0.locale = Locale(identifier: "ko_KR")
-        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.timeZone = .current
         $0.maximumDate = Date()
     }
     private lazy var lastWateredDateInputView = UIView(
@@ -99,18 +99,71 @@ final class PlantRegisterView: UIView {
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
+    
+    private let firstMetDateTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "데려 온 날")
+    let firstMetDateTextField = PlantRegisterView.makeTextField(placeholder: "년 / 월 / 일").then {
+        $0.keyboardType = .numbersAndPunctuation
+    }
+    private let firstMetDatePicker = UIDatePicker().then {
+        $0.datePickerMode = .date
+        $0.preferredDatePickerStyle = .wheels
+        $0.locale = Locale(identifier: "ko_KR")
+        $0.timeZone = .current
+        $0.maximumDate = Date()
+    }
+    private lazy var firstMetDateInputView = UIView(
+        frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 304)
+    ).then {
+        $0.backgroundColor = .systemBackground
+        $0.autoresizingMask = [.flexibleWidth]
+
+        let toolbar = UIToolbar()
+        toolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapFirstMetDateDone))
+        ]
+
+        $0.addSubview(toolbar)
+        $0.addSubview(firstMetDatePicker)
+
+        toolbar.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(44)
+        }
+
+        firstMetDatePicker.snp.makeConstraints {
+            $0.top.equalTo(toolbar.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
+    }
+    
     let registerButton = BottomSaveButton(title: "등록하기")
     var onLastWateredDateDone: ((Date) -> Void)?
+    var onFirstMetDateDone: ((Date) -> Void)?
+
+    private let formStackView = UIStackView().then {
+        $0.axis = .vertical
+        $0.spacing = Layout.sectionSpacing
+    }
 
     private lazy var categoryStackView = makeSelectionGrid(buttons: categoryButtons)
     private lazy var locationStackView = makeSelectionGrid(buttons: locationButtons)
+    private lazy var wateringCycleInputStackView = UIStackView(
+        arrangedSubviews: [wateringCycleTextField, wateringCycleUnitLabel]
+    ).then {
+        $0.axis = .horizontal
+        $0.alignment = .center
+        $0.spacing = Layout.guideSpacing
+    }
+    private lazy var lastWateredDateFieldContainer = makeLeadingAlignedContainer(for: lastWateredDateTextField)
+    private lazy var firstMetDateFieldContainer = makeLeadingAlignedContainer(for: firstMetDateTextField)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
         setupSelectionState()
         setupUI()
-        setupLastWateredDateInputView()
+        setupDateInputViews()
     }
 
     required init?(coder: NSCoder) {
@@ -135,9 +188,6 @@ final class PlantRegisterView: UIView {
         selectedCategory: PlantCategory?
     ) {
         plantTypeSearchBar.textField.text = name
-        if let suggestedWateringCycle = WateringGuideView.suggestedInputValue(from: springWaterCycle) {
-            wateringCycleTextField.text = suggestedWateringCycle
-        }
 
         // 카테고리가 기타일 경우 비활성화
         if selectedCategory == .other {
@@ -170,14 +220,15 @@ final class PlantRegisterView: UIView {
 
     // 입력화면 초기화
     func resetForm() {
-        cameraButton.layer.contents = nil
-        cameraButton.layer.contentsGravity = .resize
+        cameraButton.backgroundImageView.image = nil
         cameraButton.backgroundColor = .grayScale50
         plantTypeSearchBar.textField.text = nil
         plantNameTextField.text = nil
         wateringCycleTextField.text = nil
         lastWateredDateTextField.text = nil
         lastWateredDatePicker.date = Date()
+        firstMetDateTextField.text = nil
+        firstMetDatePicker.date = Date()
 
         categoryButtons.forEach {
             $0.isSelected = false
@@ -191,14 +242,32 @@ final class PlantRegisterView: UIView {
         wateringGuideBannerView.configure(plantName: nil, springWaterCycle: nil)
     }
 
-    func setLastWateredDate(_ date: Date, text: String) {
-        lastWateredDatePicker.date = date
+    func updateLastWateredDate(_ date: Date?, text: String) {
+        if let date {
+            lastWateredDatePicker.date = date
+        }
         lastWateredDateTextField.text = text
+    }
+
+    func updateFirstMetDate(_ date: Date?, text: String) {
+        if let date {
+            firstMetDatePicker.date = date
+        }
+        firstMetDateTextField.text = text
     }
 }
 
 // MARK: UI 구현
 private extension PlantRegisterView {
+    enum Layout {
+        static let horizontalInset: CGFloat = 16
+        static let topInset: CGFloat = 20
+        static let sectionSpacing: CGFloat = 24
+        static let fieldSpacing: CGFloat = 12
+        static let guideSpacing: CGFloat = 8
+        static let bottomInset: CGFloat = 24
+    }
+
     func setupSelectionState() {
         categoryButtons.first?.isSelected = true
         locationButtons[3].isSelected = true
@@ -210,6 +279,9 @@ private extension PlantRegisterView {
         addSubview(registerButton)
 
         scrollView.addSubview(contentView)
+        contentView.addSubview(cameraButton)
+        contentView.addSubview(formStackView)
+        contentView.addSubview(plantTypeSearchButton)
 
         headerView.snp.makeConstraints {
             $0.top.equalToSuperview().offset(64)
@@ -218,8 +290,8 @@ private extension PlantRegisterView {
         }
 
         registerButton.snp.makeConstraints {
-            $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.bottom.equalTo(safeAreaLayoutGuide).inset(24)
+            $0.horizontalEdges.equalToSuperview().inset(Layout.horizontalInset)
+            $0.bottom.equalTo(safeAreaLayoutGuide).inset(Layout.bottomInset)
             $0.height.equalTo(48)
         }
 
@@ -234,137 +306,86 @@ private extension PlantRegisterView {
             $0.width.equalToSuperview()
         }
 
-        [
-            cameraButton,
-            plantTypeTitleLabel,
-            plantTypeSearchBar,
-            plantTypeSearchButton,
-            categoryTitleLabel,
-            categoryStackView,
-            categoryGuideView,
-            plantNameTitleLabel,
-            plantNameTextField,
-            locationTitleLabel,
-            locationStackView,
-            lightGuideView,
-            wateringCycleTitleLabel,
-            wateringCycleTextField,
-            wateringCycleUnitLabel,
-            wateringGuideBannerView,
-            lastWateredTitleLabel,
-            lastWateredDateTextField
-        ].forEach { contentView.addSubview($0) }
-
         cameraButton.snp.makeConstraints {
-            $0.top.equalToSuperview().offset(20)
+            $0.top.equalToSuperview().offset(Layout.topInset)
             $0.centerX.equalToSuperview()
         }
 
-        plantTypeTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(cameraButton.snp.bottom).offset(28)
-            $0.horizontalEdges.equalToSuperview().inset(16)
+        formStackView.snp.makeConstraints {
+            $0.top.equalTo(cameraButton.snp.bottom).offset(Layout.sectionSpacing)
+            $0.horizontalEdges.equalToSuperview().inset(Layout.horizontalInset)
+            $0.bottom.equalToSuperview().inset(Layout.bottomInset)
         }
 
         plantTypeSearchBar.snp.makeConstraints {
-            $0.top.equalTo(plantTypeTitleLabel.snp.bottom).offset(12)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
             $0.height.equalTo(48)
         }
+
+        plantNameTextField.snp.makeConstraints {
+            $0.height.equalTo(48)
+        }
+
+        wateringCycleTextField.snp.makeConstraints {
+            $0.width.equalTo(84)
+            $0.height.equalTo(48)
+        }
+
+        lastWateredDateTextField.snp.makeConstraints {
+            $0.width.equalTo(126)
+            $0.height.equalTo(48)
+        }
+
+        firstMetDateTextField.snp.makeConstraints {
+            $0.width.equalTo(126)
+            $0.height.equalTo(48)
+        }
+
+        categoryGuideView.snp.makeConstraints {
+            $0.height.greaterThanOrEqualTo(32)
+        }
+
+        [
+            makeSectionStack(arrangedSubviews: [plantTypeTitleLabel, plantTypeSearchBar]),
+            makeSectionStack(
+                arrangedSubviews: [categoryTitleLabel, categoryStackView, categoryGuideView],
+                customSpacings: [categoryStackView: Layout.guideSpacing]
+            ),
+            makeSectionStack(arrangedSubviews: [plantNameTitleLabel, plantNameTextField]),
+            makeSectionStack(
+                arrangedSubviews: [locationTitleLabel, locationStackView, lightGuideView],
+                customSpacings: [locationStackView: Layout.guideSpacing]
+            ),
+            makeSectionStack(arrangedSubviews: [firstMetDateTitleLabel, firstMetDateFieldContainer]),
+            makeSectionStack(
+                arrangedSubviews: [wateringCycleTitleLabel, wateringCycleInputStackView, wateringGuideBannerView],
+                customSpacings: [wateringCycleInputStackView: Layout.guideSpacing]
+            ),
+            makeSectionStack(arrangedSubviews: [lastWateredTitleLabel, lastWateredDateFieldContainer])
+        ].forEach { formStackView.addArrangedSubview($0) }
 
         plantTypeSearchButton.snp.makeConstraints {
             $0.top.leading.bottom.equalTo(plantTypeSearchBar)
             $0.trailing.equalTo(plantTypeSearchBar.cameraButton.snp.leading).offset(-8)
         }
-
-        categoryTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(plantTypeSearchBar.snp.bottom).offset(20)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        categoryStackView.snp.makeConstraints {
-            $0.top.equalTo(categoryTitleLabel.snp.bottom).offset(12)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        categoryGuideView.snp.makeConstraints {
-            $0.top.equalTo(categoryStackView.snp.bottom).offset(8)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        plantNameTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(categoryGuideView.snp.bottom).offset(24)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        plantNameTextField.snp.makeConstraints {
-            $0.top.equalTo(plantNameTitleLabel.snp.bottom).offset(12)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-            $0.height.equalTo(48)
-        }
-
-        locationTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(plantNameTextField.snp.bottom).offset(24)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        locationStackView.snp.makeConstraints {
-            $0.top.equalTo(locationTitleLabel.snp.bottom).offset(12)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        lightGuideView.snp.makeConstraints {
-            $0.top.equalTo(locationStackView.snp.bottom).offset(8)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        wateringCycleTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(lightGuideView.snp.bottom).offset(24)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        wateringCycleTextField.snp.makeConstraints {
-            $0.top.equalTo(wateringCycleTitleLabel.snp.bottom).offset(12)
-            $0.leading.equalTo(plantTypeTitleLabel)
-            $0.width.equalTo(84)
-            $0.height.equalTo(48)
-        }
-
-        wateringCycleUnitLabel.snp.makeConstraints {
-            $0.leading.equalTo(wateringCycleTextField.snp.trailing).offset(8)
-            $0.centerY.equalTo(wateringCycleTextField)
-        }
-
-        wateringGuideBannerView.snp.makeConstraints {
-            $0.top.equalTo(wateringCycleTextField.snp.bottom).offset(8)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        lastWateredTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(wateringGuideBannerView.snp.bottom).offset(24)
-            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
-        }
-
-        lastWateredDateTextField.snp.makeConstraints {
-            $0.top.equalTo(lastWateredTitleLabel.snp.bottom).offset(12)
-            $0.leading.equalTo(plantTypeTitleLabel)
-            $0.width.equalTo(126)
-            $0.height.equalTo(48)
-            $0.bottom.equalToSuperview().inset(24)
-        }
-        categoryGuideView.snp.makeConstraints {
-            $0.height.greaterThanOrEqualTo(32)
-        }
     }
 
-    func setupLastWateredDateInputView() {
+    func setupDateInputViews() {
         lastWateredDateTextField.inputView = lastWateredDateInputView
         lastWateredDateTextField.tintColor = .clear
+        firstMetDateTextField.inputView = firstMetDateInputView
+        firstMetDateTextField.tintColor = .clear
     }
 
     @objc func didTapLastWateredDateDone() {
         let selectedDate = lastWateredDatePicker.date
         onLastWateredDateDone?(selectedDate)
         lastWateredDateTextField.resignFirstResponder()
+    }
+
+    @objc func didTapFirstMetDateDone() {
+        let selectedDate = firstMetDatePicker.date
+        onFirstMetDateDone?(selectedDate)
+        firstMetDateTextField.resignFirstResponder()
     }
 
     // 버튼 그리드 배치하기
@@ -387,6 +408,26 @@ private extension PlantRegisterView {
         return UIStackView(arrangedSubviews: rows).then {
             $0.axis = .vertical
             $0.spacing = 8
+        }
+    }
+
+    func makeSectionStack(arrangedSubviews: [UIView], customSpacings: [UIView: CGFloat] = [:]) -> UIStackView {
+        UIStackView(arrangedSubviews: arrangedSubviews).then {
+            $0.axis = .vertical
+            $0.spacing = Layout.fieldSpacing
+
+            for (view, spacing) in customSpacings {
+                $0.setCustomSpacing(spacing, after: view)
+            }
+        }
+    }
+
+    func makeLeadingAlignedContainer(for contentView: UIView) -> UIView {
+        UIView().then { containerView in
+            containerView.addSubview(contentView)
+            contentView.snp.makeConstraints {
+                $0.top.leading.bottom.equalToSuperview()
+            }
         }
     }
 

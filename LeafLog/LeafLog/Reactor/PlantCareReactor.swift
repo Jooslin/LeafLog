@@ -1085,7 +1085,10 @@ private extension PlantCareReactor {
                 title: "식물 상태",
                 value: displayHealthStatus(from: plant.healthStatus)
             ),
-            PlantCarePlantInfoRow(title: "데려온 날", value: displayDate(from: plant.createdAt)),
+            PlantCarePlantInfoRow(
+                title: "데려온 날",
+                value: displayDate(from: plant.firstMetDate ?? plant.createdAt)
+            ),
             PlantCarePlantInfoRow(title: "위치", value: plant.location?.rawValue ?? "미지정"),
             PlantCarePlantInfoRow(title: "마지막 급수일", value: displayDate(from: plant.lastWateredAt))
         ]

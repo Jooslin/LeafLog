@@ -14,8 +14,8 @@ import OSLog
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
-    private static let lastWateredDateCalendar = Calendar(identifier: .gregorian)
-    private static let lastWateredDateTimeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+    private static let dateCalendar = Calendar.current
+    private static let dateTimeZone = TimeZone.current
     private let logger = Logger(subsystem: "LeafLog", category: "PlantRegisterReactor")
 
     enum Mode: Equatable {
@@ -90,6 +90,7 @@ final class PlantRegisterReactor: Reactor {
         var lastWateredDate: Date? = nil
         var lastWateredDateText = ""
         var firstMetDate: Date? = nil
+        var firstMetDateText = ""
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var existingImage: UIImage? = nil
@@ -158,9 +159,10 @@ final class PlantRegisterReactor: Reactor {
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
-            newState.lastWateredDateText = Self.makeLastWateredDateText(from: date)
+            newState.lastWateredDateText = Self.makeDateText(from: date)
         case .setFirstMetDate(let date):
             newState.firstMetDate = date
+            newState.firstMetDateText = Self.makeDateText(from: date)
         case .setExistingImage(let image):
             newState.existingImage = image
         case .setSaving(let isSaving):
@@ -349,6 +351,10 @@ final class PlantRegisterReactor: Reactor {
             return .failure(ValidationError(message: "마지막 급수일을 선택해주세요."))
         }
 
+        guard let firstMetDate = state.firstMetDate else {
+            return .failure(ValidationError(message: "데려온 날을 선택해주세요."))
+        }
+
         return .success(
             PlantCreateInput(
                 category: category,
@@ -359,7 +365,7 @@ final class PlantRegisterReactor: Reactor {
                 image: image,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt,
-                firstMetDate: state.firstMetDate
+                firstMetDate: firstMetDate
             )
         )
     }
@@ -399,6 +405,10 @@ final class PlantRegisterReactor: Reactor {
             return .failure(ValidationError(message: "마지막 급수일을 선택해주세요."))
         }
 
+        guard let firstMetDate = state.firstMetDate else {
+            return .failure(ValidationError(message: "데려온 날을 선택해주세요."))
+        }
+
         return .success(
             PlantUpdateInput(
                 id: plant.id,
@@ -411,7 +421,7 @@ final class PlantRegisterReactor: Reactor {
                 existingImagePath: plant.imagePath,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt,
-                firstMetDate: state.firstMetDate
+                firstMetDate: firstMetDate
             )
         )
     }
@@ -423,6 +433,7 @@ final class PlantRegisterReactor: Reactor {
         let hasLocation = state.selectedLocation != nil
         let hasWateringInterval = Int(state.wateringIntervalText.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
         let hasLastWateredDate = state.lastWateredDate != nil
+        let hasFirstMetDate = state.firstMetDate != nil
         let isNotSaving = !state.isSaving
 
         return hasCategory
@@ -431,6 +442,7 @@ final class PlantRegisterReactor: Reactor {
             && hasLocation
             && hasWateringInterval
             && hasLastWateredDate
+            && hasFirstMetDate
             && isNotSaving
     }
 
@@ -458,8 +470,9 @@ final class PlantRegisterReactor: Reactor {
             state.selectedLocation = plant.location
             state.wateringIntervalText = "\(plant.wateringIntervalDays)"
             state.lastWateredDate = plant.lastWateredAt
-            state.lastWateredDateText = makeLastWateredDateText(from: plant.lastWateredAt)
+            state.lastWateredDateText = makeDateText(from: plant.lastWateredAt)
             state.firstMetDate = plant.firstMetDate
+            state.firstMetDateText = makeDateText(from: plant.firstMetDate)
         }
 
         state.isRegisterEnabled = isRegisterEnabled(for: state)
@@ -506,10 +519,10 @@ final class PlantRegisterReactor: Reactor {
         return ""
     }
 
-    private static func makeLastWateredDateText(from date: Date?) -> String {
+    private static func makeDateText(from date: Date?) -> String {
         guard let date else { return "" }
-        var calendar = lastWateredDateCalendar
-        calendar.timeZone = lastWateredDateTimeZone
+        var calendar = dateCalendar
+        calendar.timeZone = dateTimeZone
         let components = calendar.dateComponents([.year, .month, .day], from: date)
 
         guard let year = components.year,
