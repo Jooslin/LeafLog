@@ -13,7 +13,7 @@ import RxCocoa
 
 class CalendarViewController: BaseViewController, View {
     private let calendarView = CalendarView()
-    
+
     override func loadView() {
         self.view = calendarView
     }
@@ -39,6 +39,11 @@ class CalendarViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        calendarView.rx.alarmButtonTap
+            .map { _ in AppStep.alarmCenter }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+        
         calendarView.rx.headerPreviousButtonTap
             .map { _ in CalendarReactor.Action.previousMonth }
             .bind(to: reactor.action)
@@ -48,12 +53,12 @@ class CalendarViewController: BaseViewController, View {
             .map { _ in CalendarReactor.Action.nextMonth }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
-        calendarView.rx.alarmButtonTap
-            .map { _ in AppStep.alarmCenter }
-            .bind(to: steps)
-            .disposed(by: disposeBag)
 
+        calendarView.rx.todayButtonTap
+            .map { _ in CalendarReactor.Action.backToToday }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         calendarView.rx.filterButtonTap
             .map { CalendarReactor.Action.updateFilter($0) }
             .bind(to: reactor.action)
@@ -77,7 +82,7 @@ class CalendarViewController: BaseViewController, View {
             .compactMap { item -> AppStep? in
                 switch item {
                 case .water(let data), .grow(let data), .sprout(let data), .treat(let data):
-                    return AppStep.record(plantID: data.id)
+                    return AppStep.record(plantID: data.id, date: data.date)
                 default:
                     return nil
                 }

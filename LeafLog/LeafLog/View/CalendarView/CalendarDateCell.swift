@@ -10,6 +10,11 @@ import SnapKit
 import Then
 
 final class CalendarDateCell: UICollectionViewCell {
+    private let colorChip = ColorChip(frame: .zero, size: 5).then {
+        $0.backgroundColor = .primary700
+        $0.isHidden = true
+    }
+    
     private let selectedView = BaseCardView(cornerRadius: 12).then {
         $0.backgroundColor = .white
         $0.layer.borderWidth = 0.5
@@ -45,12 +50,8 @@ final class CalendarDateCell: UICollectionViewCell {
         }
         
         dateLabel.textColor = .label
-    }
-    
-    override var isSelected: Bool {
-        didSet {
-            selectedView.isHidden = !isSelected
-        }
+        selectedView.isHidden = true
+        colorChip.isHidden = true
     }
 }
 
@@ -61,9 +62,15 @@ extension CalendarDateCell {
         contentView.addSubview(selectedView)
         contentView.addSubview(dateLabel)
         contentView.addSubview(badgeStack)
+        contentView.addSubview(colorChip)
         
         selectedView.snp.makeConstraints {
             $0.edges.equalToSuperview()
+        }
+        
+        colorChip.snp.makeConstraints {
+            $0.top.equalToSuperview().offset(4)
+            $0.centerX.equalToSuperview()
         }
         
         dateLabel.snp.makeConstraints {
@@ -110,12 +117,27 @@ extension CalendarDateCell {
 extension CalendarDateCell {
     func configure(_ data: CalendarView.ManageInfoByDate) {
         dateLabel.text = "\(data.day)"
-        dateLabel.textColor =
-        data.isCurrentMonth ? dateLabel.textColor
-        : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
         
         data.badge.prefix(badges.count).enumerated().forEach {
             badges[$0.offset].image = UIImage(named: $0.element.smallImage)
         }
+        
+        selectedView.isHidden = !data.isSelected
+        colorChip.isHidden = !data.isToday
+        
+        dateLabel.textColor = data.isToday ? .primary700
+        : data.isCurrentMonth ? .label
+        : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+        
+//        if data.isToday && data.isCurrentMonth {
+//            colorChip.isHidden = false
+//            dateLabel.textColor = .primary700
+//        } else if data.isToday && !data.isCurrentMonth {
+//            colorChip.isHidden = false
+//            dateLabel.textColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+//            colorChip.backgroundColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+//        } else if !data.isCurrentMonth {
+//            dateLabel.textColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+//        }
     }
 }

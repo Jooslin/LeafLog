@@ -12,15 +12,7 @@ import Then
 final class CalendarDetailCell: UICollectionViewCell {
 
     private let nameLabel = UILabel(text: "", config: .body14)
-    
-    private let colorChip = UIView().then {
-        $0.layer.cornerRadius = 4
-        $0.clipsToBounds = true
-        $0.snp.makeConstraints {
-            $0.width.height.equalTo(8)
-        }
-    }
-    
+    private let colorChip = ColorChip(frame: .zero, size: 8)
     private let separateBar = SeparateBar()
     
     override init(frame: CGRect) {

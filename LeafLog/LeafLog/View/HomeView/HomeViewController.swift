@@ -76,7 +76,7 @@ extension HomeViewController {
         // 등록하기 버튼 탭시
         homeView.rx.registerButtonTap
             .throttle(.milliseconds(500), latest: false, scheduler: MainScheduler.instance)
-            .map { _ in AppStep.plantRegister() }
+            .map { _ in AppStep.plantRegister }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
