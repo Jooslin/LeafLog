@@ -8,8 +8,6 @@
 import UIKit
 import SnapKit
 import Then
-import RxSwift
-import RxCocoa
 
 class EmptyView: UIView {
     let imageView = UIImageView().then {
