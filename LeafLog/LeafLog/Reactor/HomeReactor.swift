@@ -156,10 +156,21 @@ extension HomeReactor {
     private func plantConverToItem(plants: [MyPlant]) throws -> [HomeView.Item] {
         guard !plants.isEmpty else { return [] }
         
-        // 다음 급수일까지 남은 일수가 적은 순으로 정렬
+        // 물주기 버튼 활성화 기준 우선 정렬, 이후 다음 급수일까지 남은 일수가 적은 순으로 정렬
         let sortedPlants = try plants
-            .map { (plant: $0, remaining: try $0.wateringIntervalDays - daysFromLastWatering(from: $0.lastWateredAt)) }
-            .sorted { $0.remaining < $1.remaining }
+            .map {
+                let days = try daysFromLastWatering(from: $0.lastWateredAt)
+                return (plant: $0, excess: days, remaining: $0.wateringIntervalDays - days) }
+            .sorted(by: {
+                let lhsCanWater = $0.excess != 0
+                let rhsCanWater = $1.excess != 0
+                
+                if lhsCanWater != rhsCanWater {
+                    return lhsCanWater
+                }
+
+                return $0.remaining < $1.remaining
+            })
             .map { $0.plant }
         
         // 아이템 변환
