@@ -25,7 +25,7 @@ class EmptyView: UIView {
     
     let button = BottomSaveButton(title: "")
     
-    init(frame: CGRect = .zero, image: String, title: String, subTitle: String, needButton: Bool) {
+    init(frame: CGRect = .zero, image: String, title: String, subTitle: String, needButton: Bool, buttonTitle: String? = nil) {
         super.init(frame: frame)
         
         backgroundColor = .white
@@ -35,6 +35,10 @@ class EmptyView: UIView {
         subLabel.text = subTitle
         
         button.isHidden = !needButton
+        if needButton {
+            button.setTitle(buttonTitle ?? "")
+//            button.configuration?.title = buttonTitle ?? ""
+        }
         
         setLayout()
     }
@@ -51,7 +55,7 @@ class EmptyView: UIView {
         
         let stackView = UIStackView(arrangedSubviews: [imageView, labelStack]).then {
             $0.axis = .vertical
-            $0.spacing = 32
+            $0.spacing = 24
             $0.alignment = .center
         }
         

@@ -18,7 +18,7 @@ final class NotificationCenterView: UIView {
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     
-    let emptyView = EmptyView(image: "cameraColored", title: "아직 받은 알림이 없어요", subTitle: "물주기나 관리 일정이 생기면\n알림으로 알려드릴게요.", needButton: false).then {
+    let emptyView = EmptyView(image: OthersImageAsset.bellColored.rawValue, title: "아직 받은 알림이 없어요", subTitle: "물주기나 관리 일정이 생기면\n알림으로 알려드릴게요.", needButton: false).then {
         $0.isHidden = true
     }
     
