@@ -23,16 +23,30 @@ final class HomeView: UIView {
         $0.isHidden = true
     }
     
+    private let collectionTopFadeLayer = CAGradientLayer().then {
+        $0.locations = [0, 1]
+        $0.colors = [
+            UIColor.grayScale50.cgColor,
+            UIColor.grayScale50.withAlphaComponent(0).cgColor
+        ]
+    }
+    
     private let collectionTopFadeView = UIView().then {
         $0.isUserInteractionEnabled = false
     }
-    private let collectionTopFadeLayer = CAGradientLayer()
+    
     
     fileprivate let waterButtonTap = PublishRelay<UUID?>()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        
         backgroundColor = .grayScale50
+        
+        if collectionTopFadeLayer.superlayer == nil {
+            collectionTopFadeView.layer.addSublayer(collectionTopFadeLayer)
+        }
+        
         setLayout()
     }
     
@@ -42,17 +56,7 @@ final class HomeView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        
         collectionTopFadeLayer.frame = collectionTopFadeView.bounds
-        collectionTopFadeLayer.colors = [
-            UIColor.grayScale50.cgColor,
-            UIColor.grayScale50.withAlphaComponent(0).cgColor
-        ]
-        collectionTopFadeLayer.locations = [0, 1]
-        
-        if collectionTopFadeLayer.superlayer == nil {
-            collectionTopFadeView.layer.addSublayer(collectionTopFadeLayer)
-        }
     }
 }
 
