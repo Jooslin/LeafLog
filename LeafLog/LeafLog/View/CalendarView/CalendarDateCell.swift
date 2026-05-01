@@ -52,6 +52,7 @@ final class CalendarDateCell: UICollectionViewCell {
         dateLabel.textColor = .label
         selectedView.isHidden = true
         colorChip.isHidden = true
+        colorChip.backgroundColor = .primary700
     }
 }
 
@@ -123,21 +124,16 @@ extension CalendarDateCell {
         }
         
         selectedView.isHidden = !data.isSelected
+        
+        let subColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
+        
         colorChip.isHidden = !data.isToday
+        colorChip.backgroundColor = (data.isToday && !data.isCurrentMonth) ? subColor : .primary700
         
-        dateLabel.textColor = data.isToday ? .primary700
-        : data.isCurrentMonth ? .label
-        : UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
-        
-//        if data.isToday && data.isCurrentMonth {
-//            colorChip.isHidden = false
-//            dateLabel.textColor = .primary700
-//        } else if data.isToday && !data.isCurrentMonth {
-//            colorChip.isHidden = false
-//            dateLabel.textColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
-//            colorChip.backgroundColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
-//        } else if !data.isCurrentMonth {
-//            dateLabel.textColor = UIColor(red: 0.76, green: 0.78, blue: 0.73, alpha: 1.00) // HEX #C3C8BB
-//        }
+        if data.isToday && data.isCurrentMonth {
+            dateLabel.textColor = .primary700
+        } else {
+            dateLabel.textColor = data.isCurrentMonth ? .label : subColor
+        }
     }
 }
