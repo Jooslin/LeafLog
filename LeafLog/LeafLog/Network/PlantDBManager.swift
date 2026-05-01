@@ -136,7 +136,7 @@ final class PlantDBManager {
             case location
             case nickname
             case speciesName = "species_name"
-            case contentNumber
+            case contentNumber = "content_number"
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
@@ -247,7 +247,7 @@ final class PlantDBManager {
             case location
             case nickname
             case speciesName = "species_name"
-            case contentNumber
+            case contentNumber = "content_number"
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
