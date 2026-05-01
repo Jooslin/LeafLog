@@ -22,6 +22,7 @@ enum AppStep: Step {
     case splash
     case loginRequired
     case main
+    case updateRequired(message: String, storeURL: URL)
     
     // Tab
     case plantTab
