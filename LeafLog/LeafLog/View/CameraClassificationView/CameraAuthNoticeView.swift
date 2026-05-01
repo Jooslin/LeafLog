@@ -11,65 +11,25 @@ import Then
 import RxSwift
 import RxCocoa
 
-final class CameraAuthNoticeView: UIView {
-    let imageView = UIImageView(image: .cameraColored).then {
-        $0.setContentHuggingPriority(.defaultLow, for: .vertical)
-        $0.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-        
-        $0.snp.makeConstraints {
-            $0.width.height.equalTo(96)
-        }
-    }
-    let label = UILabel(text: "카메라 권한이 없어요", config: .title18).then {
-        $0.setContentHuggingPriority(.required, for: .vertical)
-        $0.setContentCompressionResistancePriority(.required, for: .vertical)
-        $0.textAlignment = .center
-    }
-    let subLabel = UILabel(text: "설정으로 이동해 카메라 권한을 허용하면 카메라를 이용할 수 있어요", config: .body14, color: .grayScale600).then {
-        $0.textAlignment = .center
-    }
-    
-    let settingButton = BottomSaveButton(title: "설정으로 이동").then {
-        $0.snp.makeConstraints {
-            $0.height.equalTo(48)
-        }
+final class CameraAuthNoticeView: EmptyView {
+    override init(frame: CGRect = .zero,
+                  image: String = OthersImageAsset.cameraColored.rawValue,
+                  title: String = Notice.authorizationDenied.label,
+                  subTitle: String = Notice.authorizationDenied.subLabel,
+                  needButton: Bool = true,
+                  buttonTitle: String? = "설정으로 이동"
+    ) {
+        super.init(
+            image: image,
+            title: title,
+            subTitle: subTitle,
+            needButton: needButton,
+            buttonTitle: buttonTitle
+        )
     }
     
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        backgroundColor = .white
-        setLayout()
-        
-    }
-    
-    required init?(coder: NSCoder) {
+    @MainActor required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setLayout() {
-        let labelStack = UIStackView(arrangedSubviews: [label, subLabel]).then {
-            $0.axis = .vertical
-            $0.spacing = 8
-        }
-        
-        let stackView = UIStackView(arrangedSubviews: [imageView, labelStack]).then {
-            $0.axis = .vertical
-            $0.spacing = 32
-            $0.alignment = .center
-        }
-        
-        addSubview(stackView)
-        addSubview(settingButton)
-        
-        stackView.snp.makeConstraints {
-            $0.centerY.equalToSuperview()
-            $0.horizontalEdges.equalToSuperview().inset(76)
-        }
-        
-        settingButton.snp.makeConstraints {
-            $0.horizontalEdges.equalToSuperview().inset(24)
-            $0.bottom.equalTo(safeAreaLayoutGuide).inset(24)
-        }
     }
 }
 
@@ -111,6 +71,6 @@ extension CameraAuthNoticeView {
 
 extension Reactive where Base: CameraAuthNoticeView {
     var settingButtonTap: ControlEvent<Void> {
-        base.settingButton.rx.tap
+        base.button.rx.tap
     }
 }

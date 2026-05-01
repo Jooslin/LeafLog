@@ -57,9 +57,12 @@ final class NotificationCenterReactor: Reactor {
 extension NotificationCenterReactor {
     private func notifications() -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+                
                 do {
                     let now = Date()
                     let notifications = try await self.notificationDBManager.fetchMyNotifications()
@@ -93,7 +96,6 @@ extension NotificationCenterReactor {
                     observer.onCompleted()
                 }
             }
-            
             return Disposables.create {
                 task.cancel()
             }

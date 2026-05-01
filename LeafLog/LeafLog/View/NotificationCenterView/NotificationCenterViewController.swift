@@ -48,16 +48,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
     }
     
-    private func bindState(reactor: NotificationCenterReactor) {
+    private func bindState(reactor: NotificationCenterReactor) {        
         reactor.state
             .map(\.alarmItem)
             .subscribe(onNext: { [weak self] items in
-                guard !items.isEmpty else {
-                    self?.notificationCenterView.emptyView.isHidden = false
-                    return
-                }
-                
-                self?.notificationCenterView.emptyView.isHidden = true
+                self?.notificationCenterView.emptyView.isHidden = !items.isEmpty
                 self?.notificationCenterView.setSnapshot(items)
             })
             .disposed(by: disposeBag)

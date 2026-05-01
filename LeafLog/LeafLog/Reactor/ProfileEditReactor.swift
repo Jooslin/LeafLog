@@ -105,10 +105,15 @@ final class ProfileEditReactor: Reactor {
     }
 
     private func loadProfile() -> Observable<Mutation> {
-        Observable.create { observer in
+        Observable.create { [weak self] observer in
             observer.onNext(.setLoading(true))
 
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+                
                 do {
                     let profile: UserProfileModel
                     if let existingProfile = try await self.profileDBManager.fetchMyProfile() {
@@ -135,8 +140,9 @@ final class ProfileEditReactor: Reactor {
     }
 
     private func saveProfile() -> Observable<Mutation> {
-        Observable.create { observer in
-            guard let profile = self.currentState.profile else {
+        Observable.create { [weak self] observer in
+            guard let self,
+                  let profile = self.currentState.profile else {
                 observer.onNext(.setErrorMessage("프로필 정보를 먼저 불러와주세요."))
                 observer.onCompleted()
                 return Disposables.create()
@@ -144,7 +150,12 @@ final class ProfileEditReactor: Reactor {
 
             observer.onNext(.setSaving(true))
 
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+                
                 do {
                     let imagePath: String?
                     if let selectedImage = self.currentState.selectedImage {
@@ -176,8 +187,9 @@ final class ProfileEditReactor: Reactor {
     }
 
     private func deleteProfileImage() -> Observable<Mutation> {
-        Observable.create { observer in
-            guard let profile = self.currentState.profile else {
+        Observable.create { [weak self] observer in
+            guard let self,
+                  let profile = self.currentState.profile else {
                 observer.onNext(.setSelectedImage(nil))
                 observer.onCompleted()
                 return Disposables.create()
@@ -192,7 +204,12 @@ final class ProfileEditReactor: Reactor {
 
             observer.onNext(.setSaving(true))
 
-            let task = Task {
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+                
                 do {
                     let updatedProfile = try await self.profileDBManager.deleteMyProfileImage()
 

@@ -76,7 +76,10 @@ extension HomeReactor {
     private func loadPlants() -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task { [weak self] in
-                guard let self else { return }
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
                 do {
                     let plants = try await self.plantDBManger.fetchMyPlants()
                     
@@ -118,7 +121,10 @@ extension HomeReactor {
     private func updateWatered(of id: UUID) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task { [weak self] in
-                guard let self else { return }
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
                 
                 let date = Date()
                 

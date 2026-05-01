@@ -146,7 +146,10 @@ extension CameraClassificationReactor {
             }
             
             Task { [weak self] in
-                guard let self else { return }
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
                 do {
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
                     observer.onNext(.analyzeResult(classificationResult))
