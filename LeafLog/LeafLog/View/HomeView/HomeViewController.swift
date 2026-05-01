@@ -48,7 +48,7 @@ extension HomeViewController {
                         guard let id = plant.id else { return nil }
                         return AppStep.record(plantID: id)
                     } else if plant.emptyShelf == .first {
-                        return AppStep.plantRegister()
+                        return AppStep.plantRegister
                     } else {
                         return nil
                     }

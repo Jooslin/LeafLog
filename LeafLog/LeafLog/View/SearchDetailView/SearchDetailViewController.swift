@@ -80,7 +80,7 @@ final class SearchDetailViewController: BaseViewController, View {
             .compactMap { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] selectedPlant in
-                self?.steps.accept(AppStep.plantRegister(selectedPlant))
+                self?.steps.accept(AppStep.plantRegisterSelectedPlant(selectedPlant))
             })
             .disposed(by: disposeBag)
     }

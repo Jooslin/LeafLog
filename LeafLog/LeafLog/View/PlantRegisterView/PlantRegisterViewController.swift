@@ -7,6 +7,7 @@
 
 import PhotosUI
 import ReactorKit
+import RxKeyboard
 import RxSwift
 import UIKit
 import RxCocoa
@@ -62,6 +63,8 @@ final class PlantRegisterViewController: BaseViewController, View {
         maximumDynamicTypeCategory = .accessibilityLarge
         super.viewDidLoad()
         view.backgroundColor = .white
+        setKeyboardDismissGesture()
+        setKeyboard()
 
         guard let reactor else { return }
         bindUI(reactor: reactor)
@@ -182,7 +185,7 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self.resetFormUI()
                 switch reactor.currentState.mode {
                 case .create:
-                    self.steps.accept(AppStep.endPlantRegister)
+                    self.steps.accept(AppStep.endPlantRegisterEdit)
                 case .edit:
                     self.steps.accept(AppStep.pageBack)
                 }
@@ -193,7 +196,13 @@ final class PlantRegisterViewController: BaseViewController, View {
             .filter { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.endPlantRegister)
+                guard let self else { return }
+                switch reactor.currentState.mode {
+                case .create:
+                    self.steps.accept(AppStep.endPlantRegisterEdit)
+                case .edit:
+                    self.steps.accept(AppStep.endPlantDelete)
+                }
             })
             .disposed(by: disposeBag)
         
@@ -295,6 +304,18 @@ final class PlantRegisterViewController: BaseViewController, View {
             .map { PlantRegisterReactor.Action.updateWateringInterval($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        registerView.plantNameTextField.rx.controlEvent(.editingDidBegin)
+            .subscribe(onNext: { [weak self] in
+                self?.scrollToViewIfNeeded(self?.registerView.plantNameTextField)
+            })
+            .disposed(by: disposeBag)
+
+        registerView.lastWateredDateTextField.rx.controlEvent(.editingDidBegin)
+            .subscribe(onNext: { [weak self] in
+                self?.scrollToViewIfNeeded(self?.registerView.lastWateredDateTextField)
+            })
+            .disposed(by: disposeBag)
         
         registerView.registerButton.rx.tap
             .subscribe(onNext: { [weak self] in
@@ -360,6 +381,47 @@ final class PlantRegisterViewController: BaseViewController, View {
             button.isSelected = (buttonTitle == location?.rawValue)
         }
     }
+
+    private func setKeyboard() {
+        RxKeyboard.instance.visibleHeight
+            .drive(onNext: { [weak self] keyboardHeight in
+                guard let self else { return }
+
+                let isShowingLastWateredDatePicker = self.registerView.lastWateredDateTextField.isFirstResponder
+                let bottomInset: CGFloat
+
+                if isShowingLastWateredDatePicker {
+                    bottomInset = (keyboardHeight * 0.5) + 32
+                } else {
+                    bottomInset = keyboardHeight > 0 ? keyboardHeight + 32 : 32
+                }
+
+                self.registerView.scrollView.contentInset.bottom = bottomInset
+                self.registerView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
+
+                if keyboardHeight > 0, !isShowingLastWateredDatePicker {
+                    self.scrollToCurrentResponderIfNeeded()
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func scrollToCurrentResponderIfNeeded() {
+        guard let responder = view.currentFirstResponder,
+              responder.isDescendant(of: registerView.scrollView) else {
+            return
+        }
+
+        scrollToViewIfNeeded(responder)
+    }
+
+    private func scrollToViewIfNeeded(_ targetView: UIView?) {
+        guard let targetView else { return }
+
+        let targetFrame = targetView.convert(targetView.bounds, to: registerView.scrollView)
+        let visibleRect = targetFrame.insetBy(dx: 0, dy: -16)
+        registerView.scrollView.scrollRectToVisible(visibleRect, animated: false)
+    }
     
     private func handlePlantTypeSearchTap() {
         view.endEditing(true)
@@ -408,5 +470,21 @@ extension PlantRegisterViewController {
         
         let imagePicker = PHPickerViewController(configuration: config)
         return imagePicker
+    }
+}
+
+private extension UIView {
+    var currentFirstResponder: UIView? {
+        if isFirstResponder {
+            return self
+        }
+
+        for subview in subviews {
+            if let responder = subview.currentFirstResponder {
+                return responder
+            }
+        }
+
+        return nil
     }
 }

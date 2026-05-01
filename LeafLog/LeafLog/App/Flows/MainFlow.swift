@@ -8,8 +8,10 @@
 import UIKit
 import RxFlow
 import ReactorKit
+import Dependencies
 
 final class MainFlow: Flow {
+    @Dependency(\.uiApplication) private var uiApplication
     private let window: UIWindow
     private let tabBarController = MainViewController()
     
@@ -38,19 +40,53 @@ final class MainFlow: Flow {
         case .pageBack:
             pop(animated: true)
             return .none
+
+        case .endPlantDelete:
+            popAfterDeletePlant(animated: true)
+            return .none
             
         case .record(let plantID):
             return navigateToPlantRecord(plantID: plantID)
             
-//        case .plantEdit(let plant):
-//            let plantRegisterViewController = makePlantEditViewController(plant: plant)
-//            navigate(to: plantRegisterViewController, animated: true)
-//            
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: plantRegisterViewController,
-//                    withNextStepper: plantRegisterViewController
-//                ))
+        case .plantEdit(let plant):
+            let plantRegisterViewController = makePlantEditViewController(plant: plant)
+            navigate(to: plantRegisterViewController, animated: true)
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: plantRegisterViewController,
+                    withNextStepper: plantRegisterViewController
+                ))
+
+        case .plantSearch:
+            return navigateToPlantSearch()
+
+        case .plantSearchDetail(let contentNumber):
+            return navigateToPlantSearchDetail(contentNumber: contentNumber)
+
+        case .classificationResult(let result):
+            return navigateToClassificationResult(result)
+
+        case .plantRegisterSelectedPlant(let selectedPlant):
+            return updatePlantRegister(selectedPlant)
+
+        case .cameraRequired:
+            return navigateToCameraClassification()
+
+        case .applicatoinSettingRequired:
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                uiApplication.open(url)
+            }
+            return .none
+
+        case let .confirmAlert(title, message, okTitle, onConfirm):
+            presentConfirmAlert(
+                title: title,
+                message: message,
+                okTitle: okTitle,
+                onConfirm: onConfirm
+            )
+            return .none
           
         case .alarmCenter:
             return navigateToAlarmCenter()
@@ -77,6 +113,30 @@ final class MainFlow: Flow {
             navigationController.popViewController(animated: animated)
         } else {
             tabBarController.selectedViewController?.dismiss(animated: animated)
+        }
+    }
+
+    private func popAfterDeletePlant(animated: Bool) {
+        guard let navigationController = tabBarController.selectedViewController as? UINavigationController else {
+            tabBarController.selectedViewController?.dismiss(animated: animated)
+            return
+        }
+
+        let viewControllers = navigationController.viewControllers
+
+        guard let registerIndex = viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+              registerIndex > 0,
+              viewControllers[registerIndex - 1] is PlantCareViewController else {
+            navigationController.popToRootViewController(animated: animated)
+            return
+        }
+
+        let targetIndex = registerIndex - 2
+        if targetIndex >= 0 {
+            let targetViewController = viewControllers[targetIndex]
+            navigationController.popToViewController(targetViewController, animated: animated)
+        } else {
+            navigationController.popToRootViewController(animated: animated)
         }
     }
 }
@@ -128,6 +188,25 @@ extension MainFlow {
         present(alert, animated: true)
         return .none
     }
+
+    private func presentConfirmAlert(
+        title: String,
+        message: String,
+        okTitle: String,
+        onConfirm: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: title,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
+        alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
+            onConfirm()
+        })
+
+        present(alert, animated: true)
+    }
     
     private func navigateToPlantRecord(plantID: UUID) -> FlowContributors {
         let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID))
@@ -145,9 +224,102 @@ extension MainFlow {
             withNextPresentable: notificationCenterViewController,
             withNextStepper: notificationCenterViewController))
     }
+
+    private func navigateToPlantSearch() -> FlowContributors {
+        let searchViewController = SearchViewController()
+        searchViewController.hidesBottomBarWhenPushed = true
+        navigate(to: searchViewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: searchViewController,
+                withNextStepper: searchViewController
+            )
+        )
+    }
+
+    private func navigateToPlantSearchDetail(contentNumber: String) -> FlowContributors {
+        let reactor = SearchDetailReactor(contentNumber: contentNumber)
+        let viewController = SearchDetailViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        navigate(to: viewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController
+            )
+        )
+    }
+
+    private func navigateToClassificationResult(_ result: [String: PlantClassificationService.Confidence]) -> FlowContributors {
+        let searchViewController = SearchViewController(classficationResult: result)
+        searchViewController.hidesBottomBarWhenPushed = true
+        navigate(to: searchViewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: searchViewController,
+                withNextStepper: searchViewController
+            )
+        )
+    }
+
+    private func navigateToCameraClassification() -> FlowContributors {
+        let cameraViewController = CameraClassificationViewController()
+        navigate(to: cameraViewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: cameraViewController,
+                withNextStepper: cameraViewController
+            )
+        )
+    }
+
+    private func updatePlantRegister(_ selectedPlant: SelectedPlant) -> FlowContributors {
+        guard let navigationController = tabBarController.selectedViewController as? UINavigationController else {
+            return .none
+        }
+
+        if let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
+            registerViewController.updateSelectedPlant(selectedPlant)
+            return .none
+        }
+
+        if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+           let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
+            registerViewController.updateSelectedPlant(selectedPlant)
+
+            let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+            let searchViewControllers = navigationController.viewControllers
+                .dropFirst(registerIndex + 1)
+                .filter { $0 is SearchViewController }
+            let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
+            navigationController.setViewControllers(updatedViewControllers, animated: true)
+            return .none
+        }
+
+        let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
+        navigate(to: plantRegisterViewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: plantRegisterViewController,
+                withNextStepper: plantRegisterViewController
+            )
+        )
+    }
 }
 
 extension MainFlow {
+    private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
+        let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
+        let viewController = PlantRegisterViewController(reactor: reactor)
+        viewController.hidesBottomBarWhenPushed = true
+        return viewController
+    }
+
     private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(mode: .edit(plant))
         let viewController = PlantRegisterViewController(reactor: reactor)

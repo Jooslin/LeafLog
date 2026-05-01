@@ -10,14 +10,13 @@ import Then
 import UIKit
 
 final class PlantRegisterView: UIView {
-
-    let headerView = TitleHeaderView(text: "식물 등록", hasBackButton: true)
-
-    private let scrollView = UIScrollView().then {
+    let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
         $0.keyboardDismissMode = .onDrag
     }
+
+    let headerView = TitleHeaderView(text: "식물 등록", hasBackButton: true)
 
     private let contentView = UIView()
 
