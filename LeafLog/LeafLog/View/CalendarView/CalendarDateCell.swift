@@ -52,6 +52,7 @@ final class CalendarDateCell: UICollectionViewCell {
         dateLabel.textColor = .label
         selectedView.isHidden = true
         colorChip.isHidden = true
+        colorChip.backgroundColor = .primary700
     }
 }
 
