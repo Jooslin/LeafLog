@@ -33,9 +33,9 @@ final class NotificationCenterView: UIView {
     }
     
     private func setLayout() {
-        addSubview(emptyView)
         addSubview(titleView)
         addSubview(listView)
+        addSubview(emptyView)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
