@@ -679,7 +679,7 @@ private extension PlantCareView {
             cell.configure(event: event)
         }
 
-        let plantDetailCellRegistration = UICollectionView.CellRegistration<PlantDetailCell, Item> { cell, _, item in
+        let plantDetailCellRegistration = UICollectionView.CellRegistration<PlantDetailCell, Item> { [weak self] cell, _, item in
             guard case .plantInfo(let infoItem) = item else {
                 return
             }
