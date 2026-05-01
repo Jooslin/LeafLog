@@ -351,6 +351,10 @@ final class PlantRegisterReactor: Reactor {
             return .failure(ValidationError(message: "마지막 급수일을 선택해주세요."))
         }
 
+        guard let firstMetDate = state.firstMetDate else {
+            return .failure(ValidationError(message: "데려온 날을 선택해주세요."))
+        }
+
         return .success(
             PlantCreateInput(
                 category: category,
@@ -361,7 +365,7 @@ final class PlantRegisterReactor: Reactor {
                 image: image,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt,
-                firstMetDate: state.firstMetDate
+                firstMetDate: firstMetDate
             )
         )
     }
@@ -401,6 +405,10 @@ final class PlantRegisterReactor: Reactor {
             return .failure(ValidationError(message: "마지막 급수일을 선택해주세요."))
         }
 
+        guard let firstMetDate = state.firstMetDate else {
+            return .failure(ValidationError(message: "데려온 날을 선택해주세요."))
+        }
+
         return .success(
             PlantUpdateInput(
                 id: plant.id,
@@ -413,7 +421,7 @@ final class PlantRegisterReactor: Reactor {
                 existingImagePath: plant.imagePath,
                 wateringIntervalDays: wateringIntervalDays,
                 lastWateredAt: lastWateredAt,
-                firstMetDate: state.firstMetDate
+                firstMetDate: firstMetDate
             )
         )
     }
@@ -425,6 +433,7 @@ final class PlantRegisterReactor: Reactor {
         let hasLocation = state.selectedLocation != nil
         let hasWateringInterval = Int(state.wateringIntervalText.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
         let hasLastWateredDate = state.lastWateredDate != nil
+        let hasFirstMetDate = state.firstMetDate != nil
         let isNotSaving = !state.isSaving
 
         return hasCategory
@@ -433,6 +442,7 @@ final class PlantRegisterReactor: Reactor {
             && hasLocation
             && hasWateringInterval
             && hasLastWateredDate
+            && hasFirstMetDate
             && isNotSaving
     }
 
