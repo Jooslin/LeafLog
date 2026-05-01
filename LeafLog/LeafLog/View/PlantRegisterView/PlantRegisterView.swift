@@ -99,8 +99,47 @@ final class PlantRegisterView: UIView {
             $0.horizontalEdges.bottom.equalToSuperview()
         }
     }
+    
+    private let firstMetDateTitleLabel = PlantRegisterView.makeRequiredSectionLabel(text: "식물을 키우기 시작한 날")
+    let firstMetDateTextField = PlantRegisterView.makeTextField(placeholder: "년 / 월 / 일").then {
+        $0.keyboardType = .numbersAndPunctuation
+    }
+    private let firstMetDatePicker = UIDatePicker().then {
+        $0.datePickerMode = .date
+        $0.preferredDatePickerStyle = .wheels
+        $0.locale = Locale(identifier: "ko_KR")
+        $0.timeZone = TimeZone(identifier: "Asia/Seoul")
+        $0.maximumDate = Date()
+    }
+    private lazy var firstMetDateInputView = UIView(
+        frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 304)
+    ).then {
+        $0.backgroundColor = .systemBackground
+        $0.autoresizingMask = [.flexibleWidth]
+
+        let toolbar = UIToolbar()
+        toolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(title: "완료", style: .done, target: self, action: #selector(didTapFirstMetDateDone))
+        ]
+
+        $0.addSubview(toolbar)
+        $0.addSubview(firstMetDatePicker)
+
+        toolbar.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(44)
+        }
+
+        firstMetDatePicker.snp.makeConstraints {
+            $0.top.equalTo(toolbar.snp.bottom)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
+    }
+    
     let registerButton = BottomSaveButton(title: "등록하기")
     var onLastWateredDateDone: ((Date) -> Void)?
+    var onFirstMetDateDone: ((Date) -> Void)?
 
     private lazy var categoryStackView = makeSelectionGrid(buttons: categoryButtons)
     private lazy var locationStackView = makeSelectionGrid(buttons: locationButtons)
@@ -110,7 +149,7 @@ final class PlantRegisterView: UIView {
         backgroundColor = .white
         setupSelectionState()
         setupUI()
-        setupLastWateredDateInputView()
+        setupDateInputViews()
     }
 
     required init?(coder: NSCoder) {
@@ -178,6 +217,8 @@ final class PlantRegisterView: UIView {
         wateringCycleTextField.text = nil
         lastWateredDateTextField.text = nil
         lastWateredDatePicker.date = Date()
+        firstMetDateTextField.text = nil
+        firstMetDatePicker.date = Date()
 
         categoryButtons.forEach {
             $0.isSelected = false
@@ -194,6 +235,11 @@ final class PlantRegisterView: UIView {
     func setLastWateredDate(_ date: Date, text: String) {
         lastWateredDatePicker.date = date
         lastWateredDateTextField.text = text
+    }
+
+    func setFirstMetDate(_ date: Date, text: String) {
+        firstMetDatePicker.date = date
+        firstMetDateTextField.text = text
     }
 }
 
@@ -252,7 +298,9 @@ private extension PlantRegisterView {
             wateringCycleUnitLabel,
             wateringGuideBannerView,
             lastWateredTitleLabel,
-            lastWateredDateTextField
+            lastWateredDateTextField,
+            firstMetDateTitleLabel,
+            firstMetDateTextField
         ].forEach { contentView.addSubview($0) }
 
         cameraButton.snp.makeConstraints {
@@ -349,6 +397,18 @@ private extension PlantRegisterView {
             $0.leading.equalTo(plantTypeTitleLabel)
             $0.width.equalTo(126)
             $0.height.equalTo(48)
+        }
+
+        firstMetDateTitleLabel.snp.makeConstraints {
+            $0.top.equalTo(lastWateredDateTextField.snp.bottom).offset(32)
+            $0.horizontalEdges.equalTo(plantTypeTitleLabel)
+        }
+
+        firstMetDateTextField.snp.makeConstraints {
+            $0.top.equalTo(firstMetDateTitleLabel.snp.bottom).offset(12)
+            $0.leading.equalTo(plantTypeTitleLabel)
+            $0.width.equalTo(126)
+            $0.height.equalTo(48)
             $0.bottom.equalToSuperview().inset(24)
         }
         categoryGuideView.snp.makeConstraints {
@@ -356,15 +416,23 @@ private extension PlantRegisterView {
         }
     }
 
-    func setupLastWateredDateInputView() {
+    func setupDateInputViews() {
         lastWateredDateTextField.inputView = lastWateredDateInputView
         lastWateredDateTextField.tintColor = .clear
+        firstMetDateTextField.inputView = firstMetDateInputView
+        firstMetDateTextField.tintColor = .clear
     }
 
     @objc func didTapLastWateredDateDone() {
         let selectedDate = lastWateredDatePicker.date
         onLastWateredDateDone?(selectedDate)
         lastWateredDateTextField.resignFirstResponder()
+    }
+
+    @objc func didTapFirstMetDateDone() {
+        let selectedDate = firstMetDatePicker.date
+        onFirstMetDateDone?(selectedDate)
+        firstMetDateTextField.resignFirstResponder()
     }
 
     // 버튼 그리드 배치하기

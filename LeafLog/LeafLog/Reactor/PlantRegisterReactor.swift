@@ -90,6 +90,7 @@ final class PlantRegisterReactor: Reactor {
         var lastWateredDate: Date? = nil
         var lastWateredDateText = ""
         var firstMetDate: Date? = nil
+        var firstMetDateText = ""
         var isRegisterEnabled = false
         var isSaving = false
         @Pulse var existingImage: UIImage? = nil
@@ -158,9 +159,10 @@ final class PlantRegisterReactor: Reactor {
             newState.wateringIntervalText = text
         case .setLastWateredDate(let date):
             newState.lastWateredDate = date
-            newState.lastWateredDateText = Self.makeLastWateredDateText(from: date)
+            newState.lastWateredDateText = Self.makeDateText(from: date)
         case .setFirstMetDate(let date):
             newState.firstMetDate = date
+            newState.firstMetDateText = Self.makeDateText(from: date)
         case .setExistingImage(let image):
             newState.existingImage = image
         case .setSaving(let isSaving):
@@ -458,8 +460,9 @@ final class PlantRegisterReactor: Reactor {
             state.selectedLocation = plant.location
             state.wateringIntervalText = "\(plant.wateringIntervalDays)"
             state.lastWateredDate = plant.lastWateredAt
-            state.lastWateredDateText = makeLastWateredDateText(from: plant.lastWateredAt)
+            state.lastWateredDateText = makeDateText(from: plant.lastWateredAt)
             state.firstMetDate = plant.firstMetDate
+            state.firstMetDateText = makeDateText(from: plant.firstMetDate)
         }
 
         state.isRegisterEnabled = isRegisterEnabled(for: state)
@@ -506,7 +509,7 @@ final class PlantRegisterReactor: Reactor {
         return ""
     }
 
-    private static func makeLastWateredDateText(from date: Date?) -> String {
+    private static func makeDateText(from date: Date?) -> String {
         guard let date else { return "" }
         var calendar = lastWateredDateCalendar
         calendar.timeZone = lastWateredDateTimeZone

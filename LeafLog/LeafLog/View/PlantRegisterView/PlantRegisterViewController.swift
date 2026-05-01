@@ -18,7 +18,7 @@ private struct PlantRegisterHeaderState: Equatable {
     let showsDeleteButton: Bool
 }
 
-private struct LastWateredDateViewState: Equatable {
+private struct DateFieldViewState: Equatable {
     let date: Date?
     let text: String
 }
@@ -158,12 +158,22 @@ final class PlantRegisterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state
-            .map { LastWateredDateViewState(date: $0.lastWateredDate, text: $0.lastWateredDateText) }
+            .map { DateFieldViewState(date: $0.lastWateredDate, text: $0.lastWateredDateText) }
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] viewState in
                 guard let self, let date = viewState.date else { return }
                 self.registerView.setLastWateredDate(date, text: viewState.text)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .map { DateFieldViewState(date: $0.firstMetDate, text: $0.firstMetDateText) }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] viewState in
+                guard let self, let date = viewState.date else { return }
+                self.registerView.setFirstMetDate(date, text: viewState.text)
             })
             .disposed(by: disposeBag)
         
@@ -316,6 +326,12 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self?.scrollToViewIfNeeded(self?.registerView.lastWateredDateTextField)
             })
             .disposed(by: disposeBag)
+
+        registerView.firstMetDateTextField.rx.controlEvent(.editingDidBegin)
+            .subscribe(onNext: { [weak self] in
+                self?.scrollToViewIfNeeded(self?.registerView.firstMetDateTextField)
+            })
+            .disposed(by: disposeBag)
         
         registerView.registerButton.rx.tap
             .subscribe(onNext: { [weak self] in
@@ -325,6 +341,10 @@ final class PlantRegisterViewController: BaseViewController, View {
 
         registerView.onLastWateredDateDone = { [weak reactor] date in
             reactor?.action.onNext(.updateLastWateredDate(date))
+        }
+
+        registerView.onFirstMetDateDone = { [weak reactor] date in
+            reactor?.action.onNext(.updateFirstMetDate(date))
         }
 
         syncInitialFormState()
@@ -387,10 +407,11 @@ final class PlantRegisterViewController: BaseViewController, View {
             .drive(onNext: { [weak self] keyboardHeight in
                 guard let self else { return }
 
-                let isShowingLastWateredDatePicker = self.registerView.lastWateredDateTextField.isFirstResponder
+                let isShowingDatePicker = self.registerView.lastWateredDateTextField.isFirstResponder
+                    || self.registerView.firstMetDateTextField.isFirstResponder
                 let bottomInset: CGFloat
 
-                if isShowingLastWateredDatePicker {
+                if isShowingDatePicker {
                     bottomInset = (keyboardHeight * 0.5) + 32
                 } else {
                     bottomInset = keyboardHeight > 0 ? keyboardHeight + 32 : 32
@@ -399,7 +420,7 @@ final class PlantRegisterViewController: BaseViewController, View {
                 self.registerView.scrollView.contentInset.bottom = bottomInset
                 self.registerView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
 
-                if keyboardHeight > 0, !isShowingLastWateredDatePicker {
+                if keyboardHeight > 0, !isShowingDatePicker {
                     self.scrollToCurrentResponderIfNeeded()
                 }
             })
