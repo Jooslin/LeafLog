@@ -14,6 +14,7 @@ import Dependencies
 final class SplashViewController: BaseViewController {
 
     @Dependency(\.authService) private var authService
+    @Dependency(\.appUpdateManager) private var appUpdateManager
     
     private var didStartSessionCheck = false
     
@@ -43,12 +44,25 @@ final class SplashViewController: BaseViewController {
         }
     }
     
-    // 로그인 세션 확인
+    // 업데이트 체크 & 로그인 세션 확인
     private func validateSession() {
-        Task {
-            let nextStep = await authService.resolveInitialStep()
+        Task { [weak self] in
+            guard let self else { return }
 
-            self.steps.accept(nextStep)
+            let updateState = await appUpdateManager.fetchUpdateState()
+
+            switch updateState {
+            case let .required(message, storeURL):
+                await MainActor.run {
+                    self.steps.accept(AppStep.updateRequired(message: message, storeURL: storeURL))
+                }
+
+            case .available, .optional:
+                let nextStep = await authService.resolveInitialStep()
+                await MainActor.run {
+                    self.steps.accept(nextStep)
+                }
+            }
         }
     }
 }

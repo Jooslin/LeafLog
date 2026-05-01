@@ -53,6 +53,9 @@ final class AppFlow: Flow {
 
         case .main:
             return navigateToMain()
+
+        case let .updateRequired(message, storeURL):
+            return navigateToUpdateRequired(message: message, storeURL: storeURL)
             
         default:
             return .none
@@ -88,5 +91,19 @@ extension AppFlow {
                 withNextPresentable: mainFlow,
                 withNextStepper: OneStepper(withSingleStep: AppStep.main))
             )
+    }
+
+    private func navigateToUpdateRequired(message: String, storeURL: URL) -> FlowContributors {
+        guard window.rootViewController is UpdateRequiredViewController == false else {
+            return .none
+        }
+
+        let updateRequiredViewController = UpdateRequiredViewController(
+            message: message,
+            storeURL: storeURL
+        )
+
+        window.rootViewController = updateRequiredViewController
+        return .none
     }
 }

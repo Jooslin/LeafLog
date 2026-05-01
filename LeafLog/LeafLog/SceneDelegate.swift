@@ -10,16 +10,20 @@ import KakaoSDKAuth
 import GoogleSignIn
 import ReactorKit
 import RxFlow
+import RxRelay
 import Dependencies
 import OSLog
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private let logger = Logger(subsystem: "LeafLog", category: "SceneDelegate")
     let coordinator = FlowCoordinator()
+    private let appStepper = AppStepper()
     @Dependency(\.notificationManager) private var notificationManager
     @Dependency(\.fcmManager) private var fcmManager
+    @Dependency(\.appUpdateManager) private var appUpdateManager
     
     var window: UIWindow?
+    private var isCheckingRequiredUpdate = false
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
@@ -45,7 +49,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let appFlow = AppFlow(windowScene: windowScene)
         window = appFlow.window
         
-        coordinator.coordinate(flow: appFlow, with: OneStepper(withSingleStep: AppStep.splash))
+        coordinator.coordinate(
+            flow: appFlow,
+            with: CompositeStepper(steppers: [
+                OneStepper(withSingleStep: AppStep.splash),
+                appStepper
+            ])
+        )
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -67,6 +77,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 self?.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
             }
         }
+
+        Task { [weak self] in
+            await self?.emitRequiredUpdateIfNeeded()
+        }
     }
     
     func sceneWillResignActive(_ scene: UIScene) {
@@ -85,4 +99,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
         
     }
+
+    @MainActor
+    private func emitRequiredUpdateIfNeeded() async {
+        guard isCheckingRequiredUpdate == false else { return }
+        guard window?.rootViewController is SplashViewController == false else { return }
+        guard window?.rootViewController is UpdateRequiredViewController == false else { return }
+
+        isCheckingRequiredUpdate = true
+        defer { isCheckingRequiredUpdate = false }
+
+        let updateState = await appUpdateManager.fetchUpdateState()
+
+        guard case let .required(message, storeURL) = updateState else { return }
+
+        appStepper.steps.accept(AppStep.updateRequired(message: message, storeURL: storeURL))
+    }
+}
+
+private struct AppStepper: Stepper {
+    let steps = PublishRelay<Step>()
 }
