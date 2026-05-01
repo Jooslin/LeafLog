@@ -37,7 +37,6 @@ class EmptyView: UIView {
         button.isHidden = !needButton
         if needButton {
             button.setTitle(buttonTitle ?? "")
-//            button.configuration?.title = buttonTitle ?? ""
         }
         
         setLayout()
