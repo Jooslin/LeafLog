@@ -23,6 +23,11 @@ final class HomeView: UIView {
         $0.isHidden = true
     }
     
+    private let collectionTopFadeView = UIView().then {
+        $0.isUserInteractionEnabled = false
+    }
+    private let collectionTopFadeLayer = CAGradientLayer()
+    
     fileprivate let waterButtonTap = PublishRelay<UUID?>()
     
     override init(frame: CGRect) {
@@ -34,6 +39,21 @@ final class HomeView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        collectionTopFadeLayer.frame = collectionTopFadeView.bounds
+        collectionTopFadeLayer.colors = [
+            UIColor.grayScale50.cgColor,
+            UIColor.grayScale50.withAlphaComponent(0).cgColor
+        ]
+        collectionTopFadeLayer.locations = [0, 1]
+        
+        if collectionTopFadeLayer.superlayer == nil {
+            collectionTopFadeView.layer.addSublayer(collectionTopFadeLayer)
+        }
+    }
 }
 
 extension HomeView {
@@ -42,6 +62,7 @@ extension HomeView {
         addSubview(totalWideCard)
         addSubview(emptyView)
         addSubview(collectionView)
+        addSubview(collectionTopFadeView)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -64,6 +85,12 @@ extension HomeView {
         collectionView.snp.makeConstraints {
             $0.top.equalTo(totalWideCard.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
+        }
+        
+        collectionTopFadeView.snp.makeConstraints {
+            $0.top.equalTo(collectionView.snp.top)
+            $0.horizontalEdges.equalTo(collectionView)
+            $0.height.equalTo(50)
         }
     }
 }
@@ -117,9 +144,11 @@ extension HomeView {
         if isEmpty {
             emptyView.isHidden = false
             collectionView.isHidden = true
+            collectionTopFadeView.isHidden = true
         } else {
             emptyView.isHidden = true
             collectionView.isHidden = false
+            collectionTopFadeView.isHidden = false
         }
     }
     
