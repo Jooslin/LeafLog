@@ -6,7 +6,6 @@
 //
 import Dependencies
 import Foundation
-import Then
 import ReactorKit
 import RxSwift
 import UIKit
@@ -15,9 +14,11 @@ import OSLog
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
-    private static let dateCalendar = Calendar.current.then {
-        $0.timeZone = .current
-    }
+    private static let dateCalendar: Calendar = {
+        var calendar = Calendar.current
+        calendar.timeZone = .current
+        return calendar
+    }()
     private let logger = Logger(subsystem: "LeafLog", category: "PlantRegisterReactor")
 
     enum Mode: Equatable {
