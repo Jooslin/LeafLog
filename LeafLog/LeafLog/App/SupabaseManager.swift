@@ -73,6 +73,16 @@ extension SupabaseManager {
         static let lifetime: TimeInterval = 50 * 60 // 캐시에서 URL 유지하는 시간
     }
 
+    private enum ImageUploadLimit {
+        static let maxByteCount = 5 * 1024 * 1024 // 5MB
+        static let exceededMessage = "5MB를 초과하는 이미지는 등록할 수 없습니다."
+    }
+
+    private enum ImageUploadCompression {
+        static let maxPixelLength: CGFloat = 1280 // 긴쪽이 1280 넘으면 1280으로
+        static let jpegQuality: CGFloat = 0.75 // 75% 품질로 압축
+    }
+
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
     func uploadProfileImage(_ image: UIImage, userID: UUID) async throws -> String {
         let normalizedUserID = userID.uuidString.lowercased()
@@ -81,7 +91,8 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.profileImages,
             objectPath: objectPath,
-            conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요.")
+            conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요."),
+            sizeLimitError: .profileFailed(ImageUploadLimit.exceededMessage)
         )
     }
     
@@ -94,7 +105,8 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
-            conversionError: .plantFailed("식물 이미지를 변환하지 못했어요.")
+            conversionError: .plantFailed("식물 이미지를 변환하지 못했어요."),
+            sizeLimitError: .plantFailed(ImageUploadLimit.exceededMessage)
         )
     }
     
@@ -107,7 +119,8 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
-            conversionError: .careFailed("일기 사진을 변환하지 못했어요.")
+            conversionError: .careFailed("일기 사진을 변환하지 못했어요."),
+            sizeLimitError: .careFailed(ImageUploadLimit.exceededMessage)
         )
     }
     
@@ -142,25 +155,80 @@ extension SupabaseManager {
         _ image: UIImage,
         bucket: String,
         objectPath: String,
-        conversionError: AuthError
+        conversionError: AuthError,
+        sizeLimitError: AuthError
     ) async throws -> String {
-        guard let fileData = image.jpegData(compressionQuality: 0.8) else {
+        guard let fileData = compressedImageData(from: image) else {
             throw conversionError
         }
+
+        // 이미지 용량 검사
+        guard fileData.count <= ImageUploadLimit.maxByteCount else {
+            throw sizeLimitError
+        }
         
-        _ = try await client.storage
-            .from(bucket)
-            .upload(
-                path: objectPath,
-                file: fileData,
-                options: FileOptions(
-                    cacheControl: "3600",
-                    contentType: "image/jpeg",
-                    upsert: true
+        do {
+            _ = try await client.storage
+                .from(bucket)
+                .upload(
+                    path: objectPath,
+                    file: fileData,
+                    options: FileOptions(
+                        cacheControl: "3600",
+                        contentType: "image/jpeg",
+                        upsert: true
+                    )
                 )
-            )
+        } catch {
+            if Self.isStorageSizeLimitError(error) {
+                // 한국어 에러 반환
+                throw sizeLimitError
+            }
+
+            throw error
+        }
         
         return objectPath
+    }
+
+    // MARK: - 이미지 압축하는 메서드
+    private func compressedImageData(from image: UIImage) -> Data? {
+        let resizedImage = resizedImageForUpload(from: image)
+        // 품질 압축
+        return resizedImage.jpegData(compressionQuality: ImageUploadCompression.jpegQuality)
+    }
+
+    private func resizedImageForUpload(from image: UIImage) -> UIImage {
+        let pixelSize = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+        let longestSide = max(pixelSize.width, pixelSize.height)
+
+        // 1280보다 작으면 통과
+        guard longestSide > ImageUploadCompression.maxPixelLength else {
+            return image
+        }
+
+        // 1280 기준으로 비율 유지해서 리사이즈
+        let ratio = ImageUploadCompression.maxPixelLength / longestSide
+        let targetSize = CGSize(
+            width: image.size.width * ratio,
+            height: image.size.height * ratio
+        )
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+
+        return UIGraphicsImageRenderer(size: targetSize, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: targetSize))
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+
+    private static func isStorageSizeLimitError(_ error: Error) -> Bool {
+        let message = (String(describing: error)).lowercased()
+        return message.contains("maximum allowed size")
+            || message.contains("object exceeded")
     }
 
     // URL 변환 로직

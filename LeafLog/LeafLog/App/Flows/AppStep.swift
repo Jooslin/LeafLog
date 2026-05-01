@@ -25,7 +25,8 @@ enum AppStep: Step {
     
     // Tab
     case plantTab
-    case endPlantRegister
+    case endPlantRegisterEdit
+    case endPlantDelete
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
@@ -37,7 +38,8 @@ enum AppStep: Step {
     case alarmCenter
     
     // PlantTab
-    case plantRegister(SelectedPlant? = nil)
+    case plantRegister
+    case plantRegisterSelectedPlant(SelectedPlant)
     case plantEdit(MyPlant)
     case plantSearch
     case plantSearchDetail(String)

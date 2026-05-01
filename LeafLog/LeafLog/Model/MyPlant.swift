@@ -64,6 +64,7 @@ struct PlantCreateInput {
     let image: UIImage?
     let wateringIntervalDays: Int
     let lastWateredAt: Date
+    let firstMetDate: Date?
 }
 
 // MARK: - 사용자 Update Input Model
@@ -81,6 +82,7 @@ struct PlantUpdateInput {
     
     let wateringIntervalDays: Int
     let lastWateredAt: Date
+    let firstMetDate: Date?
 }
 
 // MARK: - 앱 내에서 전반적으로 사용할 내 식물 모델
@@ -94,6 +96,7 @@ struct MyPlant: Codable, Hashable {
     let imagePath: String?
     let wateringIntervalDays: Int
     let lastWateredAt: Date
+    let firstMetDate: Date?
     let healthStatus: String
     let guideEnabled: Bool
     let createdAt: Date
@@ -102,7 +105,26 @@ struct MyPlant: Codable, Hashable {
 
     // 기본 이미지
     var defaultImageAssetName: String {
-        category.defaultImageAssetName // 기본 이미지
+        speciesDefaultImageAssetName ?? category.defaultImageAssetName
+    }
+
+    private var speciesDefaultImageAssetName: String? {
+        let normalizedSpeciesName = speciesName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .components(separatedBy: .whitespacesAndNewlines)
+            .joined()
+
+        switch category {
+        case .vine where normalizedSpeciesName.contains("몬스테라") || normalizedSpeciesName.contains("monstera"):
+            return "plantMonstera"
+        case .grass where normalizedSpeciesName.contains("안수리움")
+            || normalizedSpeciesName.contains("안스리움")
+            || normalizedSpeciesName.contains("anthurium"):
+            return "plantAnthurium"
+        default:
+            return nil
+        }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -119,6 +141,7 @@ struct MyPlant: Codable, Hashable {
         case guideEnabled = "guide_enabled"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
-        case contentNumber
+        case contentNumber = "content_number"
+        case firstMetDate = "first_met_date"
     }
 }

@@ -11,6 +11,7 @@ import Dependencies
 import AVFoundation
 import RxRelay
 import PhotosUI
+import ReactorKit
 
 /*
  RxFlow 사용 예시입니다. - 추후 해당 탭 구현 시 변경 예정입니다.
@@ -35,6 +36,7 @@ final class PlantTabFlow: Flow {
         switch step {
         case .plantTab:
             let homeViewController = HomeViewController()
+            homeViewController.reactor = HomeReactor()
             navigationController.setViewControllers([homeViewController], animated: false)
 
             return .one(
@@ -44,40 +46,24 @@ final class PlantTabFlow: Flow {
                 )
             )
             
-        case .endPlantRegister:
+        case .record(let plantID, let date):
+            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
+            viewController.hidesBottomBarWhenPushed = true
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+            
+        case .endPlantRegisterEdit:
             navigationController.popToRootViewController(animated: true)
             return .none
 
-        case .plantRegister(let selectedPlant):
-            if let selectedPlant,
-               let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
-                registerViewController.updateSelectedPlant(selectedPlant)
+            // 새 식물 등록 시작
+        case .plantRegister:
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: nil)
 
-                return .none
-            }
-
-            if let selectedPlant,
-               let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
-               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
-                registerViewController.updateSelectedPlant(selectedPlant)
-
-                let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
-                let searchViewControllers = navigationController.viewControllers
-                    .dropFirst(registerIndex + 1)
-                    .filter { $0 is SearchViewController }
-                let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
-                navigationController.setViewControllers(updatedViewControllers, animated: true)
-
-                return .none
-            }
-
-            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
-            
             if navigationController.viewControllers.isEmpty {
                 let homeViewController = HomeViewController()
                 navigationController.setViewControllers([homeViewController, plantRegisterViewController], animated: false)
-            } else if selectedPlant == nil,
-                      let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
+            } else if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }) {
                 var updatedViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
                 updatedViewControllers.append(plantRegisterViewController)
                 navigationController.setViewControllers(updatedViewControllers, animated: true)
@@ -85,24 +71,34 @@ final class PlantTabFlow: Flow {
                 navigationController.pushViewController(plantRegisterViewController, animated: true)
             }
 
-//            return .one(
-//                flowContributor: .contribute(
-//                    withNextPresentable: plantRegisterViewController,
-//                    withNextStepper: plantRegisterViewController
-//                )
-//            )
-            
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
                     withNextStepper: CompositeStepper(
                         steppers: [plantRegisterViewController, photoSelectStepper]
-                    )))
+                    )
+                )
+            )
+            
+            // 검색, 상세 등에서 식물 정보 가지고 시작
+        case .plantRegisterSelectedPlant(let selectedPlant):
+            if let registerViewController = navigationController.topViewController as? PlantRegisterViewController {
+                registerViewController.updateSelectedPlant(selectedPlant)
+                return .none
+            }
 
-        case .plantEdit(let plant):
-            let plantRegisterViewController = makePlantEditViewController(plant: plant)
+            if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
+               let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
+                updateAndRestorePlantRegister(
+                    registerViewController: registerViewController,
+                    selectedPlant: selectedPlant,
+                    registerIndex: registerIndex
+                )
+                return .none
+            }
+
+            let plantRegisterViewController = makePlantRegisterViewController(selectedPlant: selectedPlant)
             navigationController.pushViewController(plantRegisterViewController, animated: true)
-
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
@@ -130,12 +126,6 @@ final class PlantTabFlow: Flow {
             viewController.hidesBottomBarWhenPushed = true
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
-
-        case .record(let plantID, let date):
-            let viewController = PlantCareViewController(reactor: PlantCareReactor(plantID: plantID, selectedDate: date))
-            viewController.hidesBottomBarWhenPushed = true
-            navigationController.pushViewController(viewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))            
         
         case .classificationResult(let result): // AI 검색 결과 표시
             let searchViewController = SearchViewController(classficationResult: result)
@@ -154,15 +144,6 @@ final class PlantTabFlow: Flow {
 
         case .diaryImageSourceSheet:
             presentDiaryImageSourceSheet()
-            return .none
-
-        case let .confirmAlert(title, message, okTitle, onConfirm):
-            presentConfirmAlert(
-                title: title,
-                message: message,
-                okTitle: okTitle,
-                onConfirm: onConfirm
-            )
             return .none
             
         case .cameraRequired:
@@ -227,34 +208,23 @@ extension PlantTabFlow {
         )
     }
 
-    private func presentConfirmAlert(
-        title: String,
-        message: String,
-        okTitle: String,
-        onConfirm: @escaping () -> Void
+    private func updateAndRestorePlantRegister(
+        registerViewController: PlantRegisterViewController,
+        selectedPlant: SelectedPlant,
+        registerIndex: Int
     ) {
-        let alert = UIAlertController(
-            title: title,
-            message: message,
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "취소", style: .cancel))
-        alert.addAction(UIAlertAction(title: okTitle, style: .destructive) { _ in
-            onConfirm()
-        })
+        registerViewController.updateSelectedPlant(selectedPlant)
 
-        navigationController.present(alert, animated: true)
+        let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
+        let searchViewControllers = navigationController.viewControllers
+            .dropFirst(registerIndex + 1)
+            .filter { $0 is SearchViewController }
+        let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
+        navigationController.setViewControllers(updatedViewControllers, animated: true)
     }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
         let reactor = PlantRegisterReactor(selectedPlant: selectedPlant)
-        let viewController = PlantRegisterViewController(reactor: reactor)
-        viewController.hidesBottomBarWhenPushed = true
-        return viewController
-    }
-
-    private func makePlantEditViewController(plant: MyPlant) -> PlantRegisterViewController {
-        let reactor = PlantRegisterReactor(mode: .edit(plant))
         let viewController = PlantRegisterViewController(reactor: reactor)
         viewController.hidesBottomBarWhenPushed = true
         return viewController

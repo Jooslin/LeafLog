@@ -16,7 +16,11 @@ final class PlantCareView: UIView {
         static let headerContentInset: CGFloat = 344 // 헤더 여백
         static let segmentedTopOffset: CGFloat = 268
         static let expandedHeaderFractionThreshold: CGFloat = 0.01 // 임계값 추가
-        static let statusEstimatedHeight: CGFloat = 148
+        static let compactHeaderleadingInset: CGFloat = 56
+        static let compactHeadertrailingOffset: CGFloat = 16
+        static let compactHeaderNameScale: CGFloat = 0.8
+        static let compactHeaderNameGapTolerance: CGFloat = 4
+        static let statusEstimatedHeight: CGFloat = 160
         static let diaryPhotoHeight: CGFloat = 420
         static let diaryEstimatedHeight: CGFloat = 740
         static let timelinePhotoHeight: CGFloat = 420
@@ -32,10 +36,16 @@ final class PlantCareView: UIView {
         $0.contentMode = .scaleAspectFill
         $0.image = nil
         $0.tintColor = nil
+        $0.setContentHuggingPriority(.required, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
 
     let nameLabel = UILabel(text: "name", config: .headline24).then {
         $0.textAlignment = .center
+        $0.numberOfLines = 1 // 최대 한줄
+        $0.lineBreakMode = .byTruncatingTail // 말줄임표 처리
+        $0.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        $0.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     }
 
     let plantNameLabel = UILabel(text: "plant name", config: .label16, color: .grayScale600).then {
@@ -125,6 +135,8 @@ private extension PlantCareView {
         headerView.addLayoutGuide(headerContentLayoutGuide)
         headerContentLayoutGuide.snp.makeConstraints {
             $0.center.equalToSuperview()
+            $0.leading.greaterThanOrEqualToSuperview().offset(Metric.compactHeaderleadingInset)
+            $0.trailing.lessThanOrEqualToSuperview().inset(Metric.compactHeadertrailingOffset)
         }
 
         addSubview(headerView)
@@ -165,7 +177,7 @@ private extension PlantCareView {
         })
 
         compactLayoutConstraints.append(contentsOf: nameLabel.snp.prepareConstraints {
-            $0.leading.equalTo(plantImageView.snp.trailing)
+            $0.leading.equalTo(plantImageView.snp.trailing).offset(8)
             $0.centerY.trailing.equalTo(headerContentLayoutGuide)
         })
 
@@ -206,7 +218,7 @@ extension PlantCareView {
             guard let self else { return }
 
             self.layoutIfNeeded()
-            self.nameLabel.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+            self.nameLabel.transform = self.compactNameLabelTransform()
             self.plantNameLabel.alpha = 0
         }
         scrollAnimator?.pauseAnimation()
@@ -289,6 +301,17 @@ extension PlantCareView {
         nameLabel.transform = .identity
         plantNameLabel.alpha = 1
         layoutIfNeeded()
+    }
+
+    // 별명이 길 때 (4pt 초과)일 때 x값을 4만큼 왼쪽으로 당기기
+    private func compactNameLabelTransform() -> CGAffineTransform {
+        let scale = Metric.compactHeaderNameScale
+        let visualLeadingGap = (nameLabel.bounds.width * (1 - scale)) / 2
+        let translationX = -max(0, visualLeadingGap - Metric.compactHeaderNameGapTolerance)
+
+        let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
+        let translationTransform = CGAffineTransform(translationX: translationX, y: 0)
+        return scaleTransform.concatenating(translationTransform)
     }
 
     private var hasValidLayoutSize: Bool {
@@ -1002,6 +1025,8 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     var onMemoSaveTapped: ((PlantCareRecordType, String) -> Void)? // 메모 저장 누름
 
     private var item: PlantCareItem?
+    // 메모 내용이 변했는지 판단하기 위해 저장된 메모 내용을 기억하는 변수
+    private var savedMemoText = ""
 
     private let cardView = UIView().then {
         $0.backgroundColor = .grayScale50
@@ -1029,9 +1054,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         $0.configuration = configuration
     }
     private let memoLabel = UILabel(text: "메모 추가", config: .label14, color: .black)
+    private let memoRow = UIControl()
 
     private let chevronButton = UIButton(type: .system).then {
         $0.tintColor = .grayScale600
+        $0.isUserInteractionEnabled = false
     }
 
     private let textView = UITextView().then {
@@ -1051,9 +1078,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     private let saveButton = UIButton(config: .sSize, title: "저장")
     private lazy var saveButtonRow = UIView().then {
         $0.addSubview(saveButton)
-
+        
         saveButton.snp.makeConstraints {
-            $0.top.bottom.trailing.equalToSuperview()
+            $0.bottom.equalToSuperview()
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.equalToSuperview().inset(2)
             $0.width.equalTo(49)
             $0.height.equalTo(28)
         }
@@ -1067,6 +1096,7 @@ private final class PlantCareRecordCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        textView.delegate = self // textview의 내용이 바뀔때마다 감지
         setLayout()
         setActions()
     }
@@ -1080,6 +1110,11 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         titleLabel.text = item.type.title
         iconImageView.image = UIImage(named: item.type.badge.smallImage)
         textView.text = item.memoText
+        // 현재 저장된 메모
+        savedMemoText = item.memoText.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 비어있지 않고 저장된 메모와 같으면 활성화
+        saveButton.isSelected = !savedMemoText.isEmpty
+            && textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedMemoText
         memoContentStack.isHidden = !item.isMemoExpanded
         chevronButton.setImage(
             UIImage(named: item.isMemoExpanded ? "arrowUp" : "arrowDown"),
@@ -1095,20 +1130,27 @@ private final class PlantCareRecordCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        // 아이콘, 제목, 완료 버튼
-        let headerRow = UIStackView(arrangedSubviews: [titleStack, completeButton]).then {
-            $0.axis = .horizontal
-            $0.alignment = .center
-            $0.distribution = .equalSpacing
+        let headerRow = UIView().then {
+            $0.addSubview(titleStack)
+            $0.addSubview(completeButton)
         }
 
-        // 메모 추가 + 토글
-        let memoRow = UIView()
+        titleStack.snp.makeConstraints {
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(2)
+        }
+
+        completeButton.snp.makeConstraints {
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.bottom.equalToSuperview().inset(2)
+        }
+
         memoRow.addSubview(memoLabel)
         memoRow.addSubview(chevronButton)
 
         memoLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         chevronButton.snp.makeConstraints {
@@ -1134,33 +1176,33 @@ private final class PlantCareRecordCell: UICollectionViewCell {
         }
 
         headerRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(34)
         }
 
         memoRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(32)
         }
 
         saveButtonRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(30)
         }
     }
 
     private func setActions() {
+        memoRow.addAction(UIAction { [weak self] _ in
+            guard let self, let item else {
+                return
+            }
+
+            onMemoToggleTapped?(item.type)
+        }, for: .touchUpInside)
+
         completeButton.addAction(UIAction { [weak self] _ in
             guard let item = self?.item else {
                 return
             }
 
             self?.onCompleteTapped?(item.type)
-        }, for: .touchUpInside)
-
-        chevronButton.addAction(UIAction { [weak self] _ in
-            guard let item = self?.item else {
-                return
-            }
-
-            self?.onMemoToggleTapped?(item.type)
         }, for: .touchUpInside)
 
         saveButton.addAction(UIAction { [weak self] _ in
@@ -1181,10 +1223,19 @@ private final class PlantCareRecordCell: UICollectionViewCell {
     }
 }
 
+extension PlantCareRecordCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        saveButton.isSelected = textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedMemoText
+            && !savedMemoText.isEmpty
+    }
+}
+
 private final class PlantCareDiaryCell: UICollectionViewCell {
     var onDiaryToggleTapped: (() -> Void)?
     var onDiarySaveTapped: ((String) -> Void)?
     var onDiaryPhotoTapped: ((UIView) -> Void)?
+
+    private var savedDiaryText = ""
 
     private let cardView = UIView().then {
         $0.backgroundColor = .grayScale50
@@ -1193,8 +1244,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let iconImageView = UIImageView().then {
-        $0.image = UIImage(named: "sprout")?.withRenderingMode(.alwaysTemplate)
-        $0.tintColor = .primary600
+        $0.image = UIImage(named: "diary")
         $0.contentMode = .scaleAspectFit
         $0.snp.makeConstraints {
             $0.size.equalTo(24)
@@ -1206,6 +1256,10 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     private let cameraButton = UIButton(type: .system).then {
         $0.setImage(UIImage(named: "camera")?.withRenderingMode(.alwaysTemplate), for: .normal)
         $0.tintColor = .grayScale600
+        $0.backgroundColor = .white
+        $0.layer.cornerRadius = 12
+        $0.contentEdgeInsets = UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
+        $0.imageView?.contentMode = .scaleAspectFit
     }
 
     private let photoImageView = UIImageView().then {
@@ -1243,8 +1297,10 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
     }
 
     private let diaryLabel = UILabel(text: "일기 기록", config: .label14, color: .black)
+    private let diaryRow = UIControl() // 텍스트 영역 토글 접혔다 폈다하는 row
     private let chevronButton = UIButton(type: .system).then {
         $0.tintColor = .grayScale600
+        $0.isUserInteractionEnabled = false // 터치 안받음
     }
 
     private let textView = UITextView().then {
@@ -1266,7 +1322,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         $0.addSubview(saveButton)
 
         saveButton.snp.makeConstraints {
-            $0.top.bottom.trailing.equalToSuperview()
+            $0.bottom.equalToSuperview()
+            $0.trailing.equalToSuperview().inset(4)
+            $0.top.equalToSuperview().inset(2)
             $0.width.equalTo(49)
             $0.height.equalTo(28)
         }
@@ -1280,6 +1338,7 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        textView.delegate = self
         setLayout()
         setActions()
     }
@@ -1301,6 +1360,9 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
     func configure(item: PlantCareDiaryItem) {
         textView.text = item.diaryText
+        savedDiaryText = item.diaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        saveButton.isSelected = !savedDiaryText.isEmpty
+            && textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedDiaryText
         diaryContentStack.isHidden = !item.isDiaryExpanded
         chevronButton.setImage(
             UIImage(named: item.isDiaryExpanded ? "arrowUp" : "arrowDown"),
@@ -1363,9 +1425,13 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
             $0.alignment = .center
         }
 
-        let headerRow = UIStackView(arrangedSubviews: [titleStack]).then {
-            $0.axis = .horizontal
-            $0.alignment = .center
+        let headerRow = UIView().then {
+            $0.addSubview(titleStack)
+        }
+
+        titleStack.snp.makeConstraints {
+            $0.leading.equalToSuperview().inset(3)
+            $0.centerY.equalToSuperview()
         }
 
         let photoRow = UIView()
@@ -1374,20 +1440,23 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
 
 
         photoLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         cameraButton.snp.makeConstraints {
-            $0.trailing.centerY.equalToSuperview().inset(8)
-            $0.size.equalTo(24)
+            $0.trailing.equalToSuperview().inset(3)
+            $0.centerY.equalToSuperview()
+            $0.width.equalTo(48)
+            $0.height.equalTo(36)
         }
 
-        let diaryRow = UIView()
         diaryRow.addSubview(diaryLabel)
         diaryRow.addSubview(chevronButton)
 
         diaryLabel.snp.makeConstraints {
-            $0.leading.centerY.equalToSuperview()
+            $0.centerY.equalToSuperview()
+            $0.leading.equalToSuperview().inset(4)
         }
 
         chevronButton.snp.makeConstraints {
@@ -1396,11 +1465,13 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         let divider = SeparateBar()
+        let diaryDivider = SeparateBar()
         let stackView = UIStackView(arrangedSubviews: [
             headerRow,
             divider,
             photoRow,
             photoPreviewView,
+            diaryDivider,
             diaryRow,
             diaryContentStack
         ]).then {
@@ -1420,33 +1491,33 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         }
 
         headerRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(34)
         }
 
         photoRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(36)
         }
 
         diaryRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(32)
         }
 
         saveButtonRow.snp.makeConstraints {
-            $0.height.equalTo(28)
+            $0.height.equalTo(30)
         }
     }
 
     private func setActions() {
+        diaryRow.addAction(UIAction { [weak self] _ in
+            self?.onDiaryToggleTapped?()
+        }, for: .touchUpInside)
+
         cameraButton.addAction(UIAction { [weak self] _ in
             guard let self else {
                 return
             }
 
             onDiaryPhotoTapped?(cameraButton)
-        }, for: .touchUpInside)
-
-        chevronButton.addAction(UIAction { [weak self] _ in
-            self?.onDiaryToggleTapped?()
         }, for: .touchUpInside)
 
         saveButton.addAction(UIAction { [weak self] _ in
@@ -1466,6 +1537,14 @@ private final class PlantCareDiaryCell: UICollectionViewCell {
         photoPlaceholderLabel.isHidden = !hasPhoto
     }
 
+}
+
+// 텍스트 필드 내용이 바뀔때마다 실행
+extension PlantCareDiaryCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        saveButton.isSelected = textView.text.trimmingCharacters(in: .whitespacesAndNewlines) == savedDiaryText
+            && !savedDiaryText.isEmpty
+    }
 }
 
 private final class PlantCareTimelineControlCell: UICollectionViewCell {
@@ -1569,10 +1648,10 @@ private final class PlantCareTimelineControlCell: UICollectionViewCell {
         configuration.title = title
         configuration.baseForegroundColor = isSelected ? .primary700 : .grayScale500
         configuration.background.backgroundColor = isSelected ? .primary100 : .white
-        configuration.background.strokeColor = isSelected ? .primary600 : .grayScale100
+        configuration.background.strokeColor = isSelected ? .primary400 : .grayScale100
         configuration.background.strokeWidth = 1
         configuration.background.cornerRadius = 12
-        configuration.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12)
+        configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
             outgoing.font = UIFont.systemFont(ofSize: 14, weight: .medium)
@@ -1694,7 +1773,7 @@ private final class PlantCareTimelineEventCell: UICollectionViewCell {
 
             // 일기
         case .diary:
-            iconImageView.image = UIImage(named: "sprout")
+            iconImageView.image = UIImage(named: "diary")
             titleLabel.text = "오늘의 일기"
             memoLabel.text = memo.isEmpty ? "" : memo
             configurePhotoPreview(

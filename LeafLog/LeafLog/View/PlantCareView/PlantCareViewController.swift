@@ -35,6 +35,7 @@ final class PlantCareViewController: BaseViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        maximumDynamicTypeCategory = .accessibilityLarge // 다이나믹 폰트 최대 크기 설정
         setKeyboardDismissGesture() // 키보드 내리기
         bindKeyboard() // 키보드 텍스트 필드 위치 조정
     }
