@@ -9,7 +9,6 @@ import Dependencies
 import SnapKit
 import Then
 import UIKit
-internal import System
 
 // MARK: - 강제 업데이트 전용 화면
 final class UpdateRequiredViewController: UIViewController {
