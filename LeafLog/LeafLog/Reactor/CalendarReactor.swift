@@ -162,7 +162,10 @@ extension CalendarReactor {
                       let month = dateComp.month else { return Disposables.create() }
                 
                 let task = Task { [weak self] in
-                    guard let self else { return }
+                    guard let self else {
+                        observer.onCompleted()
+                        return
+                    }
                     
                     do {
                         // 월간 기록

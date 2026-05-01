@@ -179,7 +179,10 @@ final class MyPageReactor: Reactor {
     private func updateNotificationAllowance(isOn: Bool) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task {
-                guard let self else { return }
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
                 
                 do {
                     try await self.notificationManager.updateIsNotificationEnabled(to: isOn)

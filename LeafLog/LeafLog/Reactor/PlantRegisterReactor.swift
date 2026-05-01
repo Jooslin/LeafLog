@@ -525,8 +525,12 @@ final class PlantRegisterReactor: Reactor {
 extension PlantRegisterReactor {
     private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
-            Task {
+            Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+                
                 do {
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
                     observer.onNext(.analyzeResult(classificationResult))
