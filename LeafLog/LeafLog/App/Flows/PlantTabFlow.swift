@@ -214,13 +214,7 @@ extension PlantTabFlow {
         registerIndex: Int
     ) {
         registerViewController.updateSelectedPlant(selectedPlant)
-
-        let previousViewControllers = Array(navigationController.viewControllers.prefix(registerIndex))
-        let searchViewControllers = navigationController.viewControllers
-            .dropFirst(registerIndex + 1)
-            .filter { $0 is SearchViewController }
-        let updatedViewControllers = previousViewControllers + searchViewControllers + [registerViewController]
-        navigationController.setViewControllers(updatedViewControllers, animated: true)
+        navigationController.popToViewController(registerViewController, animated: true)
     }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
