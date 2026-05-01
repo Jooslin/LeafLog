@@ -285,7 +285,7 @@ extension MyPageViewController: MFMailComposeViewControllerDelegate {
         // 문의/오류신고에 따라 제목과 본문 양식 다르게 지정
         if isError {
             mailVC.setSubject("[LeafLog] 오류 신고")
-            mailVC.setMessageBody("발생한 오류에 대해 적어주세요.\n\n- 발생 일시:\n-사용 중인 기종 (예: iPhone 15 Pro):\n- 오류가 발생한 화면이나 상황:\n", isHTML: false)
+            mailVC.setMessageBody("발생한 오류에 대해 적어주세요.\n\n- 발생 일시:\n- 사용 중인 기종 (예: iPhone 15 Pro):\n- 오류가 발생한 화면이나 상황:\n", isHTML: false)
         } else {
             mailVC.setSubject("[LeafLog] 서비스 문의")
             mailVC.setMessageBody("문의하실 내용을 적어주세요.\n\n", isHTML: false)
