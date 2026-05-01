@@ -78,7 +78,8 @@ final class PlantDBManager {
             contentNumber: input.contentNumber,
             imagePath: imagePath,
             wateringIntervalDays: input.wateringIntervalDays,
-            lastWateredAt: input.lastWateredAt
+            lastWateredAt: input.lastWateredAt,
+            firstMetDate: input.firstMetDate
         )
         
         // Supabase Insert 실행 후 생성된 데이터를 모델로 바로 디코딩
@@ -126,6 +127,7 @@ final class PlantDBManager {
         let imagePath: String?
         let wateringIntervalDays: Int
         let lastWateredAt: Date
+        let firstMetDate: Date?
         
         enum CodingKeys: String, CodingKey {
             case id
@@ -138,6 +140,7 @@ final class PlantDBManager {
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
+            case firstMetDate = "first_met_date"
         }
     }
     
@@ -163,7 +166,8 @@ final class PlantDBManager {
             contentNumber: input.contentNumber,
             imagePath: imagePath,
             wateringIntervalDays: input.wateringIntervalDays,
-            lastWateredAt: input.lastWateredAt
+            lastWateredAt: input.lastWateredAt,
+            firstMetDate: input.firstMetDate
         )
         
         // Supabase Update 실행
@@ -236,6 +240,7 @@ final class PlantDBManager {
         let imagePath: String?
         let wateringIntervalDays: Int
         let lastWateredAt: Date
+        let firstMetDate: Date?
         
         enum CodingKeys: String, CodingKey {
             case category
@@ -246,6 +251,7 @@ final class PlantDBManager {
             case imagePath = "image_path"
             case wateringIntervalDays = "watering_interval_days"
             case lastWateredAt = "last_watered_at"
+            case firstMetDate = "first_met_date"
         }
     }
     
