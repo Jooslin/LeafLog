@@ -104,7 +104,7 @@ final class SearchViewController: BaseViewController, View {
             return cell
         }
 
-        dataSource?.supplementaryViewProvider = { collectionView, kind, indexPath in
+        dataSource?.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
             guard kind == UICollectionView.elementKindSectionFooter,
                   let view = collectionView.dequeueReusableSupplementaryView(
                     ofKind: kind,
