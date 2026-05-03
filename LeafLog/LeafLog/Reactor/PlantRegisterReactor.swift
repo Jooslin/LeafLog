@@ -14,11 +14,6 @@ import OSLog
 final class PlantRegisterReactor: Reactor {
     @Dependency(\.plantService) private var plantService
     @Dependency(\.plantClassificationService) private var plantClassificationService
-    private static let dateCalendar: Calendar = {
-        var calendar = Calendar.current
-        calendar.timeZone = .current
-        return calendar
-    }()
     private let logger = Logger(subsystem: "LeafLog", category: "PlantRegisterReactor")
 
     enum Mode: Equatable {
@@ -524,7 +519,7 @@ final class PlantRegisterReactor: Reactor {
 
     private static func makeDateText(from date: Date?) -> String {
         guard let date else { return "" }
-        let components = dateCalendar.dateComponents([.year, .month, .day], from: date)
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
 
         guard let year = components.year,
               let month = components.month,
