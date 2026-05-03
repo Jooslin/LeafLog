@@ -89,11 +89,8 @@ final class PlantTabFlow: Flow {
 
             if let registerIndex = navigationController.viewControllers.lastIndex(where: { $0 is PlantRegisterViewController }),
                let registerViewController = navigationController.viewControllers[registerIndex] as? PlantRegisterViewController {
-                updateAndRestorePlantRegister(
-                    registerViewController: registerViewController,
-                    selectedPlant: selectedPlant,
-                    registerIndex: registerIndex
-                )
+                registerViewController.updateSelectedPlant(selectedPlant)
+                navigationController.popToViewController(registerViewController, animated: true)
                 return .none
             }
 
@@ -206,15 +203,6 @@ extension PlantTabFlow {
                 viewController?.deleteDiaryPhoto()
             }
         )
-    }
-
-    private func updateAndRestorePlantRegister(
-        registerViewController: PlantRegisterViewController,
-        selectedPlant: SelectedPlant,
-        registerIndex: Int
-    ) {
-        registerViewController.updateSelectedPlant(selectedPlant)
-        navigationController.popToViewController(registerViewController, animated: true)
     }
 
     private func makePlantRegisterViewController(selectedPlant: SelectedPlant?) -> PlantRegisterViewController {
