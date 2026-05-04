@@ -338,7 +338,7 @@ extension CalendarReactor {
         guard !dateRawValue.isEmpty else { return [:] }
         let targetDate = LocalDate(rawValue: dateRawValue)
         
-        let key = currentKeyMonth(of: date)
+        let key = currentKeyMonth(of: currentState.benchmarkDate)
         let monthlyRecords = monthlyRecordCache[key] ?? []
         
         var records: [MyPlant: CareRecord] = [:]
