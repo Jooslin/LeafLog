@@ -26,6 +26,7 @@ final class CalendarReactor: Reactor {
         case updateFilters(Set<Int>)
         case updateMonthlyData(MonthKey, [CareRecord])
         case updateSelectedDate(Date)
+        case updateMyPlants([MyPlant])
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
@@ -44,6 +45,7 @@ final class CalendarReactor: Reactor {
         var benchmarkDate: Date = Date() // 달력 표시 기준일
         var filters: Set<Int> = []
         var cacheData: [MonthKey: [CareRecord]] = [:]
+        var plants: [MyPlant] = []
         
         var selectedDate: Date? // 선택된 날짜
         var data: [CalendarView.Section: [CalendarView.Item]] = [
@@ -115,6 +117,9 @@ final class CalendarReactor: Reactor {
             
         case .updateSelectedDate(let date):
             newState.selectedDate = date
+            
+        case .updateMyPlants(let plants):
+            newState.plants = plants
             
         case .setCalendarHeader(let year, let month):
             newState.data[.header] = [CalendarView.Item.header(year, month)]
