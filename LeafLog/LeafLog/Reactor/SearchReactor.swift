@@ -146,7 +146,8 @@ final class SearchReactor: Reactor {
                 .just(.setLoading(true)),
                 searchClassificationResult(classifications: classificationResult),
                 .just(.setLoading(false)),
-                .just(.setTitle("검색 결과"))
+                .just(.setTitle("검색 결과")),
+                .just(.setSearchType(.plantName))
             ])
 
         case .selectPlant(let item):
