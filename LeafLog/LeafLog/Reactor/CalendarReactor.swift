@@ -91,7 +91,10 @@ final class CalendarReactor: Reactor {
                 ])
             
         case .updateFilter(let tag):
-            return filterCalendar(tag: tag)
+            return Observable.concat([
+                filterCalendar(tag: tag),
+                detailItems(of: currentState.selectedDate ?? Date())
+                ])
             
         case .dateSelected(let date):
             return Observable.concat([
