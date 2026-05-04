@@ -25,8 +25,8 @@ final class CalendarReactor: Reactor {
         case updateBenchmarkDate(Date)
         case updateFilters(Set<Int>)
         case updateMonthlyData(MonthKey, [CareRecord])
-        case updateSelectedDate(Date)
         case updateMyPlants([MyPlant])
+        case updateSelectedDate(Date)
         
         case setCalendarHeader(Int, Int) // 년, 월
         case setCalendarItem([CalendarView.Item])
@@ -46,6 +46,7 @@ final class CalendarReactor: Reactor {
         var filters: Set<Int> = []
         var cacheData: [MonthKey: [CareRecord]] = [:]
         var plants: [MyPlant] = []
+        var cacheOrder: [MonthKey] = []
         
         var selectedDate: Date? // 선택된 날짜
         var data: [CalendarView.Section: [CalendarView.Item]] = [
@@ -62,10 +63,7 @@ final class CalendarReactor: Reactor {
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
     
     private let calendar = Calendar.current
-    private var monthlyRecordCache: [MonthKey: [CareRecord]] = [:]
-    private var monthlyRecordCacheOrder: [MonthKey] = []
     private let cacheLimit = 3
-    private var myPlants: [MyPlant] = []
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
@@ -113,13 +111,16 @@ final class CalendarReactor: Reactor {
             newState.filters = filters
             
         case .updateMonthlyData(let key, let data):
+            let newManagedCache = manageCache(state.cacheOrder, key: key, cache: state.cacheData)
+            newState.cacheOrder = newManagedCache.0
+            newState.cacheData = newManagedCache.1
             newState.cacheData[key] = data
-            
-        case .updateSelectedDate(let date):
-            newState.selectedDate = date
             
         case .updateMyPlants(let plants):
             newState.plants = plants
+            
+        case .updateSelectedDate(let date):
+            newState.selectedDate = date
             
         case .setCalendarHeader(let year, let month):
             newState.data[.header] = [CalendarView.Item.header(year, month)]
@@ -176,7 +177,7 @@ extension CalendarReactor {
                         // 월간 기록
                         let key = self.currentKeyMonth(of: benchmark)
                         
-                        let cache = try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트 데이터
+                        let cache = try await self.updateCacheData(of: benchmark, key: key) // 캐시 업데이트 데이터
                         let plants = cache.0
                         let records = cache.1
                         
@@ -377,31 +378,29 @@ extension CalendarReactor {
 
 //MARK: Manage Record Cache
 extension CalendarReactor {
-    private func updateCache(of date: Date, key: MonthKey) async throws -> ([MyPlant], [CareRecord]) {
+    private func updateCacheData(of date: Date, key: MonthKey) async throws -> ([MyPlant], [CareRecord]) {
         let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
-        
         let data = try await self.monthlyPlantRecords(of: date, plants: plants)
-        guard manageCacheOrder(key: key) else { return ([], []) } // 캐시 정리
         return (plants, data)
     }
     
-    private func manageCacheOrder(key: MonthKey) -> Bool {
-        if monthlyRecordCacheOrder.contains(key) { // Cache Hit
-            guard let index = monthlyRecordCacheOrder.firstIndex(of: key) else { return false }
-            monthlyRecordCacheOrder.append(monthlyRecordCacheOrder.remove(at: index)) // 가장 후순위로 순서 변경
-            return true
-        } else if monthlyRecordCacheOrder.count >= cacheLimit { // Cache Miss, Limit full
-            let target = monthlyRecordCacheOrder.removeFirst() // 가장 오래된 키를 지우면서 반환
-            monthlyRecordCache.removeValue(forKey: target) // 캐시에서 가장 오래된 데이터 삭제
-            return true
+    private func manageCache(_ order: [MonthKey], key: MonthKey, cache: [MonthKey: [CareRecord]]) -> ([MonthKey], [MonthKey: [CareRecord]]) {
+        var newOrder = order
+        var newCache = cache
+        
+        if newOrder.contains(key) { // Cache Hit
+            guard let index = newOrder.firstIndex(of: key) else { return (order, cache) }
+            newOrder.append(newOrder.remove(at: index)) // 가장 후순위로 순서 변경
+            return (newOrder, newCache)
+        } else if newOrder.count >= cacheLimit { // Cache Miss, Limit full
+            let target = newOrder.removeFirst() // 가장 오래된 키를 지우면서 반환
+            newOrder.append(key) // 신규 캐시 추가
+            newCache.removeValue(forKey: target) // 캐시에서 가장 오래된 데이터 삭제
+            return (newOrder, newCache)
         } else { // Cache Miss, Limit Enough
-            return true
+            newOrder.append(key) // 신규 캐시 추가
+            return (newOrder, newCache)
         }
-    }
-    
-    private func updateMyPlants() async throws {
-        let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
-        myPlants = plants
     }
 }
 
