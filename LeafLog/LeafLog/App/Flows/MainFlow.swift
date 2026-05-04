@@ -91,6 +91,10 @@ final class MainFlow: Flow {
         case .alarmCenter:
             return navigateToAlarmCenter()
             
+        case .diaryImageSourceSheet:
+            presentDiaryImageSourceSheet()
+            return .none
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -325,5 +329,24 @@ extension MainFlow {
         let viewController = PlantRegisterViewController(reactor: reactor)
         viewController.hidesBottomBarWhenPushed = true
         return viewController
+    }
+}
+
+extension MainFlow {
+    private func presentDiaryImageSourceSheet() {
+        guard let navigationController = tabBarController.selectedViewController as? UINavigationController,
+              let viewController = navigationController.topViewController as? PlantCareViewController else {
+            return
+        }
+
+        ImageSourcePickerPresenter.present(
+            from: navigationController,
+            sourceView: viewController.diaryImagePickerSourceView,
+            delegate: viewController,
+            deleteTitle: viewController.hasDiaryPhoto ? "사진 삭제" : nil,
+            onDelete: { [weak viewController] in
+                viewController?.deleteDiaryPhoto()
+            }
+        )
     }
 }
