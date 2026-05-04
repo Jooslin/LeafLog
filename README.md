@@ -23,7 +23,7 @@
 | 이름 | 담당 기능 |
 |---|---|
 | 변예린 | RxFlow 초기 세팅, 알림, 홈 화면, 캘린더 화면, AI 식물 식별 |
-| 김주희 | Supabase 설정, 스플래시 화면, 소셜 로그인 및 회원탈퇴, 마이페이지, 식물 상세 - 기록탭 / 타임라인 탭 |
+| 김주희 | Supabase DB, 스플래시 화면, 소셜 로그인 및 회원탈퇴, 마이페이지, 식물 상세 - 기록탭 / 타임라인 탭 |
 | 장예슬 | API 검색, 공용 UI, 식물 검색, 식물 등록, 식물 상세 - 정보탭 |
 | 김아정 | UX/UI 디자인, 로고 및 아이콘 제작 |
 
@@ -116,6 +116,7 @@ LeafLog는 Supabase를 통한 Google, Kakao 소셜 로그인과 on-device 라이
 로그인 성공 후 FCM 토큰을 저장하여 Supabase에 저장된 토큰과 동기화합니다.
 
 
+
 ## 🏠 홈 화면
 
 <p align=center><img width=50% src="https://github.com/user-attachments/assets/54ed3d33-731f-4b95-a107-18d53e6e6379" /></p>
@@ -125,6 +126,7 @@ LeafLog는 Supabase를 통한 Google, Kakao 소셜 로그인과 on-device 라이
 '물주기 버튼'으로 빠르게 급수 기록을 저장할 수 있어 사용자의 관리 흐름을 간단하게 하였습니다.
 
 UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 snapshot에 사용되는 dataSource는 3의 배수로 생성됩니다.
+
 
 
 ## 🔍 식물 등록 및 검색
@@ -140,6 +142,7 @@ UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 sna
 검색 결과에서 식물을 선택하여 해당 정보를 가지고 식물 등록 화면에서 '내 식물'로 저장할 수 있습니다.
 
 
+
 ## 📆 캘린더 화면
 
 <p align=center><img width=60% src="https://github.com/user-attachments/assets/1f351bfd-89ec-4e45-b2b7-35e0cfde69b0" /></p>
@@ -149,6 +152,7 @@ UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 sna
 각 관리 항목에 따른 필터링 기능을 제공하여 원하는 기록만 골라 볼 수 있습니다.
 
 특정 날짜를 선택하면 해당 날짜에 기록된 상세 관리 내역을 확인하고, 해당 식물 기록으로 이동할 수 있습니다.
+
 
 
 ## 📝 식물 관리 화면
@@ -173,6 +177,7 @@ UISegmentControl로 구현된 탭 Component를 통해 사용자가 손쉽게 필
 타임라인 탭에서는 지금까지 저장한 관리 기록을 시간 순서대로 확인할 수 있습니다.
 
 
+
 ## 👤 마이페이지
 
 <p align=center><img width=50% src="https://github.com/user-attachments/assets/34ca2fcf-05dd-4c50-a871-637f8fd74bd8" /></p>
@@ -182,6 +187,8 @@ UISegmentControl로 구현된 탭 Component를 통해 사용자가 손쉽게 필
 토글을 통해 푸시 알림 설정을 변경할 수 있으며, 문의하기 등 앱 지원에 관한 사항과 앱 버전 확인 기능을 제공합니다.
 
 <br>
+
+
 
 ## 🔔 알림 센터 화면
 
