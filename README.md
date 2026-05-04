@@ -100,6 +100,15 @@ LeafLog
 
 # 📋 의사 결정 기록
 
+[📋260331 AI 모델 선정 논의](https://leaflog.notion.site/260331-AI-3564589f9d0f807cb509c87471d0f0d7?source=copy_link)
+
+[📋260401 데이터베이스 결정 논의](https://leaflog.notion.site/260401-3564589f9d0f80ce87b2c47c72fdc5e2?source=copy_link)
+
+[📋260401 개발 기본사항 결정 논의](https://leaflog.notion.site/260401-3564589f9d0f80d68595e5763c9571d0?source=copy_link)
+
+[🖌️260406 식물 등록 모델에 관한 논의](https://leaflog.notion.site/260406-3564589f9d0f80718a8ad2030ebca924?source=copy_link)
+
+[📋260407 API Key 저장 방식 결정](https://leaflog.notion.site/260407-API-Key-3564589f9d0f80b88134ea7900f738b2?source=copy_link)
 
 # ⭐ 핵심 기능
 
@@ -116,7 +125,7 @@ LeafLog는 Supabase를 통한 Google, Kakao 소셜 로그인과 on-device 라이
 
 로그인 성공 후 FCM 토큰을 저장하여 Supabase에 저장된 토큰과 동기화합니다.
 
-
+<br>
 
 ## 🏠 홈 화면
 
@@ -128,7 +137,7 @@ LeafLog는 Supabase를 통한 Google, Kakao 소셜 로그인과 on-device 라이
 
 UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 snapshot에 사용되는 dataSource는 3의 배수로 생성됩니다.
 
-
+<br>
 
 ## 🔍 식물 등록 및 검색
 
@@ -142,7 +151,7 @@ UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 sna
 
 검색 결과에서 식물을 선택하여 해당 정보를 가지고 식물 등록 화면에서 '내 식물'로 저장할 수 있습니다.
 
-
+<br>
 
 ## 📆 캘린더 화면
 
@@ -154,7 +163,7 @@ UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 sna
 
 특정 날짜를 선택하면 해당 날짜에 기록된 상세 관리 내역을 확인하고, 해당 식물 기록으로 이동할 수 있습니다.
 
-
+<br>
 
 ## 📝 식물 관리 화면
 
@@ -162,14 +171,16 @@ UICollectionView로 구현되었으며, 선반 모양을 구현하기 위해 sna
 
 UISegmentControl로 구현된 탭 Component를 통해 사용자가 손쉽게 필요한 카테고리로 전환할 수 있습니다.
 
-### 관리 기록 기능
+<br>
+
+### 1) 관리 기록 기능
 
 <p align=center><img width=60% src="https://github.com/user-attachments/assets/513d2c9f-0b6f-4aff-9f6a-110a60aecd63" /></p>
 
 
 물주기, 분갈이, 비료, 치료 기록과 '오늘의 일기' 기록을 날짜별로 저장할 수 있습니다.
 
-### 식물 정보, 타임라인 기능
+### 2) 식물 정보, 타임라인 기능
 
 <p align=center><img width=60% src="https://github.com/user-attachments/assets/41764d1b-c99d-4cc0-8520-97058b2780b6" /></p>
 
@@ -177,7 +188,7 @@ UISegmentControl로 구현된 탭 Component를 통해 사용자가 손쉽게 필
 
 타임라인 탭에서는 지금까지 저장한 관리 기록을 시간 순서대로 확인할 수 있습니다.
 
-
+<br>
 
 ## 👤 마이페이지
 
@@ -199,6 +210,7 @@ UISegmentControl로 구현된 탭 Component를 통해 사용자가 손쉽게 필
 
 사용자는 FCM 기반 푸시 알림을 통해 급수가 필요한 식물에 대해 관리 시점을 놓치지 않고 확인할 수 있습니다.
 
+<br>
 
 # 🛠 Troubleshooting
 
