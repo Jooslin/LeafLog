@@ -175,13 +175,17 @@ extension CalendarReactor {
                     do {
                         // 월간 기록
                         let key = self.currentKeyMonth(of: benchmark)
-                        try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트
-                        let records = self.monthlyRecordCache[key] ?? []
+                        
+                        let cache = try await self.updateCache(of: benchmark, key: key) // 캐시 업데이트 데이터
+                        let plants = cache.0
+                        let records = cache.1
                         
                         let dates = self.calculateDates(of: benchmark)
                         let items = self.datesConvertToItems(current: benchmark, dates, records: records, filters: filters)
                         
                         observer.onNext(.updateBenchmarkDate(benchmark))
+                        observer.onNext(.updateMonthlyData(key, records))
+                        observer.onNext(.updateMyPlants(plants))
                         observer.onNext(.setCalendarHeader(year, month))
                         observer.onNext(.setFilterItem([CalendarView.Item.filter(filters)]))
                         observer.onNext(.setCalendarItem(items))
@@ -208,7 +212,7 @@ extension CalendarReactor {
         let benchmark = currentState.benchmarkDate
         let newFilter = newFilters(tag: tag)
         let key = currentKeyMonth(of: benchmark)
-        let records = monthlyRecordCache[key] ?? []
+        let records = currentState.cacheData[key] ?? []
         
         let dates = calculateDates(of: benchmark)
         let items = datesConvertToItems(current: benchmark, dates, records: records, filters: newFilter)
@@ -344,10 +348,10 @@ extension CalendarReactor {
         let targetDate = LocalDate(rawValue: dateRawValue)
         
         let key = currentKeyMonth(of: currentState.benchmarkDate)
-        let monthlyRecords = monthlyRecordCache[key] ?? []
+        let monthlyRecords = currentState.cacheData[key] ?? []
         
         var records: [MyPlant: CareRecord] = [:]
-        for plant in myPlants {
+        for plant in  currentState.plants {
             let filtered = monthlyRecords.filter { $0.plantID == plant.id && $0.recordDate == targetDate }
             guard let record = filtered.first else { continue }
             records[plant] = record
@@ -373,13 +377,12 @@ extension CalendarReactor {
 
 //MARK: Manage Record Cache
 extension CalendarReactor {
-    private func updateCache(of date: Date, key: MonthKey) async throws {
-            let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
-            myPlants = plants
+    private func updateCache(of date: Date, key: MonthKey) async throws -> ([MyPlant], [CareRecord]) {
+        let plants = try await plantDBManager.fetchMyPlants() // 유저가 등록한 모든 식물
         
-            let data = try await self.monthlyPlantRecords(of: date, plants: plants)
-            guard manageCacheOrder(key: key) else { return } // 캐시 정리
-            monthlyRecordCache[key] = data
+        let data = try await self.monthlyPlantRecords(of: date, plants: plants)
+        guard manageCacheOrder(key: key) else { return ([], []) } // 캐시 정리
+        return (plants, data)
     }
     
     private func manageCacheOrder(key: MonthKey) -> Bool {
