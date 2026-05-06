@@ -141,11 +141,11 @@ final class PlantTabFlow: Flow {
 
         
             
-        case .cameraRequired:
-            let camera = CameraClassificationViewController()
-            navigationController.pushViewController(camera, animated: true)
-            
-            return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+//        case .cameraRequired:
+//            let camera = CameraClassificationViewController()
+//            navigationController.pushViewController(camera, animated: true)
+//            
+//            return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))

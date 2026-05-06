@@ -270,15 +270,21 @@ extension MainFlow {
     }
 
     private func navigateToCameraClassification() -> FlowContributors {
-        let cameraViewController = CameraClassificationViewController()
-        navigate(to: cameraViewController, animated: true)
-
-        return .one(
-            flowContributor: .contribute(
-                withNextPresentable: cameraViewController,
-                withNextStepper: cameraViewController
+        if let navigationController = tabBarController.selectedViewController as? UINavigationController,
+           navigationController.viewControllers.contains(where: { $0 is CameraClassificationViewController }) {
+            navigationController.popViewController(animated: true)
+            return .none
+        } else {
+            let cameraViewController = CameraClassificationViewController()
+            navigate(to: cameraViewController, animated: true)
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: cameraViewController,
+                    withNextStepper: cameraViewController
+                )
             )
-        )
+        }
     }
 
     private func updatePlantRegister(_ selectedPlant: SelectedPlant) -> FlowContributors {
