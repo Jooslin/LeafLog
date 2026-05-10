@@ -96,7 +96,7 @@ final class PlantRegisterReactor: Reactor {
         @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
         
-        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
+        @Pulse var classificationResult: [String: PlantClassificationService.Confidence]? = nil
     }
 
     let initialState: State
