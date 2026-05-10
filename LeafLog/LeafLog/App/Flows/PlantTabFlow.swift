@@ -119,10 +119,7 @@ final class PlantTabFlow: Flow {
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
         
         case .classificationResult(let result): // AI 검색 결과 표시
-            let searchViewController = SearchViewController(classficationResult: result)
-            searchViewController.hidesBottomBarWhenPushed = true
-            navigationController.pushViewController(searchViewController, animated: true)
-            return .one(flowContributor: .contribute(withNextPresentable: searchViewController, withNextStepper: searchViewController))
+            return navigateToClassificationResult(result)
             
         case .applicatoinSettingRequired: // 휴대폰 앱 설정 화면 이동
             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -130,11 +127,8 @@ final class PlantTabFlow: Flow {
             }
             return .none
             
-//        case .cameraRequired:
-//            let camera = CameraClassificationViewController()
-//            navigationController.pushViewController(camera, animated: true)
-//            
-//            return .one(flowContributor: .contribute(withNextPresentable: camera, withNextStepper: camera))
+        case .cameraRequired:
+            return navigateToCameraClassification()
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
@@ -163,5 +157,35 @@ extension PlantTabFlow {
         let viewController = PlantRegisterViewController(reactor: reactor)
         viewController.hidesBottomBarWhenPushed = true
         return viewController
+    }
+    
+    private func navigateToCameraClassification() -> FlowContributors {
+        if navigationController.viewControllers.contains(where: { $0 is CameraClassificationViewController }) {
+            navigationController.popViewController(animated: true)
+            return .none
+        } else {
+            let cameraViewController = CameraClassificationViewController()
+            navigationController.pushViewController(cameraViewController, animated: true)
+            
+            return .one(
+                flowContributor: .contribute(
+                    withNextPresentable: cameraViewController,
+                    withNextStepper: cameraViewController
+                )
+            )
+        }
+    }
+    
+    private func navigateToClassificationResult(_ result: [String: PlantClassificationService.Confidence]) -> FlowContributors {
+        let searchViewController = SearchViewController(classficationResult: result)
+        searchViewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(searchViewController, animated: true)
+        
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: searchViewController,
+                withNextStepper: searchViewController
+            )
+        )
     }
 }
