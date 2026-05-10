@@ -136,7 +136,10 @@ extension CameraClassificationReactor {
 extension CameraClassificationReactor {
     private func analyzeImage(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
+            guard let self else {
+                observer.onCompleted()
+                return Disposables.create()
+            }
             
             let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
             guard let cropImage else {
@@ -145,7 +148,7 @@ extension CameraClassificationReactor {
                 return Disposables.create()
             }
             
-            Task { [weak self] in
+            let task = Task { [weak self] in
                 guard let self else {
                     observer.onCompleted()
                     return
@@ -160,7 +163,9 @@ extension CameraClassificationReactor {
                     observer.onCompleted()
                 }
             }
-            return Disposables.create()
+            return Disposables.create() {
+                task.cancel()
+            }
         }
     }
 }

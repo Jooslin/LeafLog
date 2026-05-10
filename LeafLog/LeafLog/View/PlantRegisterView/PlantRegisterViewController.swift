@@ -296,7 +296,6 @@ final class PlantRegisterViewController: BaseViewController, View {
         cameraSearchButtonSelected
             .compactMap { result in
                 guard case .camera = result else { return nil }
-                
                 return AppStep.cameraRequired
             }
             .bind(to: steps)
@@ -310,7 +309,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             }
             .withUnretained(self)
             .do(onNext: { $0.present($1, animated: true) })
-            .flatMap { $1.rx.selectedImages }
+            .flatMap { $1.rx.selectedImages.take(1) }
             .compactMap(\.first)
             .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
             .bind(to: reactor.action)

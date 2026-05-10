@@ -534,7 +534,7 @@ final class PlantRegisterReactor: Reactor {
 extension PlantRegisterReactor {
     private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            Task { [weak self] in
+            let task = Task { [weak self] in
                 guard let self else {
                     observer.onCompleted()
                     return
@@ -554,7 +554,9 @@ extension PlantRegisterReactor {
                     observer.onCompleted()
                 }
             }
-            return Disposables.create()
+            return Disposables.create() {
+                task.cancel()
+            }
         }
     }
 }
