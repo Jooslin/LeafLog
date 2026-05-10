@@ -23,8 +23,6 @@ final class PlantTabFlow: Flow {
     @Dependency(\.cameraService) private var cameraService
     @Dependency(\.uiApplication) private var uiApplication
     private let navigationController = UINavigationController()
-    private let photoSelectStepper = PhotoSelectStepper()
-    private var imagePicker: PHPickerViewController?
     
     var root: any RxFlow.Presentable { navigationController }
     
@@ -74,11 +72,9 @@ final class PlantTabFlow: Flow {
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: CompositeStepper(
-                        steppers: [plantRegisterViewController, photoSelectStepper]
+                    withNextStepper:  plantRegisterViewController
                     )
                 )
-            )
             
             // 검색, 상세 등에서 식물 정보 가지고 시작
         case .plantRegisterSelectedPlant(let selectedPlant):
@@ -99,9 +95,7 @@ final class PlantTabFlow: Flow {
             return .one(
                 flowContributor: .contribute(
                     withNextPresentable: plantRegisterViewController,
-                    withNextStepper: CompositeStepper(
-                        steppers: [plantRegisterViewController, photoSelectStepper]
-                    )
+                    withNextStepper: plantRegisterViewController
                 )
             )
 
@@ -136,11 +130,6 @@ final class PlantTabFlow: Flow {
             }
             return .none
             
-        case .photoSelect: // 사진 선택 분기
-            return presentPhotoSelect()
-
-        
-            
 //        case .cameraRequired:
 //            let camera = CameraClassificationViewController()
 //            navigationController.pushViewController(camera, animated: true)
@@ -154,39 +143,6 @@ final class PlantTabFlow: Flow {
 }
 
 extension PlantTabFlow {
-    // 사진 선택 alert에서 사용할 stepper
-    struct PhotoSelectStepper: Stepper {
-        let steps = PublishRelay<Step>()
-    }
-    
-    //TODO: 추후 수정 필요 - 등록 화면의 카메라 검색 버튼과 연동하여 수정 필요
-    private func presentPhotoSelect() -> FlowContributors {
-        let alert = UIAlertController()
-        let cameraAction = UIAlertAction(title: "촬영하기", style: .default) { [weak self] _ in
-            self?.photoSelectStepper.steps.accept(AppStep.cameraRequired)
-        }
-        
-//        let galleryAction = UIAlertAction(title: "이미지 불러오기", style: .default) { [weak self] _ in
-//            guard let self else { return }
-//            
-//           let imagePicker = imagePicker ?? makeImagePicker()
-//            
-//            alert.dismiss(animated: true) {
-//                self.navigationController.present(imagePicker, animated: true)
-//            }
-//        }
-        
-        let cancel = UIAlertAction(title: "취소", style: .cancel)
-        
-        alert.addAction(cameraAction)
-//        alert.addAction(galleryAction)
-        alert.addAction(cancel)
-        
-        navigationController.present(alert, animated: true)
-        
-        return .none
-    }
-
     private func updateAndRestorePlantRegister(
         registerViewController: PlantRegisterViewController,
         selectedPlant: SelectedPlant,
