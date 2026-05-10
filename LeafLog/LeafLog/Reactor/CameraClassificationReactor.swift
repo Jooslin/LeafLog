@@ -33,7 +33,7 @@ final class CameraClassificationReactor: Reactor {
         @Pulse var isAuthorized: Bool = false
         @Pulse var isCameraReady: Bool = false
     
-        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
+        @Pulse var classificationResult: [String: PlantClassificationService.Confidence]? = nil
         
         @Pulse var errorMessage: String? = nil
     }
