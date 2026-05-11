@@ -79,6 +79,8 @@ flowchart LR
     end
 
     subgraph DomainData["Domain & Data"]
+        ComplexUseCase["COMPLEX USE CASE<br/>등록<br/>수정<br/>삭제<br/>인증<br/>카메라"]
+        SimpleDataAccess["SIMPLE DATA ACCESS<br/>목록 조회<br/>상태 갱신<br/>기록 저장"]
         Service["SERVICE<br/>AuthService<br/>PlantService<br/>CameraService<br/>PlantClassificationService"]
         Data["DATA LAYER<br/>PlantDB<br/>CareRecordDB<br/>ProfileDB<br/>NotificationDB<br/>NetworkManager<br/>SupabaseManager"]
         Model["MODEL<br/>MyPlant<br/>CareRecord<br/>PlantResponse<br/>UserProfile<br/>AppNotification"]
@@ -87,12 +89,15 @@ flowchart LR
 
     Flow --> View
     View --> Reactor
-    Reactor --> Service
-    Reactor --> Data
+    Reactor --> ComplexUseCase
+    Reactor --> SimpleDataAccess
+    ComplexUseCase --> Service
+    SimpleDataAccess --> Data
     Service --> Data
     Data --> Model
     Data --> External
 
+    classDef usecase fill:#FFFFFF,stroke:#B8B8B8,color:#333333,font-weight:bold
     classDef flow fill:#E8F3FF,stroke:#4A90E2,color:#1F3A5F,font-weight:bold
     classDef view fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F,font-weight:bold
     classDef reactor fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00,font-weight:bold
@@ -104,6 +109,7 @@ flowchart LR
     class Flow flow
     class View view
     class Reactor reactor
+    class ComplexUseCase,SimpleDataAccess usecase
     class Service service
     class Data data
     class Model model
@@ -119,6 +125,15 @@ flowchart LR
     Search["식물 검색<br/>SearchReactor"]
     MyPage["마이페이지<br/>MyPageReactor"]
 
+    HomePlants["홈 카드<br/>식물 목록 조회"]
+    QuickWater["빠른 물주기<br/>오늘 기록 저장"]
+    PlantManage["식물 관리<br/>등록<br/>수정<br/>삭제"]
+    CareLog["관리 기록<br/>일지<br/>타임라인"]
+    ProfileInfo["프로필<br/>계정 정보"]
+    NotificationInfo["알림<br/>설정<br/>알림 목록"]
+    PlantInfo["식물 정보<br/>DB 저장"]
+    InitialRecord["초기 기록<br/>급수 기록 생성"]
+
     PlantService["PlantService"]
     PlantDB["PlantDBManager"]
     CareRecordDB["CareRecordDBManager"]
@@ -129,17 +144,28 @@ flowchart LR
     Supabase["Supabase"]
     FarmAPI["농사로 API"]
 
-    Home --> PlantDB
-    Home --> CareRecordDB
-    Care --> PlantService
-    Care --> CareRecordDB
+    Home --> HomePlants
+    Home --> QuickWater
+    HomePlants --> PlantDB
+    QuickWater --> CareRecordDB
+
+    Care --> PlantManage
+    Care --> CareLog
+    PlantManage --> PlantService
+    CareLog --> CareRecordDB
+
     Calendar --> CareRecordDB
     Search --> NetworkManager
-    MyPage --> ProfileDB
-    MyPage --> NotificationDB
 
-    PlantService --> PlantDB
-    PlantService --> CareRecordDB
+    MyPage --> ProfileInfo
+    MyPage --> NotificationInfo
+    ProfileInfo --> ProfileDB
+    NotificationInfo --> NotificationDB
+
+    PlantService --> PlantInfo
+    PlantService --> InitialRecord
+    PlantInfo --> PlantDB
+    InitialRecord --> CareRecordDB
 
     PlantDB --> Supabase
     CareRecordDB --> Supabase
@@ -148,11 +174,13 @@ flowchart LR
     NetworkManager --> FarmAPI
 
     classDef screen fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F
+    classDef branch fill:#FFFFFF,stroke:#B8B8B8,color:#333333
     classDef logic fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00
     classDef data fill:#FDEDED,stroke:#D66A6A,color:#5E2424
     classDef external fill:#EEF7F7,stroke:#5BA6A6,color:#244F4F
 
     class Home,Care,Calendar,Search,MyPage screen
+    class HomePlants,QuickWater,PlantManage,CareLog,ProfileInfo,NotificationInfo,PlantInfo,InitialRecord branch
     class PlantService logic
     class PlantDB,CareRecordDB,ProfileDB,NotificationDB,NetworkManager data
     class Supabase,FarmAPI external
