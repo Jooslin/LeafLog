@@ -77,6 +77,61 @@ LeafLog
 
 <br>
 
+
+# 🔑 실행 전 준비 사항
+
+잎로그는 농사로 API, Supabase, Kakao Login, Google Sign-In, Firebase Messaging을 사용하기 때문에 프로젝트 실행 전에 아래 설정 파일이 필요합니다.
+
+해당 파일들은 API Key와 인증 정보가 포함되어 있어 Git에 포함하지 않고, 로컬 환경에서 직접 추가해야 합니다.
+
+## 1. Secrets.xcconfig 추가
+
+프로젝트 루트의 `LeafLog/Secrets.xcconfig` 파일을 생성한 뒤 아래 내용을 추가합니다.
+
+```xcconfig
+NONGSARO_API_KEY = your_api_key
+NONGSARO_BASE_URL = https:/$()/api.nongsaro.go.kr/service/garden
+SUPABASE_URL = voleebkqcpkwtliktbos.supabase.co
+SUPABASE_ANON_KEY = your_anon_key
+KAKAO_NATIVE_APP_KEY = your_kakao_native_app_key
+REVERSED_CLIENT_ID = your_reversed_client_id
+```
+
+- `NONGSARO_API_KEY`: 농사로 Open API 인증 키
+- `SUPABASE_ANON_KEY`: Supabase 프로젝트의 anon public key
+- `KAKAO_NATIVE_APP_KEY`: Kakao Developers에서 발급받은 Native App Key
+- `REVERSED_CLIENT_ID`: GoogleService-Info.plist의 `REVERSED_CLIENT_ID` 값
+
+
+## 2. GoogleService-Info.plist 추가
+
+Google Sign-In과 Firebase Messaging 사용을 위해 `LeafLog/LeafLog/Configuration/GoogleService-Info.plist` 파일을 추가해야 합니다.
+
+해당 파일은 Firebase Console에서 iOS 앱 설정 파일을 다운로드하거나, 공유받은 `GoogleService-Info.plist` 내용을 그대로 추가합니다.
+
+파일에는 아래 항목들이 포함되어 있어야 합니다.
+
+```plist
+CLIENT_ID
+REVERSED_CLIENT_ID
+API_KEY
+GCM_SENDER_ID
+PLIST_VERSION
+BUNDLE_ID
+PROJECT_ID
+STORAGE_BUCKET
+IS_ADS_ENABLED
+IS_ANALYTICS_ENABLED
+IS_APPINVITE_ENABLED
+IS_GCM_ENABLED
+IS_SIGNIN_ENABLED
+GOOGLE_APP_ID
+```
+
+위 설정 파일이 없으면 API 요청, 소셜 로그인, 푸시 알림 기능이 정상적으로 동작하지 않을 수 있습니다.
+
+<br>
+
 # 🏗 아키텍처
 
 ### ReactorKit 채택 이유
