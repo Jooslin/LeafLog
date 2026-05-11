@@ -62,6 +62,106 @@ LeafLog
 
 <br>
 
+# 🖼️ 다이어그램
+
+### 전체 프로젝트 흐름
+```mermaid
+flowchart LR
+    direction LR
+
+    subgraph Presentation["Presentation"]
+        Flow["RXFLOW<br/>AppFlow<br/>MainFlow<br/>LoginFlow<br/>TabFlow"]
+        View["UIKIT VIEWCONTROLLER<br/>Login<br/>Home<br/>Calendar<br/>PlantCare<br/>Search<br/>MyPage"]
+    end
+
+    subgraph State["State"]
+        Reactor["REACTORKIT<br/>Login<br/>Home<br/>Calendar<br/>PlantCare<br/>Search<br/>MyPage"]
+    end
+
+    subgraph DomainData["Domain & Data"]
+        Service["SERVICE<br/>AuthService<br/>PlantService<br/>CameraService<br/>PlantClassificationService"]
+        Data["DATA LAYER<br/>PlantDB<br/>CareRecordDB<br/>ProfileDB<br/>NotificationDB<br/>NetworkManager<br/>SupabaseManager"]
+        Model["MODEL<br/>MyPlant<br/>CareRecord<br/>PlantResponse<br/>UserProfile<br/>AppNotification"]
+        External["EXTERNAL<br/>Supabase<br/>농사로 API<br/>Firebase<br/>TensorFlow Lite"]
+    end
+
+    Flow --> View
+    View --> Reactor
+    Reactor --> Service
+    Reactor --> Data
+    Service --> Data
+    Data --> Model
+    Data --> External
+
+    classDef flow fill:#E8F3FF,stroke:#4A90E2,color:#1F3A5F,font-weight:bold
+    classDef view fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F,font-weight:bold
+    classDef reactor fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00,font-weight:bold
+    classDef service fill:#F7EDFF,stroke:#9B6AD6,color:#3E245E,font-weight:bold
+    classDef data fill:#FDEDED,stroke:#D66A6A,color:#5E2424,font-weight:bold
+    classDef model fill:#F4F4F4,stroke:#8A8A8A,color:#333333,font-weight:bold
+    classDef external fill:#EEF7F7,stroke:#5BA6A6,color:#244F4F,font-weight:bold
+
+    class Flow flow
+    class View view
+    class Reactor reactor
+    class Service service
+    class Data data
+    class Model model
+    class External external
+
+```
+### 주요 데이터 흐름
+```mermaid
+flowchart LR
+    Home["홈<br/>HomeReactor"]
+    Care["식물 관리<br/>PlantCareReactor"]
+    Calendar["캘린더<br/>CalendarReactor"]
+    Search["식물 검색<br/>SearchReactor"]
+    MyPage["마이페이지<br/>MyPageReactor"]
+
+    PlantService["PlantService"]
+    PlantDB["PlantDBManager"]
+    CareRecordDB["CareRecordDBManager"]
+    ProfileDB["ProfileDBManager"]
+    NotificationDB["NotificationDBManager"]
+    NetworkManager["NetworkManager"]
+
+    Supabase["Supabase"]
+    FarmAPI["농사로 API"]
+
+    Home --> PlantDB
+    Home --> CareRecordDB
+    Care --> PlantService
+    Care --> CareRecordDB
+    Calendar --> CareRecordDB
+    Search --> NetworkManager
+    MyPage --> ProfileDB
+    MyPage --> NotificationDB
+
+    PlantService --> PlantDB
+    PlantService --> CareRecordDB
+
+    PlantDB --> Supabase
+    CareRecordDB --> Supabase
+    ProfileDB --> Supabase
+    NotificationDB --> Supabase
+    NetworkManager --> FarmAPI
+
+    classDef screen fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F
+    classDef logic fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00
+    classDef data fill:#FDEDED,stroke:#D66A6A,color:#5E2424
+    classDef external fill:#EEF7F7,stroke:#5BA6A6,color:#244F4F
+
+    class Home,Care,Calendar,Search,MyPage screen
+    class PlantService logic
+    class PlantDB,CareRecordDB,ProfileDB,NotificationDB,NetworkManager data
+    class Supabase,FarmAPI external
+
+```
+
+
+<br>
+
 # 🧰 기술 스택
 
 | 분류 | 라이브러리 |
