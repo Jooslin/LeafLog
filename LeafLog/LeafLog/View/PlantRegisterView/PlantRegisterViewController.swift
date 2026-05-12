@@ -547,7 +547,6 @@ extension PlantRegisterViewController {
     private enum PlantTypeImageSource {
         case camera
         case photoLibrary
-        case none
     }
     
     private func selectedPlantTypeImageSourceAlert() -> Observable<PlantTypeImageSource> {
