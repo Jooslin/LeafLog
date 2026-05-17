@@ -532,6 +532,7 @@ final class PlantRegisterReactor: Reactor {
 }
 
 extension PlantRegisterReactor {
+    // 갤러리에서 가져온 이미지 분석
     private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task { [weak self] in

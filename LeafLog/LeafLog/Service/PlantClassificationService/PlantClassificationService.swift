@@ -135,6 +135,9 @@ extension PlantClassificationService {
                 let name = labels[target.offset]
                 let confidence = Confidence.from(value: target.element)
                 
+                let approx = Double(target.element) / 255.0 * 100.0
+                print("index=\(target.offset) raw=\(target.element) approx=\(String(format: "%.2f%%", approx)) label=\(name)")
+                
                 guard confidence != .unknown else { continue }
                 result[name] = confidence
             }
@@ -148,6 +151,35 @@ extension PlantClassificationService {
 
 //MARK: Preprocess to run model
 extension PlantClassificationService {
+    // 이미지 중앙 crop 함수 - 이미지 검색 시 카메라 preview의 aspectFill + guideFrame과 비슷한 비율로 사용
+    func cropCenterSquare(_ image: UIImage) -> UIImage {
+        guard image.size.width > 0, image.size.height > 0 else { return image }
+
+        let screenSize = UIScreen.main.bounds.size
+        let guideSide: CGFloat = 280
+        let previewScale = max(
+            screenSize.width / image.size.width,
+            screenSize.height / image.size.height
+        )
+        let cropPaddingScale: CGFloat = 1.12
+        let side = min((guideSide / previewScale) * cropPaddingScale, min(image.size.width, image.size.height))
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let verticalOffset = side * 0.08
+
+        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).image { _ in
+            image.draw(
+                in: CGRect(
+                    x: (side - image.size.width) / 2.0,
+                    y: ((side - image.size.height) / 2.0) + verticalOffset,
+                    width: image.size.width,
+                    height: image.size.height
+                )
+            )
+        }
+    }
+
     // 이미지 전처리 함수
     private func preprocessImage(_ image: UIImage, width: Int, height: Int) -> Data? {
         // 1. 비율에 맞춰 리사이징 할 크기 계산 (Aspect Fill 방식)

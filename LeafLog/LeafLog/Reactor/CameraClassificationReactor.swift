@@ -134,6 +134,7 @@ extension CameraClassificationReactor {
 }
 
 extension CameraClassificationReactor {
+    // 촬영한 이미지 분석
     private func analyzeImage(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             guard let self else {
@@ -141,6 +142,7 @@ extension CameraClassificationReactor {
                 return Disposables.create()
             }
             
+            // 가이드 프레임에 맞추어 이미지 crop
             let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
             guard let cropImage else {
                 observer.onNext(.analyzeResult([:]))
