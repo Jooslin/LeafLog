@@ -151,35 +151,6 @@ extension PlantClassificationService {
 
 //MARK: Preprocess to run model
 extension PlantClassificationService {
-    // 이미지 중앙 crop 함수 - 이미지 검색 시 카메라 preview의 aspectFill + guideFrame과 비슷한 비율로 사용
-    func cropCenterSquare(_ image: UIImage) -> UIImage {
-        guard image.size.width > 0, image.size.height > 0 else { return image }
-
-        let screenSize = UIScreen.main.bounds.size
-        let guideSide: CGFloat = 280
-        let previewScale = max(
-            screenSize.width / image.size.width,
-            screenSize.height / image.size.height
-        )
-        let cropPaddingScale: CGFloat = 1.12
-        let side = min((guideSide / previewScale) * cropPaddingScale, min(image.size.width, image.size.height))
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        let verticalOffset = side * 0.08
-
-        return UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format).image { _ in
-            image.draw(
-                in: CGRect(
-                    x: (side - image.size.width) / 2.0,
-                    y: ((side - image.size.height) / 2.0) + verticalOffset,
-                    width: image.size.width,
-                    height: image.size.height
-                )
-            )
-        }
-    }
-
     // 이미지 전처리 함수
     private func preprocessImage(_ image: UIImage, width: Int, height: Int) -> Data? {
         // 1. 비율에 맞춰 리사이징 할 크기 계산 (Aspect Fill 방식)
@@ -243,29 +214,46 @@ extension PlantClassificationService {
     }
 }
 
-// MARK: Added - Capture Image Crop & Preprocess
+//MARK: Crop Image
 extension PlantClassificationService {
-    // 모델 입력용 데이터로 전처리
-    func preprocessCapturedImageData(
-        _ imageData: Data,
-        normalizedRect: CGRect
-    ) -> Data? {
-        guard let croppedImage = cropCapturedImage(imageData, normalizedRect: normalizedRect) else {
-            return nil
-        }
+    // 이미지 중앙 crop 함수 - 이미지 검색 시 카메라 preview의 aspectFill + guideFrame과 비슷한 비율로 사용
+    func cropCenterSquare(_ image: UIImage) -> UIImage {
+        guard let orientedImage = normalizedImage(from: image) else { return image }
+        let cropRect = makeCenterGuideRect(for: orientedImage)
+        return cropImage(orientedImage, cropRect: cropRect) ?? orientedImage
+    }
 
-        return preprocessImage(croppedImage, width: inputWidth, height: inputHeight)
+    // 이미지 중앙 가이드 Rect 생성 함수 - 이미지 검색 시 crop할 이미지 범위를 구함
+    private func makeCenterGuideRect(for image: UIImage) -> CGRect {
+        guard image.size.width > 0, image.size.height > 0 else { return .zero }
+
+        let screenSize = UIScreen.main.bounds.size
+        let guideSide: CGFloat = 280
+        let previewScale = max(
+            screenSize.width / image.size.width,
+            screenSize.height / image.size.height
+        )
+        let cropPaddingScale: CGFloat = 1.12
+        let side = min((guideSide / previewScale) * cropPaddingScale, min(image.size.width, image.size.height))
+        let verticalOffset = side * 0.08
+
+        return CGRect(
+            x: ((image.size.width - side) / 2.0),
+            y: ((image.size.height - side) / 2.0) - verticalOffset,
+            width: side,
+            height: side
+        )
     }
     
-    // normalized rect 기준으로 캡처 데이터에서 guideFrame 영역만 잘라낸 이미지를 반환
-    func cropCapturedImage(
+    // 이미지 guidFrame crop 함수 - 촬영하기 시 normalized rect 기준으로 캡처 데이터에서 guideFrame 영역만 잘라낸 이미지를 반환
+    func cropGuideFrame(
         _ imageData: Data,
         normalizedRect: CGRect
     ) -> UIImage? {
         guard let image = UIImage(data: imageData) else { return nil }
         guard !normalizedRect.isEmpty else { return image }
 
-        // capturePhoto로 얻은 UIImage는 데이터가 나타내느 방향(orientation)과 실제 cgImage 픽셀 방향이 다를 수 있음
+        // capturePhoto로 얻은 UIImage는 데이터가 나타내는 방향(orientation)과 실제 cgImage 픽셀 방향이 다를 수 있음
         // 캡처 이미지의 사이즈만큼 세로 캔버스에 다시 그려서 crop 좌표 계산을 "사용자가 보는 방향"으로 맞춤
         let orientedSize = image.size
         let format = UIGraphicsImageRendererFormat.default()
@@ -280,7 +268,7 @@ extension PlantClassificationService {
         }
 
         let imageSize = CGSize(width: cgImage.width, height: cgImage.height)
-
+        
         // normalized rect는 프리뷰 좌표계를 기준으로 축이 바뀐 형태
         // -> 세로 이미지 기준 crop에서는 x/y와 width/height를 서로 바꿔 적용해야 guideFrame에 보였던 정사각형 영역과 같은 크기로 잘림
         let cropRect = CGRect(
@@ -288,28 +276,42 @@ extension PlantClassificationService {
             y: normalizedRect.minX * imageSize.height,
             width: normalizedRect.height * imageSize.width,
             height: normalizedRect.width * imageSize.height
-        ).intersection(CGRect(origin: .zero, size: imageSize))
+        )
 
+        return cropImage(orientedImage, cropRect: cropRect) ?? orientedImage
+    }
+    
+    // 이미지를 잘라내는 함수
+    private func cropImage(_ image: UIImage, cropRect: CGRect) -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+
+        let imageBounds = CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height)
+        let cropRect = cropRect.intersection(imageBounds).integral
 
         guard !cropRect.isEmpty,
-              let croppedCGImage = cgImage.cropping(to: cropRect.integral) else {
-            return orientedImage
+              let croppedCGImage = cgImage.cropping(to: cropRect) else {
+            return nil
         }
 
         return UIImage(cgImage: croppedCGImage)
     }
 
+}
+
+
+// MARK: Normalize Image
+extension PlantClassificationService {
     // UIImage의 방향을 실제 픽셀에 반영하여 crop 좌표 계산이 어긋나지 않도록 정방향 이미지로 다시 그림
     private func normalizedImage(from image: UIImage) -> UIImage? {
         guard let cgImage = image.cgImage else { return image }
 
-        let pixelSize = CGSize(width: cgImage.width, height: cgImage.height)
+        let imageSize = image.size
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
 
-        return UIGraphicsImageRenderer(size: pixelSize, format: format).image { _ in
+        return UIGraphicsImageRenderer(size: imageSize, format: format).image { _ in
             UIImage(cgImage: cgImage, scale: 1, orientation: image.imageOrientation)
-                .draw(in: CGRect(origin: .zero, size: pixelSize))
+                .draw(in: CGRect(origin: .zero, size: imageSize))
         }
     }
 }

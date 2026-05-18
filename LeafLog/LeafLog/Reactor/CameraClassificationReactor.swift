@@ -143,7 +143,7 @@ extension CameraClassificationReactor {
             }
             
             // 가이드 프레임에 맞추어 이미지 crop
-            let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
+            let cropImage = self.plantClassificationService.cropGuideFrame(imageData, normalizedRect: normalizedRect)
             guard let cropImage else {
                 observer.onNext(.analyzeResult([:]))
                 observer.onCompleted()

@@ -542,6 +542,8 @@ extension PlantRegisterReactor {
                 }
                 
                 do {
+//                    let croppedImage = self.plantClassificationService.cropCenterSquare(image)
+                    
                     let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()

@@ -312,7 +312,7 @@ final class PlantRegisterViewController: BaseViewController, View {
             }
             .withUnretained(self)
             .do(onNext: { $0.present($1, animated: true) })
-            .flatMap { $1.rx.selectedImages }
+            .flatMap { $1.rx.selectedImages.take(1) }
             .compactMap(\.first)
             .withUnretained(self)
             .map { `self`, image in
