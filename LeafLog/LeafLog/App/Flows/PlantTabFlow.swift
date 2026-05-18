@@ -160,8 +160,8 @@ extension PlantTabFlow {
     }
     
     private func navigateToCameraClassification() -> FlowContributors {
-        if navigationController.viewControllers.contains(where: { $0 is CameraClassificationViewController }) {
-            navigationController.popViewController(animated: true)
+        if let cameraVC = navigationController.viewControllers.first(where: { $0 is CameraClassificationViewController }) {
+            navigationController.popToViewController(cameraVC, animated: true)
             return .none
         } else {
             let cameraViewController = CameraClassificationViewController()
