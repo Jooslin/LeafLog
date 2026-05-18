@@ -286,6 +286,7 @@ final class PlantRegisterViewController: BaseViewController, View {
         
         // 카메라 검색 버튼
         let cameraSearchButtonSelected = registerView.plantTypeSearchBar.cameraButton.rx.tap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
             .withUnretained(self)
             .flatMap({ `self`, _ in
                 self.selectedPlantTypeImageSourceAlert()
