@@ -542,9 +542,9 @@ extension PlantRegisterReactor {
                 }
                 
                 do {
-//                    let croppedImage = self.plantClassificationService.cropCenterSquare(image)
+                    let croppedImage = self.plantClassificationService.cropCenterSquare(image)
                     
-                    let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
+                    let classificationResult = try self.plantClassificationService.analyzeImage(image: croppedImage)
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
                 } catch let error as PlantClassificationService.ClassificationError {

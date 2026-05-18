@@ -11,8 +11,6 @@ import RxKeyboard
 import RxSwift
 import UIKit
 import RxCocoa
-import Dependencies
-import SnapKit
 
 private struct PlantRegisterHeaderState: Equatable {
     let title: String
@@ -41,7 +39,6 @@ private func makePlantRegisterHeaderState(_ state: PlantRegisterReactor.State) -
 }
 
 final class PlantRegisterViewController: BaseViewController, View {
-    @Dependency(\.plantClassificationService) private var plantClassificationService
     private let registerView = PlantRegisterView()
     private var selectedImage: UIImage?
     
@@ -314,14 +311,6 @@ final class PlantRegisterViewController: BaseViewController, View {
             .do(onNext: { $0.present($1, animated: true) })
             .flatMap { $1.rx.selectedImages.take(1) }
             .compactMap(\.first)
-            .withUnretained(self)
-            .map { `self`, image in
-                self.plantClassificationService.cropCenterSquare(image)
-            }
-            .withUnretained(self)
-            .flatMap { `self`, croppedImage in
-                self.presentDebugCroppedImage(croppedImage)
-            }
             .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
@@ -537,74 +526,6 @@ extension PlantRegisterViewController {
         return imagePicker
     }
 
-    private func presentDebugCroppedImage(_ image: UIImage) -> Observable<UIImage> {
-        #if DEBUG
-        Observable.create { [weak self] observer in
-            func presentIfReady(retryCount: Int) {
-                guard let self else {
-                    observer.onNext(image)
-                    observer.onCompleted()
-                    return
-                }
-
-                guard self.presentedViewController == nil else {
-                    if retryCount < 10 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            presentIfReady(retryCount: retryCount + 1)
-                        }
-                    } else {
-                        observer.onNext(image)
-                        observer.onCompleted()
-                    }
-                    return
-                }
-
-                let previewController = UIViewController()
-                previewController.modalPresentationStyle = .overFullScreen
-                previewController.view.backgroundColor = .black
-
-                let imageView = UIImageView(image: image)
-                imageView.contentMode = .scaleAspectFit
-                imageView.backgroundColor = .black
-
-                let closeButton = UIButton(type: .system)
-                closeButton.setTitle("닫기", for: .normal)
-                closeButton.setTitleColor(.white, for: .normal)
-                closeButton.addAction(
-                    UIAction { [weak previewController] _ in
-                        previewController?.dismiss(animated: true) {
-                            observer.onNext(image)
-                            observer.onCompleted()
-                        }
-                    },
-                    for: .touchUpInside
-                )
-
-                previewController.view.addSubview(imageView)
-                previewController.view.addSubview(closeButton)
-
-                imageView.snp.makeConstraints {
-                    $0.edges.equalToSuperview()
-                }
-
-                closeButton.snp.makeConstraints {
-                    $0.top.equalTo(previewController.view.safeAreaLayoutGuide).offset(16)
-                    $0.trailing.equalToSuperview().inset(24)
-                }
-
-                self.present(previewController, animated: true)
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                presentIfReady(retryCount: 0)
-            }
-
-            return Disposables.create()
-        }
-        #else
-        Observable.just(image)
-        #endif
-    }
 }
 
 private extension UIView {
