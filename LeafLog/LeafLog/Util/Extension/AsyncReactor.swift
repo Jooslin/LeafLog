@@ -20,13 +20,16 @@ extension AsyncReactor {
         return Disposables.create()
       }
       let stream = AsyncThrowingStream<Mutation, Error> { continuation in
-        Task {
+        let mutationTask = Task { // mutate를 실행중인 Task
           do {
             try await self.mutate(action: action, continuation: continuation)
             continuation.finish()
           } catch {
             continuation.finish(throwing: error)
           }
+        }
+        continuation.onTermination = { _ in // stream 종료시 실행중인 Task도 함께 취소
+          mutationTask.cancel()
         }
       }
       let task = Task {
