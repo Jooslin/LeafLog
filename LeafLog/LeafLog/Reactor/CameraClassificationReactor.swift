@@ -83,6 +83,7 @@ final class CameraClassificationReactor: Reactor {
             newState.isCameraReady = true
             
         case .cameraNotReady:
+            newState.isAuthorized = true
             newState.isCameraReady = false
 
         case .analyzeResult(let results):
