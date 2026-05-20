@@ -51,6 +51,8 @@ final class NotificationCenterViewController: BaseViewController, View {
     private func bindState(reactor: NotificationCenterReactor) {        
         reactor.state
             .map(\.alarmItem)
+            .skip(1)
+            .distinctUntilChanged()
             .subscribe(onNext: { [weak self] items in
                 self?.notificationCenterView.emptyView.isHidden = !items.isEmpty
                 self?.notificationCenterView.setSnapshot(items)
