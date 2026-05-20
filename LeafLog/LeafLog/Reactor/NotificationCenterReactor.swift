@@ -14,6 +14,7 @@ import OSLog
 final class NotificationCenterReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case refresh
     }
     
     enum Mutation {
@@ -36,6 +37,9 @@ final class NotificationCenterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
+            return notifications()
+            
+        case .refresh:
             return notifications()
         }
     }

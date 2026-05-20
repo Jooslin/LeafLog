@@ -50,6 +50,7 @@ final class FCMManager: NSObject {
 extension FCMManager: UNUserNotificationCenterDelegate {
     // Foreground에서 알림이 오는 설정
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        NotificationCenter.default.post(name: .leafLogRemoteNotificationReceived, object: nil)
         completionHandler([.list, .banner])
     }
 }
