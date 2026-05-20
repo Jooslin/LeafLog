@@ -135,9 +135,6 @@ extension PlantClassificationService {
                 let name = labels[target.offset]
                 let confidence = Confidence.from(value: target.element)
                 
-                let approx = Double(target.element) / 255.0 * 100.0
-                print("index=\(target.offset) raw=\(target.element) approx=\(String(format: "%.2f%%", approx)) label=\(name)")
-                
                 guard confidence != .unknown else { continue }
                 result[name] = confidence
             }
