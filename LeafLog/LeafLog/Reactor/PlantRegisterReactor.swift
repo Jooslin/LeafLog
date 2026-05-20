@@ -96,7 +96,7 @@ final class PlantRegisterReactor: Reactor {
         @Pulse var deleteCompleted = false
         @Pulse var errorMessage: String? = nil
         
-        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
+        @Pulse var classificationResult: [String: PlantClassificationService.Confidence]? = nil
     }
 
     let initialState: State
@@ -532,16 +532,19 @@ final class PlantRegisterReactor: Reactor {
 }
 
 extension PlantRegisterReactor {
+    // 갤러리에서 가져온 이미지 분석
     private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            Task { [weak self] in
+            let task = Task { [weak self] in
                 guard let self else {
                     observer.onCompleted()
                     return
                 }
                 
                 do {
-                    let classificationResult = try self.plantClassificationService.analyzeImage(image: image)
+                    let croppedImage = self.plantClassificationService.cropCenterSquare(image)
+                    
+                    let classificationResult = try self.plantClassificationService.analyzeImage(image: croppedImage)
                     observer.onNext(.analyzeResult(classificationResult))
                     observer.onCompleted()
                 } catch let error as PlantClassificationService.ClassificationError {
@@ -554,7 +557,9 @@ extension PlantRegisterReactor {
                     observer.onCompleted()
                 }
             }
-            return Disposables.create()
+            return Disposables.create() {
+                task.cancel()
+            }
         }
     }
 }

@@ -86,9 +86,10 @@ class CameraClassificationViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: CameraClassificationReactor) {
-        reactor.state
-            .map { AppStep.classificationResult($0.classificationResult)
-            }
+        reactor.pulse(\.$classificationResult)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .map { AppStep.classificationResult($0) }
             .bind(to: steps)
             .disposed(by: disposeBag)
         

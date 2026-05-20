@@ -259,7 +259,6 @@ extension CalendarReactor {
                 .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
             ])
         }
-        
     }
     
     private func updateSelectedItem(date: Date) -> Observable<Mutation> {
