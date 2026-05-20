@@ -187,7 +187,7 @@ final class AuthService {
         do {
             try await supabaseManager.deactivateCurrentDeviceToken()
         } catch {
-            throw AuthError.notificationFailed("기기 알림 연결을 해제하지 못했어요. 잠시 후 다시 시도해주세요.")
+            logger.error("기기 토큰 비활성화 실패: \(error.localizedDescription)")
         }
         try await supabase.auth.signOut()
         await signOutProvider(for: user)
