@@ -87,6 +87,7 @@ extension HomeViewController {
         
         // 등록 식물이 없을 경우
         state.map(\.isEmpty)
+            .skip(1)
             .drive { [weak self] isEmpty in
                 self?.homeView.showEmpty(isEmpty)
             }
