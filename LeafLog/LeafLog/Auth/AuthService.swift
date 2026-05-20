@@ -184,6 +184,11 @@ final class AuthService {
     // MARK: - Sign Out
     func signOut() async throws {
         let user = try await supabase.auth.user()
+        do {
+            try await supabaseManager.deactivateCurrentDeviceToken()
+        } catch {
+            throw AuthError.notificationFailed("기기 알림 연결을 해제하지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
         try await supabase.auth.signOut()
         await signOutProvider(for: user)
     }
