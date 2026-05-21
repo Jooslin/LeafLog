@@ -9,7 +9,7 @@ import ReactorKit
 import RxSwift
 import Dependencies
 
-final class SearchDetailReactor: Reactor {
+final class SearchDetailReactor: AsyncReactor {
 
     enum Action {
         case viewDidLoad
@@ -47,25 +47,24 @@ final class SearchDetailReactor: Reactor {
         self.initialState = State(contentNumber: contentNumber)
     }
 
-    func mutate(action: Action) -> Observable<Mutation> {
+    func mutate(action: Action, continuation: MutationStreamContinuation) async throws {
         switch action {
         case .viewDidLoad:
-            return .concat([
-                .just(.setLoading(true)),
-                .merge(
-                    fetchDetail(contentNumber: currentState.contentNumber),
-                    fetchImages(contentNumber: currentState.contentNumber)
-                ),
-                .just(.setLoading(false))
-            ])
+            continuation.yield(.setLoading(true))
+            async let detailMutation = fetchDetail(contentNumber: currentState.contentNumber)
+            async let imagesMutation = fetchImages(contentNumber: currentState.contentNumber)
+            continuation.yield(await detailMutation)
+            continuation.yield(await imagesMutation)
+            continuation.yield(.setLoading(false))
 
         case .selectPlant:
             guard let detail = currentState.detail else {
-                return .just(.setError("식물 정보를 아직 불러오지 못했어요."))
+                continuation.yield(.setError("식물 정보를 아직 불러오지 못했어요."))
+                return
             }
 
             let name = Self.makeSelectedPlantName(detail: detail, displayName: currentState.displayName)
-            return .just(
+            continuation.yield(
                 .setSelectedPlant(
                     SelectedPlant(
                         name: name,
@@ -103,43 +102,21 @@ final class SearchDetailReactor: Reactor {
         return newState
     }
 
-    private func fetchDetail(contentNumber: String) -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            let task = Task {
-                do {
-                    let detail = try await networkManager.fetchPlantDetail(contentNumber: contentNumber)
-                    
-                    observer.onNext(.setDetail(detail))
-                    observer.onCompleted()
-                } catch {
-                    observer.onNext(.setError(Self.errorMessage(from: error)))
-                    observer.onCompleted()
-                }
-            }
-
-            return Disposables.create {
-                task.cancel()
-            }
+    private func fetchDetail(contentNumber: String) async -> Mutation {
+        do {
+            let detail = try await networkManager.fetchPlantDetail(contentNumber: contentNumber)
+            return .setDetail(detail)
+        } catch {
+            return .setError(Self.errorMessage(from: error))
         }
     }
     
-    private func fetchImages(contentNumber: String) -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            let task = Task {
-                do {
-                    let images = try await networkManager.fetchPlantFiles(contentNumber: contentNumber)
-
-                    observer.onNext(.setImages(images))
-                    observer.onCompleted()
-                } catch {
-                    observer.onNext(.setError(Self.errorMessage(from: error)))
-                    observer.onCompleted()
-                }
-            }
-
-            return Disposables.create {
-                task.cancel()
-            }
+    private func fetchImages(contentNumber: String) async -> Mutation {
+        do {
+            let images = try await networkManager.fetchPlantFiles(contentNumber: contentNumber)
+            return .setImages(images)
+        } catch {
+            return .setError(Self.errorMessage(from: error))
         }
     }
     
