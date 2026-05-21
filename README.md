@@ -17,6 +17,13 @@
 
 <br>
 
+# 📋 패치노트
+ 2026.04.25. : 1.0.0. 최초 배포
+ 2026.05.05. : 1.0.1. 업데이트 (UI 개선, 식물 등록일 기능 추가, 이미지 업로드 방식 개선, 업데이트 확인 기능 추가)
+ 2026.05.21. : 1.0.2. 업데이트 (async await 리팩토링, 네비게이션 스택 버그 수정, 갤러리 이미지 검색 기능 추가)
+
+<br>
+
 # 👥 팀 소개
 
 **Team Jooslin**
@@ -62,6 +69,134 @@ LeafLog
 
 <br>
 
+# 🖼️ 다이어그램
+
+### 전체 프로젝트 흐름
+```mermaid
+flowchart LR
+    direction LR
+
+    subgraph Presentation["Presentation"]
+        Flow["RXFLOW<br/>AppFlow<br/>MainFlow<br/>LoginFlow<br/>TabFlow"]
+        View["UIKIT VIEWCONTROLLER<br/>Login<br/>Home<br/>Calendar<br/>PlantCare<br/>Search<br/>MyPage"]
+    end
+
+    subgraph State["State"]
+        Reactor["REACTORKIT<br/>Login<br/>Home<br/>Calendar<br/>PlantCare<br/>Search<br/>MyPage"]
+    end
+
+    subgraph DomainData["Domain & Data"]
+        ComplexUseCase["COMPLEX USE CASE<br/>등록<br/>수정<br/>삭제<br/>인증<br/>카메라"]
+        SimpleDataAccess["SIMPLE DATA ACCESS<br/>목록 조회<br/>상태 갱신<br/>기록 저장"]
+        Service["SERVICE<br/>AuthService<br/>PlantService<br/>CameraService<br/>PlantClassificationService"]
+        Data["DATA LAYER<br/>PlantDB<br/>CareRecordDB<br/>ProfileDB<br/>NotificationDB<br/>NetworkManager<br/>SupabaseManager"]
+        Model["MODEL<br/>MyPlant<br/>CareRecord<br/>PlantResponse<br/>UserProfile<br/>AppNotification"]
+        External["EXTERNAL<br/>Supabase<br/>농사로 API<br/>Firebase<br/>TensorFlow Lite"]
+    end
+
+    Flow --> View
+    View --> Reactor
+    Reactor --> ComplexUseCase
+    Reactor --> SimpleDataAccess
+    ComplexUseCase --> Service
+    SimpleDataAccess --> Data
+    Service --> Data
+    Data --> Model
+    Data --> External
+
+    classDef usecase fill:#FFFFFF,stroke:#B8B8B8,color:#333333,font-weight:bold
+    classDef flow fill:#E8F3FF,stroke:#4A90E2,color:#1F3A5F,font-weight:bold
+    classDef view fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F,font-weight:bold
+    classDef reactor fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00,font-weight:bold
+    classDef service fill:#F7EDFF,stroke:#9B6AD6,color:#3E245E,font-weight:bold
+    classDef data fill:#FDEDED,stroke:#D66A6A,color:#5E2424,font-weight:bold
+    classDef model fill:#F4F4F4,stroke:#8A8A8A,color:#333333,font-weight:bold
+    classDef external fill:#EEF7F7,stroke:#5BA6A6,color:#244F4F,font-weight:bold
+
+    class Flow flow
+    class View view
+    class Reactor reactor
+    class ComplexUseCase,SimpleDataAccess usecase
+    class Service service
+    class Data data
+    class Model model
+    class External external
+
+```
+### 주요 데이터 흐름
+```mermaid
+flowchart LR
+    Home["홈<br/>HomeReactor"]
+    Care["식물 관리<br/>PlantCareReactor"]
+    Calendar["캘린더<br/>CalendarReactor"]
+    Search["식물 검색<br/>SearchReactor"]
+    MyPage["마이페이지<br/>MyPageReactor"]
+
+    HomePlants["홈 카드<br/>식물 목록 조회"]
+    QuickWater["빠른 물주기<br/>오늘 기록 저장"]
+    PlantManage["식물 관리<br/>등록<br/>수정<br/>삭제"]
+    CareLog["관리 기록<br/>일지<br/>타임라인"]
+    ProfileInfo["프로필<br/>계정 정보"]
+    NotificationInfo["알림<br/>설정<br/>알림 목록"]
+    PlantInfo["식물 정보<br/>DB 저장"]
+    InitialRecord["초기 기록<br/>급수 기록 생성"]
+
+    PlantService["PlantService"]
+    PlantDB["PlantDBManager"]
+    CareRecordDB["CareRecordDBManager"]
+    ProfileDB["ProfileDBManager"]
+    NotificationDB["NotificationDBManager"]
+    NetworkManager["NetworkManager"]
+
+    Supabase["Supabase"]
+    FarmAPI["농사로 API"]
+
+    Home --> HomePlants
+    Home --> QuickWater
+    HomePlants --> PlantDB
+    QuickWater --> CareRecordDB
+
+    Care --> PlantManage
+    Care --> CareLog
+    PlantManage --> PlantService
+    CareLog --> CareRecordDB
+
+    Calendar --> CareRecordDB
+    Search --> NetworkManager
+
+    MyPage --> ProfileInfo
+    MyPage --> NotificationInfo
+    ProfileInfo --> ProfileDB
+    NotificationInfo --> NotificationDB
+
+    PlantService --> PlantInfo
+    PlantService --> InitialRecord
+    PlantInfo --> PlantDB
+    InitialRecord --> CareRecordDB
+
+    PlantDB --> Supabase
+    CareRecordDB --> Supabase
+    ProfileDB --> Supabase
+    NotificationDB --> Supabase
+    NetworkManager --> FarmAPI
+
+    classDef screen fill:#F0F8ED,stroke:#6AA84F,color:#2F4F2F
+    classDef branch fill:#FFFFFF,stroke:#B8B8B8,color:#333333
+    classDef logic fill:#FFF4DE,stroke:#D99A2B,color:#5A3B00
+    classDef data fill:#FDEDED,stroke:#D66A6A,color:#5E2424
+    classDef external fill:#EEF7F7,stroke:#5BA6A6,color:#244F4F
+
+    class Home,Care,Calendar,Search,MyPage screen
+    class HomePlants,QuickWater,PlantManage,CareLog,ProfileInfo,NotificationInfo,PlantInfo,InitialRecord branch
+    class PlantService logic
+    class PlantDB,CareRecordDB,ProfileDB,NotificationDB,NetworkManager data
+    class Supabase,FarmAPI external
+
+```
+
+
+<br>
+
 # 🧰 기술 스택
 
 | 분류 | 라이브러리 |
@@ -74,6 +209,61 @@ LeafLog
 | Auth | Apple Login, Google Sing-In, Kakao Login |
 | AI | TensorFlowLiteSwift |
 | Notifications | Firebase Messaging |
+
+<br>
+
+
+# 🔑 실행 전 준비 사항
+
+잎로그는 농사로 API, Supabase, Kakao Login, Google Sign-In, Firebase Messaging을 사용하기 때문에 프로젝트 실행 전에 아래 설정 파일이 필요합니다.
+
+해당 파일들은 API Key와 인증 정보가 포함되어 있어 Git에 포함하지 않고, 로컬 환경에서 직접 추가해야 합니다.
+
+## 1. Secrets.xcconfig 추가
+
+프로젝트 루트의 `LeafLog/Secrets.xcconfig` 파일을 생성한 뒤 아래 내용을 추가합니다.
+
+```xcconfig
+NONGSARO_API_KEY = your_api_key
+NONGSARO_BASE_URL = https:/$()/api.nongsaro.go.kr/service/garden
+SUPABASE_URL = voleebkqcpkwtliktbos.supabase.co
+SUPABASE_ANON_KEY = your_anon_key
+KAKAO_NATIVE_APP_KEY = your_kakao_native_app_key
+REVERSED_CLIENT_ID = your_reversed_client_id
+```
+
+- `NONGSARO_API_KEY`: 농사로 Open API 인증 키
+- `SUPABASE_ANON_KEY`: Supabase 프로젝트의 anon public key
+- `KAKAO_NATIVE_APP_KEY`: Kakao Developers에서 발급받은 Native App Key
+- `REVERSED_CLIENT_ID`: GoogleService-Info.plist의 `REVERSED_CLIENT_ID` 값
+
+
+## 2. GoogleService-Info.plist 추가
+
+Google Sign-In과 Firebase Messaging 사용을 위해 `LeafLog/LeafLog/Configuration/GoogleService-Info.plist` 파일을 추가해야 합니다.
+
+해당 파일은 Firebase Console에서 iOS 앱 설정 파일을 다운로드하거나, 공유받은 `GoogleService-Info.plist` 내용을 그대로 추가합니다.
+
+파일에는 아래 항목들이 포함되어 있어야 합니다.
+
+```plist
+CLIENT_ID
+REVERSED_CLIENT_ID
+API_KEY
+GCM_SENDER_ID
+PLIST_VERSION
+BUNDLE_ID
+PROJECT_ID
+STORAGE_BUCKET
+IS_ADS_ENABLED
+IS_ANALYTICS_ENABLED
+IS_APPINVITE_ENABLED
+IS_GCM_ENABLED
+IS_SIGNIN_ENABLED
+GOOGLE_APP_ID
+```
+
+위 설정 파일이 없으면 API 요청, 소셜 로그인, 푸시 알림 기능이 정상적으로 동작하지 않을 수 있습니다.
 
 <br>
 

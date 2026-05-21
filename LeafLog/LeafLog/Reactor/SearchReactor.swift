@@ -10,7 +10,7 @@ import Foundation
 import ReactorKit
 import RxSwift
 
-final class SearchReactor: Reactor {
+final class SearchReactor: AsyncReactor {
     
     // 사용자가 한 행동
     enum Action {
@@ -57,14 +57,12 @@ final class SearchReactor: Reactor {
     
     // Action -> Mutation -> State
     // Action을 받아서 어떤 Mutation을 만들지 결정
-    func mutate(action: Action) -> Observable<Mutation> {
+    func mutate(action: Action, continuation: MutationStreamContinuation) async throws {
         switch action {
         case .viewDidLoad:
-            return .concat([
-                .just(.setLoading(true)),
-                loadFilterOptions(), // 서버에서 필터 목록가져오기
-                .just(.setLoading(false))
-            ])
+            continuation.yield(.setLoading(true))
+            await loadFilterOptions(continuation: continuation) // 서버에서 필터 목록가져오기
+            continuation.yield(.setLoading(false))
             
             // 사용자가 텍스트 입력시 실행
         case .updateQuery(let rawQuery):
@@ -72,26 +70,24 @@ final class SearchReactor: Reactor {
             
             // 비었을 때
             guard !query.isEmpty else {
-                return .concat([
-                    .just(.setQuery("")),
-                    .just(.setPlants([])),
-                    .just(.setLoading(false)),
-                    .just(.setResultText("검색어를 입력해 주세요.")),
-                    .just(.setTitle("식물 검색"))
-                ])
+                continuation.yield(.setQuery(""))
+                continuation.yield(.setPlants([]))
+                continuation.yield(.setLoading(false))
+                continuation.yield(.setResultText("검색어를 입력해 주세요."))
+                continuation.yield(.setTitle("식물 검색"))
+                return
             }
             
             // 로딩 시작 - 네트워크 검색 - 로딩 종료
-            return .concat([
-                .just(.setQuery(query)),
-                .just(.setLoading(true)),
-                search(
-                    query: query,
-                    searchType: currentState.searchType,
-                    filterState: currentState.filterState
-                ),
-                .just(.setLoading(false))
-            ])
+            continuation.yield(.setQuery(query))
+            continuation.yield(.setLoading(true))
+            await search(
+                query: query,
+                searchType: currentState.searchType,
+                filterState: currentState.filterState,
+                continuation: continuation
+            )
+            continuation.yield(.setLoading(false))
             
             
             // 검색타입 바꿀때
@@ -100,20 +96,20 @@ final class SearchReactor: Reactor {
             
             // 검색어 없으면 그냥 바꾸기만
             guard !currentQuery.isEmpty else {
-                return .just(.setSearchType(searchType))
+                continuation.yield(.setSearchType(searchType))
+                return
             }
             
             // 검색어 있으면 검색해줌
-            return .concat([
-                .just(.setSearchType(searchType)),
-                .just(.setLoading(true)),
-                search(
-                    query: currentQuery,
-                    searchType: searchType,
-                    filterState: currentState.filterState
-                ),
-                .just(.setLoading(false))
-            ])
+            continuation.yield(.setSearchType(searchType))
+            continuation.yield(.setLoading(true))
+            await search(
+                query: currentQuery,
+                searchType: searchType,
+                filterState: currentState.filterState,
+                continuation: continuation
+            )
+            continuation.yield(.setLoading(false))
             
             
             // 필터 업데이트 할 때
@@ -123,35 +119,33 @@ final class SearchReactor: Reactor {
             
             // 검색어 없으면 그냥 필터 바꿈
             guard !currentQuery.isEmpty else {
-                return .just(.setFilter(kind, option))
+                continuation.yield(.setFilter(kind, option))
+                return
             }
             
             // 필터 적용해서 다시 검색
-            return .concat([
-                .just(.setFilter(kind, option)),
-                .just(.setLoading(true)),
-                search(
-                    query: currentQuery,
-                    searchType: currentState.searchType,
-                    filterState: nextFilterState
-                ),
-                .just(.setLoading(false))
-            ])
+            continuation.yield(.setFilter(kind, option))
+            continuation.yield(.setLoading(true))
+            await search(
+                query: currentQuery,
+                searchType: currentState.searchType,
+                filterState: nextFilterState,
+                continuation: continuation
+            )
+            continuation.yield(.setLoading(false))
             
             // AI 식물 식별 결과 사용할 때
         case let .classificationQuery(classificationResult):
             // 학명 검색
-            return .concat([
-                .just(.setSearchType(.botanicalName)),
-                .just(.setLoading(true)),
-                searchClassificationResult(classifications: classificationResult),
-                .just(.setLoading(false)),
-                .just(.setTitle("검색 결과")),
-                .just(.setSearchType(.plantName))
-            ])
+            continuation.yield(.setSearchType(.botanicalName))
+            continuation.yield(.setLoading(true))
+            await searchClassificationResult(classifications: classificationResult, continuation: continuation)
+            continuation.yield(.setLoading(false))
+            continuation.yield(.setTitle("검색 결과"))
+            continuation.yield(.setSearchType(.plantName))
 
         case .selectPlant(let item):
-            return fetchSelectedPlant(from: item)
+            await fetchSelectedPlant(from: item, continuation: continuation)
         }
     }
     
@@ -187,81 +181,61 @@ final class SearchReactor: Reactor {
     }
     
     // 서버에서 필터 목록을 가져와서 Mutation으로 바꿔주는 역할
-    private func loadFilterOptions() -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            let task = Task {
-                do {
-                    let options = try await networkManager.fetchAllFilterOptions()
-                    observer.onNext(.setFilterOptions(options))
-                    observer.onCompleted()
-                } catch {
-                    observer.onNext(.setResultText("필터 옵션 로드 실패: \(error.localizedDescription)"))
-                    observer.onCompleted()
-                }
-            }
-            
-            return Disposables.create {
-                task.cancel()
-            }
+    private func loadFilterOptions(continuation: MutationStreamContinuation) async {
+        do {
+            let options = try await networkManager.fetchAllFilterOptions()
+            continuation.yield(.setFilterOptions(options))
+        } catch {
+            continuation.yield(.setResultText("필터 옵션 로드 실패: \(error.localizedDescription)"))
         }
     }
     
     private func search(
         query: String,
         searchType: PlantSearchType,
-        filterState: PlantFilterState
-    ) -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            let task = Task {
-                do {
-                    let plants = try await networkManager.fetchPlantList(
-                        keyword: query,
-                        searchType: searchType,
-                        filterState: filterState,
-                        pageNo: 1,
-                        numOfRows: 10
-                    )
-                    
-                    // items 추가
-                    let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
-                        
-                        let item = SearchViewController.PlantSummaryItem(
-                            contentNumber: $1.contentNumber,
-                            name: $1.name,
-                            imageURL: $1.imageURL,
-                            thumbnailURL: $1.thumbnailURL,
-                            confidence: .unknown,
-                            primaryThumbnailURL: $1.primaryImageURL,
-                            primaryImageURL: $1.primaryImageURL,
-                            displayThumbnailURL: $1.displayThumbnailURL)
-                        
-                        return $0 + [item]
-                    }
-                    
-                    // 결과 처리
-                    let message: String
-                    if plants.isEmpty {
-                        message = "'\(query)' 검색 결과가 없습니다."
-                    } else {
-                        message = ""
-                    }
-                    
-                    observer.onNext(.setPlants(items))
-                    // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
-                    observer.onNext(.setResultText(message))
-                    observer.onCompleted()
-                    // 에러 처리
-                } catch {
-                    observer.onNext(.setPlants([]))
-                    observer.onNext(.setResultText("검색 실패: \(error.localizedDescription)"))
-                    observer.onCompleted()
-                }
+        filterState: PlantFilterState,
+        continuation: MutationStreamContinuation
+    ) async {
+        do {
+            let plants = try await networkManager.fetchPlantList(
+                keyword: query,
+                searchType: searchType,
+                filterState: filterState,
+                pageNo: 1,
+                numOfRows: 10
+            )
+            
+            // items 추가
+            let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+                
+                let item = SearchViewController.PlantSummaryItem(
+                    contentNumber: $1.contentNumber,
+                    name: $1.name,
+                    imageURL: $1.imageURL,
+                    thumbnailURL: $1.thumbnailURL,
+                    confidence: .unknown,
+                    primaryThumbnailURL: $1.primaryImageURL,
+                    primaryImageURL: $1.primaryImageURL,
+                    displayThumbnailURL: $1.displayThumbnailURL)
+                
+                return $0 + [item]
             }
             
-            // 구독이 해제되면 실행중인 Task 취소
-            return Disposables.create {
-                task.cancel()
+            // 결과 처리
+            let message: String
+            if plants.isEmpty {
+                message = "'\(query)' 검색 결과가 없습니다."
+            } else {
+                message = ""
             }
+            
+            continuation.yield(.setPlants(items))
+            // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
+            continuation.yield(.setResultText(message))
+            // 에러 처리
+        } catch {
+            continuation.yield(.setPlants([]))
+            continuation.yield(.setResultText("검색 실패: \(error.localizedDescription)"))
         }
     }
     
@@ -271,97 +245,79 @@ final class SearchReactor: Reactor {
             .joined(separator: " ")
     }
 
-    private func fetchSelectedPlant(from item: SearchViewController.PlantSummaryItem) -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            let task = Task {
-                do {
-                    let detail = try await networkManager.fetchPlantDetail(contentNumber: item.contentNumber)
-                    let selectedPlant = SelectedPlant(
-                        name: item.name,
-                        contentNumber: item.contentNumber,
-                        detail: detail,
-                        category: nil
-                    )
-                    observer.onNext(.setSelectedPlant(selectedPlant))
-                    observer.onCompleted()
-                } catch {
-                    let message: String
-                    if let networkError = error as? NetworkManager.NetworkError {
-                        message = networkError.errorDescription ?? "식물 정보를 불러오지 못했습니다."
-                    } else {
-                        message = error.localizedDescription
-                    }
-
-                    observer.onNext(.setErrorMessage(message))
-                    observer.onCompleted()
-                }
+    private func fetchSelectedPlant(
+        from item: SearchViewController.PlantSummaryItem,
+        continuation: MutationStreamContinuation
+    ) async {
+        do {
+            let detail = try await networkManager.fetchPlantDetail(contentNumber: item.contentNumber)
+            let selectedPlant = SelectedPlant(
+                name: item.name,
+                contentNumber: item.contentNumber,
+                detail: detail,
+                category: nil
+            )
+            continuation.yield(.setSelectedPlant(selectedPlant))
+        } catch {
+            let message: String
+            if let networkError = error as? NetworkManager.NetworkError {
+                message = networkError.errorDescription ?? "식물 정보를 불러오지 못했습니다."
+            } else {
+                message = error.localizedDescription
             }
 
-            return Disposables.create {
-                task.cancel()
-            }
+            continuation.yield(.setErrorMessage(message))
         }
     }
 }
 
 extension SearchReactor {
     private func searchClassificationResult(
-        classifications: [String: PlantClassificationService.Confidence]
-    ) -> Observable<Mutation> {
-        Observable.create { [networkManager] observer in
-            guard !classifications.isEmpty else {
-                // 결과 처리
-                observer.onNext(.setPlants([]))
-                observer.onNext(.setResultText("AI 검색 결과 식물을 찾지 못했습니다."))
-                observer.onCompleted()
-                return Disposables.create()
-            }
+        classifications: [String: PlantClassificationService.Confidence],
+        continuation: MutationStreamContinuation
+    ) async {
+        guard !classifications.isEmpty else {
+            // 결과 처리
+            continuation.yield(.setPlants([]))
+            continuation.yield(.setResultText("AI 검색 결과 식물을 찾지 못했습니다."))
+            return
+        }
+        
+        do {
+            // 일치율 높은 순으로 정렬한 식물 학명 배열
+            let keywords = classifications
+                .sorted(by: {
+                    $0.value.rawValue < $1.value.rawValue})
+                .map { String($0.key) }
             
-            let task = Task {
-                do {
-                    // 일치율 높은 순으로 정렬한 식물 학명 배열
-                    let keywords = classifications
-                        .sorted(by: {
-                            $0.value.rawValue < $1.value.rawValue})
-                        .map { String($0.key) }
-                    
-                    // API 검색 결과
-                    let plants = try await networkManager.fetchPlantListBy(keywords: keywords)
+            // API 검색 결과
+            let plants = try await networkManager.fetchPlantListBy(keywords: keywords)
 
-                    let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
-                        guard let confidence = classifications[$1.key] else { return $0 }
-                        
-                        let item = SearchViewController.PlantSummaryItem(
-                            contentNumber: $1.value.contentNumber,
-                            name: $1.value.name,
-                            imageURL: $1.value.imageURL,
-                            thumbnailURL: $1.value.thumbnailURL,
-                            confidence: confidence,
-                            primaryThumbnailURL: $1.value.primaryImageURL,
-                            primaryImageURL: $1.value.primaryImageURL,
-                            displayThumbnailURL: $1.value.displayThumbnailURL)
+            let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+                guard let confidence = classifications[$1.key] else { return $0 }
+                
+                let item = SearchViewController.PlantSummaryItem(
+                    contentNumber: $1.value.contentNumber,
+                    name: $1.value.name,
+                    imageURL: $1.value.imageURL,
+                    thumbnailURL: $1.value.thumbnailURL,
+                    confidence: confidence,
+                    primaryThumbnailURL: $1.value.primaryImageURL,
+                    primaryImageURL: $1.value.primaryImageURL,
+                    displayThumbnailURL: $1.value.displayThumbnailURL)
 
-                        return $0 + [item]
-                    }
-
-                    let message: String = items.isEmpty ? "AI 검색 결과 식물을 찾지 못했습니다." : ""
-                    
-                    observer.onNext(.setPlants(items))
-                    // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
-                    observer.onNext(.setResultText(message))
-                    observer.onCompleted()
-                    // 에러 처리
-                } catch {
-                    observer.onNext(.setPlants([]))
-                    observer.onNext(.setResultText("검색 실패: \(error.localizedDescription)"))
-                    observer.onCompleted()
-                }
+                return $0 + [item]
             }
+
+            let message: String = items.isEmpty ? "AI 검색 결과 식물을 찾지 못했습니다." : ""
             
-            // 구독이 해제되면 실행중인 Task 취소
-            return Disposables.create {
-                task.cancel()
-            }
+            continuation.yield(.setPlants(items))
+            // 검색이 끝나면 결과 텍스트를 바꾸는 Mutation을 보냄
+            continuation.yield(.setResultText(message))
+            // 에러 처리
+        } catch {
+            continuation.yield(.setPlants([]))
+            continuation.yield(.setResultText("검색 실패: \(error.localizedDescription)"))
         }
     }
 }

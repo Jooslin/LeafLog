@@ -224,6 +224,13 @@ final class PlantRegisterViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
 
+        reactor.pulse(\.$classificationResult)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .map { AppStep.classificationResult($0) }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
+
         Observable.just(PlantRegisterReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
@@ -277,9 +284,36 @@ final class PlantRegisterViewController: BaseViewController, View {
             for: .touchUpInside
         )
         
-        registerView.plantTypeSearchBar.cameraButton.rx.tap
-            .map { AppStep.cameraRequired }
+        // 카메라 검색 버튼
+        let cameraSearchButtonSelected = registerView.plantTypeSearchBar.cameraButton.rx.tap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
+            .withUnretained(self)
+            .flatMap({ `self`, _ in
+                self.selectedPlantTypeImageSourceAlert()
+            })
+            .share()
+        
+        // 카메라 검색 버튼 - 촬영하기 선택 시
+        cameraSearchButtonSelected
+            .compactMap { result in
+                guard case .camera = result else { return nil }
+                return AppStep.cameraRequired
+            }
             .bind(to: steps)
+            .disposed(by: disposeBag)
+   
+        // 카메라 검색 버튼 - 이미지 불러오기 선택 시
+        cameraSearchButtonSelected
+            .compactMap { [weak self] result -> PHPickerViewController? in
+                guard case .photoLibrary = result else { return nil }
+                return self?.makeImagePicker()
+            }
+            .withUnretained(self)
+            .do(onNext: { $0.present($1, animated: true) })
+            .flatMap { $1.rx.selectedImages.take(1) }
+            .compactMap(\.first)
+            .map { PlantRegisterReactor.Action.classificationImageSelected($0) }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         registerView.categoryButtons.forEach { button in
@@ -492,6 +526,7 @@ extension PlantRegisterViewController {
         let imagePicker = PHPickerViewController(configuration: config)
         return imagePicker
     }
+
 }
 
 private extension UIView {
@@ -507,5 +542,38 @@ private extension UIView {
         }
 
         return nil
+    }
+}
+
+extension PlantRegisterViewController {
+    private enum PlantTypeImageSource {
+        case camera
+        case photoLibrary
+    }
+    
+    private func selectedPlantTypeImageSourceAlert() -> Observable<PlantTypeImageSource> {
+        Observable.create { [weak self] observer in
+            guard let self else {
+                observer.onCompleted()
+                return Disposables.create()
+            }
+            let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
+            
+            alert.addAction(UIAlertAction(title: "촬영하기", style: .default) { _ in
+                observer.onNext(.camera)
+                observer.onCompleted()
+            })
+            alert.addAction(UIAlertAction(title: "이미지 불러오기", style: .default) { _ in
+                observer.onNext(.photoLibrary)
+                observer.onCompleted()
+            })
+            alert.addAction(UIAlertAction(title: "취소", style: .cancel) { _ in
+                observer.onCompleted()
+            })
+
+            self.present(alert, animated: true)
+            return Disposables.create()
+        }
+        
     }
 }

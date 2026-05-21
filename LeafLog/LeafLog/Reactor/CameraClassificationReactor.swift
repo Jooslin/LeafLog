@@ -33,7 +33,7 @@ final class CameraClassificationReactor: Reactor {
         @Pulse var isAuthorized: Bool = false
         @Pulse var isCameraReady: Bool = false
     
-        var classificationResult: [String: PlantClassificationService.Confidence] = [:]
+        @Pulse var classificationResult: [String: PlantClassificationService.Confidence]? = nil
         
         @Pulse var errorMessage: String? = nil
     }
@@ -83,6 +83,7 @@ final class CameraClassificationReactor: Reactor {
             newState.isCameraReady = true
             
         case .cameraNotReady:
+            newState.isAuthorized = true
             newState.isCameraReady = false
 
         case .analyzeResult(let results):
@@ -134,32 +135,32 @@ extension CameraClassificationReactor {
 }
 
 extension CameraClassificationReactor {
+    // 촬영한 이미지 분석
     private func analyzeImage(_ imageData: Data, normalizedRect: CGRect) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            guard let self else { return Disposables.create() }
+            guard let self else {
+                observer.onCompleted()
+                return Disposables.create()
+            }
             
-            let cropImage = self.plantClassificationService.cropCapturedImage(imageData, normalizedRect: normalizedRect)
+            // 가이드 프레임에 맞추어 이미지 crop
+            let cropImage = self.plantClassificationService.cropGuideFrame(imageData, normalizedRect: normalizedRect)
             guard let cropImage else {
                 observer.onNext(.analyzeResult([:]))
                 observer.onCompleted()
                 return Disposables.create()
             }
             
-            Task { [weak self] in
-                guard let self else {
-                    observer.onCompleted()
-                    return
-                }
-                do {
-                    let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
-                    observer.onNext(.analyzeResult(classificationResult))
-                    observer.onCompleted()
-                } catch {
-                    self.logger.error("이미지 분석 실패: \(error.localizedDescription)")
-                    observer.onNext(.analyzeResult([:]))
-                    observer.onCompleted()
-                }
+            do {
+                let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
+                observer.onNext(.analyzeResult(classificationResult))
+                observer.onCompleted()
+            } catch {
+                self.logger.error("이미지 분석 실패: \(error.localizedDescription)")
+                observer.onNext(.analyzeResult([:]))
+                observer.onCompleted()
             }
+            
             return Disposables.create()
         }
     }

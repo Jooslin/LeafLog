@@ -184,6 +184,11 @@ final class AuthService {
     // MARK: - Sign Out
     func signOut() async throws {
         let user = try await supabase.auth.user()
+        do {
+            try await supabaseManager.deactivateCurrentDeviceToken()
+        } catch {
+            logger.error("기기 토큰 비활성화 실패: \(error.localizedDescription)")
+        }
         try await supabase.auth.signOut()
         await signOutProvider(for: user)
     }

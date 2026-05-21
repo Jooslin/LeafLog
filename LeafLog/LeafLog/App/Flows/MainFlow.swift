@@ -64,14 +64,8 @@ final class MainFlow: Flow {
         case .plantSearchDetail(let contentNumber):
             return navigateToPlantSearchDetail(contentNumber: contentNumber)
 
-        case .classificationResult(let result):
-            return navigateToClassificationResult(result)
-
         case .plantRegisterSelectedPlant(let selectedPlant):
             return updatePlantRegister(selectedPlant)
-
-        case .cameraRequired:
-            return navigateToCameraClassification()
 
         case .applicatoinSettingRequired:
             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -252,31 +246,6 @@ extension MainFlow {
             flowContributor: .contribute(
                 withNextPresentable: viewController,
                 withNextStepper: viewController
-            )
-        )
-    }
-
-    private func navigateToClassificationResult(_ result: [String: PlantClassificationService.Confidence]) -> FlowContributors {
-        let searchViewController = SearchViewController(classficationResult: result)
-        searchViewController.hidesBottomBarWhenPushed = true
-        navigate(to: searchViewController, animated: true)
-
-        return .one(
-            flowContributor: .contribute(
-                withNextPresentable: searchViewController,
-                withNextStepper: searchViewController
-            )
-        )
-    }
-
-    private func navigateToCameraClassification() -> FlowContributors {
-        let cameraViewController = CameraClassificationViewController()
-        navigate(to: cameraViewController, animated: true)
-
-        return .one(
-            flowContributor: .contribute(
-                withNextPresentable: cameraViewController,
-                withNextStepper: cameraViewController
             )
         )
     }

@@ -300,6 +300,13 @@ extension SupabaseManager {
                     lastSeenAt: Date(),
                     isActive: true
                 )
+
+                try await client
+                    .from("device_tokens")
+                    .update(["is_active": false])
+                    .eq("device_id", value: deviceID)
+                    .neq("user_id", value: currentUserId)
+                    .execute()
                 
                 try await client
                     .from("device_tokens")
@@ -309,6 +316,18 @@ extension SupabaseManager {
                 logger.error("⚠️ 디바이스 토큰 저장 보류(로그인 전이거나 네트워크 에러)\nerror: \(error.localizedDescription, privacy: .private)")
             }
         }
+    }
+
+    func deactivateCurrentDeviceToken() async throws {
+        guard let currentUserId = client.auth.currentUser?.id else { return }
+        guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { return }
+
+        try await client
+            .from("device_tokens")
+            .update(["is_active": false])
+            .eq("user_id", value: currentUserId)
+            .eq("device_id", value: deviceID)
+            .execute()
     }
     
     // 유저 알림 허용 여부 업데이트
