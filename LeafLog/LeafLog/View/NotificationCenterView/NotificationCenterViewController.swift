@@ -42,6 +42,23 @@ final class NotificationCenterViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        Observable.merge(
+            // 앱이 백그라운드 상태에서 다시 foreground로 진입했을 경우
+            NotificationCenter.default.rx.notification(
+                UIApplication.didBecomeActiveNotification
+            )
+            .map { _ in },
+            // FCM을 통해 푸시 알림을 받았을 경우
+            NotificationCenter.default.rx.notification(
+                .leafLogRemoteNotificationReceived
+            )
+            .map { _ in }
+        )
+            .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
+            .map { NotificationCenterReactor.Action.refresh }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         notificationCenterView.rx.backButtonTap
             .map { _ in AppStep.pageBack }
             .bind(to: steps)
@@ -51,6 +68,7 @@ final class NotificationCenterViewController: BaseViewController, View {
     private func bindState(reactor: NotificationCenterReactor) {        
         reactor.state
             .map(\.alarmItem)
+            .skip(1)
             .subscribe(onNext: { [weak self] items in
                 self?.notificationCenterView.emptyView.isHidden = !items.isEmpty
                 self?.notificationCenterView.setSnapshot(items)

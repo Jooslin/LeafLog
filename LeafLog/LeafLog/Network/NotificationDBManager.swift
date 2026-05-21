@@ -35,11 +35,14 @@ final class NotificationDBManager {
     }
 
     func markAsRead(notificationID: UUID) async throws {
+        let user = try await supabaseManager.client.auth.user()
+
         do {
             try await supabaseManager.client
                 .from("notifications")
                 .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("id", value: notificationID)
+                .eq("user_id", value: user.id)
                 .execute()
         } catch {
             throw AuthError.notificationFailed("알림 상태를 업데이트하지 못했어요. 잠시 후 다시 시도해주세요.")

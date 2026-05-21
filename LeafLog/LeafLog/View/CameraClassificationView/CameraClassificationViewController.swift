@@ -94,9 +94,11 @@ class CameraClassificationViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         let isAuthorized = reactor.pulse(\.$isAuthorized)
+            .skip(1)
             .asDriver(onErrorDriveWith: .empty())
         
         let isCameraReady = reactor.pulse(\.$isCameraReady)
+            .skip(1)
             .asDriver(onErrorDriveWith: .empty())
         
         Driver
