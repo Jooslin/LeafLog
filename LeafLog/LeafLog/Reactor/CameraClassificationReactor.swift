@@ -151,24 +151,17 @@ extension CameraClassificationReactor {
                 return Disposables.create()
             }
             
-            let task = Task { [weak self] in
-                guard let self else {
-                    observer.onCompleted()
-                    return
-                }
-                do {
-                    let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
-                    observer.onNext(.analyzeResult(classificationResult))
-                    observer.onCompleted()
-                } catch {
-                    self.logger.error("이미지 분석 실패: \(error.localizedDescription)")
-                    observer.onNext(.analyzeResult([:]))
-                    observer.onCompleted()
-                }
+            do {
+                let classificationResult = try self.plantClassificationService.analyzeImage(image: cropImage)
+                observer.onNext(.analyzeResult(classificationResult))
+                observer.onCompleted()
+            } catch {
+                self.logger.error("이미지 분석 실패: \(error.localizedDescription)")
+                observer.onNext(.analyzeResult([:]))
+                observer.onCompleted()
             }
-            return Disposables.create() {
-                task.cancel()
-            }
+            
+            return Disposables.create()
         }
     }
 }

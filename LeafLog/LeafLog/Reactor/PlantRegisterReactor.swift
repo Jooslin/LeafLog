@@ -535,31 +535,28 @@ extension PlantRegisterReactor {
     // 갤러리에서 가져온 이미지 분석
     private func analyzeImage(_ image: UIImage) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
-            let task = Task { [weak self] in
-                guard let self else {
-                    observer.onCompleted()
-                    return
-                }
+            guard let self else {
+                observer.onCompleted()
+                return Disposables.create()
+            }
+            
+            do {
+                let croppedImage = self.plantClassificationService.cropCenterSquare(image)
                 
-                do {
-                    let croppedImage = self.plantClassificationService.cropCenterSquare(image)
-                    
-                    let classificationResult = try self.plantClassificationService.analyzeImage(image: croppedImage)
-                    observer.onNext(.analyzeResult(classificationResult))
-                    observer.onCompleted()
-                } catch let error as PlantClassificationService.ClassificationError {
-                    self.logger.error("PlantClassificationError: \(error.localizedDescription)")
-                    observer.onNext(.analyzeResult([:]))
-                    observer.onCompleted()
-                } catch {
-                    self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
-                    observer.onNext(.analyzeResult([:]))
-                    observer.onCompleted()
-                }
+                let classificationResult = try self.plantClassificationService.analyzeImage(image: croppedImage)
+                observer.onNext(.analyzeResult(classificationResult))
+                observer.onCompleted()
+            } catch let error as PlantClassificationService.ClassificationError {
+                self.logger.error("PlantClassificationError: \(error.localizedDescription)")
+                observer.onNext(.analyzeResult([:]))
+                observer.onCompleted()
+            } catch {
+                self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
+                observer.onNext(.analyzeResult([:]))
+                observer.onCompleted()
             }
-            return Disposables.create() {
-                task.cancel()
-            }
+            
+            return Disposables.create()
         }
     }
 }
