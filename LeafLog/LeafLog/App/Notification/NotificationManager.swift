@@ -56,6 +56,7 @@ final class NotificationManager {
     }
     
     // 알림 허용 여부 업데이트
+    @discardableResult
     func updateIsNotificationEnabled(to isEnabled: Bool?) async throws -> Bool {
         guard let userId = self.supabaseManager.client.auth.currentUser?.id else {
             throw NotificationError.userIDNotFound
@@ -66,6 +67,9 @@ final class NotificationManager {
         var target: Bool = false
         
         if let isEnabled {
+            if isEnabled && !isAuthorized {
+                throw NotificationError.authorizationDenied
+            }
             target = isEnabled && isAuthorized
         } else {
             target = isAuthorized
@@ -106,6 +110,7 @@ final class NotificationManager {
 extension NotificationManager {
     enum NotificationError: Error {
         case userIDNotFound
+        case authorizationDenied
     }
 }
 

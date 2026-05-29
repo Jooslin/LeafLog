@@ -57,7 +57,7 @@ enum AppStep: Step {
         onConfirm: () -> Void
     )
     
+    // MyInfoTab
     case profileImageSourceSheet
-    // 예시용
-    case pushButtonTapped
+    case notificationAuthorizationRequired(onSettingsSelected: () -> Void)
 }
