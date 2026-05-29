@@ -185,10 +185,10 @@ final class MyPageReactor: Reactor {
                 }
                 
                 do {
-                    try await self.notificationManager.updateIsNotificationEnabled(to: isOn)
+                    let actualIsOn = try await self.notificationManager.updateIsNotificationEnabled(to: isOn)
                     self.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
                     
-                    observer.onNext(.setPushAlert(isOn))
+                    observer.onNext(.setPushAlert(actualIsOn))
                     observer.onCompleted()
                 } catch {
                     self.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")

@@ -56,24 +56,28 @@ final class NotificationManager {
     }
     
     // 알림 허용 여부 업데이트
-    func updateIsNotificationEnabled(to isEnabled: Bool?) async throws {
+    func updateIsNotificationEnabled(to isEnabled: Bool?) async throws -> Bool {
         guard let userId = self.supabaseManager.client.auth.currentUser?.id else {
             throw NotificationError.userIDNotFound
         }
         
+        let isAuthorized = await self.checkNotificationEnabled()
+        
         var target: Bool = false
         
         if let isEnabled {
-            target = isEnabled
+            target = isEnabled && isAuthorized
         } else {
-            target = await self.checkNotificationEnabled()
+            target = isAuthorized
         }
         
         let willUpdate = checkUserDefaultsWouldUpdate(to: target, user: userId)
-        guard willUpdate else { return } // UserDefaults가 업데이트될 경우
+        guard willUpdate else { return target } // UserDefaults가 업데이트될 경우
         
         try await supabaseManager.updateIsNotificationEnabled(target) // DB 업데이트
         updateUserDefaultsIsNotificationEnabled(to: target, user: userId) // UserDefaults 업데이트
+        
+        return target
     }
     
     // UserDefaults 업데이트 여부
