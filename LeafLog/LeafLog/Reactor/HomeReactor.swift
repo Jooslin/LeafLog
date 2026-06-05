@@ -13,6 +13,8 @@ import Dependencies
 final class HomeReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case refreshUnreadNotificationState
+        case remoteNotificationReceived
         case waterButtonTap(UUID)
     }
     
@@ -20,6 +22,7 @@ final class HomeReactor: Reactor {
         case setEmpty(Bool)
         case setTotalCard(Int, Int)
         case setPlants([HomeView.Item])
+        case setHasUnreadNotification(Bool)
         case error(String)
     }
     
@@ -27,6 +30,7 @@ final class HomeReactor: Reactor {
         var isEmpty: Bool = true
         var totalPlants: Int = 0
         var totalWater: Int = 0
+        var hasUnreadNotification: Bool = false
         var data: [HomeView.Section: [HomeView.Item]] = [:]
         @Pulse var errorMessage: String? = nil
     }
@@ -36,12 +40,19 @@ final class HomeReactor: Reactor {
     //MARK: Properties
     @Dependency(\.plantDBManager) private var plantDBManger
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
+    @Dependency(\.notificationDBManager) private var notificationDBManager
     private let calendar = Calendar.current
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return loadPlants()
+            return Observable.merge(loadPlants(), refreshUnreadNotificationState())
+
+        case .refreshUnreadNotificationState:
+            return refreshUnreadNotificationState()
+
+        case .remoteNotificationReceived:
+            return .just(.setHasUnreadNotification(true))
             
         case .waterButtonTap(let id):
             return Observable.concat(
@@ -63,6 +74,9 @@ final class HomeReactor: Reactor {
             
         case .setPlants(let items):
             newState.data[.plant] = items
+
+        case .setHasUnreadNotification(let hasUnreadNotification):
+            newState.hasUnreadNotification = hasUnreadNotification
             
         case .error(let message):
             newState.errorMessage = message
@@ -150,6 +164,29 @@ extension HomeReactor {
                     observer.onCompleted()
                 }
             }
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
+
+    private func refreshUnreadNotificationState() -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+
+                do {
+                    let hasUnreadNotification = try await self.notificationDBManager.hasUnreadNotifications()
+                    observer.onNext(.setHasUnreadNotification(hasUnreadNotification))
+                    observer.onCompleted()
+                } catch {
+                    observer.onCompleted()
+                }
+            }
+
             return Disposables.create {
                 task.cancel()
             }

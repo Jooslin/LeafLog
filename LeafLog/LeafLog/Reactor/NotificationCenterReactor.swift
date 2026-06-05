@@ -90,6 +90,14 @@ extension NotificationCenterReactor {
                     }
                     
                     observer.onNext(.setAlarm(items))
+
+                    do {
+                        try await self.notificationDBManager.markAllAsRead()
+                        NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
+                    } catch {
+                        self.logger.error("알림 전체 읽음 처리 실패: \(error.localizedDescription, privacy: .private)")
+                    }
+
                     observer.onCompleted()
                 } catch let error as AuthError {
                     observer.onNext(.error(error.userMessage))

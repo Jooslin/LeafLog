@@ -38,6 +38,16 @@ class CalendarViewController: BaseViewController, View {
             .map { _ in CalendarReactor.Action.viewWillAppear}
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        NotificationCenter.default.rx.notification(.leafLogRemoteNotificationReceived)
+            .map { _ in CalendarReactor.Action.remoteNotificationReceived }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        NotificationCenter.default.rx.notification(.leafLogNotificationReadStateChanged)
+            .map { _ in CalendarReactor.Action.refreshUnreadNotificationState }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
         calendarView.rx.alarmButtonTap
             .map { _ in AppStep.alarmCenter }

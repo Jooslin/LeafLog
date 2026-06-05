@@ -9,4 +9,5 @@ import Foundation
 
 extension Notification.Name {
     static let leafLogRemoteNotificationReceived = Notification.Name("leafLogRemoteNotificationReceived")
+    static let leafLogNotificationReadStateChanged = Notification.Name("leafLogNotificationReadStateChanged")
 }

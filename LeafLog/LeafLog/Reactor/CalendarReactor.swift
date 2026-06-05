@@ -13,6 +13,8 @@ import Dependencies
 final class CalendarReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case refreshUnreadNotificationState
+        case remoteNotificationReceived
         case previousMonth
         case nextMonth
         case backToToday
@@ -37,6 +39,7 @@ final class CalendarReactor: Reactor {
         case setDetailGrowItem([CalendarView.Item])
         case setDetailSproutItem([CalendarView.Item])
         case setDetailTreatItem([CalendarView.Item])
+        case setHasUnreadNotification(Bool)
         
         case error(String)
     }
@@ -47,10 +50,11 @@ final class CalendarReactor: Reactor {
         var cacheData: [MonthKey: [CareRecord]] = [:]
         var plants: [MyPlant] = []
         var cacheOrder: [MonthKey] = []
+        var hasUnreadNotification: Bool = false
         
         var selectedDate: Date? // 선택된 날짜
         var data: [CalendarView.Section: [CalendarView.Item]] = [
-            .title: [.title],
+            .title: [.title(false)],
             .filter: [.filter([])]
         ]
         @Pulse var errorMessage: String? = nil
@@ -61,6 +65,7 @@ final class CalendarReactor: Reactor {
     //MARK: properties
     @Dependency(\.plantDBManager) private var plantDBManager
     @Dependency(\.careRecordDBManager) private var careRecordDBManager
+    @Dependency(\.notificationDBManager) private var notificationDBManager
     
     private let calendar = Calendar.current
     private let cacheLimit = 3
@@ -72,8 +77,15 @@ final class CalendarReactor: Reactor {
             return Observable.concat([
                 reloadCalendar(moveBenchmark: .none),
                 .just(.updateSelectedDate(date)),
-                detailItems(of: date)
+                detailItems(of: date),
+                refreshUnreadNotificationState()
                 ])
+
+        case .refreshUnreadNotificationState:
+            return refreshUnreadNotificationState()
+
+        case .remoteNotificationReceived:
+            return .just(.setHasUnreadNotification(true))
             
         case .previousMonth:
             return reloadCalendar(moveBenchmark: .previous)
@@ -148,6 +160,10 @@ final class CalendarReactor: Reactor {
             
         case .setDetailTreatItem(let items):
             newState.data[.treat] = items
+
+        case .setHasUnreadNotification(let hasUnreadNotification):
+            newState.hasUnreadNotification = hasUnreadNotification
+            newState.data[.title] = [.title(hasUnreadNotification)]
             
         case .error(let message):
             newState.errorMessage = message
@@ -258,6 +274,29 @@ extension CalendarReactor {
                 .just(.setDetailSproutItem(detailRecords[Badge.sprout.rawValue])),
                 .just(.setDetailTreatItem(detailRecords[Badge.treat.rawValue]))
             ])
+        }
+    }
+
+    private func refreshUnreadNotificationState() -> Observable<Mutation> {
+        Observable.create { [weak self] observer in
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+
+                do {
+                    let hasUnreadNotification = try await self.notificationDBManager.hasUnreadNotifications()
+                    observer.onNext(.setHasUnreadNotification(hasUnreadNotification))
+                    observer.onCompleted()
+                } catch {
+                    observer.onCompleted()
+                }
+            }
+
+            return Disposables.create {
+                task.cancel()
+            }
         }
     }
     

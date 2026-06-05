@@ -38,6 +38,16 @@ extension HomeViewController {
             .map { HomeReactor.Action.viewWillAppear }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        NotificationCenter.default.rx.notification(.leafLogRemoteNotificationReceived)
+            .map { _ in HomeReactor.Action.remoteNotificationReceived }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        NotificationCenter.default.rx.notification(.leafLogNotificationReadStateChanged)
+            .map { _ in HomeReactor.Action.refreshUnreadNotificationState }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
         // 컬렉션뷰 아이템 선택시
         homeView.rx.itemSelected
@@ -107,6 +117,13 @@ extension HomeViewController {
         state.map(\.data)
             .drive { [weak self] data in
                 self?.homeView.setSnapshot(data)
+            }
+            .disposed(by: disposeBag)
+
+        state.map(\.hasUnreadNotification)
+            .distinctUntilChanged()
+            .drive { [weak self] hasUnreadNotification in
+                self?.homeView.configureAlarmButton(hasUnreadNotification: hasUnreadNotification)
             }
             .disposed(by: disposeBag)
     }
