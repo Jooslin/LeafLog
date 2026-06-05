@@ -104,7 +104,8 @@ class CalendarViewController: BaseViewController, View {
     private func bindState(reactor: CalendarReactor) {
         reactor.state
             .map { $0.data }
-            .subscribe(onNext: { [weak self] data in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] data in
                 self?.calendarView.setSnapshot(data)
             })
             .disposed(by: disposeBag)
