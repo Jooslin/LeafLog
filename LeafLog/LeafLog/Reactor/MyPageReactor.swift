@@ -37,6 +37,7 @@ final class MyPageReactor: Reactor {
         case setErrorMessage(String?)
         case setRouteToMail(isError: Bool)
         case setPushAlert(Bool)
+        case setNotificationAuthorizationRequired(Bool)
     }
     
     struct State {
@@ -48,6 +49,7 @@ final class MyPageReactor: Reactor {
         @Pulse var errorMessage: String?
         @Pulse var routeToMail: Bool? // true면 오류 신고, false면 일반 문의 버전
         @Pulse var pushAlertIsOn: Bool = true
+        @Pulse var notificationAuthorizationRequired: Bool = false
     }
     
     let initialState = State()
@@ -115,6 +117,9 @@ final class MyPageReactor: Reactor {
             
         case .setPushAlert(let isOn):
             newState.pushAlertIsOn = isOn
+            
+        case .setNotificationAuthorizationRequired(let isRequired):
+            newState.notificationAuthorizationRequired = isRequired
         }
         
         return newState
@@ -185,10 +190,16 @@ final class MyPageReactor: Reactor {
                 }
                 
                 do {
-                    try await self.notificationManager.updateIsNotificationEnabled(to: isOn)
+                    let actualIsOn = try await self.notificationManager.updateIsNotificationEnabled(to: isOn)
                     self.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
                     
-                    observer.onNext(.setPushAlert(isOn))
+                    observer.onNext(.setPushAlert(actualIsOn))
+                    observer.onNext(.setNotificationAuthorizationRequired(false))
+                    observer.onCompleted()
+                } catch NotificationManager.NotificationError.authorizationDenied {
+                    self.logger.log("⚠️알림 권한 허용 필요")
+                    observer.onNext(.setPushAlert(false))
+                    observer.onNext(.setNotificationAuthorizationRequired(true))
                     observer.onCompleted()
                 } catch {
                     self.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")

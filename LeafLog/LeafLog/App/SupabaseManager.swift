@@ -290,27 +290,16 @@ extension SupabaseManager {
     func updateFCMToken(_ validToken: String) {
         Task {
             do {
-                guard let currentUserId = client.auth.currentUser?.id else { return } // 현재 로그인 된 유저 정보
+                guard client.auth.currentUser?.id != nil else { return } // 현재 로그인 된 유저 정보
                 guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { return } // 기기 정보
                 
-                let payload = DeviceTokenPayload(
-                    userID: currentUserId,
-                    fcmToken: validToken,
-                    deviceID: deviceID,
-                    lastSeenAt: Date(),
-                    isActive: true
-                )
+                let payload = [
+                    "p_fcm_token": validToken,
+                    "p_device_id": deviceID,
+                ]
 
                 try await client
-                    .from("device_tokens")
-                    .update(["is_active": false])
-                    .eq("device_id", value: deviceID)
-                    .neq("user_id", value: currentUserId)
-                    .execute()
-                
-                try await client
-                    .from("device_tokens")
-                    .upsert(payload, onConflict: "user_id,device_id")
+                    .rpc("activate_current_device_token", params: payload)
                     .execute()
             } catch {
                 logger.error("⚠️ 디바이스 토큰 저장 보류(로그인 전이거나 네트워크 에러)\nerror: \(error.localizedDescription, privacy: .private)")
@@ -343,21 +332,6 @@ extension SupabaseManager {
             .execute()
     }
     
-    private struct DeviceTokenPayload: Encodable {
-        let userID: UUID
-        let fcmToken: String
-        let deviceID: String
-        let lastSeenAt: Date
-        let isActive: Bool
-        
-        enum CodingKeys: String, CodingKey {
-            case userID = "user_id"
-            case fcmToken = "fcm_token"
-            case deviceID = "device_id"
-            case lastSeenAt = "last_seen_at"
-            case isActive = "is_active"
-        }
-    }
 }
 
 
