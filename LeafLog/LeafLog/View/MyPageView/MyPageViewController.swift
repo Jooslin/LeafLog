@@ -157,6 +157,22 @@ final class MyPageViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        // 알림 권한 허용 필요
+        reactor.pulse(\.$notificationAuthorizationRequired)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isRequired in
+                if isRequired {
+                    self?.steps.accept(
+                        AppStep.notificationAuthorizationRequired(
+                            onSettingsSelected: { [weak self] in
+                                self?.steps.accept(AppStep.applicatoinSettingRequired)
+                            }
+                        )
+                    )
+                }
+            })
+            .disposed(by: disposeBag)
+        
         // 에러 메세지
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }

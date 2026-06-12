@@ -32,6 +32,10 @@ final class CalendarTitleCell: UICollectionViewCell {
         super.prepareForReuse()
         disposeBag = DisposeBag()
     }
+
+    func configure(hasUnreadNotification: Bool) {
+        titleView.setRightButtonImage(hasUnreadNotification ? "bellOn" : "bell")
+    }
 }
 
 extension Reactive where Base: CalendarTitleCell {

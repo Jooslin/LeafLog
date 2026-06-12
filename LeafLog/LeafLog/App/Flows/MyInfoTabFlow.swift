@@ -55,6 +55,9 @@ final class MyInfoTabFlow: Flow {
         case .loginRequired:
             return .end(forwardToParentFlowWithStep: step)
             
+        case .notificationAuthorizationRequired(let onSettingsSelected):
+            return presentNotificationAuthorizationRequired(onSettingsSelected: onSettingsSelected)
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
@@ -78,5 +81,22 @@ private extension MyInfoTabFlow {
                 profileEditVC?.deleteProfileImage()
             }
         )
+    }
+    
+    func presentNotificationAuthorizationRequired(onSettingsSelected: @escaping () -> Void) -> RxFlow.FlowContributors {
+        let alert = UIAlertController(title: "알림 권한 필요", message: "푸시 알림을 활성화하기 위해서는 알림 권한이 필요합니다.", preferredStyle: .alert)
+        
+        let setting = UIAlertAction(title: "설정으로 이동", style: .default) { _ in
+            onSettingsSelected()
+        }
+        
+        let cancel = UIAlertAction(title: "취소", style: .cancel)
+        
+        alert.addAction(setting)
+        alert.addAction(cancel)
+        
+        navigationController.present(alert, animated: true)
+        
+        return .none
     }
 }

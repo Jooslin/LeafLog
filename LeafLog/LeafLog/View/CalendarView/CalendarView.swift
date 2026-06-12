@@ -68,6 +68,14 @@ extension CalendarView {
         
         let titleCellRegistration = UICollectionView.CellRegistration<CalendarTitleCell, Item> { [weak self] cell,indexPath,item in
             guard let self else { return }
+
+            switch item {
+            case .title(let hasUnreadNotification):
+                cell.configure(hasUnreadNotification: hasUnreadNotification)
+            default:
+                break
+            }
+
             cell.rx.alarmButtonTap
                 .bind(to: self.alarmButtonTap)
                 .disposed(by: cell.disposeBag)
@@ -223,7 +231,7 @@ extension CalendarView {
     
     nonisolated
     enum Item: Hashable {
-        case title
+        case title(Bool)
         case header(Int, Int) // 년, 월
         case filter(Set<Int>)
         case calendar(ManageInfoByDate)

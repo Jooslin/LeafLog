@@ -84,6 +84,10 @@ extension TitleHeaderView {
         backButton.configuration?.baseForegroundColor = color
         rightButton.configuration?.baseForegroundColor = color
     }
+
+    func setRightButtonImage(_ imageName: String) {
+        rightButton.setImage(UIImage(named: imageName), for: .normal)
+    }
 }
 
 extension TitleHeaderView {

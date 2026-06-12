@@ -160,6 +160,10 @@ extension HomeView {
         totalWideCard.plantLabel.text = "내 식물 \(total)개"
         totalWideCard.waterLabel.text = "물 필요 \(needWater)개"
     }
+
+    func configureAlarmButton(hasUnreadNotification: Bool) {
+        titleView.setRightButtonImage(hasUnreadNotification ? "bellOn" : "bell")
+    }
 }
 
 //MARK: CollectionView - Section, Item

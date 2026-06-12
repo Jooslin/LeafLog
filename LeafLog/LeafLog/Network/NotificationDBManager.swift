@@ -34,6 +34,30 @@ final class NotificationDBManager {
         }
     }
 
+    func hasUnreadNotifications() async throws -> Bool {
+        struct NotificationID: Decodable {
+            let id: UUID
+        }
+
+        let user = try await supabaseManager.client.auth.user()
+
+        do {
+            let notifications: [NotificationID] = try await supabaseManager.client
+                .from("notifications")
+                .select("id")
+                .eq("user_id", value: user.id)
+                .not("sent_at", operator: .is, value: "null")
+                .is("read_at", value: nil)
+                .limit(1)
+                .execute()
+                .value
+
+            return !notifications.isEmpty
+        } catch {
+            throw AuthError.notificationFailed("미확인 알림 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+    }
+
     func markAsRead(notificationID: UUID) async throws {
         let user = try await supabaseManager.client.auth.user()
 
