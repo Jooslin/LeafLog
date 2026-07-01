@@ -19,6 +19,8 @@ final class CommunityComposeView: UIView {
         $0.alwaysBounceVertical = true
     }
     
+    private let contentView = UIView()
+    
     //MARK: init
     init(mode: Mode) {
         super.init(frame: .zero)
@@ -38,7 +40,24 @@ final class CommunityComposeView: UIView {
     }
     
     private func setLayout() {
+        addSubview(titleView)
+        addSubview(scrollView)
+        scrollView.addSubview(contentView)
         
+        titleView.snp.makeConstraints {
+            $0.top.equalTo(safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        
+        scrollView.snp.makeConstraints {
+            $0.top.equalTo(titleView.snp.bottom)
+            $0.horizontalEdges.equalToSuperview()
+        }
+        
+        contentView.snp.makeConstraints {
+            $0.edges.equalTo(scrollView.contentLayoutGuide)
+            $0.width.equalTo(scrollView.snp.width)
+        }
     }
  
 }
