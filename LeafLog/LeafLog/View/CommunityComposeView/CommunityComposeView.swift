@@ -21,6 +21,8 @@ final class CommunityComposeView: UIView {
     
     private let contentView = UIView()
     
+    let saveButton = BottomSaveButton(title: "")
+    
     //MARK: init
     init(mode: Mode) {
         super.init(frame: .zero)
@@ -28,8 +30,10 @@ final class CommunityComposeView: UIView {
         switch mode {
         case .create:
             titleView.titleLabel.text = "게시글 작성"
+            saveButton.setTitle("등록하기")
         case .edit:
             titleView.titleLabel.text = "게시글 수정"
+            saveButton.setTitle("수정하기")
         }
         
         setLayout()
@@ -42,6 +46,7 @@ final class CommunityComposeView: UIView {
     private func setLayout() {
         addSubview(titleView)
         addSubview(scrollView)
+        addSubview(saveButton)
         scrollView.addSubview(contentView)
         
         titleView.snp.makeConstraints {
@@ -52,6 +57,11 @@ final class CommunityComposeView: UIView {
         scrollView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
+        }
+        
+        saveButton.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview().inset(24)
+            $0.bottom.equalTo(safeAreaLayoutGuide.snp.bottom).inset(24)
         }
         
         contentView.snp.makeConstraints {
