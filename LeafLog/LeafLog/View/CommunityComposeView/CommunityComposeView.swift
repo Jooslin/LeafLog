@@ -18,9 +18,17 @@ final class CommunityComposeView: UIView {
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
     }
-    
     private let contentView = UIView()
     
+    let categoryDailyButton = UIButton(config: .lSize, title: "식물 일상").then {
+        $0.layer.cornerRadius = 8
+    }
+    let categoryQuestionButton = UIButton(config: .lSize, title: "식물 고민").then {
+        $0.layer.cornerRadius = 8
+    }
+    let categoryPlanetButton = UIButton(config: .lSize, title: "초록별 여행").then {
+        $0.layer.cornerRadius = 8
+    }
     let saveButton = BottomSaveButton(title: "")
     
     //MARK: init
@@ -44,6 +52,12 @@ final class CommunityComposeView: UIView {
     }
     
     private func setLayout() {
+        let buttonStack = UIStackView(arrangedSubviews: [categoryDailyButton, categoryQuestionButton, categoryPlanetButton]).then {
+            $0.axis = .horizontal
+            $0.spacing = 8
+            $0.alignment = .center
+        }
+        
         addSubview(titleView)
         addSubview(scrollView)
         addSubview(saveButton)
@@ -72,6 +86,10 @@ final class CommunityComposeView: UIView {
  
 }
 
+//MARK: Components
+extension CommunityComposeView {
+    
+}
 
 //MARK: Types
 extension CommunityComposeView {
