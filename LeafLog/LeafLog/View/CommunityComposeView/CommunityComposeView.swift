@@ -88,7 +88,32 @@ final class CommunityComposeView: UIView {
 
 //MARK: Components
 extension CommunityComposeView {
-    
+    private func makeAttributedTitle(text: String) -> UILabel {
+        let label = UILabel(config: .title14)
+        let attributedString = NSMutableAttributedString(string: text)
+        
+        if let starRange = text.range(of: "*") {
+            let nsRange = NSRange(starRange, in: text)
+            
+            // 별 색상 설정
+            attributedString.addAttribute(
+                .foregroundColor,
+                value: UIColor.subRed,
+                range: nsRange
+            )
+            
+            // 폰트 설정
+            attributedString.addAttribute(
+                .font,
+                value: label.font as Any,
+                range: NSRange(location: 0, length: attributedString.length)
+            )
+        }
+        
+        label.attributedText = attributedString
+        
+        return label
+    }
 }
 
 //MARK: Types
