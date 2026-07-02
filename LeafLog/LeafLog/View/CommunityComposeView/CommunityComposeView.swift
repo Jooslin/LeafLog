@@ -29,6 +29,8 @@ final class CommunityComposeView: UIView {
     let categoryPlanetButton = UIButton(config: .lSize, title: "초록별 여행").then {
         $0.layer.cornerRadius = 8
     }
+    
+    
     let saveButton = BottomSaveButton(title: "")
     
     //MARK: init
