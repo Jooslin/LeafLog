@@ -30,6 +30,32 @@ final class CommunityComposeView: UIView {
         $0.layer.cornerRadius = 8
     }
     
+    let titleTextField = DesignTextField().then {
+        $0.placeholder = "제목을 입력해주세요."
+    }
+    
+    let bodyTextView = UITextView().then {
+        $0.font = .systemFont(ofSize: 14, weight: .regular)
+        $0.textColor = .label
+        $0.backgroundColor = .grayScale50
+        $0.layer.borderColor = UIColor.grayScale100.cgColor
+        $0.layer.borderWidth = 1
+        
+        $0.layer.cornerRadius = 12
+        $0.clipsToBounds = true
+
+        $0.isScrollEnabled = true
+        $0.showsVerticalScrollIndicator = false
+        $0.textContainerInset = UIEdgeInsets(
+            top: 12,
+            left: 12,
+            bottom: 12,
+            right: 12
+        )
+        $0.textContainer.lineFragmentPadding = 0
+    }
+    
+    private let bodyPlaceholderLabel = UILabel(text: "게시글 내용을 입력해주세요.", config: .body14, color: .grayScale300)
     
     let saveButton = BottomSaveButton(title: "")
     
@@ -63,7 +89,10 @@ final class CommunityComposeView: UIView {
         addSubview(titleView)
         addSubview(scrollView)
         addSubview(saveButton)
+        
         scrollView.addSubview(contentView)
+        
+        bodyTextView.addSubview(bodyPlaceholderLabel)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -83,6 +112,14 @@ final class CommunityComposeView: UIView {
         contentView.snp.makeConstraints {
             $0.edges.equalTo(scrollView.contentLayoutGuide)
             $0.width.equalTo(scrollView.snp.width)
+        }
+        
+        bodyTextView.snp.makeConstraints {
+            $0.height.equalTo(140)
+        }
+        
+        bodyPlaceholderLabel.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview().inset(12)
         }
     }
  

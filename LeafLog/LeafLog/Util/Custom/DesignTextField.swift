@@ -15,6 +15,8 @@ class DesignTextField: UITextField {
         
         backgroundColor = .clear
         textColor = .label
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.grayScale100.cgColor
         
         layer.cornerRadius = 12
         clipsToBounds = true
