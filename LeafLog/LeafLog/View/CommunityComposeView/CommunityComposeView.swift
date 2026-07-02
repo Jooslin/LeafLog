@@ -114,6 +114,25 @@ extension CommunityComposeView {
         
         return label
     }
+    
+    private func makeVerticalStackView(title: String, style: TitleStyle, views: [UIView]) -> UIStackView {
+        let titleLabel = switch style {
+        case .plain:
+            UILabel(text: title, config: .title14)
+        case .attributed:
+            makeAttributedTitle(text: title)
+        }
+        
+        let stackView = UIStackView(arrangedSubviews: [titleLabel] + views).then {
+            $0.axis = .vertical
+            $0.spacing = 16
+            
+            titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+            titleLabel.setContentHuggingPriority(.required, for: .vertical)
+        }
+        
+        return stackView
+    }
 }
 
 //MARK: Types
@@ -121,5 +140,10 @@ extension CommunityComposeView {
     enum Mode {
         case create
         case edit
+    }
+    
+    enum TitleStyle {
+        case plain
+        case attributed
     }
 }
