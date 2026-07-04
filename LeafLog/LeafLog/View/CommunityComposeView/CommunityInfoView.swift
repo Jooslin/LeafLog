@@ -29,7 +29,7 @@ final class CommunityInfoView: UIView {
         lines: 1
     )
     
-    private let backgroundView = UIView().then {
+    private let ruleBackgroundView = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 12
         $0.clipsToBounds = true
@@ -51,8 +51,74 @@ final class CommunityInfoView: UIView {
         color: .grayScale600,
         lines: 0
     )
+    
+    //MARK: init
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        backgroundColor = .grayScale50
+        layer.cornerRadius = 12
+        clipsToBounds = true
+        
+        setLayout()
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }
 
+//MARK: layout
+extension CommunityInfoView {
+    private func setLayout()  {
+        let titleStack = UIStackView(arrangedSubviews: [titleLabel, subTitleLabel]).then {
+            $0.axis = .vertical
+            $0.alignment = .leading
+            $0.spacing = 0
+        }
+        
+        let ruleStack = UIStackView(arrangedSubviews: [firstRule, secondRule, thirdRule]).then {
+            $0.axis = .vertical
+            $0.alignment = .leading
+            $0.spacing = 8
+        }
+        
+        let noticeStack = UIStackView(arrangedSubviews: [noticeTitleLabel, noticeBodyLabel]).then {
+            $0.axis = .vertical
+            $0.alignment = .leading
+            $0.spacing = 0
+        }
+        
+        let stackView = UIStackView(arrangedSubviews: [titleStack, ruleBackgroundView, noticeStack]).then {
+            $0.axis = .vertical
+            $0.spacing = 8
+            $0.alignment = .leading
+        }
+        
+        ruleBackgroundView.addSubview(ruleStack)
+        
+        ruleStack.snp.makeConstraints {
+            $0.edges.equalToSuperview().inset(12)
+        }
+        
+        addSubview(closeButton)
+        addSubview(stackView)
+        
+        closeButton.snp.makeConstraints {
+            $0.width.height.equalTo(24)
+            $0.top.equalToSuperview().inset(12)
+            $0.trailing.equalToSuperview().inset(24)
+        }
+        
+        stackView.snp.makeConstraints {
+            $0.top.equalTo(closeButton.snp.bottom).offset(8)
+            $0.horizontalEdges.bottom.equalToSuperview().inset(24)
+        }
+    }
+}
+
+//MARK: helper
 extension CommunityInfoView {
     private func makeRuleStack(of rule: Rule) -> UIStackView {
         let title = UILabel(text: rule.title, config: .label12, lines: 1)
@@ -70,6 +136,7 @@ extension CommunityInfoView {
     }
 }
 
+//MARK: Types
 extension CommunityInfoView {
     enum Rule {
         case first, second, third
