@@ -27,7 +27,9 @@ final class CommunityInfoView: UIView {
         config: .label12,
         color: .grayScale700,
         lines: 1
-    )
+    ).then {
+        $0.setTextWithLineHeight(text: $0.text ?? "", height: 18)
+    }
     
     private let ruleBackgroundView = UIView().then {
         $0.backgroundColor = .white
@@ -50,7 +52,9 @@ final class CommunityInfoView: UIView {
         config: .label12,
         color: .grayScale600,
         lines: 0
-    )
+    ).then {
+        $0.setTextWithLineHeight(text: $0.text ?? "", height: 18)
+    }
     
     //MARK: init
     override init(frame: CGRect) {
@@ -124,6 +128,7 @@ extension CommunityInfoView {
         let title = UILabel(text: rule.title, config: .label12, lines: 1)
         let description = UILabel(text: rule.description, config: .body12, lines: 0).then {
             $0.lineBreakMode = .byWordWrapping
+            $0.setTextWithLineHeight(text: $0.text ?? "", height: 18)
         }
         
         let stackView = UIStackView(arrangedSubviews: [title, description]).then {
