@@ -22,7 +22,7 @@ final class CommunityComposeViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.reactor = CameraClassificationReactor()
-        tabBarController?.tabBar.isHidden = true
+        hidesBottomBarWhenPushed = true
         navigationController?.navigationBar.isHidden = true
         
         
