@@ -110,7 +110,7 @@ final class CommunityComposeView: UIView {
         scrollView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
-            $0.bottom.greaterThanOrEqualTo(saveButton.snp.top).inset(24)
+            $0.bottom.equalTo(saveButton.snp.top).inset(24)
         }
         
         saveButton.snp.makeConstraints {
