@@ -20,6 +20,7 @@ final class CommunityComposeView: UIView {
     }
     private let contentView = UIView()
     
+    private lazy var categoryTitleLabel = makeAttributedTitle(text: "카테고리*")
     let categoryDailyButton = UIButton(config: .lSize, title: "식물 일상").then {
         $0.layer.cornerRadius = 8
     }
@@ -30,10 +31,14 @@ final class CommunityComposeView: UIView {
         $0.layer.cornerRadius = 8
     }
     
+    private lazy var titleTitleLabel = makeAttributedTitle(text: "제목*")
     let titleTextField = DesignTextField().then {
         $0.placeholder = "제목을 입력해주세요."
     }
+
+    private lazy var pictureTitleLabel = makeAttributedTitle(text: "사진 첨부 (선택)")
     
+    private lazy var bodyTitleLabel = makeAttributedTitle(text: "내용*")
     let bodyTextView = UITextView().then {
         $0.font = .systemFont(ofSize: 14, weight: .regular)
         $0.textColor = .label
@@ -83,16 +88,23 @@ final class CommunityComposeView: UIView {
         let buttonStack = UIStackView(arrangedSubviews: [categoryDailyButton, categoryQuestionButton, categoryPlanetButton]).then {
             $0.axis = .horizontal
             $0.spacing = 8
-            $0.alignment = .center
+            $0.alignment = .fill
+        }
+        
+        let categoryStack = makeVerticalStackView(title: "카테고리*", style: .attributed, views: [buttonStack])
+        let titleStack = makeVerticalStackView(title: "제목*", style: .attributed, views: [titleTextField])
+        let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [])
+        let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyTextView])
+        
+        let stackView = UIStackView(arrangedSubviews: [categoryStack, titleStack, pictureStack, bodyStack]).then {
+            $0.axis = .vertical
+            $0.spacing = 32
+            $0.alignment = .leading
         }
         
         addSubview(titleView)
         addSubview(scrollView)
         addSubview(saveButton)
-        
-        scrollView.addSubview(contentView)
-        
-        bodyTextView.addSubview(bodyPlaceholderLabel)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -102,17 +114,45 @@ final class CommunityComposeView: UIView {
         scrollView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
+            $0.bottom.greaterThanOrEqualTo(saveButton.snp.top).inset(24)
         }
         
         saveButton.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(24)
             $0.bottom.equalTo(safeAreaLayoutGuide.snp.bottom).inset(24)
+            $0.height.equalTo(48)
         }
+        
+        scrollView.addSubview(contentView)
+        contentView.addSubview(stackView)
         
         contentView.snp.makeConstraints {
             $0.edges.equalTo(scrollView.contentLayoutGuide)
             $0.width.equalTo(scrollView.snp.width)
         }
+        
+        stackView.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview().inset(16)
+            $0.verticalEdges.equalToSuperview().inset(32)
+        }
+        
+        categoryStack.snp.makeConstraints {
+            $0.width.equalToSuperview()
+        }
+        
+        buttonStack.snp.makeConstraints {
+            $0.height.equalTo(36)
+        }
+        
+        titleStack.snp.makeConstraints {
+            $0.width.equalToSuperview()
+        }
+        
+        bodyStack.snp.makeConstraints {
+            $0.width.equalToSuperview()
+        }
+        
+        bodyTextView.addSubview(bodyPlaceholderLabel)
         
         bodyTextView.snp.makeConstraints {
             $0.height.equalTo(140)

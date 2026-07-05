@@ -24,6 +24,8 @@ final class CommunityComposeViewController: BaseViewController, View {
         self.reactor = CameraClassificationReactor()
         tabBarController?.tabBar.isHidden = true
         navigationController?.navigationBar.isHidden = true
+        
+        
     }
     
     //MARK: Bind
