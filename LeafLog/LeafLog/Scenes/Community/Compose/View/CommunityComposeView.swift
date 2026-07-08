@@ -34,6 +34,12 @@ final class CommunityComposeView: UIView {
         $0.placeholder = "제목을 입력해주세요."
     }
 
+    let pictureViews = [
+        PictureComposeView(),
+        PictureComposeView(),
+        PictureComposeView()
+    ]
+    
     let bodyTextView = UITextView().then {
         $0.font = .systemFont(ofSize: 14, weight: .regular)
         $0.textColor = .label
@@ -86,10 +92,16 @@ final class CommunityComposeView: UIView {
             $0.alignment = .fill
         }
         
+        let pictureViewStack = UIStackView(arrangedSubviews: pictureViews).then {
+            $0.axis = .horizontal
+            $0.distribution = .fillEqually
+            $0.spacing = 12
+            $0.alignment = .center
+        }
+        
         let categoryStack = makeVerticalStackView(title: "카테고리*", style: .attributed, views: [buttonStack])
         let titleStack = makeVerticalStackView(title: "제목*", style: .attributed, views: [titleTextField])
-        //TODO: custom comp 만들기
-        let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [])
+        let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [pictureViewStack])
         let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyTextView])
         
         let stackView = UIStackView(arrangedSubviews: [categoryStack, titleStack, pictureStack, bodyStack]).then {
@@ -144,8 +156,18 @@ final class CommunityComposeView: UIView {
             $0.width.equalToSuperview()
         }
         
+        pictureStack.snp.makeConstraints {
+            $0.width.equalToSuperview()
+        }
+        
         bodyStack.snp.makeConstraints {
             $0.width.equalToSuperview()
+        }
+        
+        pictureViews.forEach { pictureView in
+            pictureView.snp.makeConstraints {
+                $0.height.equalTo(pictureView.snp.width)
+            }
         }
         
         bodyTextView.addSubview(bodyPlaceholderLabel)
