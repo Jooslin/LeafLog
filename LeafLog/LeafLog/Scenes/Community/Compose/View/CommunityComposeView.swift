@@ -65,6 +65,10 @@ final class CommunityComposeView: UIView {
         $0.textContainer.lineFragmentPadding = 0
     }
     
+    let bodyCountLabel = UILabel(config: .body12).then {
+        $0.textAlignment = .right
+    }
+    
     private let bodyPlaceholderLabel = UILabel(text: "게시글 내용을 입력해주세요.", config: .body14, color: .grayScale300)
     
     let saveButton = BottomSaveButton(title: "")
@@ -83,6 +87,9 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
+        
+        //TODO: 기능 구현 시 삭제
+        updateCount(0)
     }
 
     required init?(coder: NSCoder) {
@@ -108,10 +115,15 @@ final class CommunityComposeView: UIView {
             $0.spacing = 6
         }
         
+        let bodyVerticalStack = UIStackView(arrangedSubviews: [bodyTextView, bodyCountLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 6
+        }
+        
         let categoryStack = makeVerticalStackView(title: "카테고리*", style: .attributed, views: [buttonStack])
         let titleStack = makeVerticalStackView(title: "제목*", style: .attributed, views: [titleTextField])
         let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [pictureViewStack])
-        let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyTextView])
+        let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyVerticalStack])
         
         let stackView = UIStackView(arrangedSubviews: [categoryStack, titleStack, pictureStack, bodyStack]).then {
             $0.axis = .vertical
@@ -190,6 +202,29 @@ final class CommunityComposeView: UIView {
         }
     }
  
+}
+
+//MARK: Configure
+extension CommunityComposeView {
+    func updateCount(_ current: Int, max: Int = 1000) {
+        let text = "\(current) / \(max)"
+        let attributedString = NSMutableAttributedString(
+            string: text,
+            attributes: [
+                .foregroundColor: UIColor.grayScale300,
+                .font: UIFont.systemFont(ofSize: 12)
+            ]
+        )
+
+        let currentRange = (text as NSString).range(of: "\(current)")
+        attributedString.addAttribute(
+            .foregroundColor,
+            value: UIColor.grayScale900,
+            range: currentRange
+        )
+
+        bodyCountLabel.attributedText = attributedString
+    }
 }
 
 //MARK: Components
