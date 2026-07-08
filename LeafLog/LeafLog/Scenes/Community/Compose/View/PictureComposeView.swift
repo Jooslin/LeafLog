@@ -24,6 +24,24 @@ final class PictureComposeView: BaseCardView {
         $0.alignment = .center
     }
     
+    let imageView = UIImageView().then {
+        $0.layer.cornerRadius = 12
+        $0.clipsToBounds = true
+    }
+    
+    
+    let cancelButton = UIButton().then {
+        var configuration = UIButton.Configuration.filled()
+        configuration.baseBackgroundColor = .black.withAlphaComponent(0.5)
+        configuration.baseForegroundColor = .white
+        configuration.image = UIImage(resource: .x)
+        $0.configuration = configuration
+        
+        $0.imageView?.contentMode = .scaleAspectFit
+        $0.layer.cornerRadius = 12
+        $0.clipsToBounds = true
+    }
+    
     override init(frame: CGRect = .zero, cornerRadius: CGFloat = 12) {
         super.init(frame: frame, cornerRadius: cornerRadius)
         
@@ -60,8 +78,26 @@ final class PictureComposeView: BaseCardView {
 extension PictureComposeView {
     private func setLayout() {
         addSubview(addStack)
+        addSubview(imageView)
         
         addStack.snp.makeConstraints {
+            $0.center.equalToSuperview()
+        }
+        
+        imageView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+        
+        imageView.addSubview(cancelButton)
+        
+        cancelButton.snp.makeConstraints {
+            $0.width.height.equalTo(24)
+            $0.top.trailing.equalToSuperview().inset(8)
+            
+        }
+        
+        cancelButton.imageView?.snp.makeConstraints {
+            $0.width.height.equalTo(16)
             $0.center.equalToSuperview()
         }
         

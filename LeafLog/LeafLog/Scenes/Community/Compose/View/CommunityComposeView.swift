@@ -40,6 +40,10 @@ final class CommunityComposeView: UIView {
         PictureComposeView()
     ]
     
+    private let pictureNoticeLabel = UILabel(text: "최대 3장까지 첨부 가능", config: .body12, color: .grayScale300).then {
+        $0.textAlignment = .right
+    }
+    
     let bodyTextView = UITextView().then {
         $0.font = .systemFont(ofSize: 14, weight: .regular)
         $0.textColor = .label
@@ -92,11 +96,16 @@ final class CommunityComposeView: UIView {
             $0.alignment = .fill
         }
         
-        let pictureViewStack = UIStackView(arrangedSubviews: pictureViews).then {
+        let pictureViewHorizontalStack = UIStackView(arrangedSubviews: pictureViews).then {
             $0.axis = .horizontal
             $0.distribution = .fillEqually
             $0.spacing = 12
             $0.alignment = .center
+        }
+        
+        let pictureViewStack = UIStackView(arrangedSubviews: [pictureViewHorizontalStack, pictureNoticeLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 6
         }
         
         let categoryStack = makeVerticalStackView(title: "카테고리*", style: .attributed, views: [buttonStack])
@@ -157,7 +166,7 @@ final class CommunityComposeView: UIView {
         }
         
         pictureStack.snp.makeConstraints {
-            $0.width.equalToSuperview()
+            $0.width.equalTo(stackView.snp.width)
         }
         
         bodyStack.snp.makeConstraints {
