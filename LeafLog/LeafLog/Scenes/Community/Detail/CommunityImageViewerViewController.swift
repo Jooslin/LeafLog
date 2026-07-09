@@ -147,7 +147,7 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
     static let reuseIdentifier = String(describing: CommunityImageViewerCell.self)
     
     private let imageView = UIImageView().then {
-        $0.contentMode = .scaleAspectFill
+        $0.contentMode = .scaleAspectFit
         $0.clipsToBounds = true
     }
     
