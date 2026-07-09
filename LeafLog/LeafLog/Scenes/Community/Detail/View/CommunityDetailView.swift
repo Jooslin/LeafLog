@@ -5,6 +5,8 @@
 //  Created by Yeseul Jang on 7/7/26.
 //
 
+import RxCocoa
+import RxSwift
 import SnapKit
 import Then
 import UIKit
@@ -13,7 +15,7 @@ import UIKit
 
 final class CommunityDetailView: UIView {
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
-    var onPostImageTapped: (([String], Int) -> Void)?
+    fileprivate let postImageTapRelay = PublishRelay<Int>()
     
     let commentCollectionView = UICollectionView(
         frame: .zero,
@@ -78,7 +80,7 @@ final class CommunityDetailView: UIView {
         $0.alwaysBounceHorizontal = true
     }
     
-    private let heartButton = UIButton(configuration: .plain()).then {
+    fileprivate let heartButton = UIButton(configuration: .plain()).then {
         $0.setImage(UIImage(systemName: "heart"), for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
@@ -86,7 +88,7 @@ final class CommunityDetailView: UIView {
     
     private let heartCountLabel = UILabel(text: "N", config: .body12, color: .black, lines: 1)
     
-    private let commentButton = UIButton(configuration: .plain()).then {
+    fileprivate let commentButton = UIButton(configuration: .plain()).then {
         $0.setImage(UIImage(systemName: "bubble"), for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
@@ -114,7 +116,7 @@ final class CommunityDetailView: UIView {
         $0.leftViewMode = .always
     }
     
-    private let sendButton = UIButton(configuration: .plain()).then {
+    fileprivate let sendButton = UIButton(configuration: .plain()).then {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 20
         $0.clipsToBounds = true
@@ -124,7 +126,7 @@ final class CommunityDetailView: UIView {
     }
     
     private var commentCollectionHeightConstraint: Constraint?
-    private var postImageAssetNames: [String] = []
+    private var imageButtonDisposeBag = DisposeBag()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -338,7 +340,7 @@ extension CommunityDetailView {
     }
     
     private func configurePostImages(imageAssetNames: [String]) {
-        postImageAssetNames = imageAssetNames
+        imageButtonDisposeBag = DisposeBag()
         
         imageStackView.arrangedSubviews.forEach {
             imageStackView.removeArrangedSubview($0)
@@ -346,29 +348,25 @@ extension CommunityDetailView {
         }
         
         imageAssetNames.enumerated().forEach { index, imageAssetName in
-            let imageView = UIImageView().then {
-                $0.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
-                $0.contentMode = .scaleAspectFill
+            let imageButton = UIButton(type: .custom).then {
+                $0.setImage(UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder), for: .normal)
+                $0.imageView?.contentMode = .scaleAspectFill
+                $0.imageView?.clipsToBounds = true
                 $0.backgroundColor = .grayScale100
                 $0.layer.cornerRadius = 8
                 $0.clipsToBounds = true
-                $0.isUserInteractionEnabled = true
-                $0.tag = index
             }
-            imageView.addGestureRecognizer(UITapGestureRecognizer(
-                target: self,
-                action: #selector(handlePostImageTap(_:))
-            ))
-            imageView.snp.makeConstraints {
+            
+            imageButton.rx.tap
+                .map { index }
+                .bind(to: postImageTapRelay)
+                .disposed(by: imageButtonDisposeBag)
+            
+            imageButton.snp.makeConstraints {
                 $0.width.height.equalTo(104)
             }
-            imageStackView.addArrangedSubview(imageView)
+            imageStackView.addArrangedSubview(imageButton)
         }
-    }
-    
-    @objc private func handlePostImageTap(_ gesture: UITapGestureRecognizer) {
-        guard let imageView = gesture.view else { return }
-        onPostImageTapped?(postImageAssetNames, imageView.tag)
     }
     
     private static func makeCommentLayout() -> UICollectionViewLayout {
@@ -377,5 +375,27 @@ extension CommunityDetailView {
             $0.minimumLineSpacing = 0
             $0.estimatedItemSize = .zero
         }
+    }
+}
+
+extension Reactive where Base: CommunityDetailView {
+    var moreButtonTap: ControlEvent<Void> {
+        base.titleView.rightButton.rx.tap
+    }
+    
+    var postImageTap: ControlEvent<Int> {
+        ControlEvent(events: base.postImageTapRelay.asObservable())
+    }
+    
+    var heartButtonTap: ControlEvent<Void> {
+        base.heartButton.rx.tap
+    }
+    
+    var commentButtonTap: ControlEvent<Void> {
+        base.commentButton.rx.tap
+    }
+    
+    var sendButtonTap: ControlEvent<Void> {
+        base.sendButton.rx.tap
     }
 }

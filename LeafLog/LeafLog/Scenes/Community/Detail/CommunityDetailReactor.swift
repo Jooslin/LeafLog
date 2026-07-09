@@ -27,6 +27,11 @@ final class CommunityDetailReactor: Reactor {
         let badge: CommentBadge
     }
     
+    struct ImageViewerRoute: Equatable {
+        let imageAssetNames: [String]
+        let initialIndex: Int
+    }
+    
     enum CommentBadge: Equatable {
         case author
         case mine
@@ -35,14 +40,21 @@ final class CommunityDetailReactor: Reactor {
     
     enum Action {
         case viewDidLoad
+        case moreButtonTapped
+        case postImageTapped(index: Int)
+        case heartButtonTapped
+        case commentButtonTapped
+        case sendButtonTapped
     }
     
     enum Mutation {
         case setLoading(Bool)
+        case presentImageViewer(ImageViewerRoute)
     }
     
     struct State {
         var isLoading = false
+        @Pulse var imageViewerRoute: ImageViewerRoute?
         var post = Post(
             category: "식물 일상",
             title: "우리집 몬스테라 새잎이 나왔어요!",
@@ -95,6 +107,21 @@ final class CommunityDetailReactor: Reactor {
         switch action {
         case .viewDidLoad:
             return .empty()
+            
+        case .postImageTapped(let index):
+            let imageAssetNames = currentState.post.imageAssetNames
+            guard imageAssetNames.indices.contains(index) else { return .empty() }
+            
+            return .just(.presentImageViewer(.init(
+                imageAssetNames: imageAssetNames,
+                initialIndex: index
+            )))
+            
+        case .moreButtonTapped,
+             .heartButtonTapped,
+             .commentButtonTapped,
+             .sendButtonTapped:
+            return .empty()
         }
     }
     
@@ -104,6 +131,9 @@ final class CommunityDetailReactor: Reactor {
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
+            
+        case .presentImageViewer(let route):
+            newState.imageViewerRoute = route
         }
         
         return newState

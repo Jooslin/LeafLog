@@ -25,14 +25,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
-        detailView.onPostImageTapped = { [weak self] imageAssetNames, index in
-            let viewController = CommunityImageViewerViewController(
-                imageAssetNames: imageAssetNames,
-                initialIndex: index
-            )
-            viewController.modalPresentationStyle = .fullScreen
-            self?.present(viewController, animated: true)
-        }
     }
     
     func bind(reactor: CommunityDetailReactor) {
@@ -49,6 +41,31 @@ final class CommunityDetailViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] _ in
                 self?.steps.accept(AppStep.pageBack)
             })
+            .disposed(by: disposeBag)
+        
+        detailView.rx.moreButtonTap
+            .map { CommunityDetailReactor.Action.moreButtonTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.postImageTap
+            .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.heartButtonTap
+            .map { CommunityDetailReactor.Action.heartButtonTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.commentButtonTap
+            .map { CommunityDetailReactor.Action.commentButtonTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.sendButtonTap
+            .map { CommunityDetailReactor.Action.sendButtonTapped }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
     
@@ -70,6 +87,22 @@ final class CommunityDetailViewController: BaseViewController, View {
                 self?.detailView.commentCollectionView.reloadData()
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$imageViewerRoute)
+            .compactMap { $0 }
+            .subscribe(onNext: { [weak self] route in
+                self?.presentImageViewer(route: route)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
+        let viewController = CommunityImageViewerViewController(
+            imageAssetNames: route.imageAssetNames,
+            initialIndex: route.initialIndex
+        )
+        viewController.modalPresentationStyle = .fullScreen
+        present(viewController, animated: true)
     }
 }
 
