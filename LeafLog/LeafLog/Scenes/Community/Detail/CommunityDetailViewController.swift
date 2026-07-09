@@ -7,9 +7,10 @@
 
 import RxCocoa
 import RxSwift
+import ReactorKit
 import UIKit
 
-final class CommunityDetailViewController: BaseViewController {
+final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView()
     
     private let comments: [CommunityCommentCell.Comment] = [
@@ -50,18 +51,36 @@ final class CommunityDetailViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        hidesBottomBarWhenPushed = true
+        self.reactor = CommunityDetailReactor()
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
         detailView.updateCommentCollectionHeight(itemCount: comments.count)
-        bindActions()
     }
     
-    private func bindActions() {
+    func bind(reactor: CommunityDetailReactor) {
+        bindAction(reactor: reactor)
+        bindState(reactor: reactor)
+    }
+    
+    private func bindAction(reactor: CommunityDetailReactor) {
+        Observable.just(CommunityDetailReactor.Action.viewDidLoad)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         detailView.titleView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
                 self?.steps.accept(AppStep.pageBack)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func bindState(reactor: CommunityDetailReactor) {
+        reactor.state
+            .map(\.post)
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] post in
+                self?.detailView.configure(post: post)
             })
             .disposed(by: disposeBag)
     }

@@ -34,7 +34,6 @@ final class CommunityDetailView: UIView {
     private let contentView = UIView()
     
     private let categoryLabel = PaddingLabel(horizontalInset: 9, verticalInset: 5).then {
-        $0.text = "식물 일상"
         $0.apply(.label12, color: .primary700, lines: 1)
         $0.backgroundColor = .primary100
         $0.layer.cornerRadius = 11
@@ -42,7 +41,6 @@ final class CommunityDetailView: UIView {
     }
     
     private let postTitleLabel = UILabel(
-        text: "우리집 몬스테라 새잎이 나왔어요!",
         config: .headline18,
         color: .black,
         lines: 0
@@ -54,13 +52,10 @@ final class CommunityDetailView: UIView {
         $0.clipsToBounds = true
     }
     
-    private let nicknameLabel = UILabel(text: "잎로그", config: .body12, color: .grayScale600, lines: 1)
-    private let dateLabel = UILabel(text: "2026.04.27", config: .body12, color: .grayScale500, lines: 1)
+    private let nicknameLabel = UILabel(config: .body12, color: .grayScale600, lines: 1)
+    private let dateLabel = UILabel(config: .body12, color: .grayScale500, lines: 1)
     
     private let postBodyLabel = UILabel(
-        text: """
-        요즘 식물 키우면서 느낀 건, 결국 꾸준히 “기록하는 사람”이 식물을 오래 잘 키운다는 점이에요. 처음에는 물 주는 날짜만 잘 기억하면 된다고 생각했는데, 막상 키우다 보니까 그렇게 단순하지 않더라고요. 같은 주기로 물을 줘도 어떤 날은 잎이 축 처지고, 어떤 날은 멀쩡하고요. 이유를 몰라서 그냥 감으로 대응하다 보니 식물 상태가 더 나빠지는 경우도 있었어요.
-        """,
         config: .body14,
         color: .grayScale700,
         lines: 0
@@ -127,7 +122,6 @@ final class CommunityDetailView: UIView {
         backgroundColor = .white
         configureTitleView()
         setLayout()
-        configurePostImages()
     }
     
     required init?(coder: NSCoder) {
@@ -299,6 +293,17 @@ extension CommunityDetailView {
 
 // MARK: - Configure
 extension CommunityDetailView {
+    func configure(post: CommunityDetailReactor.Post) {
+        categoryLabel.text = post.category
+        postTitleLabel.text = post.title
+        nicknameLabel.text = post.nickname
+        dateLabel.text = post.date
+        postBodyLabel.setTextWithLineHeight(text: post.body, height: 22)
+        heartCountLabel.text = post.likeCount
+        commentCountLabel.text = post.commentCount
+        configurePostImages(imageAssetNames: post.imageAssetNames)
+    }
+    
     private func configureTitleView() {
         titleView.titleLabel.text = ""
         titleView.rightButton.isHidden = false
@@ -306,10 +311,15 @@ extension CommunityDetailView {
         titleView.rightButton.configuration?.baseForegroundColor = .black
     }
     
-    private func configurePostImages() {
-        (0..<3).forEach { _ in
+    private func configurePostImages(imageAssetNames: [String]) {
+        imageStackView.arrangedSubviews.forEach {
+            imageStackView.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        
+        imageAssetNames.prefix(3).forEach { imageAssetName in
             let imageView = UIImageView().then {
-                $0.image = UIImage(resource: .placeholder)
+                $0.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
                 $0.contentMode = .scaleAspectFill
                 $0.backgroundColor = .grayScale100
                 $0.layer.cornerRadius = 8
@@ -317,8 +327,6 @@ extension CommunityDetailView {
             }
             imageStackView.addArrangedSubview(imageView)
         }
-        
-        postBodyLabel.setTextWithLineHeight(text: postBodyLabel.text ?? "", height: 22)
     }
     
     private static func makeCommentLayout() -> UICollectionViewLayout {
@@ -362,4 +370,3 @@ private final class PaddingLabel: UILabel {
         super.drawText(in: rect.inset(by: insets))
     }
 }
-
