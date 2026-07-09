@@ -25,7 +25,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
-        detailView.updateCommentCollectionHeight(itemCount: comments.count)
     }
     
     func bind(reactor: CommunityDetailReactor) {
@@ -51,6 +50,16 @@ final class CommunityDetailViewController: BaseViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] post in
                 self?.detailView.configure(post: post)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map(\.comments)
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] comments in
+                self?.comments = comments
+                self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
+                self?.detailView.commentCollectionView.reloadData()
             })
             .disposed(by: disposeBag)
     }
