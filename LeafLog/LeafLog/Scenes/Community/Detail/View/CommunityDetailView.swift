@@ -9,6 +9,8 @@ import SnapKit
 import Then
 import UIKit
 
+// TODO: inputTextField 컴포넌트로 바꿔끼기
+
 final class CommunityDetailView: UIView {
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
     
@@ -66,7 +68,13 @@ final class CommunityDetailView: UIView {
     private let imageStackView = UIStackView().then {
         $0.axis = .horizontal
         $0.spacing = 12
-        $0.distribution = .fillEqually
+        $0.distribution = .fill
+    }
+    
+    private let imageScrollView = UIScrollView().then {
+        $0.showsHorizontalScrollIndicator = false
+        $0.showsVerticalScrollIndicator = false
+        $0.alwaysBounceHorizontal = true
     }
     
     private let heartButton = UIButton(configuration: .plain()).then {
@@ -171,13 +179,17 @@ extension CommunityDetailView {
             $0.alignment = .center
         }
         
+        let reactionContainerView = UIView().then {
+            $0.addSubview(reactionStackView)
+        }
+        
         let postStackView = UIStackView(arrangedSubviews: [
             categoryLabel,
             postTitleLabel,
             authorStackView,
             postBodyLabel,
-            imageStackView,
-            reactionStackView
+            imageScrollView,
+            reactionContainerView
         ]).then {
             $0.axis = .vertical
             $0.alignment = .leading
@@ -254,13 +266,25 @@ extension CommunityDetailView {
             $0.height.equalTo(12)
         }
         
-        imageStackView.snp.makeConstraints {
+        imageScrollView.addSubview(imageStackView)
+        
+        imageScrollView.snp.makeConstraints {
             $0.height.equalTo(104)
             $0.width.equalToSuperview()
         }
         
+        imageStackView.snp.makeConstraints {
+            $0.edges.equalTo(imageScrollView.contentLayoutGuide)
+            $0.height.equalTo(imageScrollView.frameLayoutGuide)
+        }
+        
+        reactionContainerView.snp.makeConstraints {
+            $0.width.equalToSuperview()
+        }
+        
         reactionStackView.snp.makeConstraints {
-            $0.trailing.equalTo(postStackView.snp.trailing)
+            $0.verticalEdges.equalToSuperview()
+            $0.trailing.equalToSuperview()
         }
         
         heartButton.snp.makeConstraints {
@@ -317,13 +341,16 @@ extension CommunityDetailView {
             $0.removeFromSuperview()
         }
         
-        imageAssetNames.prefix(3).forEach { imageAssetName in
+        imageAssetNames.forEach { imageAssetName in
             let imageView = UIImageView().then {
                 $0.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
                 $0.contentMode = .scaleAspectFill
                 $0.backgroundColor = .grayScale100
                 $0.layer.cornerRadius = 8
                 $0.clipsToBounds = true
+            }
+            imageView.snp.makeConstraints {
+                $0.width.height.equalTo(104)
             }
             imageStackView.addArrangedSubview(imageView)
         }
