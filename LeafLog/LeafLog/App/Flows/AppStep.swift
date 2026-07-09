@@ -58,6 +58,9 @@ enum AppStep: Step {
         onConfirm: () -> Void
     )
     
+    //CommunityTab
+    case composeNotice
+    
     // MyInfoTab
     case profileImageSourceSheet
     case notificationAuthorizationRequired(onSettingsSelected: () -> Void)

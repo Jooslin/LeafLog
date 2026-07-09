@@ -41,6 +41,15 @@ final class CommunityComposeViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.pageBack)
             })
             .disposed(by: disposeBag)
+        
+        // 안내문
+        composeView.titleView.rx.rightButtonTap
+            .subscribe(onNext: { [weak self] _ in
+                self?.steps.accept(AppStep.composeNotice)
+            })
+            .disposed(by: disposeBag)
+        
+        
     }
     
     private func bindState(reactor: CameraClassificationReactor) {

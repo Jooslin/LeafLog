@@ -40,7 +40,14 @@ final class CommunityTabFlow: Flow {
                     withNextStepper: viewController
                 )
             )
+            
+        case .composeNotice:
+            let notice = CommunityInfoViewController()
+            notice.modalPresentationStyle = .overCurrentContext
+            navigationController.present(notice, animated: false)
         
+            return .none
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
