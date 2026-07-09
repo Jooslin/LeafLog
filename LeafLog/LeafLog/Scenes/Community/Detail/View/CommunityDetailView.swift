@@ -13,6 +13,7 @@ import UIKit
 
 final class CommunityDetailView: UIView {
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
+    var onPostImageTapped: (([String], Int) -> Void)?
     
     let commentCollectionView = UICollectionView(
         frame: .zero,
@@ -123,6 +124,7 @@ final class CommunityDetailView: UIView {
     }
     
     private var commentCollectionHeightConstraint: Constraint?
+    private var postImageAssetNames: [String] = []
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -336,24 +338,37 @@ extension CommunityDetailView {
     }
     
     private func configurePostImages(imageAssetNames: [String]) {
+        postImageAssetNames = imageAssetNames
+        
         imageStackView.arrangedSubviews.forEach {
             imageStackView.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
         
-        imageAssetNames.forEach { imageAssetName in
+        imageAssetNames.enumerated().forEach { index, imageAssetName in
             let imageView = UIImageView().then {
                 $0.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
                 $0.contentMode = .scaleAspectFill
                 $0.backgroundColor = .grayScale100
                 $0.layer.cornerRadius = 8
                 $0.clipsToBounds = true
+                $0.isUserInteractionEnabled = true
+                $0.tag = index
             }
+            imageView.addGestureRecognizer(UITapGestureRecognizer(
+                target: self,
+                action: #selector(handlePostImageTap(_:))
+            ))
             imageView.snp.makeConstraints {
                 $0.width.height.equalTo(104)
             }
             imageStackView.addArrangedSubview(imageView)
         }
+    }
+    
+    @objc private func handlePostImageTap(_ gesture: UITapGestureRecognizer) {
+        guard let imageView = gesture.view else { return }
+        onPostImageTapped?(postImageAssetNames, imageView.tag)
     }
     
     private static func makeCommentLayout() -> UICollectionViewLayout {

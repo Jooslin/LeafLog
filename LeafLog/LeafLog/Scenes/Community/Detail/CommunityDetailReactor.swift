@@ -51,7 +51,13 @@ final class CommunityDetailReactor: Reactor {
             body: """
             요즘 식물 키우면서 느낀 건, 결국 꾸준히 “기록하는 사람”이 식물을 오래 잘 키운다는 점이에요. 처음에는 물 주는 날짜만 잘 기억하면 된다고 생각했는데, 막상 키우다 보니까 그렇게 단순하지 않더라고요. 같은 주기로 물을 줘도 어떤 날은 잎이 축 처지고, 어떤 날은 멀쩡하고요. 이유를 몰라서 그냥 감으로 대응하다 보니 식물 상태가 더 나빠지는 경우도 있었어요.
             """,
-            imageAssetNames: ["placeholder", "placeholder", "placeholder", "placeholder", "placeholder"],
+            imageAssetNames: [
+                "placeholder",
+                "plantMonstera",
+                "plantAnthurium",
+                "plantStuckyi",
+                "plantCategorySucculent"
+            ],
             likeCount: "N",
             commentCount: "N"
         )

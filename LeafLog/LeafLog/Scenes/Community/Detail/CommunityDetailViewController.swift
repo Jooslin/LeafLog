@@ -25,6 +25,14 @@ final class CommunityDetailViewController: BaseViewController, View {
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
+        detailView.onPostImageTapped = { [weak self] imageAssetNames, index in
+            let viewController = CommunityImageViewerViewController(
+                imageAssetNames: imageAssetNames,
+                initialIndex: index
+            )
+            viewController.modalPresentationStyle = .fullScreen
+            self?.present(viewController, animated: true)
+        }
     }
     
     func bind(reactor: CommunityDetailReactor) {
