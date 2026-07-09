@@ -73,8 +73,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
-        authorBadgeLabel.isHidden = true
-        myCommentBadgeLabel.isHidden = true
+        applyBadge(.none)
     }
     
     private func setLayout() {
@@ -138,56 +137,25 @@ final class CommunityCommentCell: UICollectionViewCell {
 }
 
 extension CommunityCommentCell {
-    func configure(_ comment: Comment) {
+    func configure(_ comment: CommunityDetailReactor.Comment) {
         nicknameLabel.text = comment.nickname
         dateLabel.text = comment.date
         bodyLabel.text = comment.body
-        authorBadgeLabel.isHidden = !comment.isAuthor
-        myCommentBadgeLabel.isHidden = !comment.isMine
+        applyBadge(comment.badge)
         bodyLabel.setTextWithLineHeight(text: comment.body, height: 20)
     }
-}
-
-extension CommunityCommentCell {
-    struct Comment: Hashable {
-        let nickname: String
-        let date: String
-        let body: String
-        let isAuthor: Bool
-        let isMine: Bool
-    }
-}
-
-private final class PaddingLabel: UILabel {
-    private let horizontalInset: CGFloat
-    private let verticalInset: CGFloat
     
-    init(horizontalInset: CGFloat, verticalInset: CGFloat) {
-        self.horizontalInset = horizontalInset
-        self.verticalInset = verticalInset
-        super.init(frame: .zero)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    override var intrinsicContentSize: CGSize {
-        let size = super.intrinsicContentSize
-        return CGSize(
-            width: size.width + horizontalInset * 2,
-            height: size.height + verticalInset * 2
-        )
-    }
-    
-    override func drawText(in rect: CGRect) {
-        let insets = UIEdgeInsets(
-            top: verticalInset,
-            left: horizontalInset,
-            bottom: verticalInset,
-            right: horizontalInset
-        )
-        super.drawText(in: rect.inset(by: insets))
+    private func applyBadge(_ badge: CommunityDetailReactor.CommentBadge) {
+        switch badge {
+        case .author:
+            authorBadgeLabel.isHidden = false
+            myCommentBadgeLabel.isHidden = true
+        case .mine:
+            authorBadgeLabel.isHidden = true
+            myCommentBadgeLabel.isHidden = false
+        case .none:
+            authorBadgeLabel.isHidden = true
+            myCommentBadgeLabel.isHidden = true
+        }
     }
 }
-
