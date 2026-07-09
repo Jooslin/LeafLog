@@ -12,37 +12,7 @@ import UIKit
 
 final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView()
-    
-    private let comments: [CommunityCommentCell.Comment] = [
-        .init(
-            nickname: "닉네임임",
-            date: "2026.04.27",
-            body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
-            isAuthor: false,
-            isMine: false
-        ),
-        .init(
-            nickname: "닉네임임",
-            date: "2026.04.27",
-            body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
-            isAuthor: true,
-            isMine: false
-        ),
-        .init(
-            nickname: "닉네임임",
-            date: "2026.04.27",
-            body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
-            isAuthor: false,
-            isMine: true
-        ),
-        .init(
-            nickname: "닉네임임",
-            date: "2026.04.27",
-            body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
-            isAuthor: false,
-            isMine: false
-        )
-    ]
+    private var comments: [CommunityDetailReactor.Comment] = []
     
     override func loadView() {
         view = detailView
