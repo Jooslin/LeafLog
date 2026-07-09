@@ -9,6 +9,8 @@ import UIKit
 import Kingfisher
 import SnapKit
 import Then
+import RxCocoa
+import RxSwift
 
 final class CommunityComposeView: UIView {
     // MARK: - UI Components
@@ -20,14 +22,17 @@ final class CommunityComposeView: UIView {
     }
     private let contentView = UIView()
     
-    let categoryDailyButton = UIButton(config: .lSize, title: "식물 일상").then {
+    let categoryDailyButton = UIButton(config: .lSize, title: PostCategory.plantLife.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.plantLife.rawValue
     }
-    let categoryQuestionButton = UIButton(config: .lSize, title: "식물 고민").then {
+    let categoryQuestionButton = UIButton(config: .lSize, title: PostCategory.plantHelp.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.plantHelp.rawValue
     }
-    let categoryPlanetButton = UIButton(config: .lSize, title: "초록별 여행").then {
+    let categoryPlanetButton = UIButton(config: .lSize, title: PostCategory.greenTrip.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.greenTrip.rawValue
     }
     
     let titleTextField = DesignTextField().then {
@@ -286,5 +291,21 @@ extension CommunityComposeView {
     enum TitleStyle {
         case plain
         case attributed
+    }
+}
+
+//MARK: Reactive
+extension Reactive where Base: CommunityComposeView {
+    var categoryButtonTap: Observable<Int> {
+        let dailyTap = base.categoryDailyButton.rx.tap
+            .map { _ in base.categoryDailyButton.tag }
+        
+        let questionTap = base.categoryQuestionButton.rx.tap
+            .map { _ in base.categoryQuestionButton.tag }
+        
+        let planetTap = base.categoryPlanetButton.rx.tap
+            .map { _ in base.categoryPlanetButton.tag }
+        
+        return Observable.merge([dailyTap, questionTap, planetTap])
     }
 }

@@ -21,20 +21,18 @@ final class CommunityComposeViewController: BaseViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.reactor = CameraClassificationReactor()
         hidesBottomBarWhenPushed = true
         navigationController?.navigationBar.isHidden = true
-        
-        
     }
     
     //MARK: Bind
-    func bind(reactor: CameraClassificationReactor) {
+    func bind(reactor: CommunityComposeReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
     }
     
-    private func bindAction(reactor: CameraClassificationReactor) {
+    private func bindAction(reactor: CommunityComposeReactor) {
+        //MARK: TitleView
         // 뒤로가기
         composeView.titleView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
@@ -49,10 +47,14 @@ final class CommunityComposeViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
-        
+        //MARK: Body
+        composeView.rx.categoryButtonTap
+            .map { CommunityComposeReactor.Action.selectCategory($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
-    private func bindState(reactor: CameraClassificationReactor) {
+    private func bindState(reactor: CommunityComposeReactor) {
         
     }
 }
