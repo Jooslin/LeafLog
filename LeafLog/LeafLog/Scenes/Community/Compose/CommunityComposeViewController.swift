@@ -48,6 +48,19 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         //MARK: Body
+        composeView.bodyTextView.rx.setDelegate(self)
+            .disposed(by: disposeBag)
+
+        composeView.bodyTextView.rx.text.orEmpty
+            .map { $0.count }
+            .distinctUntilChanged()
+            .withUnretained(self)
+            .bind(onNext: { `self`, count in
+                self.composeView.updatePlaceholderVisibility(count)
+                self.composeView.updateCount(count)
+            })
+            .disposed(by: disposeBag)
+
         composeView.rx.categoryButtonTap
             .map { CommunityComposeReactor.Action.selectCategory($0) }
             .bind(to: reactor.action)
@@ -62,4 +75,46 @@ final class CommunityComposeViewController: BaseViewController, View {
 @available(iOS 17.0, *)
 #Preview {
   CommunityComposeViewController()
+}
+
+//MARK: Delegate
+extension CommunityComposeViewController: UITextViewDelegate {
+    func textView(
+        _ textView: UITextView,
+        shouldChangeTextIn range: NSRange,
+        replacementText text: String
+    ) -> Bool {
+        let currentText = textView.text ?? ""
+        guard let textRange = Range(range, in: currentText) else {
+            return false
+        }
+
+        let updatedText = currentText.replacingCharacters(in: textRange, with: text)
+        if updatedText.count <= CommunityComposeView.bodyMaxCount {
+            return true
+        }
+
+        let replaceCount = currentText[textRange].count // 글자를 붙여넣기할 때 붙여넣을 글자의 수
+        let remainingCount = CommunityComposeView.bodyMaxCount - currentText.count + replaceCount
+        guard remainingCount > 0 else {
+            return false
+        }
+
+        // 최대 글자 수 까지만 글자를 적용하여 textView에 반영
+        let limitedText = String(text.prefix(remainingCount))
+        let limitedUpdatedText = currentText.replacingCharacters(in: textRange, with: limitedText)
+        textView.text = limitedUpdatedText
+        textView.selectedRange = NSRange(
+            location: range.location + (limitedText as NSString).length,
+            length: 0
+        )
+        
+        // NotificationCenter를 통해 textView.text의 변경을 알림 -> bodyTextView.rx.tex.orEmpty에서 감지
+        NotificationCenter.default.post(
+            name: UITextView.textDidChangeNotification,
+            object: textView
+        )
+
+        return false
+    }
 }

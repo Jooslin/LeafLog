@@ -33,7 +33,8 @@ final class CommunityComposeReactor: Reactor {
         switch action {
         case .viewWillAppear:
             return .empty()
-
+        case .selectCategory:
+            return .empty()
         }
     }
     

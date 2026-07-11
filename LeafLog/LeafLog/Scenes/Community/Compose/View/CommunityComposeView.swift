@@ -148,7 +148,7 @@ final class CommunityComposeView: UIView {
         scrollView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
-            $0.bottom.equalTo(saveButton.snp.top).inset(24)
+            $0.bottom.equalTo(saveButton.snp.top).offset(-24)
         }
         
         saveButton.snp.makeConstraints {
@@ -211,24 +211,36 @@ final class CommunityComposeView: UIView {
 
 //MARK: Configure
 extension CommunityComposeView {
-    func updateCount(_ current: Int, max: Int = 1000) {
-        let text = "\(current) / \(max)"
-        let attributedString = NSMutableAttributedString(
-            string: text,
-            attributes: [
-                .foregroundColor: UIColor.grayScale300,
-                .font: UIFont.systemFont(ofSize: 12)
-            ]
-        )
+    static let bodyMaxCount = 1000
 
-        let currentRange = (text as NSString).range(of: "\(current)")
-        attributedString.addAttribute(
-            .foregroundColor,
-            value: UIColor.grayScale900,
-            range: currentRange
-        )
-
-        bodyCountLabel.attributedText = attributedString
+    func updateCount(_ current: Int, max: Int = CommunityComposeView.bodyMaxCount) {
+        if current >= max {
+            let text = "최대 1,000자까지 입력할 수 있어요. \(current)/\(max)"
+            bodyCountLabel.text = text
+            bodyCountLabel.apply(.body12, color: .subRed)
+        } else {
+            let text = "\(current)/\(max)"
+            let attributedString = NSMutableAttributedString(
+                string: text,
+                attributes: [
+                    .foregroundColor: UIColor.grayScale300,
+                    .font: UIFont.systemFont(ofSize: 12)
+                ]
+            )
+            
+            let currentRange = (text as NSString).range(of: "\(current)")
+            attributedString.addAttribute(
+                .foregroundColor,
+                value: UIColor.grayScale900,
+                range: currentRange
+            )
+            
+            bodyCountLabel.attributedText = attributedString
+        }
+    }
+    
+    func updatePlaceholderVisibility(_ count: Int) {
+        bodyPlaceholderLabel.isHidden = count > 0 ? true : false
     }
 }
 
