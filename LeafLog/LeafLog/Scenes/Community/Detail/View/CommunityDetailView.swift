@@ -341,6 +341,8 @@ extension CommunityDetailView {
     
     private func configurePostImages(imageAssetNames: [String]) {
         imageButtonDisposeBag = DisposeBag()
+        imageScrollView.isHidden = imageAssetNames.isEmpty
+        imageScrollView.setContentOffset(.zero, animated: false)
         
         imageStackView.arrangedSubviews.forEach {
             imageStackView.removeArrangedSubview($0)
