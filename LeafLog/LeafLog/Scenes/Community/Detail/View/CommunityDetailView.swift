@@ -292,11 +292,11 @@ extension CommunityDetailView {
         }
         
         heartButton.snp.makeConstraints {
-            $0.width.height.equalTo(20)
+            $0.width.height.equalTo(25)
         }
         
         commentButton.snp.makeConstraints {
-            $0.width.height.equalTo(20)
+            $0.width.height.equalTo(25)
         }
         
         sectionDividerView.snp.makeConstraints {
