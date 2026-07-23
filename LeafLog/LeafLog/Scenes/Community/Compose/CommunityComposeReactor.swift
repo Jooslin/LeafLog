@@ -25,6 +25,10 @@ final class CommunityComposeReactor: Reactor {
     struct State {
         var category: PostCategory
         var title: String = ""
+        
+        var isButtonActive: Bool {
+            !title.isEmpty
+        }
     }
     
     let initialState = State(category: .plantLife)
@@ -37,9 +41,10 @@ final class CommunityComposeReactor: Reactor {
         case .viewWillAppear:
             return .empty()
         case .selectCategory(let tag):
-            return .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
+            return
+                .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
         case .enterTitle(let title):
-                return .just(.setTitle(title))
+            return .just(.setTitle(title))
         }
     }
     

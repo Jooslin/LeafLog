@@ -79,7 +79,13 @@ final class CommunityComposeViewController: BaseViewController, View {
         
         state.map(\.category)
             .drive { [weak composeView] category in
-                composeView?.selectCategory(category)
+                composeView?.applySelectedCategory(category)
+            }
+            .disposed(by: disposeBag)
+        
+        state.map(\.isButtonActive)
+            .drive { [weak composeView] isActive in
+                composeView?.saveButton.isEnabled = isActive
             }
             .disposed(by: disposeBag)
     }
