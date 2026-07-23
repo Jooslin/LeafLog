@@ -31,6 +31,7 @@ enum AppStep: Step {
     case calendarTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
+    case myActivity
     case record(plantID: UUID, date: Date = Date())
     
     // Global
