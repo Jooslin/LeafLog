@@ -62,13 +62,9 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         composeView.bodyTextView.rx.text.orEmpty
-            .map { $0.count }
             .distinctUntilChanged()
-            .withUnretained(self)
-            .bind(onNext: { `self`, count in
-                self.composeView.updatePlaceholderVisibility(count)
-                self.composeView.updateCount(count)
-            })
+            .map { CommunityComposeReactor.Action.enterBody($0) }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
         
@@ -78,14 +74,22 @@ final class CommunityComposeViewController: BaseViewController, View {
         let state = reactor.state.asDriver(onErrorJustReturn: .init(category: .plantLife))
         
         state.map(\.category)
-            .drive { [weak composeView] category in
-                composeView?.applySelectedCategory(category)
+            .drive(with: composeView) { view, category in
+                view.applySelectedCategory(category)
+            }
+            .disposed(by: disposeBag)
+        
+        state.map(\.body)
+            .drive(with: composeView) { view, text in
+                let count = text.count
+                view.updatePlaceholderVisibility(count) // 텍스트뷰 플레이스홀더 레이블 표시 UI 설정
+                view.updateCount(count) // 텍스트 초과 표시 UI 설정
             }
             .disposed(by: disposeBag)
         
         state.map(\.isButtonActive)
-            .drive { [weak composeView] isActive in
-                composeView?.saveButton.isEnabled = isActive
+            .drive(with: composeView) { view, isActive in
+                view.saveButton.isEnabled = isActive
             }
             .disposed(by: disposeBag)
     }

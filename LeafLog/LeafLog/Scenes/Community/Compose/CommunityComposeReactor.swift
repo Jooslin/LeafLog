@@ -15,19 +15,22 @@ final class CommunityComposeReactor: Reactor {
         case viewWillAppear
         case selectCategory(Int)
         case enterTitle(String)
+        case enterBody(String)
     }
     
     enum Mutation {
         case setCategory(PostCategory)
         case setTitle(String)
+        case setBody(String)
     }
     
     struct State {
         var category: PostCategory
         var title: String = ""
+        var body: String = ""
         
         var isButtonActive: Bool {
-            !title.isEmpty
+            !title.isEmpty && !body.isEmpty
         }
     }
     
@@ -45,6 +48,8 @@ final class CommunityComposeReactor: Reactor {
                 .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
         case .enterTitle(let title):
             return .just(.setTitle(title))
+        case .enterBody(let body):
+            return .just(.setBody(body))
         }
     }
     
@@ -55,6 +60,8 @@ final class CommunityComposeReactor: Reactor {
             newState.category = category
         case .setTitle(let title):
             newState.title = title
+        case .setBody(let body):
+            newState.body = body
         }
         return newState
     }
