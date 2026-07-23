@@ -10,6 +10,8 @@ import SnapKit
 import Then
 
 final class PictureComposeView: BaseCardView {
+    var onPictureSelectionRequested: (() -> Void)?
+
     private let dashedBorderLayer = CAShapeLayer()
     
     private let plusImageView = UIImageView(image: .plus).then {
@@ -27,6 +29,9 @@ final class PictureComposeView: BaseCardView {
     let imageView = UIImageView().then {
         $0.layer.cornerRadius = 12
         $0.clipsToBounds = true
+        $0.contentMode = .scaleAspectFill
+        $0.isUserInteractionEnabled = true
+        $0.isHidden = true
     }
     
     
@@ -40,6 +45,7 @@ final class PictureComposeView: BaseCardView {
         $0.imageView?.contentMode = .scaleAspectFit
         $0.layer.cornerRadius = 12
         $0.clipsToBounds = true
+        $0.isHidden = true
     }
     
     override init(frame: CGRect = .zero, cornerRadius: CGFloat = 12) {
@@ -56,6 +62,7 @@ final class PictureComposeView: BaseCardView {
         layer.addSublayer(dashedBorderLayer)
         
         setLayout()
+        setAction()
     }
     
     @available(*, unavailable)
@@ -71,6 +78,45 @@ final class PictureComposeView: BaseCardView {
             roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
             cornerRadius: layer.cornerRadius
         ).cgPath
+    }
+}
+
+//MARK: Configure
+extension PictureComposeView {
+    func setImage(_ image: UIImage?) {
+        imageView.image = image
+
+        let hasImage = image != nil
+        imageView.isHidden = !hasImage
+        cancelButton.isHidden = !hasImage
+        addStack.isHidden = hasImage
+    }
+}
+
+//MARK: Action
+extension PictureComposeView: UIGestureRecognizerDelegate {
+    private func setAction() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapPictureView))
+        tapGesture.delegate = self
+        addGestureRecognizer(tapGesture)
+
+        cancelButton.addTarget(self, action: #selector(didTapCancelButton), for: .touchUpInside)
+    }
+
+    @objc private func didTapPictureView() {
+        onPictureSelectionRequested?()
+    }
+
+    @objc private func didTapCancelButton() {
+        setImage(nil)
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldReceive touch: UITouch
+    ) -> Bool {
+        guard let touchedView = touch.view else { return true }
+        return !touchedView.isDescendant(of: cancelButton)
     }
 }
 

@@ -5,7 +5,7 @@
 //  Created by 변예린 on 7/9/26.
 //
 
-import Foundation
+import UIKit
 import ReactorKit
 import Supabase
 import Dependencies
@@ -15,6 +15,7 @@ final class CommunityComposeReactor: Reactor {
         case viewWillAppear
         case selectCategory(Int)
         case enterTitle(String)
+        case selectPicture([UIImage])
         case enterBody(String)
     }
     

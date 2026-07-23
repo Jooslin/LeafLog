@@ -7,12 +7,14 @@
 
 import UIKit
 import Dependencies
+import PhotosUI
 import ReactorKit
 import RxCocoa
 
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
     let composeView = CommunityComposeView(mode: .create)
+    private weak var selectedPictureView: PictureComposeView?
     
     //MARK: Lifecycle
     override func loadView() {
@@ -23,6 +25,7 @@ final class CommunityComposeViewController: BaseViewController, View {
         super.viewDidLoad()
         hidesBottomBarWhenPushed = true
         navigationController?.navigationBar.isHidden = true
+        setPictureActions()
     }
     
     //MARK: Bind
@@ -55,6 +58,17 @@ final class CommunityComposeViewController: BaseViewController, View {
         
         composeView.titleTextField.rx.text.orEmpty
             .map { CommunityComposeReactor.Action.enterTitle($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        composeView.pictureViews.rx.tap
+            .compactMap { [weak self] _ -> PHPickerViewController? in
+                return self?.makeImagePicker()
+            }
+            .withUnretained(self)
+            .do(onNext: { $0.present($1, animated: true) })
+            .flatMap { $1.rx.selectedImages.take(1) }
+            .map { CommunityComposeReactor.Action.selectPicture($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -95,12 +109,30 @@ final class CommunityComposeViewController: BaseViewController, View {
     }
 }
 
-@available(iOS 17.0, *)
-#Preview {
-  CommunityComposeViewController()
+//MARK: 사진 선택 기능 관련
+extension CommunityComposeViewController {
+    private func setPictureActions() {
+        composeView.pictureViews.forEach { pictureView in
+            pictureView.onPictureSelectionRequested = { [weak self, weak pictureView] in
+                guard let self, let pictureView else { return }
+
+                selectedPictureView = pictureView
+            }
+        }
+    }
+
+    private func makeImagePicker() -> PHPickerViewController {
+        var configuration = PHPickerConfiguration(photoLibrary: .shared())
+        configuration.filter = .images
+        configuration.selectionLimit = 3
+
+        let picker = PHPickerViewController(configuration: configuration)
+    
+        return picker
+    }
 }
 
-//MARK: Delegate
+//MARK: UITextView Delegate
 extension CommunityComposeViewController: UITextViewDelegate {
     // 글자수 제한 기능
     func textView(
@@ -141,4 +173,9 @@ extension CommunityComposeViewController: UITextViewDelegate {
 
         return false
     }
+}
+
+@available(iOS 17.0, *)
+#Preview {
+  CommunityComposeViewController()
 }
