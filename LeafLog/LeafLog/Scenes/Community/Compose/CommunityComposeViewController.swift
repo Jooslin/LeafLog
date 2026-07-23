@@ -53,6 +53,11 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        composeView.titleTextField.rx.text.orEmpty
+            .map { CommunityComposeReactor.Action.enterTitle($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 
@@ -70,7 +75,13 @@ final class CommunityComposeViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: CommunityComposeReactor) {
+        let state = reactor.state.asDriver(onErrorJustReturn: .init(category: .plantLife))
         
+        state.map(\.category)
+            .drive { [weak composeView] category in
+                composeView?.selectCategory(category)
+            }
+            .disposed(by: disposeBag)
     }
 }
 

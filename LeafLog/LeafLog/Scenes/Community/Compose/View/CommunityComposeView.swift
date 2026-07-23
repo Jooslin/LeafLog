@@ -211,6 +211,14 @@ final class CommunityComposeView: UIView {
 
 //MARK: Configure
 extension CommunityComposeView {
+    // Category
+    func applySelectedCategory(_ category: PostCategory) {
+        [categoryDailyButton, categoryQuestionButton, categoryPlanetButton].forEach {
+            $0.isSelected = $0.tag == category.rawValue
+        }
+    }
+    
+    // TextView
     static let bodyMaxCount = 1000
 
     func updateCount(_ current: Int, max: Int = CommunityComposeView.bodyMaxCount) {
