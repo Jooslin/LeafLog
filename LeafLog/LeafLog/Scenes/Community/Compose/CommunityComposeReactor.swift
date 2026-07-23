@@ -17,11 +17,11 @@ final class CommunityComposeReactor: Reactor {
     }
     
     enum Mutation {
-
+        case setCategory(PostCategory)
     }
     
     struct State {
-        let category: PostCategory
+        var category: PostCategory
     }
     
     let initialState = State(category: .plantLife)
@@ -33,15 +33,16 @@ final class CommunityComposeReactor: Reactor {
         switch action {
         case .viewWillAppear:
             return .empty()
-        case .selectCategory:
-            return .empty()
+        case .selectCategory(let tag):
+            return .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
         }
     }
     
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
         switch mutation {
-        
+        case .setCategory(let category):
+            newState.category = category
         }
         return newState
     }

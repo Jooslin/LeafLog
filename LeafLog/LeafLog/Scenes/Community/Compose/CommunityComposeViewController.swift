@@ -44,10 +44,15 @@ final class CommunityComposeViewController: BaseViewController, View {
         composeView.titleView.rx.rightButtonTap
             .subscribe(onNext: { [weak self] _ in
                 self?.steps.accept(AppStep.composeNotice)
-            })
+            }) 
             .disposed(by: disposeBag)
         
         //MARK: Body
+        composeView.rx.categoryButtonTap
+            .map { CommunityComposeReactor.Action.selectCategory($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 
@@ -61,10 +66,7 @@ final class CommunityComposeViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
 
-        composeView.rx.categoryButtonTap
-            .map { CommunityComposeReactor.Action.selectCategory($0) }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
+        
     }
     
     private func bindState(reactor: CommunityComposeReactor) {
@@ -79,6 +81,7 @@ final class CommunityComposeViewController: BaseViewController, View {
 
 //MARK: Delegate
 extension CommunityComposeViewController: UITextViewDelegate {
+    // 글자수 제한 기능
     func textView(
         _ textView: UITextView,
         shouldChangeTextIn range: NSRange,
