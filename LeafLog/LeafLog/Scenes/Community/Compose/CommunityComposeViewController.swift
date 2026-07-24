@@ -14,7 +14,6 @@ import RxCocoa
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
     let composeView = CommunityComposeView(mode: .create)
-    private weak var selectedPictureView: PictureComposeView?
     
     //MARK: Lifecycle
     override func loadView() {
@@ -61,8 +60,8 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        composeView.pictureViews.rx.tap
-            .compactMap { [weak self] _ -> PHPickerViewController? in
+        composeView.rx.pictureViewTap
+            .compactMap { [weak self] index -> PHPickerViewController? in
                 return self?.makeImagePicker()
             }
             .withUnretained(self)
@@ -116,7 +115,7 @@ extension CommunityComposeViewController {
             pictureView.onPictureSelectionRequested = { [weak self, weak pictureView] in
                 guard let self, let pictureView else { return }
 
-                selectedPictureView = pictureView
+               
             }
         }
     }

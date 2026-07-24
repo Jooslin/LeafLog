@@ -327,8 +327,10 @@ extension Reactive where Base: CommunityComposeView {
     }
     
     var pictureViewTap: Observable<Int> {
-        base.pictureViews.enumerated().forEach {
-            $0.element.rx.tap
-        }
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.tap.map { index }
+            })
     }
 }
