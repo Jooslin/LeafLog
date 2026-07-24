@@ -92,6 +92,7 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
+        updatePictureVisibility()
     }
 
     required init?(coder: NSCoder) {
@@ -212,6 +213,13 @@ extension CommunityComposeView {
     func applySelectedCategory(_ category: PostCategory) {
         [categoryDailyButton, categoryQuestionButton, categoryPlanetButton].forEach {
             $0.isSelected = $0.tag == category.rawValue
+        }
+    }
+    
+    // Picture
+    func updatePictureVisibility() {
+        for i in 1..<pictureViews.count {
+            pictureViews[i].isHidden = pictureViews[i].imageView.image == nil
         }
     }
     
