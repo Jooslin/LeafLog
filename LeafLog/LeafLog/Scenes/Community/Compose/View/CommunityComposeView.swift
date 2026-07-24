@@ -92,9 +92,6 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
-        
-        //TODO: 기능 구현 시 삭제
-        updateCount(0)
     }
 
     required init?(coder: NSCoder) {
@@ -327,5 +324,11 @@ extension Reactive where Base: CommunityComposeView {
             .map { _ in base.categoryPlanetButton.tag }
         
         return Observable.merge([dailyTap, questionTap, planetTap])
+    }
+    
+    var pictureViewTap: Observable<Int> {
+        base.pictureViews.enumerated().forEach {
+            $0.element.rx.tap
+        }
     }
 }

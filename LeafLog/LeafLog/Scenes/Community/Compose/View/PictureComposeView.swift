@@ -8,10 +8,11 @@
 import UIKit
 import SnapKit
 import Then
+import RxCocoa
+import RxSwift
 
 final class PictureComposeView: BaseCardView {
-    var onPictureSelectionRequested: (() -> Void)?
-
+    //MARK: Components
     private let dashedBorderLayer = CAShapeLayer()
     
     private let plusImageView = UIImageView(image: .plus).then {
@@ -47,6 +48,10 @@ final class PictureComposeView: BaseCardView {
         $0.clipsToBounds = true
         $0.isHidden = true
     }
+    
+    //MARK: Gesture
+    fileprivate let tapGesture = UITapGestureRecognizer()
+    var onPictureSelectionRequested: (() -> Void)?
     
     override init(frame: CGRect = .zero, cornerRadius: CGFloat = 12) {
         super.init(frame: frame, cornerRadius: cornerRadius)
@@ -96,11 +101,8 @@ extension PictureComposeView {
 //MARK: Action
 extension PictureComposeView: UIGestureRecognizerDelegate {
     private func setAction() {
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapPictureView))
         tapGesture.delegate = self
         addGestureRecognizer(tapGesture)
-
-        cancelButton.addTarget(self, action: #selector(didTapCancelButton), for: .touchUpInside)
     }
 
     @objc private func didTapPictureView() {
@@ -150,5 +152,16 @@ extension PictureComposeView {
         plusImageView.snp.makeConstraints {
             $0.width.height.equalTo(24)
         }
+    }
+}
+
+extension Reactive where Base:  PictureComposeView {
+    var tap: ControlEvent<Void> {
+        let source = base.tapGesture.rx.event.map { _ in () }
+        return ControlEvent(events: source)
+    }
+    
+    var cancelButtonTap: ControlEvent<Void> {
+        base.cancelButton.rx.tap
     }
 }
