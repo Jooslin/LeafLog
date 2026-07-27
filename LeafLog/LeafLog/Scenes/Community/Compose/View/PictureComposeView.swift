@@ -94,6 +94,7 @@ extension PictureComposeView {
         imageView.isHidden = !hasImage
         cancelButton.isHidden = !hasImage
         addStack.isHidden = hasImage
+        dashedBorderLayer.isHidden = hasImage
     }
 }
 
