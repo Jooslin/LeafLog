@@ -51,7 +51,6 @@ final class PictureComposeView: BaseCardView {
     
     //MARK: Gesture
     fileprivate let tapGesture = UITapGestureRecognizer()
-    var onPictureSelectionRequested: (() -> Void)?
     
     override init(frame: CGRect = .zero, cornerRadius: CGFloat = 12) {
         super.init(frame: frame, cornerRadius: cornerRadius)
@@ -103,14 +102,6 @@ extension PictureComposeView: UIGestureRecognizerDelegate {
     private func setAction() {
         tapGesture.delegate = self
         addGestureRecognizer(tapGesture)
-    }
-
-    @objc private func didTapPictureView() {
-        onPictureSelectionRequested?()
-    }
-
-    @objc private func didTapCancelButton() {
-        setImage(nil)
     }
 
     func gestureRecognizer(

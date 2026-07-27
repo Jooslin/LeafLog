@@ -24,7 +24,6 @@ final class CommunityComposeViewController: BaseViewController, View {
         super.viewDidLoad()
         hidesBottomBarWhenPushed = true
         navigationController?.navigationBar.isHidden = true
-        setPictureActions()
     }
     
     //MARK: Bind
@@ -60,6 +59,32 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        composeView.rx.pictureViewTap
+            .withLatestFrom(reactor.state.map(\.pictures.count)) { index, pictureCount in
+                (index, pictureCount)
+            }
+            .compactMap { [weak self] index, pictureCount in
+                self?.makePicturePickerRequest(
+                    index: index,
+                    pictureCount: pictureCount
+                )
+            }
+            .withUnretained(self)
+            .do(onNext: { viewController, request in
+                viewController.present(request.picker, animated: true)
+            })
+            .flatMap { _, request in
+                request.picker.rx.selectedImages
+                    .take(1)
+                    .map { images in (request, images) }
+            }
+            .observe(on: MainScheduler.instance)
+            .compactMap { request, images in
+                Self.makePictureAction(request: request, images: images)
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 
@@ -105,19 +130,49 @@ final class CommunityComposeViewController: BaseViewController, View {
 
 //MARK: 사진 선택 기능 관련
 extension CommunityComposeViewController {
-    private func setPictureActions() {
-        composeView.pictureViews.forEach { pictureView in
-            pictureView.onPictureSelectionRequested = { [weak self, weak pictureView] in
-                guard let self, let pictureView else { return }
+    private typealias PicturePickerRequest = (
+        index: Int,
+        replacesExisting: Bool,
+        picker: PHPickerViewController
+    )
 
-            }
-        }
+    private func makePicturePickerRequest(
+        index: Int,
+        pictureCount: Int
+    ) -> PicturePickerRequest? {
+        guard index <= pictureCount else { return nil }
+
+        let replacesExisting = index < pictureCount
+        let selectionLimit = replacesExisting
+            ? 1
+            : composeView.pictureViews.count - pictureCount
+        guard selectionLimit > 0 else { return nil }
+
+        return (
+            index,
+            replacesExisting,
+            makeImagePicker(selectionLimit: selectionLimit)
+        )
     }
 
-    private func makeImagePicker() -> PHPickerViewController {
+    private static func makePictureAction(
+        request: PicturePickerRequest,
+        images: [UIImage]
+    ) -> CommunityComposeReactor.Action? {
+        if request.replacesExisting {
+            guard let image = images.first else { return nil }
+            return .replacePicture(index: request.index, image: image)
+        }
+
+        guard !images.isEmpty else { return nil }
+        return .addPictures(images)
+    }
+
+    private func makeImagePicker(selectionLimit: Int) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: .shared())
         configuration.filter = .images
-        configuration.selectionLimit = 3
+        configuration.selection = .ordered
+        configuration.selectionLimit = selectionLimit
 
         let picker = PHPickerViewController(configuration: configuration)
     
