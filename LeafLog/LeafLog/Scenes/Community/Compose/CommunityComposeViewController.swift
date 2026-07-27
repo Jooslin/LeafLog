@@ -85,6 +85,11 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        composeView.rx.pictureRemoveButtonTap
+            .map { CommunityComposeReactor.Action.removePicture(index: $0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 

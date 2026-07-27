@@ -92,6 +92,7 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
+        applyPictures([])
     }
 
     required init?(coder: NSCoder) {
@@ -105,7 +106,18 @@ final class CommunityComposeView: UIView {
             $0.alignment = .fill
         }
         
-        let pictureViewHorizontalStack = UIStackView(arrangedSubviews: pictureViews).then {
+        let pictureSlots = pictureViews.map { pictureView in
+            let slotView = UIView()
+            slotView.addSubview(pictureView)
+
+            pictureView.snp.makeConstraints {
+                $0.edges.equalToSuperview()
+            }
+
+            return slotView
+        }
+
+        let pictureViewHorizontalStack = UIStackView(arrangedSubviews: pictureSlots).then {
             $0.axis = .horizontal
             $0.distribution = .fillEqually
             $0.spacing = 12
@@ -187,9 +199,9 @@ final class CommunityComposeView: UIView {
             $0.width.equalToSuperview()
         }
         
-        pictureViews.forEach { pictureView in
-            pictureView.snp.makeConstraints {
-                $0.height.equalTo(pictureView.snp.width)
+        pictureSlots.forEach { slotView in
+            slotView.snp.makeConstraints {
+                $0.height.equalTo(slotView.snp.width)
             }
         }
         
@@ -217,9 +229,12 @@ extension CommunityComposeView {
     
     // Picture
     func applyPictures(_ pictures: [UIImage]) {
+        let visiblePictureCount = min(pictures.count + 1, pictureViews.count)
+
         for (index, pictureView) in pictureViews.enumerated() {
             let image = pictures.indices.contains(index) ? pictures[index] : nil
             pictureView.setImage(image)
+            pictureView.isHidden = index >= visiblePictureCount
         }
     }
     
@@ -339,6 +354,14 @@ extension Reactive where Base: CommunityComposeView {
             base.pictureViews.enumerated()
             .map { index, view in
                 view.rx.tap.map { index }
+            })
+    }
+
+    var pictureRemoveButtonTap: Observable<Int> {
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.cancelButtonTap.map { index }
             })
     }
 }
