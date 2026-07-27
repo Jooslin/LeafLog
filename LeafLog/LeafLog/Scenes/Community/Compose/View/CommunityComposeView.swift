@@ -92,7 +92,6 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
-        updatePictureVisibility()
     }
 
     required init?(coder: NSCoder) {
@@ -217,9 +216,10 @@ extension CommunityComposeView {
     }
     
     // Picture
-    func updatePictureVisibility() {
-        for i in 1..<pictureViews.count {
-            pictureViews[i].isHidden = pictureViews[i].imageView.image == nil
+    func applyPictures(_ pictures: [UIImage]) {
+        for (index, pictureView) in pictureViews.enumerated() {
+            let image = pictures.indices.contains(index) ? pictures[index] : nil
+            pictureView.setImage(image)
         }
     }
     

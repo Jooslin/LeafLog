@@ -15,19 +15,25 @@ final class CommunityComposeReactor: Reactor {
         case viewWillAppear
         case selectCategory(Int)
         case enterTitle(String)
-        case selectPicture([UIImage])
+        case addPictures([UIImage])
+        case replacePicture(index: Int, image: UIImage)
+        case removePicture(index: Int)
         case enterBody(String)
     }
     
     enum Mutation {
         case setCategory(PostCategory)
         case setTitle(String)
+        case appendPictures([UIImage])
+        case replacePicture(index: Int, image: UIImage)
+        case removePicture(index: Int)
         case setBody(String)
     }
     
     struct State {
         var category: PostCategory
         var title: String = ""
+        var pictures: [UIImage] = []
         var body: String = ""
         
         var isButtonActive: Bool {
@@ -49,6 +55,12 @@ final class CommunityComposeReactor: Reactor {
                 .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
         case .enterTitle(let title):
             return .just(.setTitle(title))
+        case .addPictures(let pictures):
+            return .just(.appendPictures(pictures))
+        case let .replacePicture(index, image):
+            return .just(.replacePicture(index: index, image: image))
+        case .removePicture(let index):
+            return .just(.removePicture(index: index))
         case .enterBody(let body):
             return .just(.setBody(body))
         }
@@ -61,6 +73,18 @@ final class CommunityComposeReactor: Reactor {
             newState.category = category
         case .setTitle(let title):
             newState.title = title
+        case .appendPictures(let pictures):
+            newState.pictures.append(contentsOf: pictures)
+        case let .replacePicture(index, image):
+            guard newState.pictures.indices.contains(index) else {
+                return state
+            }
+            newState.pictures[index] = image
+        case .removePicture(let index):
+            guard newState.pictures.indices.contains(index) else {
+                return state
+            }
+            newState.pictures.remove(at: index)
         case .setBody(let body):
             newState.body = body
         }

@@ -60,17 +60,6 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        composeView.rx.pictureViewTap
-            .compactMap { [weak self] index -> PHPickerViewController? in
-                return self?.makeImagePicker()
-            }
-            .withUnretained(self)
-            .do(onNext: { $0.present($1, animated: true) })
-            .flatMap { $1.rx.selectedImages.take(1) }
-            .map { CommunityComposeReactor.Action.selectPicture($0) }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 
@@ -100,6 +89,12 @@ final class CommunityComposeViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        state.map(\.pictures)
+            .drive(with: composeView) { view, pictures in
+                view.applyPictures(pictures)
+            }
+            .disposed(by: disposeBag)
+
         state.map(\.isButtonActive)
             .drive(with: composeView) { view, isActive in
                 view.saveButton.isEnabled = isActive
@@ -115,7 +110,6 @@ extension CommunityComposeViewController {
             pictureView.onPictureSelectionRequested = { [weak self, weak pictureView] in
                 guard let self, let pictureView else { return }
 
-               
             }
         }
     }
