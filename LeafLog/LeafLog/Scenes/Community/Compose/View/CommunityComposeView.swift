@@ -364,4 +364,15 @@ extension Reactive where Base: CommunityComposeView {
                 view.rx.cancelButtonTap.map { index }
             })
     }
+
+    var pictureViewLongPress: Observable<(
+        index: Int,
+        gesture: UILongPressGestureRecognizer
+    )> {
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.longPress.map { (index, $0) }
+            })
+    }
 }

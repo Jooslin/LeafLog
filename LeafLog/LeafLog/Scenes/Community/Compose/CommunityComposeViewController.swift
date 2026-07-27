@@ -14,6 +14,7 @@ import RxCocoa
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
     let composeView = CommunityComposeView(mode: .create)
+    private var pictureDragStartX: CGFloat?
     
     //MARK: Lifecycle
     override func loadView() {
@@ -90,6 +91,20 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        composeView.rx.pictureViewLongPress
+            .withLatestFrom(reactor.state.map(\.pictures.count)) { event, pictureCount in
+                (event, pictureCount)
+            }
+            .compactMap { [weak self] event, pictureCount in
+                self?.makePictureMoveAction(
+                    index: event.index,
+                    pictureCount: pictureCount,
+                    gesture: event.gesture
+                )
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         composeView.bodyTextView.rx.setDelegate(self)
             .disposed(by: disposeBag)
 
@@ -141,6 +156,7 @@ extension CommunityComposeViewController {
         picker: PHPickerViewController
     )
 
+    // 사진 선택 수 제한 반영 imagePicker 생성
     private func makePicturePickerRequest(
         index: Int,
         pictureCount: Int
@@ -160,6 +176,7 @@ extension CommunityComposeViewController {
         )
     }
 
+    // 사진 선택 시 리액터에 전달할 액션 생성 - replace 혹은 add
     private static func makePictureAction(
         request: PicturePickerRequest,
         images: [UIImage]
@@ -173,6 +190,7 @@ extension CommunityComposeViewController {
         return .addPictures(images)
     }
 
+    // 이미지 피커 생성
     private func makeImagePicker(selectionLimit: Int) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: .shared())
         configuration.filter = .images
@@ -182,6 +200,81 @@ extension CommunityComposeViewController {
         let picker = PHPickerViewController(configuration: configuration)
     
         return picker
+    }
+
+    // 사진 순서 변경 액션
+    private func makePictureMoveAction(
+        index: Int,
+        pictureCount: Int,
+        gesture: UILongPressGestureRecognizer
+    ) -> CommunityComposeReactor.Action? {
+        guard index < pictureCount else { return nil }
+
+        let pictureView = composeView.pictureViews[index]
+        let location = gesture.location(in: composeView)
+
+        switch gesture.state {
+        case .began:
+            pictureDragStartX = location.x
+            pictureView.superview?.layer.zPosition = 1
+            pictureView.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
+
+        case .changed:
+            guard let startX = pictureDragStartX else { return nil }
+            pictureView.transform = CGAffineTransform(
+                translationX: location.x - startX,
+                y: 0
+            ).scaledBy(x: 1.05, y: 1.05)
+
+        case .ended:
+            resetPictureDrag(pictureView)
+            guard
+                let targetIndex = nearestPictureIndex(
+                    to: location.x,
+                    pictureCount: pictureCount
+                ),
+                targetIndex != index
+            else {
+                return nil
+            }
+            return .movePicture(from: index, to: targetIndex)
+
+        case .cancelled, .failed:
+            resetPictureDrag(pictureView)
+
+        default:
+            break
+        }
+
+        return nil
+    }
+
+    // 가까운 사진 인덱스 계산
+    private func nearestPictureIndex(
+        to locationX: CGFloat,
+        pictureCount: Int
+    ) -> Int? {
+        (0..<pictureCount).min { lhs, rhs in
+            abs(pictureCenterX(at: lhs) - locationX)
+                < abs(pictureCenterX(at: rhs) - locationX)
+        }
+    }
+
+    // 사진 중앙 위치 계산
+    private func pictureCenterX(at index: Int) -> CGFloat {
+        let pictureView = composeView.pictureViews[index]
+        let center = CGPoint(
+            x: pictureView.bounds.midX,
+            y: pictureView.bounds.midY
+        )
+        return pictureView.convert(center, to: composeView).x
+    }
+
+    // 사진 순서 변경 제스처 관련 초기화
+    private func resetPictureDrag(_ pictureView: PictureComposeView) {
+        pictureDragStartX = nil
+        pictureView.transform = .identity
+        pictureView.superview?.layer.zPosition = 0
     }
 }
 

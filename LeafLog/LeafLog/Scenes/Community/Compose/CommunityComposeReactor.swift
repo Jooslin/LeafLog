@@ -18,6 +18,7 @@ final class CommunityComposeReactor: Reactor {
         case addPictures([UIImage])
         case replacePicture(index: Int, image: UIImage)
         case removePicture(index: Int)
+        case movePicture(from: Int, to: Int)
         case enterBody(String)
     }
     
@@ -27,6 +28,7 @@ final class CommunityComposeReactor: Reactor {
         case appendPictures([UIImage])
         case replacePicture(index: Int, image: UIImage)
         case removePicture(index: Int)
+        case movePicture(from: Int, to: Int)
         case setBody(String)
     }
     
@@ -61,6 +63,8 @@ final class CommunityComposeReactor: Reactor {
             return .just(.replacePicture(index: index, image: image))
         case .removePicture(let index):
             return .just(.removePicture(index: index))
+        case let .movePicture(from, to):
+            return .just(.movePicture(from: from, to: to))
         case .enterBody(let body):
             return .just(.setBody(body))
         }
@@ -85,6 +89,15 @@ final class CommunityComposeReactor: Reactor {
                 return state
             }
             newState.pictures.remove(at: index)
+        case let .movePicture(from, to):
+            guard
+                newState.pictures.indices.contains(from),
+                newState.pictures.indices.contains(to)
+            else {
+                return state
+            }
+            let picture = newState.pictures.remove(at: from)
+            newState.pictures.insert(picture, at: to)
         case .setBody(let body):
             newState.body = body
         }

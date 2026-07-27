@@ -51,6 +51,9 @@ final class PictureComposeView: BaseCardView {
     
     //MARK: Gesture
     fileprivate let tapGesture = UITapGestureRecognizer()
+    fileprivate let longPressGesture = UILongPressGestureRecognizer().then {
+        $0.minimumPressDuration = 0.3
+    }
     
     override init(frame: CGRect = .zero, cornerRadius: CGFloat = 12) {
         super.init(frame: frame, cornerRadius: cornerRadius)
@@ -102,7 +105,10 @@ extension PictureComposeView {
 extension PictureComposeView: UIGestureRecognizerDelegate {
     private func setAction() {
         tapGesture.delegate = self
+        longPressGesture.delegate = self
+        tapGesture.require(toFail: longPressGesture)
         addGestureRecognizer(tapGesture)
+        addGestureRecognizer(longPressGesture)
     }
 
     func gestureRecognizer(
@@ -155,5 +161,9 @@ extension Reactive where Base:  PictureComposeView {
     
     var cancelButtonTap: ControlEvent<Void> {
         base.cancelButton.rx.tap
+    }
+
+    var longPress: ControlEvent<UILongPressGestureRecognizer> {
+        ControlEvent(events: base.longPressGesture.rx.event)
     }
 }
