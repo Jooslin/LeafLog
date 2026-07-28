@@ -15,6 +15,7 @@ final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
     let composeView = CommunityComposeView(mode: .create)
     private var pictureDragStartX: CGFloat?
+    private var pictureDragTargetIndex: Int?
     
     //MARK: Lifecycle
     override func loadView() {
@@ -148,7 +149,7 @@ final class CommunityComposeViewController: BaseViewController, View {
     }
 }
 
-//MARK: 사진 선택 기능 관련
+//MARK: 사진 선택 Image Picker 관련
 extension CommunityComposeViewController {
     private typealias PicturePickerRequest = (
         index: Int,
@@ -201,7 +202,10 @@ extension CommunityComposeViewController {
     
         return picker
     }
+}
 
+//MARK: 사진 순서 변경 애니메이션
+extension CommunityComposeViewController {
     // 사진 순서 변경 액션
     private func makePictureMoveAction(
         index: Int,
@@ -216,6 +220,7 @@ extension CommunityComposeViewController {
         switch gesture.state {
         case .began:
             pictureDragStartX = location.x
+            pictureDragTargetIndex = index
             pictureView.superview?.layer.zPosition = 1
             pictureView.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
 
@@ -226,21 +231,42 @@ extension CommunityComposeViewController {
                 y: 0
             ).scaledBy(x: 1.05, y: 1.05)
 
-        case .ended:
-            resetPictureDrag(pictureView)
             guard
                 let targetIndex = nearestPictureIndex(
                     to: location.x,
                     pictureCount: pictureCount
                 ),
-                targetIndex != index
+                targetIndex != pictureDragTargetIndex
             else {
                 return nil
             }
+            pictureDragTargetIndex = targetIndex
+            updateSiblingPictureTransforms(
+                sourceIndex: index,
+                targetIndex: targetIndex,
+                pictureCount: pictureCount
+            )
+
+        case .ended:
+            guard
+                let targetIndex = nearestPictureIndex(
+                    to: location.x,
+                    pictureCount: pictureCount
+                )
+            else {
+                resetPictureDrag(pictureView, pictureCount: pictureCount)
+                return nil
+            }
+            resetPictureDrag(pictureView, pictureCount: pictureCount)
+            guard targetIndex != index else { return nil }
             return .movePicture(from: index, to: targetIndex)
 
         case .cancelled, .failed:
-            resetPictureDrag(pictureView)
+            resetPictureDrag(
+                pictureView,
+                pictureCount: pictureCount,
+                animated: true
+            )
 
         default:
             break
@@ -249,7 +275,7 @@ extension CommunityComposeViewController {
         return nil
     }
 
-    // 가까운 사진 인덱스 계산
+    // 가장 가까운 사진 인덱스 계산
     private func nearestPictureIndex(
         to locationX: CGFloat,
         pictureCount: Int
@@ -263,18 +289,74 @@ extension CommunityComposeViewController {
     // 사진 중앙 위치 계산
     private func pictureCenterX(at index: Int) -> CGFloat {
         let pictureView = composeView.pictureViews[index]
+        let slotView = pictureView.superview ?? pictureView
         let center = CGPoint(
-            x: pictureView.bounds.midX,
-            y: pictureView.bounds.midY
+            x: slotView.bounds.midX,
+            y: slotView.bounds.midY
         )
-        return pictureView.convert(center, to: composeView).x
+        return slotView.convert(center, to: composeView).x
+    }
+
+    // 드래그 위치에 따라 기존 사진을 한 칸씩 이동
+    private func updateSiblingPictureTransforms(
+        sourceIndex: Int,
+        targetIndex: Int,
+        pictureCount: Int
+    ) {
+        let slotDistance = abs(
+            pictureCenterX(at: 1) - pictureCenterX(at: 0)
+        )
+
+        UIView.animate(
+            withDuration: 0.15,
+            delay: 0,
+            options: [.beginFromCurrentState, .allowUserInteraction]
+        ) {
+            for index in 0..<pictureCount where index != sourceIndex {
+                let translationX: CGFloat
+
+                if sourceIndex < targetIndex,
+                   index > sourceIndex,
+                   index <= targetIndex {
+                    translationX = -slotDistance
+                } else if sourceIndex > targetIndex,
+                          index >= targetIndex,
+                          index < sourceIndex {
+                    translationX = slotDistance
+                } else {
+                    translationX = 0
+                }
+
+                self.composeView.pictureViews[index].transform =
+                    CGAffineTransform(translationX: translationX, y: 0)
+            }
+        }
     }
 
     // 사진 순서 변경 제스처 관련 초기화
-    private func resetPictureDrag(_ pictureView: PictureComposeView) {
+    private func resetPictureDrag(
+        _ pictureView: PictureComposeView,
+        pictureCount: Int,
+        animated: Bool = false
+    ) {
         pictureDragStartX = nil
-        pictureView.transform = .identity
+        pictureDragTargetIndex = nil
         pictureView.superview?.layer.zPosition = 0
+
+        let resetTransforms = {
+            self.composeView.pictureViews.forEach {
+                $0.transform = .identity
+            }
+        }
+
+        if animated {
+            UIView.animate(
+                withDuration: 0.15,
+                animations: resetTransforms
+            )
+        } else {
+            resetTransforms()
+        }
     }
 }
 
