@@ -38,6 +38,11 @@ private actor SignedImageURLMemoryCache {
     }
 }
 
+private enum CommunityImageProcessingError: Error {
+    case invalidImage
+    case optimizationFailed
+}
+
 final class SupabaseManager {
     private let logger = Logger(subsystem: "LeafLog", category: "SupabaseManager")
     
@@ -147,19 +152,29 @@ extension SupabaseManager {
             "\(imageID.uuidString.lowercased()).jpg"
         ].joined(separator: "/")
 
-        let fileData = try optimizedCommunityImageData(from: image)
+        do {
+            let fileData = try optimizedCommunityImageData(from: image)
 
-        _ = try await client.storage
-            .from(StorageBucket.communityImages)
-            .upload(
-                objectPath,
-                data: fileData,
-                options: FileOptions(
-                    cacheControl: "3600",
-                    contentType: "image/jpeg",
-                    upsert: true
+            _ = try await client.storage
+                .from(StorageBucket.communityImages)
+                .upload(
+                    objectPath,
+                    data: fileData,
+                    options: FileOptions(
+                        cacheControl: "3600",
+                        contentType: "image/jpeg",
+                        upsert: true
+                    )
                 )
+        } catch {
+            logger.error(
+                "Community image upload failed. postID: \(postID.uuidString, privacy: .public), imageID: \(imageID.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
             )
+
+            throw AuthError.communityFailed(
+                "사진을 업로드하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
 
         return objectPath
     }
@@ -287,7 +302,7 @@ extension SupabaseManager {
         )
 
         guard originalLongestSide > 0 else {
-            throw AuthError.communityFailed("사진을 변환하지 못했어요.")
+            throw CommunityImageProcessingError.invalidImage
         }
 
         var targetLongestSide = min(
@@ -324,7 +339,7 @@ extension SupabaseManager {
             )
         }
 
-        throw AuthError.communityFailed("사진을 최적화하지 못했어요.")
+        throw CommunityImageProcessingError.optimizationFailed
     }
 
     private func renderCommunityImage(

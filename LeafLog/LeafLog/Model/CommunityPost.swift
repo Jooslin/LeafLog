@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CommunityPost: Hashable {
+struct CommunityPost: Codable, Hashable {
     let id: UUID
     let authorID: UUID
     let category: PostCategory
@@ -20,6 +20,19 @@ struct CommunityPost: Hashable {
     let likeCount: Int
     let images: [CommunityPostImage]
 
+    enum CodingKeys: String, CodingKey {
+        case id
+        case authorID = "author_id"
+        case category
+        case title
+        case content
+        case legacyImagePath = "image_path"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case deletedAt = "deleted_at"
+        case likeCount = "like_count"
+        case images
+    }
 }
 
 struct CommunityPostImage: Codable, Hashable {

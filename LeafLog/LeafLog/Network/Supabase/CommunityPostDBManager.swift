@@ -29,12 +29,10 @@ final class CommunityPostDBManager {
         let parameters = try makeParameters(input: input)
 
         do {
-            let response: CommunityPostRPCResponse = try await supabaseManager.client
+            return try await supabaseManager.client
                 .rpc(function, params: parameters)
                 .execute()
                 .value
-
-            return try makeCommunityPost(response: response)
         } catch let error as AuthError {
             throw error
         } catch {
@@ -68,10 +66,6 @@ final class CommunityPostDBManager {
             throw AuthError.communityFailed("내용은 최대 1,000자까지 입력할 수 있어요.")
         }
 
-        guard input.images.count <= 3 else {
-            throw AuthError.communityFailed("사진은 최대 3장까지 첨부할 수 있어요.")
-        }
-
         let uniqueImageIDs = Set(input.images.map(\.id))
         let uniqueImagePaths = Set(input.images.map(\.imagePath))
         guard
@@ -99,63 +93,6 @@ final class CommunityPostDBManager {
         )
     }
 
-    private func makeCommunityPost(
-        response: CommunityPostRPCResponse
-    ) throws -> CommunityPost {
-        guard let category = PostCategory(
-            databaseValue: response.post.category
-        ) else {
-            throw AuthError.communityFailed(
-                "게시글 카테고리 정보를 확인해주세요."
-            )
-        }
-
-        return CommunityPost(
-            id: response.post.id,
-            authorID: response.post.authorID,
-            category: category,
-            title: response.post.title,
-            content: response.post.content,
-            legacyImagePath: response.post.legacyImagePath,
-            createdAt: response.post.createdAt,
-            updatedAt: response.post.updatedAt,
-            deletedAt: response.post.deletedAt,
-            likeCount: response.post.likeCount,
-            images: response.images
-        )
-    }
-
-}
-
-nonisolated private struct CommunityPostRPCResponse: Decodable, Sendable {
-    let post: StoredCommunityPost
-    let images: [CommunityPostImage]
-}
-
-nonisolated private struct StoredCommunityPost: Decodable, Sendable {
-    let id: UUID
-    let authorID: UUID
-    let category: String
-    let title: String
-    let content: String
-    let legacyImagePath: String?
-    let createdAt: Date
-    let updatedAt: Date
-    let deletedAt: Date?
-    let likeCount: Int
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case authorID = "author_id"
-        case category
-        case title
-        case content
-        case legacyImagePath = "image_path"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case deletedAt = "deleted_at"
-        case likeCount = "like_count"
-    }
 }
 
 nonisolated private struct CommunityPostRPCParameters: Encodable, Sendable {
