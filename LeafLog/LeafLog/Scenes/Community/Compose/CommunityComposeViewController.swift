@@ -60,6 +60,8 @@ final class CommunityComposeViewController: BaseViewController, View {
             .map { CommunityComposeReactor.Action.enterTitle($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        composeView.titleTextField.delegate = self
         
         composeView.rx.pictureViewTap
             .withLatestFrom(reactor.state.map(\.pictures.count)) { index, pictureCount in
@@ -115,7 +117,10 @@ final class CommunityComposeViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
-        
+        composeView.saveButton.rx.tap
+            .map { CommunityComposeReactor.Action.saveTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: CommunityComposeReactor) {
@@ -146,6 +151,36 @@ final class CommunityComposeViewController: BaseViewController, View {
                 view.saveButton.isEnabled = isActive
             }
             .disposed(by: disposeBag)
+
+        state.map(\.isSaving)
+            .distinctUntilChanged()
+            .drive(with: self) { viewController, isSaving in
+                viewController.setSaving(isSaving)
+            }
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(with: self) { viewController, message in
+                viewController.steps.accept(AppStep.alert("오류", message))
+            }
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$warningMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(with: self) { viewController, message in
+                viewController.steps.accept(AppStep.alert("안내", message))
+            }
+            .disposed(by: disposeBag)
+    }
+
+    private func setSaving(_ isSaving: Bool) {
+        composeView.isUserInteractionEnabled = !isSaving
+        navigationController?
+            .interactivePopGestureRecognizer?
+            .isEnabled = !isSaving
     }
 }
 
@@ -360,8 +395,26 @@ extension CommunityComposeViewController {
     }
 }
 
-//MARK: UITextView Delegate
-extension CommunityComposeViewController: UITextViewDelegate {
+//MARK: Text Input Delegate
+extension CommunityComposeViewController: UITextFieldDelegate, UITextViewDelegate {
+    func textField(
+        _ textField: UITextField,
+        shouldChangeCharactersIn range: NSRange,
+        replacementString string: String
+    ) -> Bool {
+        let currentText = textField.text ?? ""
+        guard let textRange = Range(range, in: currentText) else {
+            return false
+        }
+
+        let updatedText = currentText.replacingCharacters(
+            in: textRange,
+            with: string
+        )
+
+        return updatedText.count <= 50
+    }
+
     // 글자수 제한 기능
     func textView(
         _ textView: UITextView,
