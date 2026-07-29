@@ -15,21 +15,23 @@ final class CommunityComposeReactor: Reactor {
         case viewWillAppear
         case selectCategory(Int)
         case enterTitle(String)
+        case enterBody(String)
+        
         case addPictures([UIImage])
         case replacePicture(index: Int, image: UIImage)
         case removePicture(index: Int)
         case movePicture(from: Int, to: Int)
-        case enterBody(String)
     }
     
     enum Mutation {
         case setCategory(PostCategory)
         case setTitle(String)
+        case setBody(String)
+        
         case appendPictures([UIImage])
         case replacePicture(index: Int, image: UIImage)
         case removePicture(index: Int)
         case movePicture(from: Int, to: Int)
-        case setBody(String)
     }
     
     struct State {
