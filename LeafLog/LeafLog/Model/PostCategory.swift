@@ -9,6 +9,27 @@ enum PostCategory: Int {
     case plantLife = 0
     case plantHelp
     case greenTrip
+
+    var databaseValue: String {
+        switch self {
+        case .plantLife: "plant_life"
+        case .plantHelp: "plant_help"
+        case .greenTrip: "green_trip"
+        }
+    }
+
+    init?(databaseValue: String) {
+        switch databaseValue {
+        case "plant_life":
+            self = .plantLife
+        case "plant_help":
+            self = .plantHelp
+        case "green_trip":
+            self = .greenTrip
+        default:
+            return nil
+        }
+    }
     
     var title: String {
         switch self {

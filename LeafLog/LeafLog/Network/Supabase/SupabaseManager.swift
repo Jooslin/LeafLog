@@ -65,6 +65,7 @@ extension SupabaseManager {
     private enum StorageBucket {
         static let profileImages = "profile-images"
         static let plantImages = "plant-images"
+        static let communityImages = "community-images"
     }
 
     // 엣지케이스 방지
@@ -81,6 +82,14 @@ extension SupabaseManager {
     private enum ImageUploadCompression {
         static let maxPixelLength: CGFloat = 1280 // 긴쪽이 1280 넘으면 1280으로
         static let jpegQuality: CGFloat = 0.75 // 75% 품질로 압축
+    }
+
+    private enum CommunityImageUpload {
+        static let maxByteCount = 5 * 1024 * 1024
+        static let maxPixelLength: CGFloat = 2048
+        static let minPixelLength: CGFloat = 640
+        static let resizeRatio: CGFloat = 0.8
+        static let jpegQualities: [CGFloat] = [0.82, 0.75, 0.68, 0.61, 0.55]
     }
 
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
@@ -123,6 +132,37 @@ extension SupabaseManager {
             sizeLimitError: .careFailed(ImageUploadLimit.exceededMessage)
         )
     }
+
+    func uploadCommunityPostImage(
+        _ image: UIImage,
+        userID: UUID,
+        postID: UUID,
+        imageID: UUID
+    ) async throws -> String {
+        let objectPath = [
+            "users",
+            userID.uuidString.lowercased(),
+            "posts",
+            postID.uuidString.lowercased(),
+            "\(imageID.uuidString.lowercased()).jpg"
+        ].joined(separator: "/")
+
+        let fileData = try optimizedCommunityImageData(from: image)
+
+        _ = try await client.storage
+            .from(StorageBucket.communityImages)
+            .upload(
+                objectPath,
+                data: fileData,
+                options: FileOptions(
+                    cacheControl: "3600",
+                    contentType: "image/jpeg",
+                    upsert: true
+                )
+            )
+
+        return objectPath
+    }
     
     // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
     // private bucket path면 signed URL을 만들고, 기존 외부 URL은 그대로 사용
@@ -147,6 +187,17 @@ extension SupabaseManager {
         try await resolveStoredImageURL(
             from: storedValue,
             bucket: StorageBucket.plantImages,
+            cacheKey: cacheKey
+        )
+    }
+
+    func resolveCommunityPostImageURL(
+        from storedValue: String?,
+        cacheKey: String? = nil
+    ) async throws -> URL? {
+        try await resolveStoredImageURL(
+            from: storedValue,
+            bucket: StorageBucket.communityImages,
             cacheKey: cacheKey
         )
     }
@@ -225,6 +276,86 @@ extension SupabaseManager {
         }
     }
 
+    private func optimizedCommunityImageData(from image: UIImage) throws -> Data {
+        let originalPixelSize = CGSize(
+            width: image.size.width * image.scale,
+            height: image.size.height * image.scale
+        )
+        let originalLongestSide = max(
+            originalPixelSize.width,
+            originalPixelSize.height
+        )
+
+        guard originalLongestSide > 0 else {
+            throw AuthError.communityFailed("사진을 변환하지 못했어요.")
+        }
+
+        var targetLongestSide = min(
+            originalLongestSide,
+            CommunityImageUpload.maxPixelLength
+        )
+
+        while true {
+            let renderedImage = renderCommunityImage(
+                image,
+                originalPixelSize: originalPixelSize,
+                targetLongestSide: targetLongestSide
+            )
+
+            for quality in CommunityImageUpload.jpegQualities {
+                guard let data = renderedImage.jpegData(
+                    compressionQuality: quality
+                ) else {
+                    continue
+                }
+
+                if data.count <= CommunityImageUpload.maxByteCount {
+                    return data
+                }
+            }
+
+            guard targetLongestSide > CommunityImageUpload.minPixelLength else {
+                break
+            }
+
+            targetLongestSide = max(
+                targetLongestSide * CommunityImageUpload.resizeRatio,
+                CommunityImageUpload.minPixelLength
+            )
+        }
+
+        throw AuthError.communityFailed("사진을 최적화하지 못했어요.")
+    }
+
+    private func renderCommunityImage(
+        _ image: UIImage,
+        originalPixelSize: CGSize,
+        targetLongestSide: CGFloat
+    ) -> UIImage {
+        let originalLongestSide = max(
+            originalPixelSize.width,
+            originalPixelSize.height
+        )
+        let ratio = min(1, targetLongestSide / originalLongestSide)
+        let targetSize = CGSize(
+            width: originalPixelSize.width * ratio,
+            height: originalPixelSize.height * ratio
+        )
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+
+        return UIGraphicsImageRenderer(
+            size: targetSize,
+            format: format
+        ).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: targetSize))
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+
     private static func isStorageSizeLimitError(_ error: Error) -> Bool {
         let message = (String(describing: error)).lowercased()
         return message.contains("maximum allowed size")
@@ -281,6 +412,14 @@ extension SupabaseManager {
         try await client.storage
             .from(StorageBucket.plantImages)
             .remove(paths: [path])
+    }
+
+    func deleteCommunityPostImages(paths: [String]) async throws {
+        guard !paths.isEmpty else { return }
+
+        try await client.storage
+            .from(StorageBucket.communityImages)
+            .remove(paths: paths)
     }
 }
 

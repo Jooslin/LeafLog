@@ -32,6 +32,9 @@ enum AuthError: Error {
     /// 알림 목록 저장/조회 작업이 실패했을 때
     case notificationFailed(String)
 
+    /// 커뮤니티 게시글 저장/조회 작업이 실패했을 때
+    case communityFailed(String)
+
     /// 회원탈퇴 처리 중 실패했을 때
     case withdrawalFailed(String)
 }
@@ -45,6 +48,7 @@ extension AuthError {
              .plantFailed(let message),
              .careFailed(let message),
              .notificationFailed(let message),
+             .communityFailed(let message),
              .withdrawalFailed(let message):
             return message
         case .cancelled:
