@@ -175,8 +175,10 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         state.map(\.pictures)
-            .drive(with: composeView) { view, pictures in
-                view.applyPictures(pictures.map(\.displayImage))
+            .map { $0.map(\.imageSource) }
+            .distinctUntilChanged()
+            .drive(with: composeView) { view, imageSources in
+                view.applyPictures(imageSources)
             }
             .disposed(by: disposeBag)
 
@@ -215,6 +217,21 @@ final class CommunityComposeViewController: BaseViewController, View {
         navigationController?
             .interactivePopGestureRecognizer?
             .isEnabled = !isSaving
+    }
+}
+
+private extension CommunityComposePicture {
+    var imageSource: PictureComposeView.ImageSource {
+        switch self {
+        case .existing(let image, let displayURL):
+            .remote(
+                url: displayURL,
+                cacheKey: image.id.uuidString
+            )
+        case .added(_, let displayImage),
+             .replacement(_, _, let displayImage):
+            .local(displayImage)
+        }
     }
 }
 

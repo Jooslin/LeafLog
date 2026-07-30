@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 import SnapKit
 import Then
 import RxCocoa
@@ -14,6 +15,7 @@ import RxSwift
 final class PictureComposeView: BaseCardView {
     //MARK: Components
     private let dashedBorderLayer = CAShapeLayer()
+    private var currentImageSource: ImageSource?
     
     private let plusImageView = UIImageView(image: .plus).then {
         $0.tintColor = .primary800
@@ -90,8 +92,54 @@ final class PictureComposeView: BaseCardView {
 
 //MARK: Configure
 extension PictureComposeView {
-    func setImage(_ image: UIImage?, isOccupied: Bool) {
-        imageView.image = image
+    enum ImageSource: Equatable {
+        case local(UIImage)
+        case remote(url: URL?, cacheKey: String)
+
+        static func == (lhs: ImageSource, rhs: ImageSource) -> Bool {
+            switch (lhs, rhs) {
+            case let (.local(lhsImage), .local(rhsImage)):
+                lhsImage === rhsImage
+            case let (
+                .remote(lhsURL, lhsCacheKey),
+                .remote(rhsURL, rhsCacheKey)
+            ):
+                lhsURL == rhsURL && lhsCacheKey == rhsCacheKey
+            default:
+                false
+            }
+        }
+    }
+
+    func setImage(_ source: ImageSource?, isOccupied: Bool) {
+        if currentImageSource != source {
+            currentImageSource = source
+            imageView.kf.cancelDownloadTask()
+
+            switch source {
+            case .local(let image):
+                imageView.image = image
+
+            case .remote(let url, let cacheKey):
+                imageView.image = nil
+                guard let url else { break }
+
+                let resource = KF.ImageResource(
+                    downloadURL: url,
+                    cacheKey: cacheKey
+                )
+                imageView.kf.setImage(
+                    with: resource,
+                    options: [
+                        .cacheOriginalImage,
+                        .transition(.fade(0.2))
+                    ]
+                )
+
+            case nil:
+                imageView.image = nil
+            }
+        }
 
         imageView.isHidden = !isOccupied
         cancelButton.isHidden = !isOccupied
