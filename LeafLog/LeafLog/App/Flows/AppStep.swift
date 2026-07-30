@@ -59,6 +59,8 @@ enum AppStep: Step {
     )
     
     //CommunityTab
+    case communityComposeCreate
+    case communityComposeEdit(CommunityPost)
     case composeNotice
     
     // MyInfoTab

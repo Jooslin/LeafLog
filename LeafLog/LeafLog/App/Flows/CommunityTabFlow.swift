@@ -30,9 +30,8 @@ final class CommunityTabFlow: Flow {
         switch step {
         case .communityTab:
             //TODO: Community Main VC로 변경 필요
-            let mode = CommunityComposeMode.create
-            let viewController = CommunityComposeViewController(mode: mode)
-            viewController.reactor = CommunityComposeReactor(mode: mode)
+            let viewController = CommunityTempViewController()
+            viewController.reactor = CommunityTempReactor()
             navigationController.setViewControllers([viewController], animated: false)
 
             return .one(
@@ -41,6 +40,12 @@ final class CommunityTabFlow: Flow {
                     withNextStepper: viewController
                 )
             )
+
+        case .communityComposeCreate:
+            return navigateToCompose(mode: .create)
+
+        case .communityComposeEdit(let post):
+            return navigateToCompose(mode: .edit(post))
             
         case .composeNotice:
             let notice = CommunityInfoViewController()
@@ -48,9 +53,30 @@ final class CommunityTabFlow: Flow {
             navigationController.present(notice, animated: false)
         
             return .none
+
+        case .pageBack:
+            navigationController.popViewController(animated: true)
+            return .none
             
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
+    }
+}
+
+private extension CommunityTabFlow {
+    func navigateToCompose(
+        mode: CommunityComposeMode
+    ) -> FlowContributors {
+        let viewController = CommunityComposeViewController(mode: mode)
+        viewController.reactor = CommunityComposeReactor(mode: mode)
+        navigationController.pushViewController(viewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController
+            )
+        )
     }
 }
