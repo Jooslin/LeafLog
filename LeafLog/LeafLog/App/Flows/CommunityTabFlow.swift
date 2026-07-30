@@ -30,7 +30,9 @@ final class CommunityTabFlow: Flow {
         switch step {
         case .communityTab:
             //TODO: Community Main VC로 변경 필요
-            let viewController = CommunityComposeViewController()
+            let mode = CommunityComposeMode.create
+            let viewController = CommunityComposeViewController(mode: mode)
+            viewController.reactor = CommunityComposeReactor(mode: mode)
             navigationController.setViewControllers([viewController], animated: false)
 
             return .one(

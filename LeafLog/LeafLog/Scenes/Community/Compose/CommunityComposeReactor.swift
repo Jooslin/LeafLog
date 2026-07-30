@@ -18,25 +18,25 @@ enum CommunityComposeMode {
 struct CommunityComposePicture {
     let existingImage: CommunityPostImage?
     let localImageID: UUID?
-    let previewImage: UIImage?
+    let displayImage: UIImage?
 
-    init(existingImage: CommunityPostImage, previewImage: UIImage? = nil) {
+    init(existingImage: CommunityPostImage, displayImage: UIImage? = nil) {
         self.existingImage = existingImage
         self.localImageID = nil
-        self.previewImage = previewImage
+        self.displayImage = displayImage
     }
 
     init(localImageID: UUID = UUID(), image: UIImage) {
         self.existingImage = nil
         self.localImageID = localImageID
-        self.previewImage = image
+        self.displayImage = image
     }
 
     func replacing(with image: UIImage) -> CommunityComposePicture {
         CommunityComposePicture(
             existingImage: existingImage,
             localImageID: UUID(),
-            previewImage: image
+            displayImage: image
         )
     }
 
@@ -44,18 +44,18 @@ struct CommunityComposePicture {
         CommunityComposePicture(
             existingImage: existingImage,
             localImageID: localImageID,
-            previewImage: image
+            displayImage: image
         )
     }
 
     private init(
         existingImage: CommunityPostImage?,
         localImageID: UUID?,
-        previewImage: UIImage?
+        displayImage: UIImage?
     ) {
         self.existingImage = existingImage
         self.localImageID = localImageID
-        self.previewImage = previewImage
+        self.displayImage = displayImage
     }
 }
 
@@ -371,7 +371,7 @@ final class CommunityComposeReactor: Reactor {
 
             guard
                 let localImageID = picture.localImageID,
-                let localImage = picture.previewImage
+                let localImage = picture.displayImage
             else {
                 if let existingImage = picture.existingImage {
                     imageInputs.append(

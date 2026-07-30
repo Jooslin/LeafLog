@@ -26,7 +26,6 @@ final class CommunityComposeViewController: BaseViewController, View {
         }
 
         super.init(nibName: nil, bundle: nil)
-        reactor = CommunityComposeReactor(mode: mode)
     }
 
     required init?(coder: NSCoder) {
@@ -177,7 +176,7 @@ final class CommunityComposeViewController: BaseViewController, View {
         
         state.map(\.pictures)
             .drive(with: composeView) { view, pictures in
-                view.applyPictures(pictures.map(\.previewImage))
+                view.applyPictures(pictures.map(\.displayImage))
             }
             .disposed(by: disposeBag)
 
