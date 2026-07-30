@@ -90,14 +90,13 @@ final class PictureComposeView: BaseCardView {
 
 //MARK: Configure
 extension PictureComposeView {
-    func setImage(_ image: UIImage?) {
+    func setImage(_ image: UIImage?, isOccupied: Bool) {
         imageView.image = image
 
-        let hasImage = image != nil
-        imageView.isHidden = !hasImage
-        cancelButton.isHidden = !hasImage
-        addStack.isHidden = hasImage
-        dashedBorderLayer.isHidden = hasImage
+        imageView.isHidden = !isOccupied
+        cancelButton.isHidden = !isOccupied
+        addStack.isHidden = isOccupied
+        dashedBorderLayer.isHidden = isOccupied
     }
 }
 

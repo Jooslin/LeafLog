@@ -228,12 +228,15 @@ extension CommunityComposeView {
     }
     
     // Picture
-    func applyPictures(_ pictures: [UIImage]) {
+    func applyPictures(_ pictures: [UIImage?]) {
         let visiblePictureCount = min(pictures.count + 1, pictureViews.count)
 
         for (index, pictureView) in pictureViews.enumerated() {
             let image = pictures.indices.contains(index) ? pictures[index] : nil
-            pictureView.setImage(image)
+            pictureView.setImage(
+                image,
+                isOccupied: pictures.indices.contains(index)
+            )
             pictureView.isHidden = index >= visiblePictureCount
         }
     }

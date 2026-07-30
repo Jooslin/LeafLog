@@ -13,9 +13,25 @@ import RxCocoa
 
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
-    let composeView = CommunityComposeView(mode: .create)
+    let composeView: CommunityComposeView
     private var pictureDragStartX: CGFloat?
     private var pictureDragTargetIndex: Int?
+
+    init(mode: CommunityComposeMode = .create) {
+        switch mode {
+        case .create:
+            composeView = CommunityComposeView(mode: .create)
+        case .edit:
+            composeView = CommunityComposeView(mode: .edit)
+        }
+
+        super.init(nibName: nil, bundle: nil)
+        reactor = CommunityComposeReactor(mode: mode)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     //MARK: Lifecycle
     override func loadView() {
@@ -35,6 +51,12 @@ final class CommunityComposeViewController: BaseViewController, View {
     }
     
     private func bindAction(reactor: CommunityComposeReactor) {
+        rx.viewWillAppear
+            .take(1)
+            .map { _ in CommunityComposeReactor.Action.viewWillAppear }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         //MARK: TitleView
         // 뒤로가기
         composeView.titleView.rx.backButtonTap
@@ -57,6 +79,7 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         composeView.titleTextField.rx.text.orEmpty
+            .skip(1)
             .map { CommunityComposeReactor.Action.enterTitle($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
@@ -112,6 +135,7 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         composeView.bodyTextView.rx.text.orEmpty
+            .skip(1)
             .distinctUntilChanged()
             .map { CommunityComposeReactor.Action.enterBody($0) }
             .bind(to: reactor.action)
@@ -124,16 +148,27 @@ final class CommunityComposeViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: CommunityComposeReactor) {
-        let state = reactor.state.asDriver(onErrorJustReturn: .init(category: .plantLife))
+        let state = reactor.state.asDriver(onErrorDriveWith: .empty())
         
         state.map(\.category)
             .drive(with: composeView) { view, category in
                 view.applySelectedCategory(category)
             }
             .disposed(by: disposeBag)
+
+        state.map(\.title)
+            .distinctUntilChanged()
+            .drive(with: composeView) { view, title in
+                guard view.titleTextField.text != title else { return }
+                view.titleTextField.text = title
+            }
+            .disposed(by: disposeBag)
         
         state.map(\.body)
             .drive(with: composeView) { view, text in
+                if view.bodyTextView.text != text {
+                    view.bodyTextView.text = text
+                }
                 let count = text.count
                 view.updatePlaceholderVisibility(count) // 텍스트뷰 플레이스홀더 레이블 표시 UI 설정
                 view.updateCount(count) // 텍스트 초과 표시 UI 설정
@@ -142,7 +177,7 @@ final class CommunityComposeViewController: BaseViewController, View {
         
         state.map(\.pictures)
             .drive(with: composeView) { view, pictures in
-                view.applyPictures(pictures)
+                view.applyPictures(pictures.map(\.previewImage))
             }
             .disposed(by: disposeBag)
 

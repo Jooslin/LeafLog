@@ -10,6 +10,55 @@ import ReactorKit
 import Supabase
 import Dependencies
 
+enum CommunityComposeMode {
+    case create
+    case edit(CommunityPost)
+}
+
+struct CommunityComposePicture {
+    let existingImage: CommunityPostImage?
+    let localImageID: UUID?
+    let previewImage: UIImage?
+
+    init(existingImage: CommunityPostImage, previewImage: UIImage? = nil) {
+        self.existingImage = existingImage
+        self.localImageID = nil
+        self.previewImage = previewImage
+    }
+
+    init(localImageID: UUID = UUID(), image: UIImage) {
+        self.existingImage = nil
+        self.localImageID = localImageID
+        self.previewImage = image
+    }
+
+    func replacing(with image: UIImage) -> CommunityComposePicture {
+        CommunityComposePicture(
+            existingImage: existingImage,
+            localImageID: UUID(),
+            previewImage: image
+        )
+    }
+
+    func settingPreview(_ image: UIImage) -> CommunityComposePicture {
+        CommunityComposePicture(
+            existingImage: existingImage,
+            localImageID: localImageID,
+            previewImage: image
+        )
+    }
+
+    private init(
+        existingImage: CommunityPostImage?,
+        localImageID: UUID?,
+        previewImage: UIImage?
+    ) {
+        self.existingImage = existingImage
+        self.localImageID = localImageID
+        self.previewImage = previewImage
+    }
+}
+
 final class CommunityComposeReactor: Reactor {
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
     @Dependency(\.supabaseManager) private var supabaseManager
@@ -36,6 +85,7 @@ final class CommunityComposeReactor: Reactor {
         case replacePicture(index: Int, image: UIImage)
         case removePicture(index: Int)
         case movePicture(from: Int, to: Int)
+        case setExistingPicturePreview(id: UUID, image: UIImage)
         case setSaving(Bool)
         case setSaveCompleted
         case setWarningMessage(String)
@@ -43,11 +93,13 @@ final class CommunityComposeReactor: Reactor {
     }
     
     struct State {
-        let postID = UUID()
+        let mode: CommunityComposeMode
+        let postID: UUID
         var category: PostCategory
-        var title: String = ""
-        var pictures: [UIImage] = []
-        var body: String = ""
+        var title: String
+        var pictures: [CommunityComposePicture]
+        var removedExistingImagePaths: [String] = []
+        var body: String
         var isSaving = false
         @Pulse var saveCompleted = false
         @Pulse var warningMessage: String?
@@ -70,15 +122,38 @@ final class CommunityComposeReactor: Reactor {
         }
     }
     
-    let initialState = State(category: .plantLife)
-    
-    //MARK: Properties
-    private let calendar = Calendar.current
+    let initialState: State
+
+    init(mode: CommunityComposeMode = .create) {
+        switch mode {
+        case .create:
+            initialState = State(
+                mode: mode,
+                postID: UUID(),
+                category: .plantLife,
+                title: "",
+                pictures: [],
+                body: ""
+            )
+
+        case .edit(let post):
+            initialState = State(
+                mode: mode,
+                postID: post.id,
+                category: post.category,
+                title: post.title,
+                pictures: post.images
+                    .sorted { $0.sortOrder < $1.sortOrder }
+                    .map { CommunityComposePicture(existingImage: $0) },
+                body: post.content
+            )
+        }
+    }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return .empty()
+            return loadExistingPicturePreviews(state: currentState)
         case .selectCategory(let tag):
             return
                 .just(.setCategory(PostCategory(rawValue: tag) ?? .plantLife))
@@ -107,17 +182,25 @@ final class CommunityComposeReactor: Reactor {
         case .setTitle(let title):
             newState.title = title
         case .appendPictures(let pictures):
-            newState.pictures.append(contentsOf: pictures)
+            newState.pictures.append(
+                contentsOf: pictures.map {
+                    CommunityComposePicture(image: $0)
+                }
+            )
         case let .replacePicture(index, image):
             guard newState.pictures.indices.contains(index) else {
                 return state
             }
-            newState.pictures[index] = image
+            newState.pictures[index] = newState.pictures[index]
+                .replacing(with: image)
         case .removePicture(let index):
             guard newState.pictures.indices.contains(index) else {
                 return state
             }
-            newState.pictures.remove(at: index)
+            let removedPicture = newState.pictures.remove(at: index)
+            if let imagePath = removedPicture.existingImage?.imagePath {
+                newState.removedExistingImagePaths.append(imagePath)
+            }
         case let .movePicture(from, to):
             guard
                 newState.pictures.indices.contains(from),
@@ -127,6 +210,14 @@ final class CommunityComposeReactor: Reactor {
             }
             let picture = newState.pictures.remove(at: from)
             newState.pictures.insert(picture, at: to)
+        case let .setExistingPicturePreview(id, image):
+            guard let index = newState.pictures.firstIndex(where: {
+                $0.existingImage?.id == id && $0.localImageID == nil
+            }) else {
+                return state
+            }
+            newState.pictures[index] = newState.pictures[index]
+                .settingPreview(image)
         case .setBody(let body):
             newState.body = body
         case .setSaving(let isSaving):
@@ -143,6 +234,48 @@ final class CommunityComposeReactor: Reactor {
         return newState
     }
 
+    private func loadExistingPicturePreviews(
+        state: State
+    ) -> Observable<Mutation> {
+        let existingImages = state.pictures.compactMap(\.existingImage)
+
+        return Observable.from(existingImages)
+            .concatMap { [supabaseManager] image in
+                Single<UIImage?>.create {
+                    guard let url = try await supabaseManager
+                        .resolveCommunityPostImageURL(
+                            from: image.imagePath,
+                            cacheKey: image.id.uuidString
+                        )
+                    else {
+                        return nil
+                    }
+
+                    let (data, response) = try await URLSession.shared.data(
+                        from: url
+                    )
+                    guard
+                        let response = response as? HTTPURLResponse,
+                        (200..<300).contains(response.statusCode)
+                    else {
+                        return nil
+                    }
+
+                    return UIImage(data: data)
+                }
+                .asObservable()
+                .compactMap { preview in
+                    preview.map {
+                        Mutation.setExistingPicturePreview(
+                            id: image.id,
+                            image: $0
+                        )
+                    }
+                }
+                .catch { _ in .empty() }
+            }
+    }
+
     private func savePost(state: State) -> Observable<Mutation> {
         guard !state.isSaving else { return .empty() }
 
@@ -154,22 +287,35 @@ final class CommunityComposeReactor: Reactor {
                 )
             }
 
-            let uploadResult = try await Self.uploadPictures(
+            let uploadResult = try await Self.preparePictures(
                 state.pictures,
                 userID: userID,
                 postID: state.postID,
                 supabaseManager: supabaseManager
             )
-
-            _ = try await communityPostDBManager.createPost(
-                input: CommunityPostSaveInput(
-                    id: state.postID,
-                    category: state.category,
-                    title: state.title,
-                    content: state.body,
-                    images: uploadResult.images
-                )
+            let input = CommunityPostSaveInput(
+                id: state.postID,
+                category: state.category,
+                title: state.title,
+                content: state.body,
+                images: uploadResult.images
             )
+
+            switch state.mode {
+            case .create:
+                _ = try await communityPostDBManager.createPost(input: input)
+
+            case .edit:
+                _ = try await communityPostDBManager.updatePost(input: input)
+
+                let deletedPaths = Set(
+                    state.removedExistingImagePaths
+                        + uploadResult.replacedImagePaths
+                )
+                try? await supabaseManager.deleteCommunityPostImages(
+                    paths: Array(deletedPaths)
+                )
+            }
 
             return uploadResult.hasImageUploadFailure
         }
@@ -210,39 +356,68 @@ final class CommunityComposeReactor: Reactor {
         )
     }
 
-    private static func uploadPictures(
-        _ pictures: [UIImage],
+    private static func preparePictures(
+        _ pictures: [CommunityComposePicture],
         userID: UUID,
         postID: UUID,
         supabaseManager: SupabaseManager
     ) async throws -> CommunityImageUploadResult {
-        var uploadedImages: [CommunityPostImageInput] = []
+        var imageInputs: [CommunityPostImageInput] = []
+        var replacedImagePaths: [String] = []
         var hasImageUploadFailure = false
 
         for picture in pictures {
             try Task.checkCancellation()
-            let imageID = UUID()
+
+            guard
+                let localImageID = picture.localImageID,
+                let localImage = picture.previewImage
+            else {
+                if let existingImage = picture.existingImage {
+                    imageInputs.append(
+                        CommunityPostImageInput(
+                            id: existingImage.id,
+                            imagePath: existingImage.imagePath
+                        )
+                    )
+                }
+                continue
+            }
 
             if let imagePath = try await uploadPicture(
-                picture,
+                localImage,
                 userID: userID,
                 postID: postID,
-                imageID: imageID,
+                imageID: localImageID,
                 supabaseManager: supabaseManager
             ) {
-                uploadedImages.append(
+                imageInputs.append(
                     CommunityPostImageInput(
-                        id: imageID,
+                        id: localImageID,
                         imagePath: imagePath
                     )
                 )
+
+                if let existingPath = picture.existingImage?.imagePath {
+                    replacedImagePaths.append(existingPath)
+                }
             } else {
                 hasImageUploadFailure = true
+
+                if let existingImage = picture.existingImage {
+                    imageInputs.append(
+                        CommunityPostImageInput(
+                            id: existingImage.id,
+                            imagePath: existingImage.imagePath
+                        )
+                    )
+                }
             }
         }
 
         return CommunityImageUploadResult(
-            images: uploadedImages,
+            images: imageInputs,
+            replacedImagePaths: replacedImagePaths,
             hasImageUploadFailure: hasImageUploadFailure
         )
     }
@@ -279,5 +454,6 @@ final class CommunityComposeReactor: Reactor {
 
 private struct CommunityImageUploadResult {
     let images: [CommunityPostImageInput]
+    let replacedImagePaths: [String]
     let hasImageUploadFailure: Bool
 }
