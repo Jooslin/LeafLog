@@ -22,6 +22,40 @@ final class CommunityPostDBManager {
         try await savePost(function: "update_community_post", input: input)
     }
 
+    func fetchMyPosts(
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
+
+        do {
+            let user = try await supabaseManager.client.auth.user()
+
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("author_id", value: user.id)
+                .is("deleted_at", value: nil)
+                .order("created_at", ascending: false)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
+        } catch let error as AuthError {
+            throw error
+        } catch {
+            throw AuthError.communityFailed(
+                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
     private func savePost(
         function: String,
         input: CommunityPostSaveInput
