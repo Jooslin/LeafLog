@@ -209,6 +209,14 @@ final class CommunityComposeViewController: BaseViewController, View {
                 viewController.steps.accept(AppStep.alert("안내", message))
             }
             .disposed(by: disposeBag)
+        
+        //TODO: 저장 성공 시 글 상세 화면으로 넘어가도록 step 변경 필요
+        reactor.pulse(\.$saveCompleted)
+            .map { $0 }
+            .subscribe(with: self) { viewController, isCompleted in
+                if isCompleted { viewController.steps.accept(AppStep.pageBack) }
+            }
+            .disposed(by: disposeBag)
     }
 
     private func setSaving(_ isSaving: Bool) {
