@@ -85,6 +85,7 @@ final class CommunityComposeViewController: BaseViewController, View {
         composeView.titleTextField.delegate = self
         
         composeView.rx.pictureViewTap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
             .withLatestFrom(reactor.state.map(\.pictures.count)) { index, pictureCount in
                 (index, pictureCount)
             }
@@ -140,6 +141,7 @@ final class CommunityComposeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         composeView.saveButton.rx.tap
+            .throttle(.milliseconds(500), scheduler: MainScheduler.instance)
             .map { CommunityComposeReactor.Action.saveTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
