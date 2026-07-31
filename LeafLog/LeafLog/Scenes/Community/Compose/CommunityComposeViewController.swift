@@ -14,8 +14,8 @@ import RxCocoa
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
     let composeView: CommunityComposeView
-    private var pictureDragStartX: CGFloat?
-    private var pictureDragTargetIndex: Int?
+    private var pictureDragStartX: CGFloat? // 사진 순서 변경용 드래그 시작 지점 좌표
+    private var pictureDragTargetIndex: Int? // 사진 순서 변경용 타겟 사진 순서 인덱스
 
     init(mode: CommunityComposeMode = .create) {
         switch mode {
@@ -39,7 +39,6 @@ final class CommunityComposeViewController: BaseViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        hidesBottomBarWhenPushed = true
         navigationController?.navigationBar.isHidden = true
     }
     

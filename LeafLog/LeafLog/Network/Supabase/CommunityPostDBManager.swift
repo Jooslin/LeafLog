@@ -12,8 +12,6 @@ import Supabase
 final class CommunityPostDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
 
-    private init() {}
-
     func createPost(input: CommunityPostSaveInput) async throws -> CommunityPost {
         try await savePost(function: "create_community_post", input: input)
     }
