@@ -114,11 +114,6 @@ final class CommunityTempViewController: BaseViewController, View {
         tabBarController?.tabBar.isHidden = false
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        tabBarController?.tabBar.isHidden = true
-    }
-    
     func bind(reactor: CommunityTempReactor) {
         createButton.rx.tap
             .subscribe(with: self) { viewController, _ in

@@ -37,9 +37,43 @@ final class CommunityComposeViewController: BaseViewController, View {
         view = composeView
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.navigationBar.isHidden = true
+        setKeyboardDismissGesture()
+    }
+
+    override func setKeyboardDismissGesture() {
+        let tapGesture = UITapGestureRecognizer()
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+
+        tapGesture.rx.event
+            .filter { [weak self] gesture in
+                guard let self else { return false }
+
+                let location = gesture.location(in: view)
+                guard let touchedView = view.hitTest(location, with: nil) else {
+                    return true
+                }
+
+                let inputViews = [
+                    composeView.titleTextField,
+                    composeView.bodyTextView
+                ]
+
+                return !inputViews.contains {
+                    touchedView === $0 || touchedView.isDescendant(of: $0)
+                }
+            }
+            .subscribe(with: self) { viewController, _ in
+                viewController.view.endEditing(true)
+            }
+            .disposed(by: disposeBag)
     }
     
     //MARK: Bind
