@@ -432,6 +432,8 @@ extension CommunityComposeViewController {
         targetIndex: Int,
         pictureCount: Int
     ) {
+        guard pictureCount >= 2 else { return }
+
         let slotDistance = abs(
             pictureCenterX(at: 1) - pictureCenterX(at: 0)
         )
