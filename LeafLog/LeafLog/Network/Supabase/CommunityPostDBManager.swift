@@ -77,25 +77,15 @@ final class CommunityPostDBManager {
     private func makeParameters(
         input: CommunityPostSaveInput
     ) throws -> CommunityPostRPCParameters {
-        let title = input.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let isContentEmpty = input.content
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
-
-        guard !title.isEmpty else {
-            throw AuthError.communityFailed("제목을 입력해주세요.")
-        }
-
-        guard title.count <= 50 else {
-            throw AuthError.communityFailed("제목은 최대 50자까지 입력할 수 있어요.")
-        }
-
-        guard !isContentEmpty else {
-            throw AuthError.communityFailed("내용을 입력해주세요.")
-        }
-
-        guard input.content.count <= 1_000 else {
-            throw AuthError.communityFailed("내용은 최대 1,000자까지 입력할 수 있어요.")
+        let validatedText: (title: String, content: String)
+        switch CommunityPostValidation.validate(
+            title: input.title,
+            content: input.content
+        ) {
+        case let .valid(title, content):
+            validatedText = (title, content)
+        case let .invalid(message):
+            throw AuthError.communityFailed(message)
         }
 
         let uniqueImageIDs = Set(input.images.map(\.id))
@@ -119,8 +109,8 @@ final class CommunityPostDBManager {
         return CommunityPostRPCParameters(
             postID: input.id,
             category: input.category.databaseValue,
-            title: title,
-            content: input.content,
+            title: validatedText.title,
+            content: validatedText.content,
             images: imagePayloads
         )
     }

@@ -78,17 +78,10 @@ final class CommunityComposeReactor: Reactor {
         @Pulse var errorMessage: String?
         
         var isButtonActive: Bool {
-            let normalizedTitle = title.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            let normalizedBody = body.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-
-            return !normalizedTitle.isEmpty
-                && normalizedTitle.count <= 50
-                && !normalizedBody.isEmpty
-                && body.count <= CommunityComposeView.bodyMaxCount
+            CommunityPostValidation.validate(
+                title: title,
+                content: body
+            ).isValid
                 && !isSaving
                 && !saveCompleted
         }
@@ -283,6 +276,17 @@ final class CommunityComposeReactor: Reactor {
     private func savePost(state: State) -> Observable<Mutation> {
         guard !state.isSaving else { return .empty() }
 
+        let validatedText: (title: String, content: String)
+        switch CommunityPostValidation.validate(
+            title: state.title,
+            content: state.body
+        ) {
+        case let .valid(title, content):
+            validatedText = (title, content)
+        case let .invalid(message):
+            return .just(.setErrorMessage(message))
+        }
+
         let savePostSingle = Single<Bool>.create {
             [communityPostDBManager, supabaseManager] in
             guard let userID = supabaseManager.client.auth.currentUser?.id else {
@@ -300,8 +304,8 @@ final class CommunityComposeReactor: Reactor {
             let input = CommunityPostSaveInput(
                 id: state.postID,
                 category: state.category,
-                title: state.title,
-                content: state.body,
+                title: validatedText.title,
+                content: validatedText.content,
                 images: uploadResult.images
             )
 

@@ -508,7 +508,7 @@ extension CommunityComposeViewController: UITextFieldDelegate, UITextViewDelegat
             with: string
         )
 
-        return updatedText.count <= 50
+        return updatedText.count <= CommunityPostValidation.titleMaxCount
     }
 
     // 글자수 제한 기능
@@ -523,12 +523,14 @@ extension CommunityComposeViewController: UITextFieldDelegate, UITextViewDelegat
         }
 
         let updatedText = currentText.replacingCharacters(in: textRange, with: text)
-        if updatedText.count <= CommunityComposeView.bodyMaxCount {
+        if updatedText.count <= CommunityPostValidation.contentMaxCount {
             return true
         }
 
         let replaceCount = currentText[textRange].count // 글자를 붙여넣기할 때 붙여넣을 글자의 수
-        let remainingCount = CommunityComposeView.bodyMaxCount - currentText.count + replaceCount
+        let remainingCount = CommunityPostValidation.contentMaxCount
+            - currentText.count
+            + replaceCount
         guard remainingCount > 0 else {
             return false
         }

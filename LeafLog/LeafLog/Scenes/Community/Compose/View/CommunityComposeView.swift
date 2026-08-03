@@ -244,9 +244,10 @@ extension CommunityComposeView {
     }
     
     // TextView
-    static let bodyMaxCount = 1000
-
-    func updateCount(_ current: Int, max: Int = CommunityComposeView.bodyMaxCount) {
+    func updateCount(
+        _ current: Int,
+        max: Int = CommunityPostValidation.contentMaxCount
+    ) {
         if current >= max {
             let text = "최대 1,000자까지 입력할 수 있어요. \(current)/\(max)"
             bodyCountLabel.text = text
