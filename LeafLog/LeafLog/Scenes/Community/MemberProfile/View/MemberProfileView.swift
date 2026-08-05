@@ -48,7 +48,6 @@ final class MemberProfileView: UIView {
     private let postCountLabel = UILabel(text: "", config: .label14, color: .primary700, lines: 1)
     private let likeCountLabel = UILabel(text: "", config: .label14, color: .primary700, lines: 1)
     private let sectionTitleLabel = UILabel(text: "게시글", config: .title18, color: .black, lines: 1)
-    
     fileprivate let sortButton = UIButton(configuration: .plain()).then {
         $0.setTitle("최신순", for: .normal)
         $0.setTitleColor(.black, for: .normal)
@@ -60,6 +59,7 @@ final class MemberProfileView: UIView {
     }
     
     private var postCollectionHeightConstraint: Constraint?
+    private lazy var emptyActivityBackgroundView = makeEmptyActivityBackgroundView()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -82,7 +82,9 @@ final class MemberProfileView: UIView {
     }
     
     func updatePostCollectionHeight(itemCount: Int) {
-        postCollectionHeightConstraint?.update(offset: CGFloat(itemCount) * 150)
+        let isEmpty = itemCount == 0
+        postCollectionView.backgroundView = isEmpty ? emptyActivityBackgroundView : nil
+        postCollectionHeightConstraint?.update(offset: isEmpty ? 120 : CGFloat(itemCount) * 150)
         layoutIfNeeded()
     }
 }
@@ -181,6 +183,26 @@ private extension MemberProfileView {
             $0.minimumLineSpacing = 0
             $0.estimatedItemSize = .zero
         }
+    }
+    
+    func makeEmptyActivityBackgroundView() -> UIView {
+        let backgroundView = UIView()
+        let label = UILabel(
+            text: "활동 내역이 없어요",
+            config: .body14,
+            color: .grayScale500,
+            lines: 1
+        ).then {
+            $0.textAlignment = .center
+        }
+        
+        backgroundView.addSubview(label)
+        label.snp.makeConstraints {
+            $0.top.equalToSuperview().offset(46)
+            $0.horizontalEdges.equalToSuperview().inset(16)
+        }
+        
+        return backgroundView
     }
 }
 
