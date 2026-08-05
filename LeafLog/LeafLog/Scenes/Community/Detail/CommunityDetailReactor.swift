@@ -42,6 +42,7 @@ final class CommunityDetailReactor: Reactor {
         case viewDidLoad
         case moreButtonTapped
         case postImageTapped(index: Int)
+        case commentProfileImageTapped(index: Int)
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
@@ -50,11 +51,13 @@ final class CommunityDetailReactor: Reactor {
     enum Mutation {
         case setLoading(Bool)
         case presentImageViewer(ImageViewerRoute)
+        case routeToMemberProfile(commentIndex: Int)
     }
     
     struct State {
         var isLoading = false
         @Pulse var imageViewerRoute: ImageViewerRoute?
+        @Pulse var memberProfileRoute: Int?
         var post = Post(
             category: "식물 일상",
             title: "우리집 몬스테라 새잎이 나왔어요!",
@@ -117,6 +120,11 @@ final class CommunityDetailReactor: Reactor {
                 initialIndex: index
             )))
             
+        case .commentProfileImageTapped(let index):
+            guard currentState.comments.indices.contains(index) else { return .empty() }
+            
+            return .just(.routeToMemberProfile(commentIndex: index))
+            
         case .moreButtonTapped,
              .heartButtonTapped,
              .commentButtonTapped,
@@ -134,6 +142,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
+            
+        case .routeToMemberProfile(let commentIndex):
+            newState.memberProfileRoute = commentIndex
         }
         
         return newState

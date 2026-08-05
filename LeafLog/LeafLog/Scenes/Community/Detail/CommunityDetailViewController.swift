@@ -94,6 +94,13 @@ final class CommunityDetailViewController: BaseViewController, View {
                 self?.presentImageViewer(route: route)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$memberProfileRoute)
+            .compactMap { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                self?.steps.accept(AppStep.memberProfile)
+            })
+            .disposed(by: disposeBag)
     }
     
     private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
@@ -123,6 +130,13 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
         }
         
         cell.configure(comments[indexPath.item])
+        if let reactor {
+            cell.rx.profileImageTap
+                .map { CommunityDetailReactor.Action.commentProfileImageTapped(index: indexPath.item) }
+                .bind(to: reactor.action)
+                .disposed(by: cell.disposeBag)
+        }
+        
         return cell
     }
 }

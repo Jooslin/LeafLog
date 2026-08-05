@@ -5,14 +5,17 @@
 //  Created by Yeseul Jang on 7/7/26.
 //
 
+import RxCocoa
+import RxSwift
 import SnapKit
 import Then
 import UIKit
 
 final class CommunityCommentCell: UICollectionViewCell {
     static let reuseIdentifier = "CommunityCommentCell"
+    var disposeBag = DisposeBag()
     
-    private let profileImageView = UIView().then {
+    fileprivate let profileImageButton = UIButton(type: .custom).then {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 10
         $0.clipsToBounds = true
@@ -73,6 +76,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
+        disposeBag = DisposeBag()
         applyBadge(.none)
     }
     
@@ -99,20 +103,20 @@ final class CommunityCommentCell: UICollectionViewCell {
             $0.alignment = .center
         }
         
-        contentView.addSubview(profileImageView)
+        contentView.addSubview(profileImageButton)
         contentView.addSubview(topStackView)
         contentView.addSubview(bodyLabel)
         contentView.addSubview(moreButton)
         
-        profileImageView.snp.makeConstraints {
+        profileImageButton.snp.makeConstraints {
             $0.top.equalToSuperview().inset(8)
             $0.leading.equalToSuperview().inset(20)
             $0.width.height.equalTo(20)
         }
         
         topStackView.snp.makeConstraints {
-            $0.centerY.equalTo(profileImageView)
-            $0.leading.equalTo(profileImageView.snp.trailing).offset(8)
+            $0.centerY.equalTo(profileImageButton)
+            $0.leading.equalTo(profileImageButton.snp.trailing).offset(8)
             $0.trailing.lessThanOrEqualTo(moreButton.snp.leading).offset(-8)
         }
         
@@ -128,11 +132,17 @@ final class CommunityCommentCell: UICollectionViewCell {
         }
         
         bodyLabel.snp.makeConstraints {
-            $0.top.equalTo(profileImageView.snp.bottom).offset(6)
+            $0.top.equalTo(profileImageButton.snp.bottom).offset(6)
             $0.leading.equalToSuperview().inset(20)
             $0.trailing.equalToSuperview().inset(20)
             $0.bottom.lessThanOrEqualToSuperview().inset(8)
         }
+    }
+}
+
+extension Reactive where Base: CommunityCommentCell {
+    var profileImageTap: ControlEvent<Void> {
+        base.profileImageButton.rx.tap
     }
 }
 
