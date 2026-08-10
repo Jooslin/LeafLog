@@ -29,6 +29,7 @@ enum AppStep: Step {
     case endPlantRegisterEdit
     case endPlantDelete
     case calendarTab
+    case communityTab
     case myInfoTab
     case profileEdit // 프로필 수정 화면
     case record(plantID: UUID, date: Date = Date())
@@ -56,6 +57,11 @@ enum AppStep: Step {
         okTitle: String,
         onConfirm: () -> Void
     )
+    
+    //CommunityTab
+    case communityComposeCreate
+    case communityComposeEdit(CommunityPost)
+    case composeNotice
     
     // MyInfoTab
     case profileImageSourceSheet
