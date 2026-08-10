@@ -111,7 +111,7 @@ extension NotificationCenterView {
             case .list:
                 collectionView.dequeueConfiguredReusableCell(using: alarmCellRegistration, for: indexPath, item: item)
             default:
-                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+                fatalError("NotificationCollectionView: 유효하지 않은 섹션입니다.")
             }
         }
         
