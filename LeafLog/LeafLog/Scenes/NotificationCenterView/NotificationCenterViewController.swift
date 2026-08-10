@@ -84,3 +84,9 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
     }
 }
+
+//MARK: Preview
+@available(iOS 17.0, *)
+#Preview {
+  NotificationCenterViewController()
+}

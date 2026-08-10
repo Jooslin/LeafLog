@@ -18,6 +18,8 @@ final class NotificationCenterView: UIView {
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     
+    let categorySegment = UISegmentedControl(categories: ["관리", "활동"])
+    
     let emptyView = EmptyView(image: OthersImageAsset.bellColored.rawValue, title: "아직 받은 알림이 없어요", subTitle: "물주기나 관리 일정이 생기면\n알림으로 알려드릴게요.", needButton: false).then {
         $0.isHidden = true
     }
@@ -37,6 +39,7 @@ final class NotificationCenterView: UIView {
         addSubview(listView)
         addSubview(emptyView)
         addSubview(titleView)
+        addSubview(categorySegment)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -44,8 +47,14 @@ final class NotificationCenterView: UIView {
             $0.height.equalTo(48)
         }
         
-        listView.snp.makeConstraints {
+        categorySegment.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom).offset(24)
+            $0.horizontalEdges.equalToSuperview().inset(16)
+            $0.height.equalTo(44)
+        }
+        
+        listView.snp.makeConstraints {
+            $0.top.equalTo(categorySegment.snp.bottom).offset(24)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
         
