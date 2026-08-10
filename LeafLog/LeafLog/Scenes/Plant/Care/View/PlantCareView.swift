@@ -75,19 +75,7 @@ final class PlantCareView: UIView {
         )
     }
 
-    let segmentedControl = UISegmentedControl(items: ["기록", "식물정보", "타임라인"]).then {
-        $0.selectedSegmentIndex = 0
-        $0.backgroundColor = .grayScale50
-        $0.selectedSegmentTintColor = .primary600
-        $0.setTitleTextAttributes([
-            .foregroundColor: UIColor.grayScale400,
-            .font: UIFont.systemFont(ofSize: 14, weight: .medium)
-        ], for: .normal)
-        $0.setTitleTextAttributes([
-            .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 14, weight: .semibold)
-        ], for: .selected)
-    }
+    let segmentedControl = UISegmentedControl(categories: ["기록", "식물정보", "타임라인"])
 
     var onPreviousDateTapped: (() -> Void)?
     var onNextDateTapped: (() -> Void)?
