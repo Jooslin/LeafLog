@@ -136,6 +136,25 @@ extension NotificationCenterReactor {
         
         return .just(.setCategory(category))
     }
+
+    // 카테고리 조회 여부 판단
+    // - inFlightCategory: 기존에 알람을 조회중인 카테고리
+    // - $0: 선택된 카테고리
+    // -> 기존 카테고리와 선택된 카테고리가 동일할 경우에는 반환값이 없음
+    // -> 상이할 경우에만 반환값 있음: 기존 진행중이던 조회 task를 취소
+    private func differentCategorySelected(
+        from inFlightCategory: AppNotificationCategory
+    ) -> Observable<AppNotificationCategory> {
+        action
+            .compactMap { action in
+                guard case .categorySelected(let index) = action else {
+                    return nil
+                }
+
+                return AppNotificationCategory(rawValue: index)
+            }
+            .filter { $0 != inFlightCategory }
+    }
 }
 
 extension NotificationCenterReactor {
