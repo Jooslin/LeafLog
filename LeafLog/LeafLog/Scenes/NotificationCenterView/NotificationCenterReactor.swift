@@ -42,13 +42,34 @@ final class NotificationCenterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return notifications(category: currentState.category)
+            let category = currentState.category
+
+            return notifications(category: category)
+                .take(until: differentCategorySelected(from: category))
             
         case .refresh:
-            return notifications(category: currentState.category)
+            guard !currentState.isCategoryLoading else {
+                return .empty()
+            }
+
+            let category = currentState.category
+
+            return notifications(category: category)
+                .take(until: differentCategorySelected(from: category))
             
         case .categorySelected(let index):
-            return notificationCategory(of: index)
+            guard let category = AppNotificationCategory(rawValue: index),
+                  category != currentState.category else {
+                return .empty()
+            }
+
+            return Observable.concat([
+                .just(.setCategory(category)),
+                .just(.setCategoryLoading(true)),
+                notifications(category: category),
+                .just(.setCategoryLoading(false))
+            ])
+            .take(until: differentCategorySelected(from: category))
         }
     }
     
@@ -129,14 +150,6 @@ extension NotificationCenterReactor {
         }
     }
     
-    private func notificationCategory(of index: Int) -> Observable<Mutation> {
-        guard let category = AppNotificationCategory(rawValue: index) else {
-            return .empty()
-        }
-        
-        return .just(.setCategory(category))
-    }
-
     // 카테고리 조회 여부 판단
     // - inFlightCategory: 기존에 알람을 조회중인 카테고리
     // - $0: 선택된 카테고리
