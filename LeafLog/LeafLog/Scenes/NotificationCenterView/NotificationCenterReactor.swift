@@ -46,7 +46,7 @@ final class NotificationCenterReactor: Reactor {
             return notifications(category: currentState.category)
             
         case .categorySelected(let index):
-            return notificationCateogry(of: index)
+            return notificationCategory(of: index)
         }
     }
     
@@ -124,7 +124,7 @@ extension NotificationCenterReactor {
         }
     }
     
-    private func notificationCateogry(of index: Int) -> Observable<Mutation> {
+    private func notificationCategory(of index: Int) -> Observable<Mutation> {
         guard let category = AppNotificationCategory(rawValue: index) else {
             return .empty()
         }

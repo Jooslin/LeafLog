@@ -60,9 +60,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         notificationCenterView.categorySegment.rx.selectedSegmentIndex
+            .skip(1)
+            .distinctUntilChanged()
             .map {
                 NotificationCenterReactor.Action.categorySelected($0)
-                }
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
