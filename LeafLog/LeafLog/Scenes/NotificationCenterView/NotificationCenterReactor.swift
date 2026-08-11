@@ -20,6 +20,7 @@ final class NotificationCenterReactor: Reactor {
     
     enum Mutation {
         case setAlarm([NotificationCenterView.Item])
+        case setCategory(AppNotificationCategory)
         case error(String)
     }
     
@@ -45,7 +46,7 @@ final class NotificationCenterReactor: Reactor {
             return notifications(category: currentState.category)
             
         case .categorySelected(let index):
-            return .empty()
+            return .just(.setCategory(AppNotificationCategory(rawValue: index)!))
         }
     }
     
@@ -55,6 +56,10 @@ final class NotificationCenterReactor: Reactor {
         switch mutation {
         case .setAlarm(let items):
             newState.alarmItem = items
+            
+        case .setCategory(let category):
+            newState.category = category
+            
         case .error(let message):
             newState.errorMessage = message
         }

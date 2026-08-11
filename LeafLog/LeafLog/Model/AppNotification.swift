@@ -7,9 +7,16 @@
 
 import Foundation
 
-enum AppNotificationCategory: String, Codable {
-    case management
+enum AppNotificationCategory: Int, Codable {
+    case management = 0
     case community
+    
+    var title: String {
+        switch self {
+        case .management: "management"
+        case .community: "community"
+        }
+    }
 }
 
 enum AppNotificationType: String, Codable {

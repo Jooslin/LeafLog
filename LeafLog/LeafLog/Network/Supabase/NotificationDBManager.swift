@@ -24,7 +24,7 @@ final class NotificationDBManager {
                 .from("notifications")
                 .select()
                 .eq("user_id", value: user.id)
-                .eq("category", value: category.rawValue)
+                .eq("category", value: category.title)
                 .not("sent_at", operator: .is, value: "null")
                 .order("created_at", ascending: false)
                 .limit(limit)
