@@ -15,6 +15,7 @@ final class NotificationCenterReactor: Reactor {
     enum Action {
         case viewWillAppear
         case refresh
+        case categorySelected(Int)
     }
     
     enum Mutation {
@@ -24,6 +25,7 @@ final class NotificationCenterReactor: Reactor {
     
     struct State {
         var alarmItem: [NotificationCenterView.Item] = []
+        var category: AppNotificationCategory = .management
         @Pulse var errorMessage: String?
     }
     
@@ -37,10 +39,13 @@ final class NotificationCenterReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return notifications()
+            return notifications(category: currentState.category)
             
         case .refresh:
-            return notifications()
+            return notifications(category: currentState.category)
+            
+        case .categorySelected(let index):
+            return .empty()
         }
     }
     
@@ -59,7 +64,7 @@ final class NotificationCenterReactor: Reactor {
 }
 
 extension NotificationCenterReactor {
-    private func notifications() -> Observable<Mutation> {
+    private func notifications(category: AppNotificationCategory) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task { [weak self] in
                 guard let self else {
@@ -69,7 +74,7 @@ extension NotificationCenterReactor {
                 
                 do {
                     let now = Date()
-                    let notifications = try await self.notificationDBManager.fetchMyNotifications()
+                    let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
                     
                     let items = notifications.map {
                         let time = self.calculateExcessAlarmTime(from: $0.sentAt, to: now)
