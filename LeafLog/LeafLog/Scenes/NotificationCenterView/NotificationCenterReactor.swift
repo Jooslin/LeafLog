@@ -21,14 +21,14 @@ final class NotificationCenterReactor: Reactor {
     enum Mutation {
         case setAlarm([NotificationCenterView.Item])
         case setCategory(AppNotificationCategory)
-        case setCategoryLoading(Bool)
+        case setCategorySelectionLoading(Bool)
         case error(String)
     }
     
     struct State {
         var alarmItem: [NotificationCenterView.Item] = []
         var category: AppNotificationCategory = .management
-        var isCategoryLoading = false
+        var isCategorySelectionLoading = false
         @Pulse var errorMessage: String?
     }
     
@@ -48,7 +48,7 @@ final class NotificationCenterReactor: Reactor {
                 .take(until: differentCategorySelected(from: category))
             
         case .refresh:
-            guard !currentState.isCategoryLoading else {
+            guard !currentState.isCategorySelectionLoading else {
                 return .empty()
             }
 
@@ -65,9 +65,9 @@ final class NotificationCenterReactor: Reactor {
 
             return Observable.concat([
                 .just(.setCategory(category)),
-                .just(.setCategoryLoading(true)),
+                .just(.setCategorySelectionLoading(true)),
                 notifications(category: category),
-                .just(.setCategoryLoading(false))
+                .just(.setCategorySelectionLoading(false))
             ])
             .take(until: differentCategorySelected(from: category))
         }
@@ -83,8 +83,8 @@ final class NotificationCenterReactor: Reactor {
         case .setCategory(let category):
             newState.category = category
 
-        case .setCategoryLoading(let isLoading):
-            newState.isCategoryLoading = isLoading
+        case .setCategorySelectionLoading(let isLoading):
+            newState.isCategorySelectionLoading = isLoading
             
         case .error(let message):
             newState.errorMessage = message
@@ -139,6 +139,12 @@ extension NotificationCenterReactor {
                     observer.onNext(.error(error.userMessage))
                     observer.onCompleted()
                 } catch {
+                    guard !Task.isCancelled else {
+                        self.logger.debug("알림 조회 Task가 취소되었습니다.")
+                        observer.onCompleted()
+                        return
+                    }
+
                     self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
                     observer.onNext(.error("알 수 없는 오류입니다. 잠시 후 다시 시도해주세요."))
                     observer.onCompleted()
