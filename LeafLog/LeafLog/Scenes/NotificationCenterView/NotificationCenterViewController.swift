@@ -59,6 +59,13 @@ final class NotificationCenterViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        notificationCenterView.categorySegment.rx.selectedSegmentIndex
+            .map {
+                NotificationCenterReactor.Action.categorySelected($0)
+                }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         notificationCenterView.rx.backButtonTap
             .map { _ in AppStep.pageBack }
             .bind(to: steps)
