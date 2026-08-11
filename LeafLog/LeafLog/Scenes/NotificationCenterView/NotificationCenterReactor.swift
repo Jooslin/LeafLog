@@ -21,12 +21,14 @@ final class NotificationCenterReactor: Reactor {
     enum Mutation {
         case setAlarm([NotificationCenterView.Item])
         case setCategory(AppNotificationCategory)
+        case setCategoryLoading(Bool)
         case error(String)
     }
     
     struct State {
         var alarmItem: [NotificationCenterView.Item] = []
         var category: AppNotificationCategory = .management
+        var isCategoryLoading = false
         @Pulse var errorMessage: String?
     }
     
@@ -59,6 +61,9 @@ final class NotificationCenterReactor: Reactor {
             
         case .setCategory(let category):
             newState.category = category
+
+        case .setCategoryLoading(let isLoading):
+            newState.isCategoryLoading = isLoading
             
         case .error(let message):
             newState.errorMessage = message
