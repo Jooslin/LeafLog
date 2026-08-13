@@ -19,8 +19,10 @@ final class NotificationCenterReactor: Reactor {
     }
     
     enum Mutation {
-        case setAlarm([NotificationCenterView.Item])
-        case setCategory(AppNotificationCategory)
+        case setAlarm(
+            category: AppNotificationCategory,
+            items: [NotificationCenterView.Item]
+        )
         case setCategorySelectionLoading(Bool)
         case error(String)
     }
@@ -58,13 +60,19 @@ final class NotificationCenterReactor: Reactor {
                 .take(until: differentCategorySelected(from: category))
             
         case .categorySelected(let index):
-            guard let category = AppNotificationCategory(rawValue: index),
-                  category != currentState.category else {
+            guard let category = AppNotificationCategory(rawValue: index) else {
                 return .empty()
             }
 
+            if category == currentState.category {
+                guard currentState.isCategorySelectionLoading else {
+                    return .empty()
+                }
+
+                return .just(.setCategorySelectionLoading(false))
+            }
+
             return Observable.concat([
-                .just(.setCategory(category)),
                 .just(.setCategorySelectionLoading(true)),
                 notifications(category: category),
                 .just(.setCategorySelectionLoading(false))
@@ -77,11 +85,9 @@ final class NotificationCenterReactor: Reactor {
         var newState = state
         
         switch mutation {
-        case .setAlarm(let items):
-            newState.alarmItem = items
-            
-        case .setCategory(let category):
+        case let .setAlarm(category, items):
             newState.category = category
+            newState.alarmItem = items
 
         case .setCategorySelectionLoading(let isLoading):
             newState.isCategorySelectionLoading = isLoading
@@ -109,7 +115,6 @@ extension NotificationCenterReactor {
                     
                     let items = notifications.map {
                         let time = self.calculateExcessAlarmTime(from: $0.sentAt, to: now)
-                        
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
                         
                         let alarm = NotificationCenterView.Alarm(
@@ -125,7 +130,7 @@ extension NotificationCenterReactor {
                         return item
                     }
                     
-                    observer.onNext(.setAlarm(items))
+                    observer.onNext(.setAlarm(category: category, items: items))
 
                     do {
                         try await self.notificationDBManager.markAllAsRead()
@@ -138,13 +143,10 @@ extension NotificationCenterReactor {
                 } catch let error as AuthError {
                     observer.onNext(.error(error.userMessage))
                     observer.onCompleted()
+                } catch is CancellationError {
+                    self.logger.debug("알림 조회 Task가 취소되었습니다.")
+                    observer.onCompleted()
                 } catch {
-                    guard !Task.isCancelled else {
-                        self.logger.debug("알림 조회 Task가 취소되었습니다.")
-                        observer.onCompleted()
-                        return
-                    }
-
                     self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
                     observer.onNext(.error("알 수 없는 오류입니다. 잠시 후 다시 시도해주세요."))
                     observer.onCompleted()

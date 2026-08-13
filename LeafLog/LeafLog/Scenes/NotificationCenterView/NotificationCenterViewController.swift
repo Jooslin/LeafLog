@@ -74,7 +74,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
     }
     
-    private func bindState(reactor: NotificationCenterReactor) {        
+    private func bindState(reactor: NotificationCenterReactor) {
         reactor.state
             .map(\.alarmItem)
             .skip(1)
@@ -88,6 +88,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive(onNext: { [weak self] message in
+                self?.notificationCenterView.categorySegment.selectedSegmentIndex = reactor.currentState.category.rawValue // 기존 선택 카테고리로 변경
                 self?.steps.accept(AppStep.alert("에러", message))
             })
             .disposed(by: disposeBag)
