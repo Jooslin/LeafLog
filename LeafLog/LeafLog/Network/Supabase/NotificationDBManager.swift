@@ -89,6 +89,10 @@ final class NotificationDBManager {
                 .is("read_at", value: nil)
                 .execute()
         } catch {
+            if Task.isCancelled {
+                throw CancellationError()
+            }
+            
             throw AuthError.notificationFailed("알림 전체 읽음 처리를 완료하지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }
