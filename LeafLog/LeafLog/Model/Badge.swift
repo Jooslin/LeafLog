@@ -13,13 +13,17 @@ enum Badge: Int {
     case treat
     case sun, cloud, temperature, bug
     
+    // 알람용
+    case alarmFavorite
+    case alarmCommunity
+    
     var title: String {
         switch self {
         case .water: "물주기"
         case .grow: "분갈이"
         case .sprout: "비료"
         case .treat: "치료"
-        case .sun, .cloud, .temperature, .bug: ""
+        default: ""
         }
     }
     
@@ -30,7 +34,7 @@ enum Badge: Int {
         case .sprout: "badgeSproutSmall"
         case .treat: "badgeTreatSmall"
         case .sun: "badgeSunSmall"
-        case .cloud, .temperature, .bug: ""
+        default: ""
         }
     }
     
@@ -44,6 +48,9 @@ enum Badge: Int {
         case .cloud: "badgeCloudBig"
         case .temperature: "badgeTemperatureBig"
         case .bug: "badgeBugBig"
+            
+        case .alarmFavorite: "alarmFavorite"
+        case .alarmCommunity: "alarmCommunity"
         }
     }
     
@@ -53,7 +60,7 @@ enum Badge: Int {
         case .grow: .subBrown
         case .sprout: .primary600
         case .treat: .subRed
-        case .sun, .cloud, .temperature, .bug: .black
+        default: .black
         }
     }
 }
