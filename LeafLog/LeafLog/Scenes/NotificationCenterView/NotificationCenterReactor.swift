@@ -126,6 +126,7 @@ extension NotificationCenterReactor {
                             title: $0.title,
                             body: $0.plantNamesText ?? $0.body,
                             category: $0.category,
+                            detailCategory: $0.type,
                             sentTimeLabel: timeString
                         )
                         

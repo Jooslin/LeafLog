@@ -143,6 +143,7 @@ extension NotificationCenterView {
         let title: String
         let body: String
         let category: AppNotificationCategory
+        let detailCategory: AppNotificationType
         let sentTimeLabel: String
     }
 }

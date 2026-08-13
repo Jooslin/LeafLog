@@ -28,16 +28,23 @@ enum AppNotificationCategory: String, Codable {
 }
 
 enum AppNotificationType: String, Codable {
-    case general
+    // management
     case wateringReminder = "watering_reminder"
+    
+    //community
+    case favorite
+    case comment
+    
     case unknown
 
     init(rawValue: String) {
         switch rawValue {
-        case "general":
-            self = .general
         case "watering_reminder":
             self = .wateringReminder
+        case "favorite":
+            self = .favorite
+        case "comment":
+            self = .comment
         default:
             self = .unknown
         }
