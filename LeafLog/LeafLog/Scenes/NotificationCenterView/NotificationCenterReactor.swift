@@ -17,7 +17,7 @@ final class NotificationCenterReactor: Reactor {
         case refresh
         case categorySelected(Int)
     }
-    
+
     enum Mutation {
         case setAlarm(
             category: AppNotificationCategory,
@@ -29,12 +29,16 @@ final class NotificationCenterReactor: Reactor {
     
     struct State {
         var alarmItem: [NotificationCenterView.Item] = []
-        var category: AppNotificationCategory = .management
+        var category: AppNotificationCategory
         var isCategorySelectionLoading = false
         @Pulse var errorMessage: String?
     }
     
-    let initialState = State()
+    let initialState: State
+
+    init(category: AppNotificationCategory) {
+        self.initialState = State(category: category)
+    }
     
     //MARK: properties
     @Dependency(\.notificationDBManager) private var notificationDBManager
