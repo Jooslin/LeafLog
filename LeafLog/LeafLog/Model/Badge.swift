@@ -15,7 +15,7 @@ enum Badge: Int {
     
     // 알람용
     case alarmFavorite
-    case alarmCommunity
+    case alarmComment
     
     var title: String {
         switch self {
@@ -50,7 +50,7 @@ enum Badge: Int {
         case .bug: "badgeBugBig"
             
         case .alarmFavorite: "alarmFavorite"
-        case .alarmCommunity: "alarmCommunity"
+        case .alarmComment: "alarmComment"
         }
     }
     
