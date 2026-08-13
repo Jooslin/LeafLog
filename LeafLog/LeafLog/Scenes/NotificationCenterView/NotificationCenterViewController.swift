@@ -76,11 +76,23 @@ final class NotificationCenterViewController: BaseViewController, View {
     
     private func bindState(reactor: NotificationCenterReactor) {
         reactor.state
-            .map(\.alarmItem)
             .skip(1)
-            .subscribe(onNext: { [weak self] items in
-                self?.notificationCenterView.emptyView.isHidden = !items.isEmpty
-                self?.notificationCenterView.setSnapshot(items)
+            .map { state -> (category: AppNotificationCategory, items: [NotificationCenterView.Item]) in
+                (category: state.category, items: state.alarmItem)
+            }
+            .withUnretained(notificationCenterView)
+            .subscribe(onNext: { view, value in
+                let category = value.category
+                let items = value.items
+
+                switch category {
+                case .management:
+                    view.managementEmptyView.isHidden = !items.isEmpty
+                case .community:
+                    view.communityEmptyView.isHidden = !items.isEmpty
+                }
+
+                view.setSnapshot(items)
             })
             .disposed(by: disposeBag)
         
