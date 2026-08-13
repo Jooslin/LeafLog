@@ -64,7 +64,7 @@ final class NotificationCenterReactor: Reactor {
                 .take(until: differentCategorySelected(from: category))
             
         case .categorySelected(let index):
-            guard let category = AppNotificationCategory(rawValue: index) else {
+            guard let category = AppNotificationCategory(segmentIndex: index) else {
                 return .empty()
             }
 
@@ -176,7 +176,7 @@ extension NotificationCenterReactor {
                     return nil
                 }
 
-                return AppNotificationCategory(rawValue: index)
+                return AppNotificationCategory(segmentIndex: index)
             }
             .filter { $0 != inFlightCategory }
     }

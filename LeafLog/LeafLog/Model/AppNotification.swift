@@ -7,14 +7,22 @@
 
 import Foundation
 
-enum AppNotificationCategory: Int, Codable {
-    case management = 0
+enum AppNotificationCategory: String, Codable {
+    case management
     case community
     
-    var title: String {
+    var segmentIndex: Int {
         switch self {
-        case .management: "management"
-        case .community: "community"
+        case .management: 0
+        case .community: 1
+        }
+    }
+    
+    init?(segmentIndex: Int) {
+        switch segmentIndex {
+        case 0: self = .management
+        case 1: self = .community
+        default: return nil
         }
     }
 }

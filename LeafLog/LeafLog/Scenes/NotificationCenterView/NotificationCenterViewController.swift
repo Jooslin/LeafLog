@@ -97,7 +97,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map(\.category.rawValue)
+            .map(\.category.segmentIndex)
             .distinctUntilChanged()
             .bind(to: notificationCenterView.categorySegment.rx.selectedSegmentIndex)
             .disposed(by: disposeBag)
@@ -106,7 +106,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive(onNext: { [weak self] message in
-                self?.notificationCenterView.categorySegment.selectedSegmentIndex = reactor.currentState.category.rawValue // 기존 선택 카테고리로 변경
+                self?.notificationCenterView.categorySegment.selectedSegmentIndex = reactor.currentState.category.segmentIndex // 기존 선택 카테고리로 변경
                 self?.steps.accept(AppStep.alert("에러", message))
             })
             .disposed(by: disposeBag)
