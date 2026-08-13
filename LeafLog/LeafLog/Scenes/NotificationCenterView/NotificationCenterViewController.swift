@@ -69,7 +69,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         notificationCenterView.rx.backButtonTap
-            .map { _ in AppStep.pageBack }
+            .map { _ in AppStep.alarmPageBack(reactor.currentState.category) }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
@@ -94,6 +94,12 @@ final class NotificationCenterViewController: BaseViewController, View {
 
                 view.setSnapshot(items)
             })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map(\.category.rawValue)
+            .distinctUntilChanged()
+            .bind(to: notificationCenterView.categorySegment.rx.selectedSegmentIndex)
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$errorMessage)

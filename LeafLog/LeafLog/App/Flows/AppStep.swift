@@ -38,6 +38,7 @@ enum AppStep: Step {
     case alert(String, String) // (타이틀, 메세지)
     case pageBack
     case alarmCenter
+    case alarmPageBack(AppNotificationCategory)
     
     // PlantTab
     case plantRegister

@@ -87,6 +87,11 @@ final class MainFlow: Flow {
         case .alarmCenter:
             return navigateToAlarmCenter(category: alarmCategory)
             
+        case .alarmPageBack(let category):
+            alarmCategory = category
+            pop(animated: true)
+            return .none
+            
         case .diaryImageSourceSheet:
             presentDiaryImageSourceSheet()
             return .none
