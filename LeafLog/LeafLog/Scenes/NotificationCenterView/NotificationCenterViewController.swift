@@ -88,8 +88,10 @@ final class NotificationCenterViewController: BaseViewController, View {
                 switch category {
                 case .management:
                     view.managementEmptyView.isHidden = !items.isEmpty
+                    view.communityEmptyView.isHidden = true
                 case .community:
                     view.communityEmptyView.isHidden = !items.isEmpty
+                    view.managementEmptyView.isHidden = true
                 }
 
                 view.setSnapshot(items)
