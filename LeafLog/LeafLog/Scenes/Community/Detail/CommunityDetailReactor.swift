@@ -46,16 +46,22 @@ final class CommunityDetailReactor: Reactor {
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case reachedBottom
     }
     
     enum Mutation {
         case setLoading(Bool)
+        case setLoadingMoreComments(Bool)
+        case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(commentIndex: Int)
     }
     
     struct State {
         var isLoading = false
+        var isLoadingMoreComments = false
+        var hasNextCommentPage = false
+        var nextCommentCursor: String?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: Int?
         var post = Post(
@@ -125,6 +131,14 @@ final class CommunityDetailReactor: Reactor {
             
             return .just(.routeToMemberProfile(commentIndex: index))
             
+        case .reachedBottom:
+            guard currentState.isLoadingMoreComments == false,
+                  currentState.hasNextCommentPage else {
+                return .empty()
+            }
+            
+            return .empty()
+            
         case .moreButtonTapped,
              .heartButtonTapped,
              .commentButtonTapped,
@@ -139,6 +153,14 @@ final class CommunityDetailReactor: Reactor {
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
+            
+        case .setLoadingMoreComments(let isLoadingMoreComments):
+            newState.isLoadingMoreComments = isLoadingMoreComments
+            
+        case .appendComments(let comments, let nextCursor, let hasNextPage):
+            newState.comments.append(contentsOf: comments)
+            newState.nextCommentCursor = nextCursor
+            newState.hasNextCommentPage = hasNextPage
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route

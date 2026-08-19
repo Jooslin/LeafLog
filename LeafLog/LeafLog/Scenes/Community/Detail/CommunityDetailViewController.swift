@@ -67,6 +67,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             .map { CommunityDetailReactor.Action.sendButtonTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        detailView.rx.didScroll
+            .filter { [weak self] in
+                self?.detailView.isNearBottom(threshold: 300) == true
+            }
+            .map { CommunityDetailReactor.Action.reachedBottom }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
     }
     
     private func bindState(reactor: CommunityDetailReactor) {
@@ -83,8 +91,8 @@ final class CommunityDetailViewController: BaseViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] comments in
                 self?.comments = comments
-                self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
                 self?.detailView.commentCollectionView.reloadData()
+                self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
             })
             .disposed(by: disposeBag)
         
