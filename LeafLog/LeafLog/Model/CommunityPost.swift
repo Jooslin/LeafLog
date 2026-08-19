@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CommunityPost: Codable, Hashable {
+nonisolated struct CommunityPost: Codable, Hashable, Sendable {
     let id: UUID
     let authorID: UUID
     let category: PostCategory
@@ -18,6 +18,7 @@ struct CommunityPost: Codable, Hashable {
     let updatedAt: Date
     let deletedAt: Date?
     let likeCount: Int
+    let commentCount: Int?
     let images: [CommunityPostImage]
 
     enum CodingKeys: String, CodingKey {
@@ -31,11 +32,17 @@ struct CommunityPost: Codable, Hashable {
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
         case likeCount = "like_count"
+        case commentCount = "comment_count"
         case images
+    }
+
+    var firstImagePath: String? {
+        images.min { $0.sortOrder < $1.sortOrder }?.imagePath
+            ?? legacyImagePath
     }
 }
 
-struct CommunityPostImage: Codable, Hashable {
+nonisolated struct CommunityPostImage: Codable, Hashable, Sendable {
     let id: UUID
     let postID: UUID
     let imagePath: String
@@ -51,12 +58,12 @@ struct CommunityPostImage: Codable, Hashable {
     }
 }
 
-struct CommunityPostImageInput: Hashable {
+nonisolated struct CommunityPostImageInput: Hashable, Sendable {
     let id: UUID
     let imagePath: String
 }
 
-struct CommunityPostSaveInput {
+nonisolated struct CommunityPostSaveInput: Sendable {
     let id: UUID
     let category: PostCategory
     let title: String
