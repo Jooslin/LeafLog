@@ -9,6 +9,8 @@ import UIKit
 import Kingfisher
 import SnapKit
 import Then
+import RxCocoa
+import RxSwift
 
 final class CommunityComposeView: UIView {
     // MARK: - UI Components
@@ -20,20 +22,33 @@ final class CommunityComposeView: UIView {
     }
     private let contentView = UIView()
     
-    let categoryDailyButton = UIButton(config: .lSize, title: "식물 일상").then {
+    let categoryDailyButton = UIButton(config: .lSize, title: PostCategory.plantLife.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.plantLife.rawValue
     }
-    let categoryQuestionButton = UIButton(config: .lSize, title: "식물 고민").then {
+    let categoryQuestionButton = UIButton(config: .lSize, title: PostCategory.plantHelp.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.plantHelp.rawValue
     }
-    let categoryPlanetButton = UIButton(config: .lSize, title: "초록별 여행").then {
+    let categoryPlanetButton = UIButton(config: .lSize, title: PostCategory.greenTrip.title).then {
         $0.layer.cornerRadius = 8
+        $0.tag = PostCategory.greenTrip.rawValue
     }
     
     let titleTextField = DesignTextField().then {
         $0.placeholder = "제목을 입력해주세요."
     }
 
+    let pictureViews = [
+        PictureComposeView(),
+        PictureComposeView(),
+        PictureComposeView()
+    ]
+    
+    private let pictureNoticeLabel = UILabel(text: "최대 3장까지 첨부 가능", config: .body12, color: .grayScale300).then {
+        $0.textAlignment = .right
+    }
+    
     let bodyTextView = UITextView().then {
         $0.font = .systemFont(ofSize: 14, weight: .regular)
         $0.textColor = .label
@@ -55,6 +70,10 @@ final class CommunityComposeView: UIView {
         $0.textContainer.lineFragmentPadding = 0
     }
     
+    let bodyCountLabel = UILabel(config: .body12).then {
+        $0.textAlignment = .right
+    }
+    
     private let bodyPlaceholderLabel = UILabel(text: "게시글 내용을 입력해주세요.", config: .body14, color: .grayScale300)
     
     let saveButton = BottomSaveButton(title: "")
@@ -73,6 +92,7 @@ final class CommunityComposeView: UIView {
         }
         
         setLayout()
+        applyPictures([])
     }
 
     required init?(coder: NSCoder) {
@@ -86,11 +106,38 @@ final class CommunityComposeView: UIView {
             $0.alignment = .fill
         }
         
+        let pictureSlots = pictureViews.map { pictureView in
+            let slotView = UIView()
+            slotView.addSubview(pictureView)
+
+            pictureView.snp.makeConstraints {
+                $0.edges.equalToSuperview()
+            }
+
+            return slotView
+        }
+
+        let pictureViewHorizontalStack = UIStackView(arrangedSubviews: pictureSlots).then {
+            $0.axis = .horizontal
+            $0.distribution = .fillEqually
+            $0.spacing = 12
+            $0.alignment = .center
+        }
+        
+        let pictureViewStack = UIStackView(arrangedSubviews: [pictureViewHorizontalStack, pictureNoticeLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 6
+        }
+        
+        let bodyVerticalStack = UIStackView(arrangedSubviews: [bodyTextView, bodyCountLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 6
+        }
+        
         let categoryStack = makeVerticalStackView(title: "카테고리*", style: .attributed, views: [buttonStack])
         let titleStack = makeVerticalStackView(title: "제목*", style: .attributed, views: [titleTextField])
-        //TODO: custom comp 만들기
-        let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [])
-        let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyTextView])
+        let pictureStack = makeVerticalStackView(title: "사진 첨부 (선택)", style: .plain, views: [pictureViewStack])
+        let bodyStack = makeVerticalStackView(title: "내용*", style: .attributed, views: [bodyVerticalStack])
         
         let stackView = UIStackView(arrangedSubviews: [categoryStack, titleStack, pictureStack, bodyStack]).then {
             $0.axis = .vertical
@@ -110,7 +157,7 @@ final class CommunityComposeView: UIView {
         scrollView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
-            $0.bottom.equalTo(saveButton.snp.top).inset(24)
+            $0.bottom.equalTo(saveButton.snp.top).offset(-24)
         }
         
         saveButton.snp.makeConstraints {
@@ -144,8 +191,18 @@ final class CommunityComposeView: UIView {
             $0.width.equalToSuperview()
         }
         
+        pictureStack.snp.makeConstraints {
+            $0.width.equalTo(stackView.snp.width)
+        }
+        
         bodyStack.snp.makeConstraints {
             $0.width.equalToSuperview()
+        }
+        
+        pictureSlots.forEach { slotView in
+            slotView.snp.makeConstraints {
+                $0.height.equalTo(slotView.snp.width)
+            }
         }
         
         bodyTextView.addSubview(bodyPlaceholderLabel)
@@ -159,6 +216,66 @@ final class CommunityComposeView: UIView {
         }
     }
  
+}
+
+//MARK: Configure
+extension CommunityComposeView {
+    // Category
+    func applySelectedCategory(_ category: PostCategory) {
+        [categoryDailyButton, categoryQuestionButton, categoryPlanetButton].forEach {
+            $0.isSelected = $0.tag == category.rawValue
+        }
+    }
+    
+    // Picture
+    func applyPictures(_ pictures: [PictureComposeView.ImageSource]) {
+        let visiblePictureCount = min(pictures.count + 1, pictureViews.count)
+
+        for (index, pictureView) in pictureViews.enumerated() {
+            let source = pictures.indices.contains(index)
+                ? pictures[index]
+                : nil
+            pictureView.setImage(
+                source,
+                isOccupied: pictures.indices.contains(index)
+            )
+            pictureView.isHidden = index >= visiblePictureCount
+        }
+    }
+    
+    // TextView
+    func updateCount(
+        _ current: Int,
+        max: Int = CommunityPostValidation.contentMaxCount
+    ) {
+        if current >= max {
+            let text = "최대 1,000자까지 입력할 수 있어요. \(current)/\(max)"
+            bodyCountLabel.text = text
+            bodyCountLabel.apply(.body12, color: .subRed)
+        } else {
+            let text = "\(current)/\(max)"
+            let attributedString = NSMutableAttributedString(
+                string: text,
+                attributes: [
+                    .foregroundColor: UIColor.grayScale300,
+                    .font: UIFont.systemFont(ofSize: 12)
+                ]
+            )
+            
+            let currentRange = (text as NSString).range(of: "\(current)")
+            attributedString.addAttribute(
+                .foregroundColor,
+                value: UIColor.grayScale900,
+                range: currentRange
+            )
+            
+            bodyCountLabel.attributedText = attributedString
+        }
+    }
+    
+    func updatePlaceholderVisibility(_ count: Int) {
+        bodyPlaceholderLabel.isHidden = count > 0 ? true : false
+    }
 }
 
 //MARK: Components
@@ -220,5 +337,48 @@ extension CommunityComposeView {
     enum TitleStyle {
         case plain
         case attributed
+    }
+}
+
+//MARK: Reactive
+extension Reactive where Base: CommunityComposeView {
+    var categoryButtonTap: Observable<Int> {
+        let dailyTap = base.categoryDailyButton.rx.tap
+            .map { _ in base.categoryDailyButton.tag }
+        
+        let questionTap = base.categoryQuestionButton.rx.tap
+            .map { _ in base.categoryQuestionButton.tag }
+        
+        let planetTap = base.categoryPlanetButton.rx.tap
+            .map { _ in base.categoryPlanetButton.tag }
+        
+        return Observable.merge([dailyTap, questionTap, planetTap])
+    }
+    
+    var pictureViewTap: Observable<Int> {
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.tap.map { index }
+            })
+    }
+
+    var pictureRemoveButtonTap: Observable<Int> {
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.cancelButtonTap.map { index }
+            })
+    }
+
+    var pictureViewLongPress: Observable<(
+        index: Int,
+        gesture: UILongPressGestureRecognizer
+    )> {
+        Observable.merge(
+            base.pictureViews.enumerated()
+            .map { index, view in
+                view.rx.longPress.map { (index, $0) }
+            })
     }
 }

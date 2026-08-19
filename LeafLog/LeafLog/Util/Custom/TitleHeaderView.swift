@@ -117,4 +117,8 @@ extension Reactive where Base: TitleHeaderView {
     var backButtonTap: ControlEvent<Void> {
         base.backButton.rx.tap
     }
+    
+    var rightButtonTap: ControlEvent<Void> {
+        base.rightButton.rx.tap
+    }
 }

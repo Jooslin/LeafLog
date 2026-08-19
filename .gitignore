@@ -68,3 +68,6 @@ LeafLog/LeafLog/Configuration/GoogleService-Info.plist
 service-account.json
 LeafLog/supabase/
 LeafLog/.vscode/
+AGENTS.md
+domain.md
+docs
