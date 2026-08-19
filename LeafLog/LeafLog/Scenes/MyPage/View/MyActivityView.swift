@@ -2,7 +2,11 @@
 //  MyActivityView.swift
 //  LeafLog
 //
+//  Created by 김주희 on 8/19/26.
+//
 
+import RxCocoa
+import RxSwift
 import SnapKit
 import Then
 import UIKit
@@ -27,7 +31,10 @@ final class MyActivityView: UIView {
             return attributes
         }
         $0.configuration = configuration
-        $0.isUserInteractionEnabled = false
+    }
+
+    var sortButtonTap: ControlEvent<Void> {
+        sortButton.rx.tap
     }
 
     private lazy var collectionView = UICollectionView(
@@ -44,14 +51,31 @@ final class MyActivityView: UIView {
         $0.isHidden = true
     }
 
-    private let cellRegistration = UICollectionView.CellRegistration<
-        MyActivityPostCell,
-        MyActivityPost
-    > { cell, _, post in
-        cell.configure(with: post)
+    var emptyActionButtonTap: ControlEvent<Void> {
+        emptyView.actionButtonTap
     }
 
-    private lazy var dataSource = UICollectionViewDiffableDataSource<Int, MyActivityPost>(
+    private var posts: [CommunityPost] = []
+    private var authorNicknames: [UUID: String] = [:]
+    private var authorProfileImageURLs: [UUID: URL] = [:]
+    private var postImageURLs: [UUID: URL] = [:]
+
+    private lazy var cellRegistration = UICollectionView.CellRegistration<
+        CommunityPostCell,
+        CommunityPost
+    > { [weak self] cell, indexPath, post in
+        guard let self else { return }
+        cell.configure(
+            with: post,
+            nickname: authorNicknames[post.authorID],
+            profileImageURL: authorProfileImageURLs[post.authorID],
+            postImageURL: postImageURLs[post.id],
+            showsCategory: false,
+            showsSeparator: indexPath.item < posts.count - 1
+        )
+    }
+
+    private lazy var dataSource = UICollectionViewDiffableDataSource<Int, CommunityPost>(
         collectionView: collectionView
     ) { [weak self] collectionView, indexPath, post in
         guard let self else { return nil }
@@ -64,6 +88,7 @@ final class MyActivityView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        _ = cellRegistration
         backgroundColor = .white
         setupUI()
     }
@@ -72,7 +97,19 @@ final class MyActivityView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func render(posts: [MyActivityPost], tab: MyActivityTab, animated: Bool = true) {
+    func render(
+        posts: [CommunityPost],
+        tab: MyActivityTab,
+        authorNicknames: [UUID: String],
+        authorProfileImageURLs: [UUID: URL],
+        postImageURLs: [UUID: URL],
+        animated: Bool = true
+    ) {
+        self.posts = posts
+        self.authorNicknames = authorNicknames
+        self.authorProfileImageURLs = authorProfileImageURLs
+        self.postImageURLs = postImageURLs
+
         let isEmpty = posts.isEmpty
         collectionView.isHidden = isEmpty
         emptyView.isHidden = !isEmpty
@@ -81,10 +118,17 @@ final class MyActivityView: UIView {
             emptyView.configure(for: tab)
         }
 
-        var snapshot = NSDiffableDataSourceSnapshot<Int, MyActivityPost>()
+        var snapshot = NSDiffableDataSourceSnapshot<Int, CommunityPost>()
         snapshot.appendSections([0])
         snapshot.appendItems(posts)
         dataSource.apply(snapshot, animatingDifferences: animated)
+    }
+
+    func configureSortButton(sort: PlantCareTimelineSort) {
+        var configuration = sortButton.configuration
+        configuration?.title = sort.title
+        configuration?.image = UIImage(named: sort.iconName)
+        sortButton.configuration = configuration
     }
 
     private func setupUI() {

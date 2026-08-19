@@ -2,7 +2,11 @@
 //  MyActivityEmptyView.swift
 //  LeafLog
 //
+//  Created by 김주희 on 8/19/26.
+//
 
+import RxCocoa
+import RxSwift
 import SnapKit
 import Then
 import UIKit
@@ -16,8 +20,10 @@ final class MyActivityEmptyView: UIView {
         $0.textAlignment = .center
     }
 
-    private let actionButton = UIButton(type: .system).then {
-        $0.isUserInteractionEnabled = false
+    private let actionButton = UIButton(type: .system)
+
+    var actionButtonTap: ControlEvent<Void> {
+        actionButton.rx.tap
     }
 
     override init(frame: CGRect) {
@@ -33,6 +39,7 @@ final class MyActivityEmptyView: UIView {
     func configure(for tab: MyActivityTab) {
         titleLabel.text = tab.emptyTitle
         descriptionLabel.text = tab.emptyDescription
+        actionButton.isUserInteractionEnabled = true
 
         var configuration = UIButton.Configuration.filled()
         configuration.title = tab.emptyButtonTitle
