@@ -7,6 +7,7 @@
 
 import UIKit
 import RxFlow
+import RxRelay
 import ReactorKit
 import Dependencies
 
@@ -14,6 +15,9 @@ final class MainFlow: Flow {
     @Dependency(\.uiApplication) private var uiApplication
     private let window: UIWindow
     private let tabBarController = MainViewController()
+    private let communityTabStepper = OneStepper(
+        withSingleStep: AppStep.communityTab
+    )
     
     var root: any Presentable { tabBarController }
     var alarmCategory: AppNotificationCategory
@@ -41,6 +45,15 @@ final class MainFlow: Flow {
             
         case .pageBack:
             pop(animated: true)
+            return .none
+
+        case .communityTab:
+            tabBarController.selectedIndex = 2
+            return .none
+
+        case .communityComposeCreate:
+            tabBarController.selectedIndex = 2
+            communityTabStepper.steps.accept(step)
             return .none
 
         case .endPlantDelete:
@@ -156,7 +169,14 @@ extension MainFlow {
         
         // Flow를 준비 - 클로저는 Flow가 배치될 준비가 되었을 때(Flow의 첫 번째 화면이 선택되었을 때) 실행될 동작
         // Flow.use는 내부에서 Single 이벤트를 drive로 구독을 소비하므로 소비 완료 후 자동으로 구독이 해제되어 메모리 누수가 발생하지 않음
-        Flows.use(plantTabFlow, calendarTabFlow, communityTabFlow, myInfoTabFlow, when: .created) { plant, calendar, community, my in
+
+        Flows.use(
+            plantTabFlow,
+            calendarTabFlow,
+            communityTabFlow,
+            myInfoTabFlow,
+            when: .created
+        ) { plant, calendar, community, my in
             
             plant.tabBarItem = UITabBarItem(
                 title: "홈",
@@ -169,11 +189,12 @@ extension MainFlow {
                 image: .calendarEmpty,
                 selectedImage: .calendarFill,
             )
-            
+
             community.tabBarItem = UITabBarItem(
                 title: "커뮤니티",
                 image: .chat,
-                selectedImage: .chatFill)
+                selectedImage: .chatFill
+            )
             
             my.tabBarItem = UITabBarItem(
                 title: "마이",
@@ -181,14 +202,18 @@ extension MainFlow {
                 selectedImage: .userFill
             )
             
-            self.tabBarController.setViewControllers([plant, calendar, community, my], animated: true)
+
+            self.tabBarController.setViewControllers(
+                [plant, calendar, community, my],
+                animated: true
+            )
             self.tabBarController.tabBar.tintColor = .primary700
         }
         
         return .multiple(flowContributors: [
             .contribute(withNextPresentable: plantTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.plantTab)),
             .contribute(withNextPresentable: calendarTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.calendarTab)),
-            .contribute(withNextPresentable: communityTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.communityTab)),
+            .contribute(withNextPresentable: communityTabFlow, withNextStepper: communityTabStepper),
             .contribute(withNextPresentable: myInfoTabFlow, withNextStepper: OneStepper(withSingleStep: AppStep.myInfoTab))
         ])
     }

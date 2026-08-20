@@ -32,6 +32,12 @@ final class MyInfoTabFlow: Flow {
             viewController.reactor = ProfileEditReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+
+        case .myActivity:
+            let viewController = MyActivityViewController()
+            viewController.hidesBottomBarWhenPushed = true
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
         case let .confirmAlert(title, message, okTitle, onConfirm):
             let alert = UIAlertController(

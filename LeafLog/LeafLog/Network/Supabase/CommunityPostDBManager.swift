@@ -7,10 +7,12 @@
 
 import Dependencies
 import Foundation
+import OSLog
 import Supabase
 
 final class CommunityPostDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger(subsystem: "LeafLog", category: "CommunityPostDBManager")
 
     func createPost(input: CommunityPostSaveInput) async throws -> CommunityPost {
         try await savePost(function: "create_community_post", input: input)
@@ -18,6 +20,90 @@ final class CommunityPostDBManager {
 
     func updatePost(input: CommunityPostSaveInput) async throws -> CommunityPost {
         try await savePost(function: "update_community_post", input: input)
+    }
+
+    func fetchPosts(
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
+
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .is("deleted_at", value: nil)
+                .order("created_at", ascending: false)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
+    func fetchPublicProfiles(
+        authorIDs: [UUID]
+    ) async throws -> [UUID: CommunityPublicProfile] {
+        let uniqueAuthorIDs = Array(Set(authorIDs))
+        guard !uniqueAuthorIDs.isEmpty else { return [:] }
+
+        do {
+            let profiles: [CommunityPublicProfile] = try await supabaseManager.client
+                .rpc(
+                    "get_community_public_profiles",
+                    params: CommunityPublicProfilesRPCParameters(
+                        userIDs: uniqueAuthorIDs
+                    )
+                )
+                .execute()
+                .value
+
+            return Dictionary(
+                uniqueKeysWithValues: profiles.map { ($0.id, $0) }
+            )
+        } catch {
+            logger.error(
+                "Community public profile RPC failed: \(String(describing: error), privacy: .private)"
+            )
+            throw AuthError.communityFailed(
+                "작성자 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
+    func resolvePublicProfileImageURLs(
+        profiles: [UUID: CommunityPublicProfile]
+    ) async -> [UUID: URL] {
+        var imageURLs: [UUID: URL] = [:]
+
+        for profile in profiles.values {
+            guard let storedValue = profile.profileImageURL else { continue }
+
+            do {
+                if let imageURL = try await supabaseManager.resolveProfileImageURL(
+                    from: storedValue,
+                    cacheKey: profile.id.uuidString
+                ) {
+                    imageURLs[profile.id] = imageURL
+                }
+            } catch {
+                logger.error(
+                    "Profile image URL resolution failed. userID: \(profile.id.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
+                )
+            }
+        }
+
+        return imageURLs
     }
 
     func fetchMyPosts(
@@ -115,6 +201,26 @@ final class CommunityPostDBManager {
         )
     }
 
+}
+
+nonisolated struct CommunityPublicProfile: Decodable, Sendable {
+    let id: UUID
+    let nickname: String?
+    let profileImageURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case nickname
+        case profileImageURL = "profile_image_url"
+    }
+}
+
+nonisolated private struct CommunityPublicProfilesRPCParameters: Encodable, Sendable {
+    let userIDs: [UUID]
+
+    enum CodingKeys: String, CodingKey {
+        case userIDs = "p_user_ids"
+    }
 }
 
 nonisolated private struct CommunityPostRPCParameters: Encodable, Sendable {

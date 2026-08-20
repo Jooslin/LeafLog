@@ -74,6 +74,7 @@ final class MyPageView: UIView {
     // 각 Row를 터치할 버튼들
     let inquiryButton = UIButton(type: .system)
     let reportErrorButton = UIButton(type: .system)
+    let myActivityButton = UIButton(type: .system)
     let privacyPolicyButton = UIButton(type: .system)
     let termsButton = UIButton(type: .system)
     let logoutButton = UIButton(type: .system)
@@ -136,7 +137,14 @@ final class MyPageView: UIView {
         mainStackView.addArrangedSubview(makeRow(title: "푸시알림", accessory: pushAlertSwitch, showSeparator: true))
         mainStackView.addArrangedSubview(makeSpacer(height: 32))
         
-        // 3. 고객 지원 섹션
+        // 3. 커뮤니티 섹션
+        let communityTitle = makeSectionTitle("커뮤니티")
+        mainStackView.addArrangedSubview(communityTitle)
+        mainStackView.setCustomSpacing(16, after: communityTitle)
+        mainStackView.addArrangedSubview(makeRow(title: "내 활동", button: myActivityButton))
+        mainStackView.addArrangedSubview(makeSpacer(height: 32))
+
+        // 4. 고객 지원 섹션
         let supportTitle = makeSectionTitle("고객 지원")
         mainStackView.addArrangedSubview(supportTitle)
         mainStackView.setCustomSpacing(16, after: supportTitle)
@@ -145,7 +153,7 @@ final class MyPageView: UIView {
         mainStackView.addArrangedSubview(makeRow(title: "오류신고", button: reportErrorButton))
         mainStackView.addArrangedSubview(makeSpacer(height: 32))
         
-        // 4. 앱 정보 섹션
+        // 5. 앱 정보 섹션
         let infoTitle = makeSectionTitle("앱 정보")
         mainStackView.addArrangedSubview(infoTitle)
         mainStackView.setCustomSpacing(16, after: infoTitle)
@@ -157,7 +165,7 @@ final class MyPageView: UIView {
         
         mainStackView.addArrangedSubview(makeSpacer(height: 32))
         
-        // 5. 계정 관리 섹션
+        // 6. 계정 관리 섹션
         let accountTitle = makeSectionTitle("계정 관리")
         mainStackView.addArrangedSubview(accountTitle)
         mainStackView.setCustomSpacing(16, after: accountTitle)

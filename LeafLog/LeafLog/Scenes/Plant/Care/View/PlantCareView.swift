@@ -75,7 +75,7 @@ final class PlantCareView: UIView {
         )
     }
 
-    let segmentedControl = UISegmentedControl(categories: ["기록", "식물정보", "타임라인"])
+    let segmentedControl = AppSegmentedControl(items: ["기록", "식물정보", "타임라인"])
 
     var onPreviousDateTapped: (() -> Void)?
     var onNextDateTapped: (() -> Void)?
