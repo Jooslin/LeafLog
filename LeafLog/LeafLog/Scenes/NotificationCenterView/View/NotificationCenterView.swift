@@ -18,7 +18,13 @@ final class NotificationCenterView: UIView {
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     
-    let emptyView = EmptyView(image: OthersImageAsset.bellColored.rawValue, title: "아직 받은 알림이 없어요", subTitle: "물주기나 관리 일정이 생기면\n알림으로 알려드릴게요.", needButton: false).then {
+    let categorySegment = UISegmentedControl(categories: ["관리", "활동"])
+    
+    let managementEmptyView = EmptyView(image: OthersImageAsset.bellColored.rawValue, title: "아직 관리 알림이 없어요", subTitle: "물주기나 관리 일정이 생기면\n알림으로 알려드릴게요.", needButton: false).then {
+        $0.isHidden = true
+    }
+    
+    let communityEmptyView = EmptyView(image: OthersImageAsset.bellColored.rawValue, title: "아직 활동 알림이 없어요", subTitle: "좋아요나 댓글이 달리면\n알림으로 알려드릴게요.", needButton: false).then {
         $0.isHidden = true
     }
     
@@ -35,8 +41,10 @@ final class NotificationCenterView: UIView {
     
     private func setLayout() {
         addSubview(listView)
-        addSubview(emptyView)
+        addSubview(managementEmptyView)
+        addSubview(communityEmptyView)
         addSubview(titleView)
+        addSubview(categorySegment)
         
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
@@ -44,12 +52,22 @@ final class NotificationCenterView: UIView {
             $0.height.equalTo(48)
         }
         
-        listView.snp.makeConstraints {
+        categorySegment.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom).offset(24)
+            $0.horizontalEdges.equalToSuperview().inset(16)
+            $0.height.equalTo(44)
+        }
+        
+        listView.snp.makeConstraints {
+            $0.top.equalTo(categorySegment.snp.bottom).offset(24)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
         
-        emptyView.snp.makeConstraints {
+        managementEmptyView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+        
+        communityEmptyView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
     }
@@ -93,7 +111,7 @@ extension NotificationCenterView {
             case .list:
                 collectionView.dequeueConfiguredReusableCell(using: alarmCellRegistration, for: indexPath, item: item)
             default:
-                fatalError("CalendarCollectionView: 유효하지 않은 섹션입니다.")
+                fatalError("NotificationCollectionView: 유효하지 않은 섹션입니다.")
             }
         }
         
@@ -125,6 +143,7 @@ extension NotificationCenterView {
         let title: String
         let body: String
         let category: AppNotificationCategory
+        let detailCategory: AppNotificationType
         let sentTimeLabel: String
     }
 }

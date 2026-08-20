@@ -62,7 +62,16 @@ final class NotificationAlarmCell: UICollectionViewCell {
 
 extension NotificationAlarmCell {
     func configure(_ data: NotificationCenterView.Alarm) {
-        imageView.image = data.category == .management ? UIImage(named: Badge.water.bigImage) : nil
+        imageView.image = switch data.detailCategory {
+        case .wateringReminder:
+            UIImage(named: Badge.water.bigImage)
+        case .favorite:
+            UIImage(named: Badge.alarmFavorite.bigImage)
+        case .comment:
+            UIImage(named: Badge.alarmComment.bigImage)
+        case .unknown:
+            nil
+        }
         
         titleLabel.text = data.title
         descriptionLabel.text = data.body

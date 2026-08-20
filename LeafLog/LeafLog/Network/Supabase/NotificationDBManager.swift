@@ -16,7 +16,7 @@ final class NotificationDBManager {
     private init() {}
 
     // 알림센터 진입 시 최신 알림부터 목록을 가져온다.
-    func fetchMyNotifications(limit: Int = 100) async throws -> [AppNotification] {
+    func fetchMyNotifications(limit: Int = 100, category: AppNotificationCategory) async throws -> [AppNotification] {
         let user = try await supabaseManager.client.auth.user()
 
         do {
@@ -24,12 +24,17 @@ final class NotificationDBManager {
                 .from("notifications")
                 .select()
                 .eq("user_id", value: user.id)
+                .eq("category", value: category.rawValue)
                 .not("sent_at", operator: .is, value: "null")
                 .order("created_at", ascending: false)
                 .limit(limit)
                 .execute()
                 .value
         } catch {
+            if Task.isCancelled {
+                throw CancellationError()
+            }
+
             throw AuthError.notificationFailed("알림 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }
@@ -84,6 +89,10 @@ final class NotificationDBManager {
                 .is("read_at", value: nil)
                 .execute()
         } catch {
+            if Task.isCancelled {
+                throw CancellationError()
+            }
+            
             throw AuthError.notificationFailed("알림 전체 읽음 처리를 완료하지 못했어요. 잠시 후 다시 시도해주세요.")
         }
     }

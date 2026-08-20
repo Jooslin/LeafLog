@@ -10,19 +10,41 @@ import Foundation
 enum AppNotificationCategory: String, Codable {
     case management
     case community
+    
+    var segmentIndex: Int {
+        switch self {
+        case .management: 0
+        case .community: 1
+        }
+    }
+    
+    init?(segmentIndex: Int) {
+        switch segmentIndex {
+        case 0: self = .management
+        case 1: self = .community
+        default: return nil
+        }
+    }
 }
 
 enum AppNotificationType: String, Codable {
-    case general
+    // management
     case wateringReminder = "watering_reminder"
+    
+    //community
+    case favorite
+    case comment
+    
     case unknown
 
     init(rawValue: String) {
         switch rawValue {
-        case "general":
-            self = .general
         case "watering_reminder":
             self = .wateringReminder
+        case "favorite":
+            self = .favorite
+        case "comment":
+            self = .comment
         default:
             self = .unknown
         }

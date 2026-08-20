@@ -20,10 +20,12 @@ final class MainFlow: Flow {
     )
     
     var root: any Presentable { tabBarController }
+    var alarmCategory: AppNotificationCategory
     
     init(window: UIWindow) {
         window.rootViewController = tabBarController
         self.window = window
+        self.alarmCategory = .management
     }
     
     func navigate(to step: any RxFlow.Step) -> FlowContributors {
@@ -96,7 +98,12 @@ final class MainFlow: Flow {
             return .none
           
         case .alarmCenter:
-            return navigateToAlarmCenter()
+            return navigateToAlarmCenter(category: alarmCategory)
+            
+        case .alarmPageBack(let category):
+            alarmCategory = category
+            pop(animated: true)
+            return .none
             
         case .diaryImageSourceSheet:
             presentDiaryImageSourceSheet()
@@ -244,9 +251,9 @@ extension MainFlow {
         return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
     }
   
-    private func navigateToAlarmCenter() -> FlowContributors {
+    private func navigateToAlarmCenter(category: AppNotificationCategory) -> FlowContributors {
         let notificationCenterViewController = NotificationCenterViewController()
-        let reactor = NotificationCenterReactor()
+        let reactor = NotificationCenterReactor(category: category)
         notificationCenterViewController.reactor = reactor
         
         navigate(to: notificationCenterViewController, animated: true)
