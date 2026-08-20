@@ -47,6 +47,12 @@ final class MyPageViewController: BaseViewController, View {
             .map { MyPageReactor.Action.editProfileTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        // 내 활동 화면으로 이동
+        myPageView.myActivityButton.rx.tap
+            .map { AppStep.myActivity }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
         // 로그아웃
         myPageView.logoutButton.rx.tap

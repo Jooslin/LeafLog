@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum PostCategory: Int, Codable {
+nonisolated enum PostCategory: Int, Codable, CaseIterable, Sendable {
     case plantLife = 0
     case plantHelp
     case greenTrip
@@ -43,7 +43,7 @@ enum PostCategory: Int, Codable {
 }
 
 extension PostCategory {
-    init(from decoder: any Decoder) throws {
+    nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let databaseValue = try container.decode(String.self)
 
@@ -57,7 +57,7 @@ extension PostCategory {
         self = category
     }
 
-    func encode(to encoder: any Encoder) throws {
+    nonisolated func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(databaseValue)
     }

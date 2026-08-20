@@ -27,12 +27,15 @@ final class CommunityTabFlow: Flow {
             return .none
         }
         
+
         switch step {
         case .communityTab:
-            //TODO: Community Main VC로 변경 필요
-            let viewController = CommunityTempViewController()
-            viewController.reactor = CommunityTempReactor()
-            navigationController.setViewControllers([viewController], animated: false)
+            let viewController = CommunityViewController()
+            viewController.reactor = CommunityReactor()
+            navigationController.setViewControllers(
+                [viewController],
+                animated: false
+            )
 
             return .one(
                 flowContributor: .contribute(
@@ -51,7 +54,6 @@ final class CommunityTabFlow: Flow {
             let notice = CommunityInfoViewController()
             notice.modalPresentationStyle = .overCurrentContext
             navigationController.present(notice, animated: false)
-        
             return .none
 
         case .pageBack:
