@@ -15,8 +15,8 @@ final class CommunityPostContentView: UIView {
     fileprivate let postImageTapRelay = PublishRelay<Int>()
     
     private let categoryLabel = PaddingLabel(horizontalInset: 9, verticalInset: 5).then {
-        $0.apply(.label12, color: .primary700, lines: 1)
-        $0.backgroundColor = .primary100
+        $0.apply(.label12, color: .primary800, lines: 1)
+        $0.backgroundColor = .primary200
         $0.layer.cornerRadius = 11
         $0.clipsToBounds = true
     }
@@ -29,16 +29,16 @@ final class CommunityPostContentView: UIView {
     
     private let profileImageView = UIView().then {
         $0.backgroundColor = .grayScale100
-        $0.layer.cornerRadius = 10
+        $0.layer.cornerRadius = 11
         $0.clipsToBounds = true
     }
     
-    private let nicknameLabel = UILabel(config: .body12, color: .grayScale600, lines: 1)
-    private let dateLabel = UILabel(config: .body12, color: .grayScale500, lines: 1)
+    private let nicknameLabel = UILabel(config: .body12, color: .grayScale800, lines: 1)
+    private let dateLabel = UILabel(config: .body12, color: .grayScale600, lines: 1)
     
     private let postBodyLabel = UILabel(
         config: .body14,
-        color: .grayScale700,
+        color: .grayScale600,
         lines: 0
     ).then {
         $0.lineBreakMode = .byWordWrapping
@@ -62,10 +62,10 @@ final class CommunityPostContentView: UIView {
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
     }
     
-    private let heartCountLabel = UILabel(text: "N", config: .body12, color: .black, lines: 1)
+    private let heartCountLabel = UILabel(text: "3241234", config: .body12, color: .black, lines: 1)
     
     fileprivate let commentButton = UIButton(configuration: .plain()).then {
-        $0.setImage(UIImage(systemName: "bubble"), for: .normal)
+        $0.setImage(UIImage(systemName: "message"), for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
     }
@@ -113,13 +113,13 @@ final class CommunityPostContentView: UIView {
         
         let heartStackView = UIStackView(arrangedSubviews: [heartButton, heartCountLabel]).then {
             $0.axis = .horizontal
-            $0.spacing = 3
+            $0.spacing = 4
             $0.alignment = .center
         }
         
         let commentStackView = UIStackView(arrangedSubviews: [commentButton, commentCountLabel]).then {
             $0.axis = .horizontal
-            $0.spacing = 3
+            $0.spacing = 4
             $0.alignment = .center
         }
         
@@ -187,11 +187,11 @@ final class CommunityPostContentView: UIView {
         }
         
         heartButton.snp.makeConstraints {
-            $0.width.height.equalTo(25)
+            $0.width.height.equalTo(20)
         }
         
         commentButton.snp.makeConstraints {
-            $0.width.height.equalTo(25)
+            $0.width.height.equalTo(20)
         }
     }
     
