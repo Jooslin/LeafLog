@@ -18,6 +18,7 @@ final class CommunityDetailReactor: Reactor {
         let imageAssetNames: [String]
         let likeCount: String
         let commentCount: String
+        var isLiked: Bool
     }
     
     struct Comment: Equatable {
@@ -53,6 +54,7 @@ final class CommunityDetailReactor: Reactor {
         case setLoading(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
+        case setPostLiked(Bool)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(commentIndex: Int)
     }
@@ -79,8 +81,9 @@ final class CommunityDetailReactor: Reactor {
                 "plantStuckyi",
                 "plantCategorySucculent"
             ],
-            likeCount: "N",
-            commentCount: "N"
+            likeCount: "17823",
+            commentCount: "1234",
+            isLiked: false
         )
         var comments: [Comment] = [
             .init(
@@ -139,8 +142,10 @@ final class CommunityDetailReactor: Reactor {
             
             return .empty()
             
+        case .heartButtonTapped:
+            return .just(.setPostLiked(!currentState.post.isLiked))
+            
         case .moreButtonTapped,
-             .heartButtonTapped,
              .commentButtonTapped,
              .sendButtonTapped:
             return .empty()
@@ -161,6 +166,9 @@ final class CommunityDetailReactor: Reactor {
             newState.comments.append(contentsOf: comments)
             newState.nextCommentCursor = nextCursor
             newState.hasNextCommentPage = hasNextPage
+            
+        case .setPostLiked(let isLiked):
+            newState.post.isLiked = isLiked
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route

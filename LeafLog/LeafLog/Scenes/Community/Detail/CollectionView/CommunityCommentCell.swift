@@ -29,9 +29,9 @@ final class CommunityCommentCell: UICollectionViewCell {
         horizontalInset: 10,
         verticalInset: 3
     ).then {
-        $0.apply(.label12, color: .primary600, lines: 1)
+        $0.apply(.label12, color: .primary700, lines: 1)
         $0.text = "작성자"
-        $0.backgroundColor = .primary50
+        $0.backgroundColor = .primary100
         $0.layer.borderColor = UIColor.primary400.cgColor
         $0.layer.borderWidth = 1
         $0.layer.cornerRadius = 10
@@ -43,10 +43,10 @@ final class CommunityCommentCell: UICollectionViewCell {
         horizontalInset: 10,
         verticalInset: 3
     ).then {
-        $0.apply(.label12, color: .grayScale500, lines: 1)
+        $0.apply(.label12, color: .grayScale400, lines: 1)
         $0.text = "내 댓글"
         $0.backgroundColor = .white
-        $0.layer.borderColor = UIColor.grayScale200.cgColor
+        $0.layer.borderColor = UIColor.grayScale100.cgColor
         $0.layer.borderWidth = 1
         $0.layer.cornerRadius = 10
         $0.clipsToBounds = true
@@ -82,7 +82,7 @@ final class CommunityCommentCell: UICollectionViewCell {
     
     private func setLayout() {
         let dividerView = UIView().then {
-            $0.backgroundColor = .grayScale200
+            $0.backgroundColor = .grayScale100
         }
         
         let metaStackView = UIStackView(arrangedSubviews: [nicknameLabel, dividerView, dateLabel]).then {
@@ -128,7 +128,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         moreButton.snp.makeConstraints {
             $0.top.equalToSuperview().inset(4)
             $0.trailing.equalToSuperview().inset(16)
-            $0.width.height.equalTo(28)
+            $0.width.height.equalTo(20)
         }
         
         bodyLabel.snp.makeConstraints {

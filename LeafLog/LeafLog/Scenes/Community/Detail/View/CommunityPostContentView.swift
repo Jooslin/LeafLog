@@ -56,18 +56,24 @@ final class CommunityPostContentView: UIView {
         $0.alwaysBounceHorizontal = true
     }
     
-    fileprivate let heartButton = UIButton(configuration: .plain()).then {
-        $0.setImage(UIImage(systemName: "heart"), for: .normal)
-        $0.configuration?.baseForegroundColor = .black
-        $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+    private let heartImageView = UIImageView(image: UIImage(systemName: "heart")).then {
+        $0.tintColor = .black
+        $0.contentMode = .scaleAspectFit
     }
     
-    private let heartCountLabel = UILabel(text: "3241234", config: .body12, color: .black, lines: 1)
+    fileprivate let heartButton = UIButton(type: .custom).then {
+        $0.backgroundColor = .clear
+    }
     
-    fileprivate let commentButton = UIButton(configuration: .plain()).then {
-        $0.setImage(UIImage(systemName: "message"), for: .normal)
-        $0.configuration?.baseForegroundColor = .black
-        $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+    private let heartCountLabel = UILabel(text: "N", config: .body12, color: .black, lines: 1)
+    
+    private let commentImageView = UIImageView(image: UIImage(systemName: "message")).then {
+        $0.tintColor = .black
+        $0.contentMode = .scaleAspectFit
+    }
+    
+    fileprivate let commentButton = UIButton(type: .custom).then {
+        $0.backgroundColor = .clear
     }
     
     private let commentCountLabel = UILabel(text: "N", config: .body12, color: .black, lines: 1)
@@ -91,12 +97,13 @@ final class CommunityPostContentView: UIView {
         postBodyLabel.setTextWithLineHeight(text: post.body, height: 22)
         heartCountLabel.text = post.likeCount
         commentCountLabel.text = post.commentCount
+        configureHeart(isLiked: post.isLiked)
         configurePostImages(imageAssetNames: post.imageAssetNames)
     }
     
     private func setLayout() {
         let metaDividerView = UIView().then {
-            $0.backgroundColor = .grayScale200
+            $0.backgroundColor = .grayScale100
         }
         
         let metaStackView = UIStackView(arrangedSubviews: [nicknameLabel, metaDividerView, dateLabel]).then {
@@ -111,15 +118,25 @@ final class CommunityPostContentView: UIView {
             $0.spacing = 8
         }
         
-        let heartStackView = UIStackView(arrangedSubviews: [heartButton, heartCountLabel]).then {
+        let heartIconContainerView = UIView().then {
+            $0.addSubview(heartImageView)
+            $0.addSubview(heartButton)
+        }
+        
+        let heartStackView = UIStackView(arrangedSubviews: [heartIconContainerView, heartCountLabel]).then {
             $0.axis = .horizontal
-            $0.spacing = 4
+            $0.spacing = 0
             $0.alignment = .center
         }
         
-        let commentStackView = UIStackView(arrangedSubviews: [commentButton, commentCountLabel]).then {
+        let commentIconContainerView = UIView().then {
+            $0.addSubview(commentImageView)
+            $0.addSubview(commentButton)
+        }
+        
+        let commentStackView = UIStackView(arrangedSubviews: [commentIconContainerView, commentCountLabel]).then {
             $0.axis = .horizontal
-            $0.spacing = 4
+            $0.spacing = 0
             $0.alignment = .center
         }
         
@@ -186,13 +203,36 @@ final class CommunityPostContentView: UIView {
             $0.trailing.equalToSuperview()
         }
         
+        heartIconContainerView.snp.makeConstraints {
+            $0.width.height.equalTo(32)
+        }
+        
+        heartImageView.snp.makeConstraints {
+            $0.center.equalToSuperview()
+            $0.width.height.equalTo(20)
+        }
+        
         heartButton.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+        
+        commentIconContainerView.snp.makeConstraints {
+            $0.width.height.equalTo(32)
+        }
+        
+        commentImageView.snp.makeConstraints {
+            $0.center.equalToSuperview()
             $0.width.height.equalTo(20)
         }
         
         commentButton.snp.makeConstraints {
-            $0.width.height.equalTo(20)
+            $0.edges.equalToSuperview()
         }
+    }
+    
+    private func configureHeart(isLiked: Bool) {
+        heartImageView.image = UIImage(systemName: isLiked ? "heart.fill" : "heart")
+        heartImageView.tintColor = isLiked ? .systemRed : .black
     }
     
     private func configurePostImages(imageAssetNames: [String]) {
