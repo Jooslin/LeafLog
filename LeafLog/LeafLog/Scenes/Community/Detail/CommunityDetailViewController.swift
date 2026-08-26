@@ -68,6 +68,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        detailView.rx.commentText
+            .map { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] isEnabled in
+                self?.detailView.updateSendButton(isEnabled: isEnabled)
+            })
+            .disposed(by: disposeBag)
+        
         detailView.rx.didScroll
             .filter { [weak self] in
                 self?.detailView.isNearBottom(threshold: 300) == true

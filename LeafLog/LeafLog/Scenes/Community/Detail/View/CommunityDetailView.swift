@@ -11,8 +11,6 @@ import SnapKit
 import Then
 import UIKit
 
-// TODO: inputTextField 컴포넌트로 바꿔끼기
-
 final class CommunityDetailView: UIView {
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
     let postContentView = CommunityPostContentView()
@@ -45,25 +43,18 @@ final class CommunityDetailView: UIView {
         $0.layer.borderWidth = 1 / UIScreen.main.scale
     }
     
-    private let inputTextField = UITextField().then {
-        $0.placeholder = "댓글을 입력해주세요."
-        $0.font = .systemFont(ofSize: 14, weight: .regular)
-        $0.textColor = .black
+    fileprivate let inputTextField = DesignTextField().then {
         $0.backgroundColor = .white
         $0.layer.borderColor = UIColor.grayScale200.cgColor
-        $0.layer.borderWidth = 1
-        $0.layer.cornerRadius = 12
-        $0.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
-        $0.leftViewMode = .always
+        $0.setPlaceholder(text: "댓글을 입력해주세요.")
     }
     
-    fileprivate let sendButton = UIButton(configuration: .plain()).then {
+    fileprivate let sendButton = UIButton(type: .custom).then {
         $0.backgroundColor = .grayScale100
-        $0.layer.cornerRadius = 20
+        $0.layer.cornerRadius = 23
         $0.clipsToBounds = true
         $0.setImage(UIImage(systemName: "paperplane"), for: .normal)
-        $0.configuration?.baseForegroundColor = .grayScale500
-        $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        $0.tintColor = .grayScale500
     }
     
     private var commentCollectionHeightConstraint: Constraint?
@@ -87,6 +78,11 @@ final class CommunityDetailView: UIView {
     func updateCommentCollectionHeight(itemCount: Int) {
         commentCollectionHeightConstraint?.update(offset: CGFloat(itemCount) * 70)
         setNeedsLayout()
+    }
+    
+    func updateSendButton(isEnabled: Bool) {
+        sendButton.backgroundColor = isEnabled ? .primary200 : .grayScale100
+        sendButton.tintColor = isEnabled ? .primary800 : .grayScale500
     }
     
     func isNearBottom(threshold: CGFloat) -> Bool {
@@ -121,7 +117,7 @@ private extension CommunityDetailView {
         
         inputContainerView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
-            $0.bottom.equalToSuperview()
+            $0.bottom.equalTo(safeAreaLayoutGuide)
             $0.height.equalTo(86)
         }
         
@@ -132,13 +128,13 @@ private extension CommunityDetailView {
             $0.leading.equalToSuperview().inset(16)
             $0.top.equalToSuperview().inset(14)
             $0.trailing.equalTo(sendButton.snp.leading).offset(-12)
-            $0.height.equalTo(44)
+            $0.height.equalTo(48)
         }
         
         sendButton.snp.makeConstraints {
             $0.centerY.equalTo(inputTextField)
             $0.trailing.equalToSuperview().inset(16)
-            $0.width.height.equalTo(40)
+            $0.width.height.equalTo(46)
         }
         
         scrollView.addSubview(contentView)
@@ -190,6 +186,7 @@ private extension CommunityDetailView {
             $0.estimatedItemSize = .zero
         }
     }
+    
 }
 
 extension Reactive where Base: CommunityDetailView {
@@ -211,6 +208,10 @@ extension Reactive where Base: CommunityDetailView {
     
     var sendButtonTap: ControlEvent<Void> {
         base.sendButton.rx.tap
+    }
+    
+    var commentText: ControlProperty<String?> {
+        base.inputTextField.rx.text
     }
     
     var didScroll: ControlEvent<Void> {
