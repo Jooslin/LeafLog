@@ -15,14 +15,16 @@ final class MemberProfileHeaderView: UICollectionReusableView {
     static let reuseIdentifier = String(describing: MemberProfileHeaderView.self)
     var disposeBag = DisposeBag()
     
-    fileprivate let sortButton = UIButton(configuration: .plain()).then {
-        $0.setTitle("최신순", for: .normal)
-        $0.setTitleColor(.black, for: .normal)
-        $0.titleLabel?.font = .systemFont(ofSize: 14, weight: .regular)
-        $0.setImage(UIImage(systemName: "arrow.up.arrow.down"), for: .normal)
-        $0.configuration?.baseForegroundColor = .grayScale500
-        $0.configuration?.imagePadding = 6
-        $0.semanticContentAttribute = .forceLeftToRight
+    private let sortImageView = UIImageView().then {
+        $0.image = UIImage(systemName: "arrow.up.arrow.down")
+        $0.tintColor = .grayScale500
+        $0.contentMode = .scaleAspectFit
+    }
+    
+    private let sortLabel = UILabel(text: "최신순", config: .body14, color: .black, lines: 1)
+    
+    fileprivate let sortButton = UIButton(type: .custom).then {
+        $0.backgroundColor = .clear
     }
     
     private let profileImageView = UIImageView().then {
@@ -93,6 +95,13 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         
         addSubview(profileStackView)
         addSubview(sectionTitleLabel)
+        let sortStackView = UIStackView(arrangedSubviews: [sortImageView, sortLabel]).then {
+            $0.axis = .horizontal
+            $0.spacing = 6
+            $0.alignment = .center
+        }
+        
+        addSubview(sortStackView)
         addSubview(sortButton)
         
         profileStackView.snp.makeConstraints {
@@ -110,9 +119,17 @@ final class MemberProfileHeaderView: UICollectionReusableView {
             $0.bottom.equalToSuperview().inset(18)
         }
         
-        sortButton.snp.makeConstraints {
+        sortStackView.snp.makeConstraints {
             $0.centerY.equalTo(sectionTitleLabel)
             $0.trailing.equalToSuperview().inset(16)
+        }
+        
+        sortImageView.snp.makeConstraints {
+            $0.width.height.equalTo(16)
+        }
+        
+        sortButton.snp.makeConstraints {
+            $0.edges.equalTo(sortStackView)
         }
     }
 }
