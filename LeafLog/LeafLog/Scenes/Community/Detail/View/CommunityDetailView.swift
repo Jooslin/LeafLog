@@ -53,7 +53,7 @@ final class CommunityDetailView: UIView {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 23
         $0.clipsToBounds = true
-        $0.setImage(UIImage(systemName: "paperplane"), for: .normal)
+        $0.setImage(UIImage(named: "send")?.withRenderingMode(.alwaysTemplate), for: .normal)
         $0.tintColor = .grayScale500
     }
     
