@@ -32,13 +32,13 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         $0.clipsToBounds = true
     }
     
-    private let nicknameLabel = UILabel(text: "", config: .headline24, color: .black, lines: 1).then {
+    private let nicknameLabel = UILabel(text: "", config: .headline20, color: .black, lines: 1).then {
         $0.textAlignment = .center
     }
     
     private let postCountLabel = UILabel(text: "", config: .label14, color: .primary700, lines: 1)
     private let likeCountLabel = UILabel(text: "", config: .label14, color: .primary700, lines: 1)
-    private let sectionTitleLabel = UILabel(text: "게시글", config: .title18, color: .black, lines: 1)
+    private let sectionTitleLabel = UILabel(text: "게시글", config: .title16, color: .black, lines: 1)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -101,7 +101,7 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         }
         
         profileImageView.snp.makeConstraints {
-            $0.width.height.equalTo(92)
+            $0.width.height.equalTo(96)
         }
         
         sectionTitleLabel.snp.makeConstraints {
