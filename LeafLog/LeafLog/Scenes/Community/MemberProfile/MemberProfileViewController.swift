@@ -13,7 +13,7 @@ import UIKit
 final class MemberProfileViewController: BaseViewController, View {
     private let profileView = MemberProfileView()
     private var profile: MemberProfileReactor.Profile?
-    private var posts: [MemberProfileReactor.Post] = []
+    private var postListItems: [MemberProfileReactor.PostListItem] = []
     
     override func loadView() {
         view = profileView
@@ -62,10 +62,10 @@ final class MemberProfileViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map(\.posts)
+            .map(\.postListItems)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] posts in
-                self?.posts = posts
+            .subscribe(onNext: { [weak self] postListItems in
+                self?.postListItems = postListItems
                 self?.profileView.postCollectionView.reloadData()
             })
             .disposed(by: disposeBag)
@@ -74,28 +74,30 @@ final class MemberProfileViewController: BaseViewController, View {
 
 extension MemberProfileViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        posts.isEmpty ? 1 : posts.count
+        postListItems.count
     }
     
     func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
     ) -> UICollectionViewCell {
-        if posts.isEmpty {
+        switch postListItems[indexPath.item] {
+        case .empty:
             return collectionView.dequeueReusableCell(
                 withReuseIdentifier: MemberProfileEmptyCell.reuseIdentifier,
                 for: indexPath
             )
+            
+        case .post(let post):
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: MemberProfilePostCell.reuseIdentifier,
+                for: indexPath
+            ) as? MemberProfilePostCell else {
+                return UICollectionViewCell()
+            }
+            cell.configure(post)
+            return cell
         }
-        
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: MemberProfilePostCell.reuseIdentifier,
-            for: indexPath
-        ) as? MemberProfilePostCell else {
-            return UICollectionViewCell()
-        }
-        cell.configure(posts[indexPath.item])
-        return cell
     }
     
     func collectionView(
@@ -133,7 +135,13 @@ extension MemberProfileViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        CGSize(width: collectionView.bounds.width, height: posts.isEmpty ? 120 : 150)
+        switch postListItems[indexPath.item] {
+        case .empty:
+            return CGSize(width: collectionView.bounds.width, height: 120)
+            
+        case .post:
+            return CGSize(width: collectionView.bounds.width, height: 150)
+        }
     }
     
     func collectionView(

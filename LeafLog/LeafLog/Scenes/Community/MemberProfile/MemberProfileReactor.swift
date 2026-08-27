@@ -11,7 +11,7 @@ import RxSwift
 final class MemberProfileReactor: Reactor {
     struct Profile: Equatable {
         let nickname: String
-        let profileImageAssetName: String?
+        let profileImageURL: String?
         let postCount: String
         let likeCount: String
     }
@@ -24,6 +24,11 @@ final class MemberProfileReactor: Reactor {
         let imageAssetName: String?
         let likeCount: String
         let commentCount: String
+    }
+    
+    enum PostListItem: Equatable {
+        case post(Post)
+        case empty
     }
     
     enum Action {
@@ -50,7 +55,7 @@ final class MemberProfileReactor: Reactor {
         var nextCursor: String?
         var profile = Profile(
             nickname: "닉네임",
-            profileImageAssetName: "userEmpty",
+            profileImageURL: nil,
             postCount: "12",
             likeCount: "36"
         )
@@ -110,6 +115,18 @@ final class MemberProfileReactor: Reactor {
                 commentCount: "N"
             )
         ]
+        
+        var postListItems: [PostListItem] {
+            if isInitialLoading {
+                return []
+            }
+            
+            if posts.isEmpty {
+                return [.empty]
+            }
+            
+            return posts.map { .post($0) }
+        }
     }
     
     let initialState = State()

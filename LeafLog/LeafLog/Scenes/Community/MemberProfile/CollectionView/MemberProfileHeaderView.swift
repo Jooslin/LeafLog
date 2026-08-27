@@ -7,6 +7,7 @@
 
 import RxCocoa
 import RxSwift
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -28,6 +29,7 @@ final class MemberProfileHeaderView: UICollectionReusableView {
     }
     
     private let profileImageView = UIImageView().then {
+        $0.image = UIImage(named: "non_profile")
         $0.backgroundColor = .grayScale100
         $0.contentMode = .scaleAspectFill
         $0.layer.cornerRadius = 46
@@ -56,11 +58,13 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         super.prepareForReuse()
         
         disposeBag = DisposeBag()
+        profileImageView.kf.cancelDownloadTask()
+        profileImageView.image = UIImage(named: "non_profile")
     }
     
     func configure(profile: MemberProfileReactor.Profile) {
         nicknameLabel.text = profile.nickname
-        profileImageView.image = profile.profileImageAssetName.flatMap { UIImage(named: $0) }
+        configureProfileImage(with: profile.profileImageURL)
         postCountLabel.text = profile.postCount
         likeCountLabel.text = profile.likeCount
     }
@@ -131,6 +135,28 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         sortButton.snp.makeConstraints {
             $0.edges.equalTo(sortStackView)
         }
+    }
+}
+
+private extension MemberProfileHeaderView {
+    func configureProfileImage(with profileImageURL: String?) {
+        let placeholderImage = UIImage(named: "non_profile")
+        profileImageView.kf.cancelDownloadTask()
+        
+        guard let profileImageURL,
+              let url = URL(string: profileImageURL) else {
+            profileImageView.image = placeholderImage
+            return
+        }
+        
+        profileImageView.kf.setImage(
+            with: url,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
 }
 
