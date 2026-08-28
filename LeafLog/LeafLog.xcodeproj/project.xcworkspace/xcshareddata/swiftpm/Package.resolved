@@ -1,5 +1,5 @@
 {
-  "originHash" : "121284e4bfc1447f4f430f6bad79534cf39196f8d5c51ce16642854380004496",
+  "originHash" : "2163378cb4b2e0ff280d56bd98bf84ae0359ca401e72b474e1db478c24d879fc",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -276,8 +276,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-dependencies",
       "state" : {
-        "revision" : "706feb7858a7f6c242879d137b8ee30926aa5b26",
-        "version" : "1.12.0"
+        "revision" : "5e0815746534ccaa9e20588ea35d3bb2cb27bab8",
+        "version" : "1.17.0"
       }
     },
     {
