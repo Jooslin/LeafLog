@@ -12,12 +12,18 @@ import SnapKit
 import UIKit
 import Then
 
+nonisolated enum SearchListItem: Hashable, Sendable {
+    case plant(String)
+    case empty(String)
+    case bottomGuide
+}
+
 // TODO: APPFlow 적용하기
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
     private var itemsByIdentifier: [String: PlantSummaryItem] = [:]
     // 식물 번호로 저장
-    private var dataSource: UICollectionViewDiffableDataSource<String, String>?
+    private var dataSource: UICollectionViewDiffableDataSource<String, SearchListItem>?
 
     private var classificationResult: [String: PlantClassificationService.Confidence]? // AI 검색 에서 진입 시 존재
     
@@ -71,55 +77,67 @@ final class SearchViewController: BaseViewController, View {
             forCellWithReuseIdentifier: SearchResultCell.reuseIdentifier
         )
         rootView.collectionView.register(
-            SearchBottomGuideView.self,
-            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
-            withReuseIdentifier: SearchBottomGuideView.reuseIdentifier
+            SearchEmptyResultCell.self,
+            forCellWithReuseIdentifier: SearchEmptyResultCell.reuseIdentifier
+        )
+        rootView.collectionView.register(
+            SearchBottomGuideCell.self,
+            forCellWithReuseIdentifier: SearchBottomGuideCell.reuseIdentifier
         )
         rootView.collectionView.delegate = self
         configureDataSource()
     }
 
     private func configureDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<String, String>(
+        dataSource = UICollectionViewDiffableDataSource<String, SearchListItem>(
             collectionView: rootView.collectionView
-        ) { [weak self] collectionView, indexPath, identifier in
-            guard let self,
-                  let cell = collectionView.dequeueReusableCell(
+        ) { [weak self] collectionView, indexPath, item in
+            switch item {
+            case .plant(let identifier):
+                guard let self,
+                      let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: SearchResultCell.reuseIdentifier,
                     for: indexPath
-                  ) as? SearchResultCell,
-                  let item = self.itemsByIdentifier[identifier]
-            else {
-                return UICollectionViewCell()
-            }
-            
-            cell.configure(
-                plantName: item.name,
-                confidence: item.confidence,
-                thumbnailURLString: item.displayThumbnailURL
-            )
-            cell.onSelectButtonTap = { [weak self] in
-                self?.reactor?.action.onNext(.selectPlant(item))
-            }
-            return cell
-        }
-
-        dataSource?.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
-            guard kind == UICollectionView.elementKindSectionFooter,
-                  let view = collectionView.dequeueReusableSupplementaryView(
-                    ofKind: kind,
-                    withReuseIdentifier: SearchBottomGuideView.reuseIdentifier,
+                      ) as? SearchResultCell,
+                      let plant = self.itemsByIdentifier[identifier]
+                else {
+                    return UICollectionViewCell()
+                }
+                
+                cell.configure(
+                    plantName: plant.name,
+                    confidence: plant.confidence,
+                    thumbnailURLString: plant.displayThumbnailURL
+                )
+                cell.onSelectButtonTap = { [weak self] in
+                    self?.reactor?.action.onNext(.selectPlant(plant))
+                }
+                return cell
+                
+            case .empty(let message):
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SearchEmptyResultCell.reuseIdentifier,
                     for: indexPath
-                  ) as? SearchBottomGuideView
-            else {
-                return UICollectionReusableView()
+                ) as? SearchEmptyResultCell else {
+                    return UICollectionViewCell()
+                }
+                
+                cell.configure(message: message)
+                return cell
+                
+            case .bottomGuide:
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SearchBottomGuideCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SearchBottomGuideCell else {
+                    return UICollectionViewCell()
+                }
+                
+                cell.onRegisterOtherTap = { [weak self] in
+                    self?.steps.accept(AppStep.plantRegisterSelectedPlant(.other))
+                }
+                return cell
             }
-
-            view.onRegisterOtherTap = { [weak self] in
-                self?.steps.accept(AppStep.plantRegisterSelectedPlant(.other))
-            }
-
-            return view
         }
     }
     
@@ -178,13 +196,10 @@ final class SearchViewController: BaseViewController, View {
 
     private func bindState(reactor: SearchReactor) {
         reactor.state // 식물 목록
-            .map(\.plants)
-            .distinctUntilChanged { previousPlants, currentPlants in
-                previousPlants.map(\.contentNumber) == currentPlants.map(\.contentNumber)
-            }
+            .map { ($0.listItems, $0.plants) }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] plants in
-                self?.applySnapshot(plants: plants)
+            .subscribe(onNext: { [weak self] listItems, plants in
+                self?.applySnapshot(listItems: listItems, plants: plants)
             })
             .disposed(by: disposeBag)
 
@@ -195,9 +210,8 @@ final class SearchViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state // 검색 결과 보여줄지 말지
-            .map { $0.plants.isEmpty }
+            .map(\.hasSearched)
             .distinctUntilChanged()
-            .map { !$0 }
             .bind(to: rootView.emptyLabel.rx.isHidden)
             .disposed(by: disposeBag)
 
@@ -263,14 +277,18 @@ final class SearchViewController: BaseViewController, View {
     }
     
     // 파라미터 타입 변경
-    private func applySnapshot(plants: [PlantSummaryItem], animated: Bool = true) {
+    private func applySnapshot(
+        listItems: [SearchListItem],
+        plants: [PlantSummaryItem],
+        animated: Bool = true
+    ) {
         itemsByIdentifier = Dictionary(
             uniqueKeysWithValues: plants.map { ($0.contentNumber, $0) }
         )
 
-        var snapshot = NSDiffableDataSourceSnapshot<String, String>()
+        var snapshot = NSDiffableDataSourceSnapshot<String, SearchListItem>()
         snapshot.appendSections(["main"])
-        snapshot.appendItems(plants.map(\.contentNumber), toSection: "main")
+        snapshot.appendItems(listItems, toSection: "main")
         dataSource?.apply(snapshot, animatingDifferences: animated)
     }
 }
@@ -290,12 +308,32 @@ extension SearchViewController {
     }
 }
 
-extension SearchViewController: UICollectionViewDelegate {
+extension SearchViewController: UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let identifier = dataSource?.itemIdentifier(for: indexPath),
+        guard case .plant(let identifier) = dataSource?.itemIdentifier(for: indexPath),
             let item = itemsByIdentifier[identifier]
         else { return }
         steps.accept(AppStep.plantSearchDetail(item.contentNumber))
+    }
+    
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout collectionViewLayout: UICollectionViewLayout,
+        sizeForItemAt indexPath: IndexPath
+    ) -> CGSize {
+        switch dataSource?.itemIdentifier(for: indexPath) {
+        case .plant:
+            return CGSize(width: collectionView.bounds.width, height: 104)
+            
+        case .empty:
+            return CGSize(width: collectionView.bounds.width, height: 104)
+            
+        case .bottomGuide:
+            return CGSize(width: collectionView.bounds.width, height: 188)
+            
+        case .none:
+            return CGSize(width: collectionView.bounds.width, height: 104)
+        }
     }
 }
