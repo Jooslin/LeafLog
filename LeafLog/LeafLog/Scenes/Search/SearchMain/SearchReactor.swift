@@ -19,7 +19,7 @@ final class SearchReactor: AsyncReactor {
         case updateSearchType(PlantSearchType) // 식물 이름 어떤식으로 검색하는지
         case updateFilter(PlantFilterKind, PlantFilterOption?) // 필터 바꿈
         case classificationQuery([String: PlantClassificationService.Confidence]) // AI 식별 결과 받음
-        case selectPlant(SearchViewController.PlantSummaryItem)
+        case selectPlant(SearchPlantSummaryItem)
     }
     
     // 상태를 어떻게 바꿀지에 대한 변화
@@ -30,7 +30,7 @@ final class SearchReactor: AsyncReactor {
         case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
         case setFilterOptions([PlantFilterKind: [PlantFilterOption]]) // 옵션 전체
         case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
-        case setPlants([SearchViewController.PlantSummaryItem])
+        case setPlants([SearchPlantSummaryItem])
         case setResultText(String) // 결과가 나올때
         case setSelectedPlant(SelectedPlant)
         case setErrorMessage(String)
@@ -44,7 +44,7 @@ final class SearchReactor: AsyncReactor {
         var searchType: PlantSearchType = .plantName // 어떤걸 기준으로 검색할지
         var filterOptions: [PlantFilterKind: [PlantFilterOption]] = [:]
         var filterState = PlantFilterState()
-        var plants: [SearchViewController.PlantSummaryItem] = []
+        var plants: [SearchPlantSummaryItem] = []
         var isLoading: Bool = false
         var resultText: String = "검색어를 입력해 주세요."
         @Pulse var selectedPlant: SelectedPlant? = nil
@@ -225,9 +225,9 @@ final class SearchReactor: AsyncReactor {
             )
             
             // items 추가
-            let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+            let items = plants.reduce([SearchPlantSummaryItem]()) {
                 
-                let item = SearchViewController.PlantSummaryItem(
+                let item = SearchPlantSummaryItem(
                     contentNumber: $1.contentNumber,
                     name: $1.name,
                     imageURL: $1.imageURL,
@@ -265,7 +265,7 @@ final class SearchReactor: AsyncReactor {
     }
 
     private func fetchSelectedPlant(
-        from item: SearchViewController.PlantSummaryItem,
+        from item: SearchPlantSummaryItem,
         continuation: MutationStreamContinuation
     ) async {
         do {
@@ -312,10 +312,10 @@ extension SearchReactor {
             // API 검색 결과
             let plants = try await networkManager.fetchPlantListBy(keywords: keywords)
 
-            let items = plants.reduce([SearchViewController.PlantSummaryItem]()) {
+            let items = plants.reduce([SearchPlantSummaryItem]()) {
                 guard let confidence = classifications[$1.key] else { return $0 }
                 
-                let item = SearchViewController.PlantSummaryItem(
+                let item = SearchPlantSummaryItem(
                     contentNumber: $1.value.contentNumber,
                     name: $1.value.name,
                     imageURL: $1.value.imageURL,
