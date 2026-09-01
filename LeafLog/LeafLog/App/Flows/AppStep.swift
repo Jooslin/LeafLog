@@ -61,6 +61,7 @@ enum AppStep: Step {
     )
     
     //CommunityTab
+    case memberProfile
     case communityComposeCreate
     case communityComposeEdit(CommunityPost)
     case composeNotice
