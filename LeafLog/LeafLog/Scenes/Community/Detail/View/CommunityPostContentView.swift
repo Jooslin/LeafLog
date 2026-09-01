@@ -7,6 +7,7 @@
 
 import RxCocoa
 import RxSwift
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -98,7 +99,7 @@ final class CommunityPostContentView: UIView {
         heartCountLabel.text = post.likeCount
         commentCountLabel.text = post.commentCount
         configureHeart(isLiked: post.isLiked)
-        configurePostImages(imageAssetNames: post.imageAssetNames)
+        configurePostImages(imageURLs: post.imageURLs)
     }
     
     private func setLayout() {
@@ -235,9 +236,9 @@ final class CommunityPostContentView: UIView {
         heartImageView.tintColor = isLiked ? .systemRed : .black
     }
     
-    private func configurePostImages(imageAssetNames: [String]) {
+    private func configurePostImages(imageURLs: [URL]) {
         imageButtonDisposeBag = DisposeBag()
-        imageScrollView.isHidden = imageAssetNames.isEmpty
+        imageScrollView.isHidden = imageURLs.isEmpty
         imageScrollView.setContentOffset(.zero, animated: false)
         
         imageStackView.arrangedSubviews.forEach {
@@ -245,25 +246,51 @@ final class CommunityPostContentView: UIView {
             $0.removeFromSuperview()
         }
         
-        imageAssetNames.enumerated().forEach { index, imageAssetName in
-            let imageButton = UIButton(type: .custom).then {
-                $0.setImage(UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder), for: .normal)
-                $0.imageView?.contentMode = .scaleAspectFill
-                $0.imageView?.clipsToBounds = true
+        imageURLs.enumerated().forEach { index, imageURL in
+            let imageView = UIImageView().then {
+                $0.contentMode = .scaleAspectFill
+                $0.image = UIImage(resource: .placeholder)
                 $0.backgroundColor = .grayScale100
                 $0.layer.cornerRadius = 8
                 $0.clipsToBounds = true
             }
+            
+            let imageButton = UIButton(type: .custom).then {
+                $0.backgroundColor = .clear
+            }
+            
+            let imageContainerView = UIView().then {
+                $0.addSubview(imageView)
+                $0.addSubview(imageButton)
+            }
+            
+            imageView.kf.setImage(
+                with: imageURL,
+                placeholder: UIImage(resource: .placeholder),
+                options: [
+                    .cacheOriginalImage,
+                    .transition(.fade(0.2))
+                ]
+            )
             
             imageButton.rx.tap
                 .map { index }
                 .bind(to: postImageTapRelay)
                 .disposed(by: imageButtonDisposeBag)
             
-            imageButton.snp.makeConstraints {
+            imageContainerView.snp.makeConstraints {
                 $0.width.height.equalTo(104)
             }
-            imageStackView.addArrangedSubview(imageButton)
+            
+            imageView.snp.makeConstraints {
+                $0.edges.equalToSuperview()
+            }
+            
+            imageButton.snp.makeConstraints {
+                $0.edges.equalToSuperview()
+            }
+            
+            imageStackView.addArrangedSubview(imageContainerView)
         }
     }
 }
