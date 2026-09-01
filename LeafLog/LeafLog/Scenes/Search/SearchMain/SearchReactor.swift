@@ -26,6 +26,7 @@ final class SearchReactor: AsyncReactor {
     enum Mutation {
         case setLoading(Bool) // 검색 전후
         case setQuery(String) // 검색어 저장
+        case setHasSearched(Bool)
         case setSearchType(PlantSearchType) // (영명, 학명, 식물명)
         case setFilterOptions([PlantFilterKind: [PlantFilterOption]]) // 옵션 전체
         case setFilter(PlantFilterKind, PlantFilterOption?) // 선택한 옵션
@@ -39,6 +40,7 @@ final class SearchReactor: AsyncReactor {
     // 화면이 어떤 상태인지 표현(처음 상태)
     struct State {
         var query: String = ""
+        var hasSearched = false
         var searchType: PlantSearchType = .plantName // 어떤걸 기준으로 검색할지
         var filterOptions: [PlantFilterKind: [PlantFilterOption]] = [:]
         var filterState = PlantFilterState()
@@ -48,6 +50,16 @@ final class SearchReactor: AsyncReactor {
         @Pulse var selectedPlant: SelectedPlant? = nil
         @Pulse var errorMessage: String? = nil
         var titleText: String = "식물 검색"
+        
+        var listItems: [SearchListItem] {
+            guard hasSearched else { return [] }
+            
+            if plants.isEmpty {
+                return [.empty(resultText), .bottomGuide]
+            }
+            
+            return plants.map { .plant($0.contentNumber) } + [.bottomGuide]
+        }
     }
     
     @Dependency(\.networkManager) private var networkManager
@@ -71,6 +83,7 @@ final class SearchReactor: AsyncReactor {
             // 비었을 때
             guard !query.isEmpty else {
                 continuation.yield(.setQuery(""))
+                continuation.yield(.setHasSearched(false))
                 continuation.yield(.setPlants([]))
                 continuation.yield(.setLoading(false))
                 continuation.yield(.setResultText("검색어를 입력해 주세요."))
@@ -87,6 +100,7 @@ final class SearchReactor: AsyncReactor {
                 filterState: currentState.filterState,
                 continuation: continuation
             )
+            continuation.yield(.setHasSearched(true))
             continuation.yield(.setLoading(false))
             
             
@@ -109,6 +123,7 @@ final class SearchReactor: AsyncReactor {
                 filterState: currentState.filterState,
                 continuation: continuation
             )
+            continuation.yield(.setHasSearched(true))
             continuation.yield(.setLoading(false))
             
             
@@ -132,6 +147,7 @@ final class SearchReactor: AsyncReactor {
                 filterState: nextFilterState,
                 continuation: continuation
             )
+            continuation.yield(.setHasSearched(true))
             continuation.yield(.setLoading(false))
             
             // AI 식물 식별 결과 사용할 때
@@ -140,6 +156,7 @@ final class SearchReactor: AsyncReactor {
             continuation.yield(.setSearchType(.botanicalName))
             continuation.yield(.setLoading(true))
             await searchClassificationResult(classifications: classificationResult, continuation: continuation)
+            continuation.yield(.setHasSearched(true))
             continuation.yield(.setLoading(false))
             continuation.yield(.setTitle("검색 결과"))
             continuation.yield(.setSearchType(.plantName))
@@ -159,6 +176,8 @@ final class SearchReactor: AsyncReactor {
             newState.isLoading = isLoading
         case .setQuery(let query): // 검색어
             newState.query = query
+        case .setHasSearched(let hasSearched):
+            newState.hasSearched = hasSearched
         case .setSearchType(let searchType): // 검색 타입(결과)
             newState.searchType = searchType
         case .setFilterOptions(let filterOptions):
