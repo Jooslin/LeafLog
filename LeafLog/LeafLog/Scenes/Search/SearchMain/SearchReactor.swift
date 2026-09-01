@@ -52,7 +52,7 @@ final class SearchReactor: AsyncReactor {
         var titleText: String = "식물 검색"
         
         var listItems: [SearchListItem] {
-            guard hasSearched else { return [] }
+            guard hasSearched, !isLoading else { return [] }
             
             if plants.isEmpty {
                 return [.empty(resultText), .bottomGuide]
