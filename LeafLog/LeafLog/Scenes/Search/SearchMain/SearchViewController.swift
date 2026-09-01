@@ -8,16 +8,12 @@
 import ReactorKit
 import RxCocoa
 import RxSwift
-import SnapKit
 import UIKit
-import Then
 
 // TODO: APPFlow 적용하기
 final class SearchViewController: BaseViewController, View {
     private let rootView = SearchRootView()
-    private var itemsByIdentifier: [String: PlantSummaryItem] = [:]
-    // 식물 번호로 저장
-    private var dataSource: UICollectionViewDiffableDataSource<String, String>?
+    private let collectionViewDataSource = SearchMainCollectionViewDataSource()
 
     private var classificationResult: [String: PlantClassificationService.Confidence]? // AI 검색 에서 진입 시 존재
     
@@ -66,60 +62,15 @@ final class SearchViewController: BaseViewController, View {
     }
 
     private func configureCollectionView() {
-        rootView.collectionView.register(
-            SearchResultCell.self,
-            forCellWithReuseIdentifier: SearchResultCell.reuseIdentifier
-        )
-        rootView.collectionView.register(
-            SearchBottomGuideView.self,
-            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
-            withReuseIdentifier: SearchBottomGuideView.reuseIdentifier
-        )
-        rootView.collectionView.delegate = self
-        configureDataSource()
-    }
-
-    private func configureDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<String, String>(
-            collectionView: rootView.collectionView
-        ) { [weak self] collectionView, indexPath, identifier in
-            guard let self,
-                  let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: SearchResultCell.reuseIdentifier,
-                    for: indexPath
-                  ) as? SearchResultCell,
-                  let item = self.itemsByIdentifier[identifier]
-            else {
-                return UICollectionViewCell()
-            }
-            
-            cell.configure(
-                plantName: item.name,
-                confidence: item.confidence,
-                thumbnailURLString: item.displayThumbnailURL
-            )
-            cell.onSelectButtonTap = { [weak self] in
-                self?.reactor?.action.onNext(.selectPlant(item))
-            }
-            return cell
+        collectionViewDataSource.configure(collectionView: rootView.collectionView)
+        collectionViewDataSource.onSelectButtonTap = { [weak self] plant in
+            self?.reactor?.action.onNext(.selectPlant(plant))
         }
-
-        dataSource?.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
-            guard kind == UICollectionView.elementKindSectionFooter,
-                  let view = collectionView.dequeueReusableSupplementaryView(
-                    ofKind: kind,
-                    withReuseIdentifier: SearchBottomGuideView.reuseIdentifier,
-                    for: indexPath
-                  ) as? SearchBottomGuideView
-            else {
-                return UICollectionReusableView()
-            }
-
-            view.onRegisterOtherTap = { [weak self] in
-                self?.steps.accept(AppStep.plantRegisterSelectedPlant(.other))
-            }
-
-            return view
+        collectionViewDataSource.onPlantCellTap = { [weak self] plant in
+            self?.steps.accept(AppStep.plantSearchDetail(plant.contentNumber))
+        }
+        collectionViewDataSource.onRegisterOtherTap = { [weak self] in
+            self?.steps.accept(AppStep.plantRegisterSelectedPlant(.other))
         }
     }
     
@@ -178,13 +129,10 @@ final class SearchViewController: BaseViewController, View {
 
     private func bindState(reactor: SearchReactor) {
         reactor.state // 식물 목록
-            .map(\.plants)
-            .distinctUntilChanged { previousPlants, currentPlants in
-                previousPlants.map(\.contentNumber) == currentPlants.map(\.contentNumber)
-            }
+            .map { ($0.listItems, $0.plants) }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] plants in
-                self?.applySnapshot(plants: plants)
+            .subscribe(onNext: { [weak self] listItems, plants in
+                self?.collectionViewDataSource.apply(listItems: listItems, plants: plants)
             })
             .disposed(by: disposeBag)
 
@@ -195,9 +143,8 @@ final class SearchViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         reactor.state // 검색 결과 보여줄지 말지
-            .map { $0.plants.isEmpty }
+            .map(\.hasSearched)
             .distinctUntilChanged()
-            .map { !$0 }
             .bind(to: rootView.emptyLabel.rx.isHidden)
             .disposed(by: disposeBag)
 
@@ -262,40 +209,4 @@ final class SearchViewController: BaseViewController, View {
         }
     }
     
-    // 파라미터 타입 변경
-    private func applySnapshot(plants: [PlantSummaryItem], animated: Bool = true) {
-        itemsByIdentifier = Dictionary(
-            uniqueKeysWithValues: plants.map { ($0.contentNumber, $0) }
-        )
-
-        var snapshot = NSDiffableDataSourceSnapshot<String, String>()
-        snapshot.appendSections(["main"])
-        snapshot.appendItems(plants.map(\.contentNumber), toSection: "main")
-        dataSource?.apply(snapshot, animatingDifferences: animated)
-    }
-}
-
-extension SearchViewController {
-    // 컬렉션뷰 configure용 struct
-    struct PlantSummaryItem {
-        let contentNumber: String
-        let name: String
-        let imageURL: String?
-        let thumbnailURL: String?
-        let confidence: PlantClassificationService.Confidence // ai 검색 일치율
-        
-        let primaryThumbnailURL: String?
-        let primaryImageURL: String?
-        let displayThumbnailURL: String?
-    }
-}
-
-extension SearchViewController: UICollectionViewDelegate {
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let identifier = dataSource?.itemIdentifier(for: indexPath),
-            let item = itemsByIdentifier[identifier]
-        else { return }
-        steps.accept(AppStep.plantSearchDetail(item.contentNumber))
-    }
 }

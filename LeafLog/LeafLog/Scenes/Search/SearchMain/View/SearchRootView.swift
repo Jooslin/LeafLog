@@ -15,7 +15,6 @@ import Then
 final class SearchRootView: UIView {
     private enum Layout {
         static let itemHeight: CGFloat = 104
-        static let footerHeight: CGFloat = 188
     }
 
     let searchBarView = SearchBarView().then {
@@ -122,38 +121,13 @@ final class SearchRootView: UIView {
         }
     }
 
-    private static func makeLayout() -> UICollectionViewCompositionalLayout {
-        let itemSize = NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1.0),
-            heightDimension: .absolute(Layout.itemHeight)
-        )
-        let item = NSCollectionLayoutItem(layoutSize: itemSize)
-
-        let groupSize = NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1.0),
-            heightDimension: .absolute(Layout.itemHeight)
-        )
-        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
-
-        let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = NSDirectionalEdgeInsets(
-            top: 0,
-            leading: 0,
-            bottom: 0,
-            trailing: 0
-        )
-
-        let footerSize = NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1.0),
-            heightDimension: .absolute(Layout.footerHeight)
-        )
-        let footer = NSCollectionLayoutBoundarySupplementaryItem(
-            layoutSize: footerSize,
-            elementKind: UICollectionView.elementKindSectionFooter,
-            alignment: .bottom
-        )
-        section.boundarySupplementaryItems = [footer]
-
-        return UICollectionViewCompositionalLayout(section: section)
+    private static func makeLayout() -> UICollectionViewLayout {
+        UICollectionViewFlowLayout().then {
+            $0.scrollDirection = .vertical
+            $0.minimumLineSpacing = 0
+            $0.minimumInteritemSpacing = 0
+            $0.estimatedItemSize = .zero
+            $0.itemSize = CGSize(width: UIScreen.main.bounds.width, height: Layout.itemHeight)
+        }
     }
 }
