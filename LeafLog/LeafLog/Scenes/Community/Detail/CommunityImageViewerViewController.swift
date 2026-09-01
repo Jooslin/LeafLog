@@ -5,12 +5,13 @@
 //  Created by Yeseul Jang on 7/9/26.
 //
 
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
 
 final class CommunityImageViewerViewController: UIViewController {
-    private let imageAssetNames: [String]
+    private let imageURLs: [URL]
     private let initialIndex: Int
     private var didScrollToInitialIndex = false
     
@@ -48,9 +49,9 @@ final class CommunityImageViewerViewController: UIViewController {
         $0.currentPageIndicatorTintColor = .white
     }
     
-    init(imageAssetNames: [String], initialIndex: Int) {
-        self.imageAssetNames = imageAssetNames
-        self.initialIndex = max(0, min(initialIndex, imageAssetNames.count - 1))
+    init(imageURLs: [URL], initialIndex: Int) {
+        self.imageURLs = imageURLs
+        self.initialIndex = max(0, min(initialIndex, imageURLs.count - 1))
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -62,7 +63,7 @@ final class CommunityImageViewerViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        pageControl.numberOfPages = imageAssetNames.count
+        pageControl.numberOfPages = imageURLs.count
         pageControl.currentPage = initialIndex
         setLayout()
         closeButton.addTarget(self, action: #selector(closeButtonDidTap), for: .touchUpInside)
@@ -79,7 +80,7 @@ final class CommunityImageViewerViewController: UIViewController {
             imageCollectionViewFlowLayout.invalidateLayout()
         }
         
-        guard !didScrollToInitialIndex, !imageAssetNames.isEmpty else { return }
+        guard !didScrollToInitialIndex, !imageURLs.isEmpty else { return }
         didScrollToInitialIndex = true
         imageCollectionView.scrollToItem(
             at: IndexPath(item: initialIndex, section: 0),
@@ -118,7 +119,7 @@ final class CommunityImageViewerViewController: UIViewController {
 
 extension CommunityImageViewerViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        imageAssetNames.count
+        imageURLs.count
     }
     
     func collectionView(
@@ -132,7 +133,7 @@ extension CommunityImageViewerViewController: UICollectionViewDataSource, UIColl
             return UICollectionViewCell()
         }
         
-        cell.configure(imageAssetName: imageAssetNames[indexPath.item])
+        cell.configure(imageURL: imageURLs[indexPath.item])
         return cell
     }
     
@@ -165,7 +166,21 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(imageAssetName: String) {
-        imageView.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        imageView.kf.cancelDownloadTask()
+        imageView.image = UIImage(resource: .placeholder)
+    }
+    
+    func configure(imageURL: URL) {
+        imageView.kf.setImage(
+            with: imageURL,
+            placeholder: UIImage(resource: .placeholder),
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
 }
