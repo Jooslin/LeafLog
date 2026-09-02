@@ -60,6 +60,11 @@ final class CommunityDetailViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        detailView.rx.profileImageTap
+            .map { CommunityDetailReactor.Action.postProfileImageTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         detailView.rx.heartButtonTap
             .map { CommunityDetailReactor.Action.heartButtonTapped }
             .bind(to: reactor.action)

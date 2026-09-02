@@ -13,9 +13,11 @@ import RxSwift
 
 final class CommunityDetailReactor: Reactor {
     struct Post: Equatable {
+        let memberID: UUID
         let category: String
         let title: String
         let nickname: String
+        let profileImageURL: URL?
         let date: String
         let body: String
         let imageURLs: [URL]
@@ -47,6 +49,7 @@ final class CommunityDetailReactor: Reactor {
         case viewDidLoad
         case moreButtonTapped
         case postImageTapped(index: Int)
+        case postProfileImageTapped
         case commentProfileImageTapped(index: Int)
         case heartButtonTapped
         case commentButtonTapped
@@ -136,6 +139,11 @@ final class CommunityDetailReactor: Reactor {
                 initialIndex: index
             )))
             
+        case .postProfileImageTapped:
+            guard let memberID = currentState.post?.memberID else { return .empty() }
+            
+            return .just(.routeToMemberProfile(memberID: memberID))
+            
         case .commentProfileImageTapped(let index):
             guard currentState.comments.indices.contains(index) else { return .empty() }
             let memberID = currentState.comments[index].memberID
@@ -201,6 +209,7 @@ final class CommunityDetailReactor: Reactor {
             let post = try await communityPostDBManager.fetchPost(id: postID)
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [post.authorID])
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
+            let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let imagePaths = Self.imagePaths(from: post)
             var imageURLs: [URL] = []
             
@@ -222,6 +231,7 @@ final class CommunityDetailReactor: Reactor {
             return CommunityDetailResult(
                 post: post,
                 authorNickname: nickname,
+                authorProfileImageURL: profileImageURLs[post.authorID],
                 imageURLs: imageURLs
             )
         }
@@ -250,9 +260,11 @@ final class CommunityDetailReactor: Reactor {
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
         Post(
+            memberID: result.post.authorID,
             category: result.post.category.title,
             title: result.post.title,
             nickname: result.authorNickname,
+            profileImageURL: result.authorProfileImageURL,
             date: dateFormatter.string(from: result.post.createdAt),
             body: result.post.content,
             imageURLs: result.imageURLs,
@@ -273,5 +285,6 @@ final class CommunityDetailReactor: Reactor {
 nonisolated private struct CommunityDetailResult: Sendable {
     let post: CommunityPost
     let authorNickname: String
+    let authorProfileImageURL: URL?
     let imageURLs: [URL]
 }
