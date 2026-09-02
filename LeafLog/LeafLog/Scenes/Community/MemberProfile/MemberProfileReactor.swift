@@ -10,6 +10,7 @@ import Dependencies
 import OSLog
 import ReactorKit
 import RxSwift
+import Supabase
 
 final class MemberProfileReactor: Reactor {
     private let memberID: UUID
@@ -49,9 +50,11 @@ final class MemberProfileReactor: Reactor {
         case setInitialLoading(Bool)
         case setLoadingMore(Bool)
         case setProfile(Profile)
+        case setIsMine(Bool)
         case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case resetPosts
+        case presentMemberActionSheet
         case setErrorMessage(String)
     }
     
@@ -63,6 +66,8 @@ final class MemberProfileReactor: Reactor {
         var nextOffset: Int?
         var profile: Profile?
         var posts: [Post] = []
+        var isMine = false
+        @Pulse var memberActionSheet: Bool?
         @Pulse var errorMessage: String?
         
         var postListItems: [PostListItem] {
@@ -98,8 +103,11 @@ final class MemberProfileReactor: Reactor {
                 .just(.setInitialLoading(false))
             )
             
-        case .moreButtonTapped,
-             .sortButtonTapped:
+        case .moreButtonTapped:
+            guard currentState.isMine == false else { return .empty() }
+            return .just(.presentMemberActionSheet)
+            
+        case .sortButtonTapped:
             return .empty()
             
         case .reachedBottom:
@@ -134,6 +142,9 @@ final class MemberProfileReactor: Reactor {
         case .setProfile(let profile):
             newState.profile = profile
             
+        case .setIsMine(let isMine):
+            newState.isMine = isMine
+            
         case .setPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts = posts
             newState.nextOffset = nextOffset
@@ -149,6 +160,9 @@ final class MemberProfileReactor: Reactor {
             newState.nextOffset = nil
             newState.hasNextPage = false
             
+        case .presentMemberActionSheet:
+            newState.memberActionSheet = true
+            
         case .setErrorMessage(let message):
             newState.errorMessage = message
         }
@@ -158,6 +172,7 @@ final class MemberProfileReactor: Reactor {
     
     private func fetchInitialProfile() -> Observable<Mutation> {
         Single<MemberProfileResult>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize] in
+            let currentUserID = supabaseManager.client.auth.currentUser?.id
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [memberID])
             let profile = profiles[memberID]
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
@@ -181,6 +196,7 @@ final class MemberProfileReactor: Reactor {
                     likeCount: String(stats.likeCount)
                 ),
                 posts: Self.makePosts(posts, nickname: profile?.nickname ?? "알 수 없는 사용자", imageURLs: postImageURLs),
+                isMine: memberID == currentUserID,
                 nextOffset: posts.count,
                 hasNextPage: posts.count == pageSize
             )
@@ -188,6 +204,7 @@ final class MemberProfileReactor: Reactor {
         .asObservable()
         .flatMap { result -> Observable<Mutation> in
             .from([
+                .setIsMine(result.isMine),
                 .setProfile(result.profile),
                 .setPosts(
                     result.posts,
@@ -295,6 +312,7 @@ final class MemberProfileReactor: Reactor {
 private struct MemberProfileResult {
     let profile: MemberProfileReactor.Profile
     let posts: [MemberProfileReactor.Post]
+    let isMine: Bool
     let nextOffset: Int
     let hasNextPage: Bool
 }

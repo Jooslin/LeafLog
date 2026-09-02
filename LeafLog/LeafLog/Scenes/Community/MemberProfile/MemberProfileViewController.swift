@@ -80,6 +80,15 @@ final class MemberProfileViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.state
+            .map(\.isMine)
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] isMine in
+                self?.profileView.setMoreButtonHidden(isMine)
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -87,6 +96,26 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("오류", message))
             }
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$memberActionSheet)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentMemberActionSheet()
+            }
+            .disposed(by: disposeBag)
+    }
+    
+    private func presentMemberActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        alertController.addAction(UIAlertAction(title: "차단하기", style: .destructive))
+        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive))
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
     }
 }
 
