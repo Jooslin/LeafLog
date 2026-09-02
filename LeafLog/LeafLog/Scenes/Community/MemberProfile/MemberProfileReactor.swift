@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Dependencies
+import OSLog
 import ReactorKit
 import RxSwift
 
@@ -14,17 +16,18 @@ final class MemberProfileReactor: Reactor {
     
     struct Profile: Equatable {
         let nickname: String
-        let profileImageURL: String?
+        let profileImageURL: URL?
         let postCount: String
         let likeCount: String
     }
     
     struct Post: Equatable {
+        let id: UUID
         let title: String
         let nickname: String
         let date: String
         let body: String
-        let imageAssetName: String?
+        let imageURL: URL?
         let likeCount: String
         let commentCount: String
     }
@@ -45,79 +48,22 @@ final class MemberProfileReactor: Reactor {
         case setLoading(Bool)
         case setInitialLoading(Bool)
         case setLoadingMore(Bool)
-        case setPosts([Post], nextCursor: String?, hasNextPage: Bool)
-        case appendPosts([Post], nextCursor: String?, hasNextPage: Bool)
+        case setProfile(Profile)
+        case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
+        case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case resetPosts
+        case setErrorMessage(String)
     }
     
     struct State {
         var isLoading = false
-        var isInitialLoading = false
+        var isInitialLoading = true
         var isLoadingMore = false
         var hasNextPage = false
-        var nextCursor: String?
-        var profile = Profile(
-            nickname: "닉네임",
-            profileImageURL: nil,
-            postCount: "12",
-            likeCount: "36"
-        )
-        var posts: [Post] = [
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요...",
-                imageAssetName: "placeholder",
-                likeCount: "N",
-                commentCount: "N"
-            ),
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요 열심히 기록해보자",
-                imageAssetName: nil,
-                likeCount: "N",
-                commentCount: "N"
-            ),
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요...",
-                imageAssetName: "placeholder",
-                likeCount: "N",
-                commentCount: "N"
-            ),
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요...",
-                imageAssetName: "placeholder",
-                likeCount: "N",
-                commentCount: "N"
-            ),
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요 열심히 기록해보자",
-                imageAssetName: nil,
-                likeCount: "N",
-                commentCount: "N"
-            ),
-            .init(
-                title: "우리집 몬스테라 새잎이 나왔어요!",
-                nickname: "닉네임",
-                date: "2026.04.27",
-                body: "드디어 새잎이 쑥 나왔어요. 매일보는 즐거움이 있답니다! 몬스테라 후기 남겨요...",
-                imageAssetName: "placeholder",
-                likeCount: "N",
-                commentCount: "N"
-            )
-        ]
+        var nextOffset: Int?
+        var profile: Profile?
+        var posts: [Post] = []
+        @Pulse var errorMessage: String?
         
         var postListItems: [PostListItem] {
             if isInitialLoading {
@@ -133,6 +79,11 @@ final class MemberProfileReactor: Reactor {
     }
     
     let initialState = State()
+    private let pageSize = 10
+    
+    @Dependency(\.communityPostDBManager) private var communityPostDBManager
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger(subsystem: "LeafLog", category: "MemberProfileReactor")
     
     init(memberID: UUID) {
         self.memberID = memberID
@@ -140,19 +91,30 @@ final class MemberProfileReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .viewDidLoad,
-             .moreButtonTapped,
+        case .viewDidLoad:
+            return .concat(
+                .just(.setInitialLoading(true)),
+                fetchInitialProfile(),
+                .just(.setInitialLoading(false))
+            )
+            
+        case .moreButtonTapped,
              .sortButtonTapped:
             return .empty()
             
         case .reachedBottom:
             guard currentState.isInitialLoading == false,
                   currentState.isLoadingMore == false,
-                  currentState.hasNextPage else {
+                  currentState.hasNextPage,
+                  let nextOffset = currentState.nextOffset else {
                 return .empty()
             }
             
-            return .empty()
+            return .concat(
+                .just(.setLoadingMore(true)),
+                fetchMorePosts(offset: nextOffset),
+                .just(.setLoadingMore(false))
+            )
         }
     }
     
@@ -169,22 +131,176 @@ final class MemberProfileReactor: Reactor {
         case .setLoadingMore(let isLoadingMore):
             newState.isLoadingMore = isLoadingMore
             
-        case .setPosts(let posts, let nextCursor, let hasNextPage):
+        case .setProfile(let profile):
+            newState.profile = profile
+            
+        case .setPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts = posts
-            newState.nextCursor = nextCursor
+            newState.nextOffset = nextOffset
             newState.hasNextPage = hasNextPage
             
-        case .appendPosts(let posts, let nextCursor, let hasNextPage):
+        case .appendPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts.append(contentsOf: posts)
-            newState.nextCursor = nextCursor
+            newState.nextOffset = nextOffset
             newState.hasNextPage = hasNextPage
             
         case .resetPosts:
             newState.posts = []
-            newState.nextCursor = nil
+            newState.nextOffset = nil
             newState.hasNextPage = false
+            
+        case .setErrorMessage(let message):
+            newState.errorMessage = message
         }
         
         return newState
     }
+    
+    private func fetchInitialProfile() -> Observable<Mutation> {
+        Single<MemberProfileResult>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize] in
+            let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [memberID])
+            let profile = profiles[memberID]
+            let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
+            let stats = try await communityPostDBManager.fetchPostStats(authorID: memberID)
+            let posts = try await communityPostDBManager.fetchPosts(
+                authorID: memberID,
+                limit: pageSize,
+                offset: 0
+            )
+            let postImageURLs = await Self.resolvePostImageURLs(
+                posts: posts,
+                supabaseManager: supabaseManager,
+                logger: logger
+            )
+            
+            return MemberProfileResult(
+                profile: Profile(
+                    nickname: profile?.nickname ?? "알 수 없는 사용자",
+                    profileImageURL: profileImageURLs[memberID],
+                    postCount: String(stats.postCount),
+                    likeCount: String(stats.likeCount)
+                ),
+                posts: Self.makePosts(posts, nickname: profile?.nickname ?? "알 수 없는 사용자", imageURLs: postImageURLs),
+                nextOffset: posts.count,
+                hasNextPage: posts.count == pageSize
+            )
+        }
+        .asObservable()
+        .flatMap { result -> Observable<Mutation> in
+            .from([
+                .setProfile(result.profile),
+                .setPosts(
+                    result.posts,
+                    nextOffset: result.nextOffset,
+                    hasNextPage: result.hasNextPage
+                )
+            ])
+        }
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "작성자 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func fetchMorePosts(offset: Int) -> Observable<Mutation> {
+        Single<MemberProfilePostsPage>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize, currentState] in
+            let posts = try await communityPostDBManager.fetchPosts(
+                authorID: memberID,
+                limit: pageSize,
+                offset: offset
+            )
+            let postImageURLs = await Self.resolvePostImageURLs(
+                posts: posts,
+                supabaseManager: supabaseManager,
+                logger: logger
+            )
+            let nickname = currentState.profile?.nickname ?? "알 수 없는 사용자"
+            
+            return MemberProfilePostsPage(
+                posts: Self.makePosts(posts, nickname: nickname, imageURLs: postImageURLs),
+                nextOffset: offset + posts.count,
+                hasNextPage: posts.count == pageSize
+            )
+        }
+        .map {
+            .appendPosts(
+                $0.posts,
+                nextOffset: $0.nextOffset,
+                hasNextPage: $0.hasNextPage
+            )
+        }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "게시글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    nonisolated private static func makePosts(
+        _ posts: [CommunityPost],
+        nickname: String,
+        imageURLs: [UUID: URL]
+    ) -> [Post] {
+        posts.map {
+            Post(
+                id: $0.id,
+                title: $0.title,
+                nickname: nickname,
+                date: dateFormatter.string(from: $0.createdAt),
+                body: $0.content,
+                imageURL: imageURLs[$0.id],
+                likeCount: String($0.likeCount),
+                commentCount: String($0.commentCount ?? 0)
+            )
+        }
+    }
+    
+    private static func resolvePostImageURLs(
+        posts: [CommunityPost],
+        supabaseManager: SupabaseManager,
+        logger: Logger
+    ) async -> [UUID: URL] {
+        var imageURLs: [UUID: URL] = [:]
+        
+        for post in posts {
+            guard let imagePath = post.firstImagePath else { continue }
+            
+            do {
+                if let imageURL = try await supabaseManager.resolveCommunityPostImageURL(
+                    from: imagePath,
+                    cacheKey: post.id.uuidString
+                ) {
+                    imageURLs[post.id] = imageURL
+                }
+            } catch {
+                logger.error(
+                    "Member profile post image URL resolution failed. postID: \(post.id.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
+                )
+            }
+        }
+        
+        return imageURLs
+    }
+    
+    nonisolated private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+}
+
+private struct MemberProfileResult {
+    let profile: MemberProfileReactor.Profile
+    let posts: [MemberProfileReactor.Post]
+    let nextOffset: Int
+    let hasNextPage: Bool
+}
+
+private struct MemberProfilePostsPage {
+    let posts: [MemberProfileReactor.Post]
+    let nextOffset: Int
+    let hasNextPage: Bool
 }
