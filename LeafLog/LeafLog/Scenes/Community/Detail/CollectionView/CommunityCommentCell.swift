@@ -54,7 +54,7 @@ final class CommunityCommentCell: UICollectionViewCell {
     }
     
     private let moreButton = UIButton(configuration: .plain()).then {
-        let image = UIImage(systemName: "ellipsis")
+        let image = UIImage(resource: .more)
         $0.setImage(image, for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
