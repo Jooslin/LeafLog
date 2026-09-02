@@ -5,10 +5,13 @@
 //  Created by Yeseul Jang on 8/5/26.
 //
 
+import Foundation
 import ReactorKit
 import RxSwift
 
 final class MemberProfileReactor: Reactor {
+    private let memberID: UUID
+    
     struct Profile: Equatable {
         let nickname: String
         let profileImageURL: String?
@@ -130,6 +133,10 @@ final class MemberProfileReactor: Reactor {
     }
     
     let initialState = State()
+    
+    init(memberID: UUID) {
+        self.memberID = memberID
+    }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
