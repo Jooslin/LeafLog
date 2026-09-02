@@ -172,13 +172,23 @@ final class CommunityDetailViewController: BaseViewController, View {
         case .owner:
             alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
             alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
+            alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+            present(alertController, animated: true)
             
         case .visitor:
-            alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
-                self?.presentReportReasonActionSheet()
-            })
+            presentReportConfirmAlert()
         }
-        
+    }
+    
+    private func presentReportConfirmAlert() {
+        let alertController = UIAlertController(
+            title: "이 게시글을 신고하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
+            self?.presentReportReasonActionSheet()
+        })
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         present(alertController, animated: true)
     }
