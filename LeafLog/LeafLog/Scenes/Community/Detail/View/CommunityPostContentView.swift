@@ -28,10 +28,16 @@ final class CommunityPostContentView: UIView {
         lines: 0
     )
     
-    private let profileImageView = UIView().then {
+    private let profileImageView = UIImageView().then {
+        $0.image = UIImage(named: "non_profile")
         $0.backgroundColor = .grayScale100
+        $0.contentMode = .scaleAspectFill
         $0.layer.cornerRadius = 11
         $0.clipsToBounds = true
+    }
+    
+    fileprivate let profileImageButton = UIButton(type: .custom).then {
+        $0.backgroundColor = .clear
     }
     
     private let nicknameLabel = UILabel(config: .body12, color: .grayScale800, lines: 1)
@@ -94,6 +100,7 @@ final class CommunityPostContentView: UIView {
         categoryLabel.text = post.category
         postTitleLabel.text = post.title
         nicknameLabel.text = post.nickname
+        configureProfileImage(with: post.profileImageURL)
         dateLabel.text = post.date
         postBodyLabel.setTextWithLineHeight(text: post.body, height: 22)
         heartCountLabel.text = post.likeCount
@@ -118,6 +125,7 @@ final class CommunityPostContentView: UIView {
             $0.alignment = .center
             $0.spacing = 8
         }
+        authorStackView.addSubview(profileImageButton)
         
         let heartIconContainerView = UIView().then {
             $0.addSubview(heartImageView)
@@ -178,6 +186,11 @@ final class CommunityPostContentView: UIView {
             $0.width.height.equalTo(20)
         }
         
+        profileImageButton.snp.makeConstraints {
+            $0.leading.verticalEdges.equalToSuperview()
+            $0.trailing.equalTo(nicknameLabel)
+        }
+        
         metaDividerView.snp.makeConstraints {
             $0.width.equalTo(1)
             $0.height.equalTo(12)
@@ -234,6 +247,25 @@ final class CommunityPostContentView: UIView {
     private func configureHeart(isLiked: Bool) {
         heartImageView.image = UIImage(systemName: isLiked ? "heart.fill" : "heart")
         heartImageView.tintColor = isLiked ? .systemRed : .black
+    }
+    
+    private func configureProfileImage(with profileImageURL: URL?) {
+        let placeholderImage = UIImage(named: "non_profile")
+        profileImageView.kf.cancelDownloadTask()
+        
+        guard let profileImageURL else {
+            profileImageView.image = placeholderImage
+            return
+        }
+        
+        profileImageView.kf.setImage(
+            with: profileImageURL,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
     
     private func configurePostImages(imageURLs: [URL]) {
@@ -298,6 +330,10 @@ final class CommunityPostContentView: UIView {
 extension Reactive where Base: CommunityPostContentView {
     var postImageTap: ControlEvent<Int> {
         ControlEvent(events: base.postImageTapRelay.asObservable())
+    }
+    
+    var profileImageTap: ControlEvent<Void> {
+        base.profileImageButton.rx.tap
     }
     
     var heartButtonTap: ControlEvent<Void> {

@@ -198,6 +198,10 @@ extension Reactive where Base: CommunityDetailView {
         base.postContentView.rx.postImageTap
     }
     
+    var profileImageTap: ControlEvent<Void> {
+        base.postContentView.rx.profileImageTap
+    }
+    
     var heartButtonTap: ControlEvent<Void> {
         base.postContentView.rx.heartButtonTap
     }
