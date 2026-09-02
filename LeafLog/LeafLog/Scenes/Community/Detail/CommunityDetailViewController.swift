@@ -14,6 +14,14 @@ final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView()
     private var comments: [CommunityDetailReactor.Comment] = []
     
+    init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func loadView() {
         view = detailView
     }
@@ -21,7 +29,6 @@ final class CommunityDetailViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.reactor = CommunityDetailReactor()
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
@@ -89,39 +96,52 @@ final class CommunityDetailViewController: BaseViewController, View {
         reactor.state
             .map(\.post)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] post in
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] post in
                 self?.detailView.configure(post: post)
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.state
             .map(\.comments)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] comments in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] comments in
                 self?.comments = comments
                 self?.detailView.commentCollectionView.reloadData()
                 self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$imageViewerRoute)
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] route in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] route in
                 self?.presentImageViewer(route: route)
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$memberProfileRoute)
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.memberProfile)
-            })
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] memberID in
+                self?.steps.accept(AppStep.memberProfile(memberID: memberID))
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] message in
+                self?.steps.accept(AppStep.alert("오류", message))
+            }
             .disposed(by: disposeBag)
     }
     
     private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
         let viewController = CommunityImageViewerViewController(
-            imageAssetNames: route.imageAssetNames,
+            imageURLs: route.imageURLs,
             initialIndex: route.initialIndex
         )
         viewController.modalPresentationStyle = .fullScreen

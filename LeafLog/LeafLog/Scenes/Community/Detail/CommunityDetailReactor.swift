@@ -5,6 +5,9 @@
 //  Created by Yeseul Jang on 7/9/26.
 //
 
+import Dependencies
+import Foundation
+import OSLog
 import ReactorKit
 import RxSwift
 
@@ -15,13 +18,14 @@ final class CommunityDetailReactor: Reactor {
         let nickname: String
         let date: String
         let body: String
-        let imageAssetNames: [String]
+        let imageURLs: [URL]
         let likeCount: String
         let commentCount: String
         var isLiked: Bool
     }
     
     struct Comment: Equatable {
+        let memberID: UUID
         let nickname: String
         let date: String
         let body: String
@@ -29,7 +33,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct ImageViewerRoute: Equatable {
-        let imageAssetNames: [String]
+        let imageURLs: [URL]
         let initialIndex: Int
     }
     
@@ -52,11 +56,13 @@ final class CommunityDetailReactor: Reactor {
     
     enum Mutation {
         case setLoading(Bool)
+        case setPost(Post)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
         case presentImageViewer(ImageViewerRoute)
-        case routeToMemberProfile(commentIndex: Int)
+        case routeToMemberProfile(memberID: UUID)
+        case setErrorMessage(String)
     }
     
     struct State {
@@ -65,46 +71,33 @@ final class CommunityDetailReactor: Reactor {
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var imageViewerRoute: ImageViewerRoute?
-        @Pulse var memberProfileRoute: Int?
-        var post = Post(
-            category: "식물 일상",
-            title: "우리집 몬스테라 새잎이 나왔어요!",
-            nickname: "잎로그",
-            date: "2026.04.27",
-            body: """
-            요즘 식물 키우면서 느낀 건, 결국 꾸준히 “기록하는 사람”이 식물을 오래 잘 키운다는 점이에요. 처음에는 물 주는 날짜만 잘 기억하면 된다고 생각했는데, 막상 키우다 보니까 그렇게 단순하지 않더라고요. 같은 주기로 물을 줘도 어떤 날은 잎이 축 처지고, 어떤 날은 멀쩡하고요. 이유를 몰라서 그냥 감으로 대응하다 보니 식물 상태가 더 나빠지는 경우도 있었어요.
-            """,
-            imageAssetNames: [
-                "placeholder",
-                "plantMonstera",
-                "plantAnthurium",
-                "plantStuckyi",
-                "plantCategorySucculent"
-            ],
-            likeCount: "17823",
-            commentCount: "1234",
-            isLiked: false
-        )
+        @Pulse var memberProfileRoute: UUID?
+        @Pulse var errorMessage: String?
+        var post: Post?
         var comments: [Comment] = [
             .init(
+                memberID: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
                 nickname: "닉네임임",
                 date: "2026.04.27",
                 body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
                 badge: .none
             ),
             .init(
+                memberID: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
                 nickname: "닉네임임",
                 date: "2026.04.27",
                 body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
                 badge: .author
             ),
             .init(
+                memberID: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
                 nickname: "닉네임임",
                 date: "2026.04.27",
                 body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
                 badge: .mine
             ),
             .init(
+                memberID: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
                 nickname: "닉네임임",
                 date: "2026.04.27",
                 body: "잎이 정말 싱그럽네요! 혹시 햇빛은 어떻게 쬐나요?",
@@ -113,26 +106,41 @@ final class CommunityDetailReactor: Reactor {
         ]
     }
     
-    let initialState = State()
+    let initialState: State
+    
+    @Dependency(\.communityPostDBManager) private var communityPostDBManager
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger(subsystem: "LeafLog", category: "CommunityDetailReactor")
+    private let postID: UUID
+    
+    init(postID: UUID) {
+        self.postID = postID
+        self.initialState = State()
+    }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
-            return .empty()
+            return .concat(
+                .just(.setLoading(true)),
+                fetchPost(),
+                .just(.setLoading(false))
+            )
             
         case .postImageTapped(let index):
-            let imageAssetNames = currentState.post.imageAssetNames
-            guard imageAssetNames.indices.contains(index) else { return .empty() }
+            guard let post = currentState.post,
+                  post.imageURLs.indices.contains(index) else { return .empty() }
             
             return .just(.presentImageViewer(.init(
-                imageAssetNames: imageAssetNames,
+                imageURLs: post.imageURLs,
                 initialIndex: index
             )))
             
         case .commentProfileImageTapped(let index):
             guard currentState.comments.indices.contains(index) else { return .empty() }
+            let memberID = currentState.comments[index].memberID
             
-            return .just(.routeToMemberProfile(commentIndex: index))
+            return .just(.routeToMemberProfile(memberID: memberID))
             
         case .reachedBottom:
             guard currentState.isLoadingMoreComments == false,
@@ -143,7 +151,8 @@ final class CommunityDetailReactor: Reactor {
             return .empty()
             
         case .heartButtonTapped:
-            return .just(.setPostLiked(!currentState.post.isLiked))
+            guard let post = currentState.post else { return .empty() }
+            return .just(.setPostLiked(!post.isLiked))
             
         case .moreButtonTapped,
              .commentButtonTapped,
@@ -159,6 +168,9 @@ final class CommunityDetailReactor: Reactor {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
             
+        case .setPost(let post):
+            newState.post = post
+            
         case .setLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
             
@@ -168,15 +180,98 @@ final class CommunityDetailReactor: Reactor {
             newState.hasNextCommentPage = hasNextPage
             
         case .setPostLiked(let isLiked):
-            newState.post.isLiked = isLiked
+            newState.post?.isLiked = isLiked
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
             
-        case .routeToMemberProfile(let commentIndex):
-            newState.memberProfileRoute = commentIndex
+        case .routeToMemberProfile(let memberID):
+            newState.memberProfileRoute = memberID
+            
+        case .setErrorMessage(let message):
+            newState.errorMessage = message
         }
         
         return newState
     }
+    
+    private func fetchPost() -> Observable<Mutation> {
+        Single<CommunityDetailResult>.create {
+            [communityPostDBManager, supabaseManager, logger, postID] in
+            let post = try await communityPostDBManager.fetchPost(id: postID)
+            let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [post.authorID])
+            let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
+            let imagePaths = Self.imagePaths(from: post)
+            var imageURLs: [URL] = []
+            
+            for (index, imagePath) in imagePaths.enumerated() {
+                do {
+                    if let imageURL = try await supabaseManager.resolveCommunityPostImageURL(
+                        from: imagePath,
+                        cacheKey: "\(post.id.uuidString)-\(index)"
+                    ) {
+                        imageURLs.append(imageURL)
+                    }
+                } catch {
+                    logger.error(
+                        "Community detail image URL resolution failed. postID: \(post.id.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
+                    )
+                }
+            }
+            
+            return CommunityDetailResult(
+                post: post,
+                authorNickname: nickname,
+                imageURLs: imageURLs
+            )
+        }
+        .map { result in
+            .setPost(Self.makeDetailPost(from: result))
+        }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    nonisolated private static func imagePaths(from post: CommunityPost) -> [String] {
+        let imagePaths = post.images
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .map(\.imagePath)
+        
+        if imagePaths.isEmpty, let legacyImagePath = post.legacyImagePath {
+            return [legacyImagePath]
+        }
+        
+        return imagePaths
+    }
+    
+    private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
+        Post(
+            category: result.post.category.title,
+            title: result.post.title,
+            nickname: result.authorNickname,
+            date: dateFormatter.string(from: result.post.createdAt),
+            body: result.post.content,
+            imageURLs: result.imageURLs,
+            likeCount: String(result.post.likeCount),
+            commentCount: String(result.post.commentCount ?? 0),
+            isLiked: false
+        )
+    }
+    
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+}
+
+nonisolated private struct CommunityDetailResult: Sendable {
+    let post: CommunityPost
+    let authorNickname: String
+    let imageURLs: [URL]
 }
