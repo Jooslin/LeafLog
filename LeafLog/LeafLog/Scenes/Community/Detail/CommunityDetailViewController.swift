@@ -119,6 +119,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$postActionSheetKind)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] kind in
+                self?.presentPostActionSheet(kind: kind)
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$imageViewerRoute)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -151,6 +159,61 @@ final class CommunityDetailViewController: BaseViewController, View {
         )
         viewController.modalPresentationStyle = .fullScreen
         present(viewController, animated: true)
+    }
+    
+    private func presentPostActionSheet(kind: CommunityDetailReactor.PostActionSheetKind) {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        switch kind {
+        case .owner:
+            alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
+            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
+            
+        case .visitor:
+            alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
+                self?.presentReportReasonActionSheet()
+            })
+        }
+        
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportReasonActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        [
+            "부적절한 콘텐츠",
+            "광고/홍보",
+            "식물과 관련 없는 내용",
+            "개인정보/도용",
+            "반복 게시/도배"
+        ].forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason, style: .destructive) { [weak self] _ in
+                self?.presentReportCompletedAlert()
+            })
+        }
+        
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportCompletedAlert() {
+        let alertController = UIAlertController(
+            title: "신고가 접수되었습니다.",
+            message: "운영자 확인 후 필요한 조치를 진행하겠습니다.",
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "닫기", style: .default))
+        present(alertController, animated: true)
     }
 }
 

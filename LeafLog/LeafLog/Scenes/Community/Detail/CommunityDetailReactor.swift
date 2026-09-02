@@ -10,6 +10,7 @@ import Foundation
 import OSLog
 import ReactorKit
 import RxSwift
+import Supabase
 
 final class CommunityDetailReactor: Reactor {
     struct Post: Equatable {
@@ -24,6 +25,7 @@ final class CommunityDetailReactor: Reactor {
         let likeCount: String
         let commentCount: String
         var isLiked: Bool
+        let isMine: Bool
     }
     
     struct Comment: Equatable {
@@ -37,6 +39,11 @@ final class CommunityDetailReactor: Reactor {
     struct ImageViewerRoute: Equatable {
         let imageURLs: [URL]
         let initialIndex: Int
+    }
+    
+    enum PostActionSheetKind: Equatable {
+        case owner
+        case visitor
     }
     
     enum CommentBadge: Equatable {
@@ -63,6 +70,7 @@ final class CommunityDetailReactor: Reactor {
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
+        case presentPostActionSheet(PostActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case setErrorMessage(String)
@@ -73,6 +81,7 @@ final class CommunityDetailReactor: Reactor {
         var isLoadingMoreComments = false
         var hasNextCommentPage = false
         var nextCommentCursor: String?
+        @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var errorMessage: String?
@@ -162,8 +171,11 @@ final class CommunityDetailReactor: Reactor {
             guard let post = currentState.post else { return .empty() }
             return .just(.setPostLiked(!post.isLiked))
             
-        case .moreButtonTapped,
-             .commentButtonTapped,
+        case .moreButtonTapped:
+            guard let post = currentState.post else { return .empty() }
+            return .just(.presentPostActionSheet(post.isMine ? .owner : .visitor))
+            
+        case .commentButtonTapped,
              .sendButtonTapped:
             return .empty()
         }
@@ -190,6 +202,9 @@ final class CommunityDetailReactor: Reactor {
         case .setPostLiked(let isLiked):
             newState.post?.isLiked = isLiked
             
+        case .presentPostActionSheet(let kind):
+            newState.postActionSheetKind = kind
+            
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
             
@@ -210,6 +225,7 @@ final class CommunityDetailReactor: Reactor {
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [post.authorID])
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
+            let currentUserID = supabaseManager.client.auth.currentUser?.id
             let imagePaths = Self.imagePaths(from: post)
             var imageURLs: [URL] = []
             
@@ -232,7 +248,8 @@ final class CommunityDetailReactor: Reactor {
                 post: post,
                 authorNickname: nickname,
                 authorProfileImageURL: profileImageURLs[post.authorID],
-                imageURLs: imageURLs
+                imageURLs: imageURLs,
+                isMine: post.authorID == currentUserID
             )
         }
         .map { result in
@@ -270,7 +287,8 @@ final class CommunityDetailReactor: Reactor {
             imageURLs: result.imageURLs,
             likeCount: String(result.post.likeCount),
             commentCount: String(result.post.commentCount ?? 0),
-            isLiked: false
+            isLiked: false,
+            isMine: result.isMine
         )
     }
     
@@ -287,4 +305,5 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let authorNickname: String
     let authorProfileImageURL: URL?
     let imageURLs: [URL]
+    let isMine: Bool
 }
