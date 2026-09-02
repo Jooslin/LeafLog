@@ -50,6 +50,28 @@ final class CommunityPostDBManager {
             )
         }
     }
+    
+    func fetchPost(id: UUID) async throws -> CommunityPost {
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("id", value: id)
+                .is("deleted_at", value: nil)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .single()
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
 
     func fetchPublicProfiles(
         authorIDs: [UUID]
