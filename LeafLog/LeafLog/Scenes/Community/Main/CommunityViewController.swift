@@ -61,6 +61,11 @@ final class CommunityViewController: BaseViewController, View {
             .map { AppStep.communityComposeCreate }
             .bind(to: steps)
             .disposed(by: disposeBag)
+        
+        communityView.rx.postSelected
+            .map { AppStep.communityDetail(postID: $0.id) }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
     }
 
     private func bindState(reactor: CommunityReactor) {
