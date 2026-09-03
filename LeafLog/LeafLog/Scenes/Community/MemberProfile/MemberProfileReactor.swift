@@ -38,6 +38,12 @@ final class MemberProfileReactor: Reactor {
         case empty
     }
     
+    enum Ownership: Equatable {
+        case unknown
+        case mine
+        case visitor
+    }
+    
     enum Action {
         case viewDidLoad
         case moreButtonTapped
@@ -50,7 +56,7 @@ final class MemberProfileReactor: Reactor {
         case setInitialLoading(Bool)
         case setLoadingMore(Bool)
         case setProfile(Profile)
-        case setIsMine(Bool)
+        case setOwnership(Ownership)
         case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case resetPosts
@@ -66,9 +72,13 @@ final class MemberProfileReactor: Reactor {
         var nextOffset: Int?
         var profile: Profile?
         var posts: [Post] = []
-        var isMine = false
+        var ownership: Ownership = .unknown
         @Pulse var memberActionSheet: Bool?
         @Pulse var errorMessage: String?
+        
+        var shouldShowMoreButton: Bool {
+            ownership == .visitor
+        }
         
         var postListItems: [PostListItem] {
             if isInitialLoading {
@@ -104,7 +114,7 @@ final class MemberProfileReactor: Reactor {
             )
             
         case .moreButtonTapped:
-            guard currentState.isMine == false else { return .empty() }
+            guard currentState.ownership == .visitor else { return .empty() }
             return .just(.presentMemberActionSheet)
             
         case .sortButtonTapped:
@@ -142,8 +152,8 @@ final class MemberProfileReactor: Reactor {
         case .setProfile(let profile):
             newState.profile = profile
             
-        case .setIsMine(let isMine):
-            newState.isMine = isMine
+        case .setOwnership(let ownership):
+            newState.ownership = ownership
             
         case .setPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts = posts
@@ -196,7 +206,7 @@ final class MemberProfileReactor: Reactor {
                     likeCount: String(stats.likeCount)
                 ),
                 posts: Self.makePosts(posts, nickname: profile?.nickname ?? "알 수 없는 사용자", imageURLs: postImageURLs),
-                isMine: memberID == currentUserID,
+                ownership: memberID == currentUserID ? .mine : .visitor,
                 nextOffset: posts.count,
                 hasNextPage: posts.count == pageSize
             )
@@ -204,7 +214,7 @@ final class MemberProfileReactor: Reactor {
         .asObservable()
         .flatMap { result -> Observable<Mutation> in
             .from([
-                .setIsMine(result.isMine),
+                .setOwnership(result.ownership),
                 .setProfile(result.profile),
                 .setPosts(
                     result.posts,
@@ -312,7 +322,7 @@ final class MemberProfileReactor: Reactor {
 private struct MemberProfileResult {
     let profile: MemberProfileReactor.Profile
     let posts: [MemberProfileReactor.Post]
-    let isMine: Bool
+    let ownership: MemberProfileReactor.Ownership
     let nextOffset: Int
     let hasNextPage: Bool
 }

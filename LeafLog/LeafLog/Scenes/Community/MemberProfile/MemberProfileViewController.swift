@@ -81,11 +81,11 @@ final class MemberProfileViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map(\.isMine)
+            .map(\.shouldShowMoreButton)
             .distinctUntilChanged()
             .asDriver(onErrorDriveWith: .empty())
-            .drive { [weak self] isMine in
-                self?.profileView.setMoreButtonHidden(isMine)
+            .drive { [weak self] shouldShowMoreButton in
+                self?.profileView.setMoreButtonHidden(shouldShowMoreButton == false)
             }
             .disposed(by: disposeBag)
         

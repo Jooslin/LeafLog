@@ -40,6 +40,7 @@ final class MemberProfileView: UIView {
         super.init(frame: frame)
         
         backgroundColor = .white
+        setMoreButtonHidden(true)
         setLayout()
     }
     
