@@ -11,7 +11,7 @@ import Then
 import UIKit
 
 final class CommunityImageViewerViewController: UIViewController {
-    private let imageURLs: [URL]
+    private let imageSlots: [CommunityDetailReactor.PostImageSlot]
     private let initialIndex: Int
     private var didScrollToInitialIndex = false
     
@@ -49,9 +49,9 @@ final class CommunityImageViewerViewController: UIViewController {
         $0.currentPageIndicatorTintColor = .white
     }
     
-    init(imageURLs: [URL], initialIndex: Int) {
-        self.imageURLs = imageURLs
-        self.initialIndex = max(0, min(initialIndex, imageURLs.count - 1))
+    init(imageSlots: [CommunityDetailReactor.PostImageSlot], initialIndex: Int) {
+        self.imageSlots = imageSlots
+        self.initialIndex = max(0, min(initialIndex, imageSlots.count - 1))
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -63,7 +63,7 @@ final class CommunityImageViewerViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .black
-        pageControl.numberOfPages = imageURLs.count
+        pageControl.numberOfPages = imageSlots.count
         pageControl.currentPage = initialIndex
         setLayout()
         closeButton.addTarget(self, action: #selector(closeButtonDidTap), for: .touchUpInside)
@@ -80,7 +80,7 @@ final class CommunityImageViewerViewController: UIViewController {
             imageCollectionViewFlowLayout.invalidateLayout()
         }
         
-        guard !didScrollToInitialIndex, !imageURLs.isEmpty else { return }
+        guard !didScrollToInitialIndex, !imageSlots.isEmpty else { return }
         didScrollToInitialIndex = true
         imageCollectionView.scrollToItem(
             at: IndexPath(item: initialIndex, section: 0),
@@ -119,7 +119,7 @@ final class CommunityImageViewerViewController: UIViewController {
 
 extension CommunityImageViewerViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        imageURLs.count
+        imageSlots.count
     }
     
     func collectionView(
@@ -133,7 +133,7 @@ extension CommunityImageViewerViewController: UICollectionViewDataSource, UIColl
             return UICollectionViewCell()
         }
         
-        cell.configure(imageURL: imageURLs[indexPath.item])
+        cell.configure(imageSlot: imageSlots[indexPath.item])
         return cell
     }
     
@@ -173,7 +173,12 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
         imageView.image = UIImage(resource: .placeholder)
     }
     
-    func configure(imageURL: URL) {
+    func configure(imageSlot: CommunityDetailReactor.PostImageSlot) {
+        guard let imageURL = imageSlot.imageURL else {
+            imageView.image = UIImage(resource: .placeholder)
+            return
+        }
+        
         imageView.kf.setImage(
             with: imageURL,
             placeholder: UIImage(resource: .placeholder),

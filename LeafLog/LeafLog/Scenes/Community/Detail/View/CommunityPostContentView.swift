@@ -106,7 +106,7 @@ final class CommunityPostContentView: UIView {
         heartCountLabel.text = post.likeCount
         commentCountLabel.text = post.commentCount
         configureHeart(isLiked: post.isLiked)
-        configurePostImages(imageURLs: post.imageURLs)
+        configurePostImages(imageSlots: post.imageSlots)
     }
     
     private func setLayout() {
@@ -268,9 +268,9 @@ final class CommunityPostContentView: UIView {
         )
     }
     
-    private func configurePostImages(imageURLs: [URL]) {
+    private func configurePostImages(imageSlots: [CommunityDetailReactor.PostImageSlot]) {
         imageButtonDisposeBag = DisposeBag()
-        imageScrollView.isHidden = imageURLs.isEmpty
+        imageScrollView.isHidden = imageSlots.isEmpty
         imageScrollView.setContentOffset(.zero, animated: false)
         
         imageStackView.arrangedSubviews.forEach {
@@ -278,7 +278,7 @@ final class CommunityPostContentView: UIView {
             $0.removeFromSuperview()
         }
         
-        imageURLs.enumerated().forEach { index, imageURL in
+        imageSlots.enumerated().forEach { index, imageSlot in
             let imageView = UIImageView().then {
                 $0.contentMode = .scaleAspectFill
                 $0.image = UIImage(resource: .placeholder)
@@ -296,14 +296,16 @@ final class CommunityPostContentView: UIView {
                 $0.addSubview(imageButton)
             }
             
-            imageView.kf.setImage(
-                with: imageURL,
-                placeholder: UIImage(resource: .placeholder),
-                options: [
-                    .cacheOriginalImage,
-                    .transition(.fade(0.2))
-                ]
-            )
+            if let imageURL = imageSlot.imageURL {
+                imageView.kf.setImage(
+                    with: imageURL,
+                    placeholder: UIImage(resource: .placeholder),
+                    options: [
+                        .cacheOriginalImage,
+                        .transition(.fade(0.2))
+                    ]
+                )
+            }
             
             imageButton.rx.tap
                 .map { index }

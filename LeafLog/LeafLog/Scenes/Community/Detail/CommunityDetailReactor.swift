@@ -13,6 +13,11 @@ import RxSwift
 import Supabase
 
 final class CommunityDetailReactor: Reactor {
+    struct PostImageSlot: Equatable, Sendable {
+        let originalIndex: Int
+        let imageURL: URL?
+    }
+    
     struct Post: Equatable {
         let memberID: UUID
         let category: String
@@ -21,7 +26,7 @@ final class CommunityDetailReactor: Reactor {
         let profileImageURL: URL?
         let date: String
         let body: String
-        let imageURLs: [URL]
+        let imageSlots: [PostImageSlot]
         let likeCount: String
         let commentCount: String
         var isLiked: Bool
@@ -37,7 +42,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct ImageViewerRoute: Equatable {
-        let imageURLs: [URL]
+        let imageSlots: [PostImageSlot]
         let initialIndex: Int
     }
     
@@ -141,10 +146,10 @@ final class CommunityDetailReactor: Reactor {
             
         case .postImageTapped(let index):
             guard let post = currentState.post,
-                  post.imageURLs.indices.contains(index) else { return .empty() }
+                  post.imageSlots.indices.contains(index) else { return .empty() }
             
             return .just(.presentImageViewer(.init(
-                imageURLs: post.imageURLs,
+                imageSlots: post.imageSlots,
                 initialIndex: index
             )))
             
@@ -227,28 +232,30 @@ final class CommunityDetailReactor: Reactor {
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
             let imagePaths = Self.imagePaths(from: post)
-            var imageURLs: [URL] = []
+            var imageSlots: [PostImageSlot] = []
             
             for (index, imagePath) in imagePaths.enumerated() {
+                var imageURL: URL?
+                
                 do {
-                    if let imageURL = try await supabaseManager.resolveCommunityPostImageURL(
+                    imageURL = try await supabaseManager.resolveCommunityPostImageURL(
                         from: imagePath,
                         cacheKey: "\(post.id.uuidString)-\(index)"
-                    ) {
-                        imageURLs.append(imageURL)
-                    }
+                    )
                 } catch {
                     logger.error(
                         "Community detail image URL resolution failed. postID: \(post.id.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
                     )
                 }
+                
+                imageSlots.append(PostImageSlot(originalIndex: index, imageURL: imageURL))
             }
             
             return CommunityDetailResult(
                 post: post,
                 authorNickname: nickname,
                 authorProfileImageURL: profileImageURLs[post.authorID],
-                imageURLs: imageURLs,
+                imageSlots: imageSlots,
                 isMine: post.authorID == currentUserID
             )
         }
@@ -284,7 +291,7 @@ final class CommunityDetailReactor: Reactor {
             profileImageURL: result.authorProfileImageURL,
             date: dateFormatter.string(from: result.post.createdAt),
             body: result.post.content,
-            imageURLs: result.imageURLs,
+            imageSlots: result.imageSlots,
             likeCount: String(result.post.likeCount),
             commentCount: String(result.post.commentCount ?? 0),
             isLiked: false,
@@ -304,6 +311,6 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let post: CommunityPost
     let authorNickname: String
     let authorProfileImageURL: URL?
-    let imageURLs: [URL]
+    let imageSlots: [CommunityDetailReactor.PostImageSlot]
     let isMine: Bool
 }
