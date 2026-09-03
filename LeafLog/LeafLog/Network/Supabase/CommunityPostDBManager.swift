@@ -50,6 +50,80 @@ final class CommunityPostDBManager {
             )
         }
     }
+    
+    func fetchPost(id: UUID) async throws -> CommunityPost {
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("id", value: id)
+                .is("deleted_at", value: nil)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .single()
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+    
+    func fetchPosts(
+        authorID: UUID,
+        limit: Int = 10,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
+        
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("author_id", value: authorID)
+                .is("deleted_at", value: nil)
+                .order("created_at", ascending: false)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+    
+    func fetchPostStats(authorID: UUID) async throws -> CommunityPostStats {
+        do {
+            let rows: [CommunityPostStatsRow] = try await supabaseManager.client
+                .from("community_posts")
+                .select("id, like_count")
+                .eq("author_id", value: authorID)
+                .is("deleted_at", value: nil)
+                .execute()
+                .value
+            
+            return CommunityPostStats(
+                postCount: rows.count,
+                likeCount: rows.reduce(0) { $0 + $1.likeCount }
+            )
+        } catch {
+            throw AuthError.communityFailed(
+                "작성자 활동 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
 
     func fetchPublicProfiles(
         authorIDs: [UUID]
@@ -203,6 +277,11 @@ final class CommunityPostDBManager {
 
 }
 
+nonisolated struct CommunityPostStats: Equatable, Sendable {
+    let postCount: Int
+    let likeCount: Int
+}
+
 nonisolated struct CommunityPublicProfile: Decodable, Sendable {
     let id: UUID
     let nickname: String?
@@ -212,6 +291,16 @@ nonisolated struct CommunityPublicProfile: Decodable, Sendable {
         case id
         case nickname
         case profileImageURL = "profile_image_url"
+    }
+}
+
+nonisolated private struct CommunityPostStatsRow: Decodable, Sendable {
+    let id: UUID
+    let likeCount: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case likeCount = "like_count"
     }
 }
 

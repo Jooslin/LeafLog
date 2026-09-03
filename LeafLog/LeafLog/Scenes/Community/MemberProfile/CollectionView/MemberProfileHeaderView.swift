@@ -139,18 +139,17 @@ final class MemberProfileHeaderView: UICollectionReusableView {
 }
 
 private extension MemberProfileHeaderView {
-    func configureProfileImage(with profileImageURL: String?) {
+    func configureProfileImage(with profileImageURL: URL?) {
         let placeholderImage = UIImage(named: "non_profile")
         profileImageView.kf.cancelDownloadTask()
         
-        guard let profileImageURL,
-              let url = URL(string: profileImageURL) else {
+        guard let profileImageURL else {
             profileImageView.image = placeholderImage
             return
         }
         
         profileImageView.kf.setImage(
-            with: url,
+            with: profileImageURL,
             placeholder: placeholderImage,
             options: [
                 .cacheOriginalImage,

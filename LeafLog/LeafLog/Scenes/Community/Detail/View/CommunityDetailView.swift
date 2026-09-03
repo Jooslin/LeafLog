@@ -12,7 +12,7 @@ import Then
 import UIKit
 
 final class CommunityDetailView: UIView {
-    let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
+    let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "more")
     let postContentView = CommunityPostContentView()
     
     let commentCollectionView = UICollectionView(
@@ -63,7 +63,6 @@ final class CommunityDetailView: UIView {
         super.init(frame: frame)
         
         backgroundColor = .white
-        configureTitleView()
         setLayout()
     }
     
@@ -171,14 +170,7 @@ private extension CommunityDetailView {
             $0.bottom.equalToSuperview().inset(8)
         }
     }
-    
-    func configureTitleView() {
-        titleView.titleLabel.text = ""
-        titleView.rightButton.isHidden = false
-        titleView.rightButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
-        titleView.rightButton.configuration?.baseForegroundColor = .black
-    }
-    
+
     static func makeCommentLayout() -> UICollectionViewLayout {
         UICollectionViewFlowLayout().then {
             $0.scrollDirection = .vertical
@@ -196,6 +188,10 @@ extension Reactive where Base: CommunityDetailView {
     
     var postImageTap: ControlEvent<Int> {
         base.postContentView.rx.postImageTap
+    }
+    
+    var profileImageTap: ControlEvent<Void> {
+        base.postContentView.rx.profileImageTap
     }
     
     var heartButtonTap: ControlEvent<Void> {

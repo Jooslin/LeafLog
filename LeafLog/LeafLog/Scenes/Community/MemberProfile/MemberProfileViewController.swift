@@ -15,6 +15,15 @@ final class MemberProfileViewController: BaseViewController, View {
     private var profile: MemberProfileReactor.Profile?
     private var postListItems: [MemberProfileReactor.PostListItem] = []
     
+    init(memberID: UUID) {
+        super.init(nibName: nil, bundle: nil)
+        self.reactor = MemberProfileReactor(memberID: memberID)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func loadView() {
         view = profileView
     }
@@ -22,7 +31,6 @@ final class MemberProfileViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.reactor = MemberProfileReactor()
         navigationController?.navigationBar.isHidden = true
         profileView.postCollectionView.dataSource = self
         profileView.postCollectionView.delegate = self
@@ -55,20 +63,59 @@ final class MemberProfileViewController: BaseViewController, View {
         reactor.state
             .map(\.profile)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] profile in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] profile in
                 self?.profile = profile
                 self?.profileView.postCollectionView.reloadData()
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.state
             .map(\.postListItems)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] postListItems in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] postListItems in
                 self?.postListItems = postListItems
                 self?.profileView.postCollectionView.reloadData()
-            })
+            }
             .disposed(by: disposeBag)
+        
+        reactor.state
+            .map(\.shouldShowMoreButton)
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] shouldShowMoreButton in
+                self?.profileView.setMoreButtonHidden(shouldShowMoreButton == false)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] message in
+                self?.steps.accept(AppStep.alert("오류", message))
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$memberActionSheet)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentMemberActionSheet()
+            }
+            .disposed(by: disposeBag)
+    }
+    
+    private func presentMemberActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        alertController.addAction(UIAlertAction(title: "차단하기", style: .destructive))
+        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive))
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
     }
 }
 
@@ -159,5 +206,10 @@ extension MemberProfileViewController: UICollectionViewDelegateFlowLayout {
         
         guard visibleBottom >= triggerOffset else { return }
         reactor?.action.onNext(.reachedBottom)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard case .post(let post) = postListItems[indexPath.item] else { return }
+        steps.accept(AppStep.communityDetail(postID: post.id))
     }
 }

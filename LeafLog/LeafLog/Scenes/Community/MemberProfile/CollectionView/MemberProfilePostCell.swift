@@ -5,6 +5,7 @@
 //  Created by Yeseul Jang on 8/5/26.
 //
 
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -71,6 +72,7 @@ final class MemberProfilePostCell: UICollectionViewCell {
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
+        thumbnailImageView.kf.cancelDownloadTask()
         thumbnailImageView.image = nil
         heartCountLabel.text = nil
         commentCountLabel.text = nil
@@ -86,10 +88,17 @@ final class MemberProfilePostCell: UICollectionViewCell {
         heartCountLabel.text = post.likeCount
         commentCountLabel.text = post.commentCount
         
-        if let imageAssetName = post.imageAssetName {
+        if let imageURL = post.imageURL {
             thumbnailImageView.isHidden = false
-            thumbnailImageView.image = UIImage(named: imageAssetName) ?? UIImage(resource: .placeholder)
             thumbnailWidthConstraint?.update(offset: 100)
+            thumbnailImageView.kf.setImage(
+                with: imageURL,
+                placeholder: UIImage(resource: .placeholder),
+                options: [
+                    .cacheOriginalImage,
+                    .transition(.fade(0.2))
+                ]
+            )
         } else {
             thumbnailImageView.isHidden = true
             thumbnailWidthConstraint?.update(offset: 0)

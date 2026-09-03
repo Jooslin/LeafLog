@@ -52,7 +52,7 @@ final class CommunityView: UIView {
 
     private let categorySeparator = SeparateBar()
 
-    private lazy var collectionView = UICollectionView(
+    fileprivate lazy var collectionView = UICollectionView(
         frame: .zero,
         collectionViewLayout: makeCollectionViewLayout()
     ).then {
@@ -71,7 +71,7 @@ final class CommunityView: UIView {
         $0.isHidden = true
     }
 
-    private var posts: [CommunityPost] = []
+    fileprivate var posts: [CommunityPost] = []
     private var authorNicknames: [UUID: String] = [:]
     private var authorProfileImageURLs: [UUID: URL] = [:]
     private var postImageURLs: [UUID: URL] = [:]
@@ -255,6 +255,14 @@ extension Reactive where Base: CommunityView {
 
     var writeButtonTap: ControlEvent<Void> {
         base.writeButton.rx.tap
+    }
+    
+    var postSelected: Observable<CommunityPost> {
+        base.collectionView.rx.itemSelected
+            .compactMap { indexPath in
+                guard base.posts.indices.contains(indexPath.item) else { return nil }
+                return base.posts[indexPath.item]
+            }
     }
 
     var refresh: ControlEvent<Void> {

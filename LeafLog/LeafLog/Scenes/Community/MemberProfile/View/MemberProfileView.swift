@@ -12,7 +12,7 @@ import Then
 import UIKit
 
 final class MemberProfileView: UIView {
-    let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: nil)
+    let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "more")
     
     let postCollectionView = UICollectionView(
         frame: .zero,
@@ -40,12 +40,16 @@ final class MemberProfileView: UIView {
         super.init(frame: frame)
         
         backgroundColor = .white
-        configureTitleView()
+        setMoreButtonHidden(true)
         setLayout()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    func setMoreButtonHidden(_ isHidden: Bool) {
+        titleView.rightButton.isHidden = isHidden
     }
 }
 
@@ -64,13 +68,6 @@ private extension MemberProfileView {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.bottom.equalToSuperview()
         }
-    }
-    
-    func configureTitleView() {
-        titleView.titleLabel.text = ""
-        titleView.rightButton.isHidden = false
-        titleView.rightButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
-        titleView.rightButton.configuration?.baseForegroundColor = .grayScale600
     }
     
     static func makePostLayout() -> UICollectionViewLayout {

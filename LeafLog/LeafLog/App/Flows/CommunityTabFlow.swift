@@ -44,6 +44,12 @@ final class CommunityTabFlow: Flow {
                 )
             )
 
+        case .communityDetail(let postID):
+            return navigateToDetail(postID: postID)
+            
+        case .memberProfile(let memberID):
+            return navigateToMemberProfile(memberID: memberID)
+
         case .communityComposeCreate:
             return navigateToCompose(mode: .create)
 
@@ -74,6 +80,33 @@ private extension CommunityTabFlow {
         viewController.reactor = CommunityComposeReactor(mode: mode)
         navigationController.pushViewController(viewController, animated: true)
 
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController
+            )
+        )
+    }
+    
+    func navigateToDetail(postID: UUID) -> FlowContributors {
+        let viewController = CommunityDetailViewController()
+        viewController.hidesBottomBarWhenPushed = true
+        viewController.reactor = CommunityDetailReactor(postID: postID)
+        navigationController.pushViewController(viewController, animated: true)
+
+        return .one(
+            flowContributor: .contribute(
+                withNextPresentable: viewController,
+                withNextStepper: viewController
+            )
+        )
+    }
+    
+    func navigateToMemberProfile(memberID: UUID) -> FlowContributors {
+        let viewController = MemberProfileViewController(memberID: memberID)
+        viewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(viewController, animated: true)
+        
         return .one(
             flowContributor: .contribute(
                 withNextPresentable: viewController,

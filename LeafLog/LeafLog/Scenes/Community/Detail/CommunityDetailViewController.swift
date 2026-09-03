@@ -14,6 +14,14 @@ final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView()
     private var comments: [CommunityDetailReactor.Comment] = []
     
+    init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func loadView() {
         view = detailView
     }
@@ -21,7 +29,6 @@ final class CommunityDetailViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.reactor = CommunityDetailReactor()
         navigationController?.navigationBar.isHidden = true
         detailView.commentCollectionView.dataSource = self
         detailView.commentCollectionView.delegate = self
@@ -50,6 +57,11 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         detailView.rx.postImageTap
             .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.profileImageTap
+            .map { CommunityDetailReactor.Action.postProfileImageTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -89,43 +101,129 @@ final class CommunityDetailViewController: BaseViewController, View {
         reactor.state
             .map(\.post)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] post in
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] post in
                 self?.detailView.configure(post: post)
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.state
             .map(\.comments)
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] comments in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] comments in
                 self?.comments = comments
                 self?.detailView.commentCollectionView.reloadData()
                 self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
-            })
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$postActionSheetKind)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] kind in
+                self?.presentPostActionSheet(kind: kind)
+            }
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$imageViewerRoute)
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] route in
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] route in
                 self?.presentImageViewer(route: route)
-            })
+            }
             .disposed(by: disposeBag)
         
         reactor.pulse(\.$memberProfileRoute)
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                self?.steps.accept(AppStep.memberProfile)
-            })
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] memberID in
+                self?.steps.accept(AppStep.memberProfile(memberID: memberID))
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$errorMessage)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] message in
+                self?.steps.accept(AppStep.alert("오류", message))
+            }
             .disposed(by: disposeBag)
     }
     
     private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
         let viewController = CommunityImageViewerViewController(
-            imageAssetNames: route.imageAssetNames,
+            imageSlots: route.imageSlots,
             initialIndex: route.initialIndex
         )
         viewController.modalPresentationStyle = .fullScreen
         present(viewController, animated: true)
+    }
+    
+    private func presentPostActionSheet(kind: CommunityDetailReactor.PostActionSheetKind) {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        switch kind {
+        case .owner:
+            alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
+            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
+            alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+            present(alertController, animated: true)
+            
+        case .visitor:
+            presentReportConfirmAlert()
+        }
+    }
+    
+    private func presentReportConfirmAlert() {
+        let alertController = UIAlertController(
+            title: "이 게시글을 신고하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
+            self?.presentReportReasonActionSheet()
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportReasonActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        [
+            "부적절한 콘텐츠",
+            "광고/홍보",
+            "식물과 관련 없는 내용",
+            "개인정보/도용",
+            "반복 게시/도배"
+        ].forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason, style: .destructive) { [weak self] _ in
+                self?.presentReportCompletedAlert()
+            })
+        }
+        
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportCompletedAlert() {
+        let alertController = UIAlertController(
+            title: "신고가 접수되었습니다.",
+            message: "운영자 확인 후 필요한 조치를 진행하겠습니다.",
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "닫기", style: .default))
+        present(alertController, animated: true)
     }
 }
 
