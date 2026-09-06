@@ -19,6 +19,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct Post: Equatable {
+        let id: UUID
         let memberID: UUID
         let category: String
         let title: String
@@ -66,29 +67,34 @@ final class CommunityDetailReactor: Reactor {
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case reportReasonSelected(CommunityReportReason)
         case reachedBottom
     }
     
     enum Mutation {
         case setLoading(Bool)
         case setPost(Post)
+        case setReporting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
+        case presentReportCompletedAlert
         case setErrorMessage(String)
     }
     
     struct State {
         var isLoading = false
+        var isReporting = false
         var isLoadingMoreComments = false
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
+        @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
         var post: Post?
         var comments: [Comment] = [
@@ -126,6 +132,7 @@ final class CommunityDetailReactor: Reactor {
     let initialState: State
     
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
+    @Dependency(\.communityReportDBManager) private var communityReportDBManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "CommunityDetailReactor")
     private let postID: UUID
@@ -183,6 +190,19 @@ final class CommunityDetailReactor: Reactor {
         case .commentButtonTapped,
              .sendButtonTapped:
             return .empty()
+            
+        case .reportReasonSelected(let reason):
+            guard let post = currentState.post,
+                  post.isMine == false,
+                  currentState.isReporting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setReporting(true)),
+                reportPost(post: post, reason: reason),
+                .just(.setReporting(false))
+            )
         }
     }
     
@@ -195,6 +215,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .setPost(let post):
             newState.post = post
+            
+        case .setReporting(let isReporting):
+            newState.isReporting = isReporting
             
         case .setLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
@@ -215,6 +238,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .routeToMemberProfile(let memberID):
             newState.memberProfileRoute = memberID
+            
+        case .presentReportCompletedAlert:
+            newState.reportCompleted = true
             
         case .setErrorMessage(let message):
             newState.errorMessage = message
@@ -270,6 +296,27 @@ final class CommunityDetailReactor: Reactor {
         }
     }
     
+    private func reportPost(
+        post: Post,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportPost(
+                postID: post.id,
+                reportedUserID: post.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
     nonisolated private static func imagePaths(from post: CommunityPost) -> [String] {
         let imagePaths = post.images
             .sorted { $0.sortOrder < $1.sortOrder }
@@ -284,6 +331,7 @@ final class CommunityDetailReactor: Reactor {
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
         Post(
+            id: result.post.id,
             memberID: result.post.authorID,
             category: result.post.category.title,
             title: result.post.title,
