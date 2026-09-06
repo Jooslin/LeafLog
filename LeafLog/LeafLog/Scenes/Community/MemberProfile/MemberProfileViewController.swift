@@ -104,17 +104,53 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.presentMemberActionSheet()
             }
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$reportCompleted)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentReportCompletedAlert()
+            }
+            .disposed(by: disposeBag)
     }
     
     private func presentMemberActionSheet() {
+        let alertController = UIAlertController(
+            title: "이 회원을 신고하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "신고", style: .destructive) { [weak self] _ in
+            self?.presentReportReasonActionSheet()
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportReasonActionSheet() {
         let alertController = UIAlertController(
             title: nil,
             message: nil,
             preferredStyle: .actionSheet
         )
-        alertController.addAction(UIAlertAction(title: "차단하기", style: .destructive))
-        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive))
+        
+        CommunityReportReason.allCases.forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
+                self?.reactor?.action.onNext(.reportReasonSelected(reason))
+            })
+        }
+        
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentReportCompletedAlert() {
+        let alertController = UIAlertController(
+            title: "신고가 접수되었습니다.",
+            message: "운영자 확인 후 필요한 조치를 진행하겠습니다.",
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "닫기", style: .default))
         present(alertController, animated: true)
     }
 }
