@@ -143,6 +143,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$reportCompleted)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentReportCompletedAlert()
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -200,15 +208,9 @@ final class CommunityDetailViewController: BaseViewController, View {
             preferredStyle: .actionSheet
         )
         
-        [
-            "부적절한 콘텐츠",
-            "광고/홍보",
-            "식물과 관련 없는 내용",
-            "개인정보/도용",
-            "반복 게시/도배"
-        ].forEach { reason in
-            alertController.addAction(UIAlertAction(title: reason, style: .destructive) { [weak self] _ in
-                self?.presentReportCompletedAlert()
+        CommunityReportReason.allCases.forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
+                self?.reactor?.action.onNext(.reportReasonSelected(reason))
             })
         }
         
