@@ -101,7 +101,7 @@ final class CommunityImageViewerViewController: UIViewController {
         }
         
         imageCollectionView.snp.makeConstraints {
-            $0.edges.equalTo(view.safeAreaLayoutGuide)
+            $0.edges.equalToSuperview()
         }
         
         pageControl.snp.makeConstraints {
@@ -149,7 +149,7 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
         $0.backgroundColor = .black
         $0.delegate = self
         $0.minimumZoomScale = 1
-        $0.maximumZoomScale = 4
+        $0.maximumZoomScale = 8
         $0.showsHorizontalScrollIndicator = false
         $0.showsVerticalScrollIndicator = false
         $0.bouncesZoom = true
