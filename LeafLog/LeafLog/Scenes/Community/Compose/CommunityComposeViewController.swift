@@ -246,11 +246,17 @@ final class CommunityComposeViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
-        //TODO: 저장 성공 시 글 상세 화면으로 넘어가도록 step 변경 필요
         reactor.pulse(\.$saveCompleted)
-            .map { $0 }
-            .subscribe(with: self) { viewController, isCompleted in
-                if isCompleted { viewController.steps.accept(AppStep.pageBack) }
+            .filter { $0 }
+            .withLatestFrom(reactor.state.map { (mode: $0.mode, postID: $0.postID) })
+            .subscribe(with: self) { viewController, state in
+                switch state.mode {
+                case .create:
+                    viewController.steps.accept(AppStep.pageBack)
+                    
+                case .edit:
+                    viewController.steps.accept(AppStep.communityPostUpdated(postID: state.postID))
+                }
             }
             .disposed(by: disposeBag)
     }

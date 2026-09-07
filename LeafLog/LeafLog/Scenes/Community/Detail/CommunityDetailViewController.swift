@@ -39,6 +39,15 @@ final class CommunityDetailViewController: BaseViewController, View {
         bindState(reactor: reactor)
     }
     
+    func refreshPostIfNeeded(postID: UUID) {
+        guard reactor?.currentState.post?.id == postID else { return }
+        reactor?.action.onNext(.refreshPost)
+    }
+    
+    var currentPostID: UUID? {
+        reactor?.currentState.post?.id
+    }
+    
     private func bindAction(reactor: CommunityDetailReactor) {
         Observable.just(CommunityDetailReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
@@ -143,6 +152,30 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$editPostRoute)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] post in
+                self?.steps.accept(AppStep.communityComposeEdit(post))
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$deletedPostRoute)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] postID in
+                self?.steps.accept(AppStep.communityPostDeleted(postID: postID))
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$reportCompleted)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentReportCompletedAlert()
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -170,14 +203,31 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         switch kind {
         case .owner:
-            alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
-            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
+            alertController.addAction(UIAlertAction(title: "수정하기", style: .default) { [weak self] _ in
+                self?.reactor?.action.onNext(.editButtonTapped)
+            })
+            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive) { [weak self] _ in
+                self?.presentDeleteConfirmAlert()
+            })
             alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
             present(alertController, animated: true)
             
         case .visitor:
             presentReportConfirmAlert()
         }
+    }
+    
+    private func presentDeleteConfirmAlert() {
+        let alertController = UIAlertController(
+            title: "게시글을 삭제하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+            self?.reactor?.action.onNext(.deleteButtonTapped)
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
     }
     
     private func presentReportConfirmAlert() {
@@ -200,15 +250,9 @@ final class CommunityDetailViewController: BaseViewController, View {
             preferredStyle: .actionSheet
         )
         
-        [
-            "부적절한 콘텐츠",
-            "광고/홍보",
-            "식물과 관련 없는 내용",
-            "개인정보/도용",
-            "반복 게시/도배"
-        ].forEach { reason in
-            alertController.addAction(UIAlertAction(title: reason, style: .destructive) { [weak self] _ in
-                self?.presentReportCompletedAlert()
+        CommunityReportReason.allCases.forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
+                self?.reactor?.action.onNext(.reportReasonSelected(reason))
             })
         }
         

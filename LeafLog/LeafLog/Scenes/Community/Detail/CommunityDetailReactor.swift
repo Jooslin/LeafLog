@@ -19,6 +19,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct Post: Equatable {
+        let id: UUID
         let memberID: UUID
         let category: String
         let title: String
@@ -59,6 +60,7 @@ final class CommunityDetailReactor: Reactor {
     
     enum Action {
         case viewDidLoad
+        case refreshPost
         case moreButtonTapped
         case postImageTapped(index: Int)
         case postProfileImageTapped
@@ -66,31 +68,45 @@ final class CommunityDetailReactor: Reactor {
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case editButtonTapped
+        case deleteButtonTapped
+        case reportReasonSelected(CommunityReportReason)
         case reachedBottom
     }
     
     enum Mutation {
         case setLoading(Bool)
-        case setPost(Post)
+        case setPost(Post, originalPost: CommunityPost)
+        case setReporting(Bool)
+        case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
+        case routeToEditPost(CommunityPost)
+        case routeToDeletedPost(postID: UUID)
+        case presentReportCompletedAlert
         case setErrorMessage(String)
     }
     
     struct State {
         var isLoading = false
+        var isReporting = false
+        var isDeleting = false
         var isLoadingMoreComments = false
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
+        @Pulse var editPostRoute: CommunityPost?
+        @Pulse var deletedPostRoute: UUID?
+        @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
         var post: Post?
+        var originalPost: CommunityPost?
         var comments: [Comment] = [
             .init(
                 memberID: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
@@ -126,6 +142,7 @@ final class CommunityDetailReactor: Reactor {
     let initialState: State
     
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
+    @Dependency(\.communityReportDBManager) private var communityReportDBManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "CommunityDetailReactor")
     private let postID: UUID
@@ -138,6 +155,13 @@ final class CommunityDetailReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
+            return .concat(
+                .just(.setLoading(true)),
+                fetchPost(),
+                .just(.setLoading(false))
+            )
+            
+        case .refreshPost:
             return .concat(
                 .just(.setLoading(true)),
                 fetchPost(),
@@ -183,6 +207,37 @@ final class CommunityDetailReactor: Reactor {
         case .commentButtonTapped,
              .sendButtonTapped:
             return .empty()
+            
+        case .editButtonTapped:
+            guard let originalPost = currentState.originalPost else { return .empty() }
+            return .just(.routeToEditPost(originalPost))
+            
+        case .deleteButtonTapped:
+            guard let post = currentState.post,
+                  let originalPost = currentState.originalPost,
+                  post.isMine,
+                  currentState.isDeleting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setDeleting(true)),
+                deletePost(originalPost),
+                .just(.setDeleting(false))
+            )
+            
+        case .reportReasonSelected(let reason):
+            guard let post = currentState.post,
+                  post.isMine == false,
+                  currentState.isReporting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setReporting(true)),
+                reportPost(post: post, reason: reason),
+                .just(.setReporting(false))
+            )
         }
     }
     
@@ -193,8 +248,15 @@ final class CommunityDetailReactor: Reactor {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
             
-        case .setPost(let post):
+        case .setPost(let post, let originalPost):
             newState.post = post
+            newState.originalPost = originalPost
+            
+        case .setReporting(let isReporting):
+            newState.isReporting = isReporting
+            
+        case .setDeleting(let isDeleting):
+            newState.isDeleting = isDeleting
             
         case .setLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
@@ -215,6 +277,15 @@ final class CommunityDetailReactor: Reactor {
             
         case .routeToMemberProfile(let memberID):
             newState.memberProfileRoute = memberID
+            
+        case .routeToEditPost(let post):
+            newState.editPostRoute = post
+            
+        case .routeToDeletedPost(let postID):
+            newState.deletedPostRoute = postID
+            
+        case .presentReportCompletedAlert:
+            newState.reportCompleted = true
             
         case .setErrorMessage(let message):
             newState.errorMessage = message
@@ -260,12 +331,50 @@ final class CommunityDetailReactor: Reactor {
             )
         }
         .map { result in
-            .setPost(Self.makeDetailPost(from: result))
+            .setPost(
+                Self.makeDetailPost(from: result),
+                originalPost: result.post
+            )
         }
         .asObservable()
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func reportPost(
+        post: Post,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportPost(
+                postID: post.id,
+                reportedUserID: post.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
+        Single<UUID>.create { [communityPostDBManager] in
+            try await communityPostDBManager.deletePost(post)
+            return post.id
+        }
+        .map { .routeToDeletedPost(postID: $0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
@@ -284,6 +393,7 @@ final class CommunityDetailReactor: Reactor {
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
         Post(
+            id: result.post.id,
             memberID: result.post.authorID,
             category: result.post.category.title,
             title: result.post.title,

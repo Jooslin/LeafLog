@@ -47,6 +47,7 @@ final class MemberProfileReactor: Reactor {
     enum Action {
         case viewDidLoad
         case moreButtonTapped
+        case reportReasonSelected(CommunityReportReason)
         case sortButtonTapped
         case reachedBottom
     }
@@ -55,12 +56,14 @@ final class MemberProfileReactor: Reactor {
         case setLoading(Bool)
         case setInitialLoading(Bool)
         case setLoadingMore(Bool)
+        case setReporting(Bool)
         case setProfile(Profile)
         case setOwnership(Ownership)
         case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case resetPosts
         case presentMemberActionSheet
+        case presentReportCompletedAlert
         case setErrorMessage(String)
     }
     
@@ -68,12 +71,14 @@ final class MemberProfileReactor: Reactor {
         var isLoading = false
         var isInitialLoading = true
         var isLoadingMore = false
+        var isReporting = false
         var hasNextPage = false
         var nextOffset: Int?
         var profile: Profile?
         var posts: [Post] = []
         var ownership: Ownership = .unknown
         @Pulse var memberActionSheet: Bool?
+        @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
         
         var shouldShowMoreButton: Bool {
@@ -97,6 +102,7 @@ final class MemberProfileReactor: Reactor {
     private let pageSize = 10
     
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
+    @Dependency(\.communityReportDBManager) private var communityReportDBManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "MemberProfileReactor")
     
@@ -116,6 +122,18 @@ final class MemberProfileReactor: Reactor {
         case .moreButtonTapped:
             guard currentState.ownership == .visitor else { return .empty() }
             return .just(.presentMemberActionSheet)
+            
+        case .reportReasonSelected(let reason):
+            guard currentState.ownership == .visitor,
+                  currentState.isReporting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setReporting(true)),
+                reportMember(reason: reason),
+                .just(.setReporting(false))
+            )
             
         case .sortButtonTapped:
             return .empty()
@@ -149,6 +167,9 @@ final class MemberProfileReactor: Reactor {
         case .setLoadingMore(let isLoadingMore):
             newState.isLoadingMore = isLoadingMore
             
+        case .setReporting(let isReporting):
+            newState.isReporting = isReporting
+            
         case .setProfile(let profile):
             newState.profile = profile
             
@@ -172,6 +193,9 @@ final class MemberProfileReactor: Reactor {
             
         case .presentMemberActionSheet:
             newState.memberActionSheet = true
+            
+        case .presentReportCompletedAlert:
+            newState.reportCompleted = true
             
         case .setErrorMessage(let message):
             newState.errorMessage = message
@@ -261,6 +285,23 @@ final class MemberProfileReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "게시글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func reportMember(reason: CommunityReportReason) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager, memberID] in
+            try await communityReportDBManager.reportMember(
+                reportedUserID: memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
