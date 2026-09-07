@@ -59,6 +59,9 @@ final class CommunityTabFlow: Flow {
         case .communityPostUpdated(let postID):
             return updateCommunityPostDetail(postID: postID)
             
+        case .communityPostDeleted(let postID):
+            return deleteCommunityPostDetail(postID: postID)
+            
         case .composeNotice:
             let notice = CommunityInfoViewController()
             notice.modalPresentationStyle = .overCurrentContext
@@ -125,6 +128,23 @@ private extension CommunityTabFlow {
             .compactMap { $0 as? CommunityDetailViewController }
             .last
         detailViewController?.refreshPostIfNeeded(postID: postID)
+        
+        return .none
+    }
+    
+    func deleteCommunityPostDetail(postID: UUID) -> FlowContributors {
+        let deletedViewController = navigationController.viewControllers
+            .compactMap { $0 as? CommunityDetailViewController }
+            .last { $0.currentPostID == postID }
+        
+        if let deletedViewController {
+            navigationController.popToViewController(
+                deletedViewController,
+                animated: false
+            )
+        }
+        
+        navigationController.popViewController(animated: true)
         
         return .none
     }
