@@ -44,6 +44,10 @@ final class CommunityDetailViewController: BaseViewController, View {
         reactor?.action.onNext(.refreshPost)
     }
     
+    var currentPostID: UUID? {
+        reactor?.currentState.post?.id
+    }
+    
     private func bindAction(reactor: CommunityDetailReactor) {
         Observable.just(CommunityDetailReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
@@ -156,6 +160,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$deletedPostRoute)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] postID in
+                self?.steps.accept(AppStep.communityPostDeleted(postID: postID))
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$reportCompleted)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -194,13 +206,28 @@ final class CommunityDetailViewController: BaseViewController, View {
             alertController.addAction(UIAlertAction(title: "수정하기", style: .default) { [weak self] _ in
                 self?.reactor?.action.onNext(.editButtonTapped)
             })
-            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
+            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive) { [weak self] _ in
+                self?.presentDeleteConfirmAlert()
+            })
             alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
             present(alertController, animated: true)
             
         case .visitor:
             presentReportConfirmAlert()
         }
+    }
+    
+    private func presentDeleteConfirmAlert() {
+        let alertController = UIAlertController(
+            title: "게시글을 삭제하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+            self?.reactor?.action.onNext(.deleteButtonTapped)
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
     }
     
     private func presentReportConfirmAlert() {

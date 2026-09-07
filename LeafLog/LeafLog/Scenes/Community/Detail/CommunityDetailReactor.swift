@@ -69,6 +69,7 @@ final class CommunityDetailReactor: Reactor {
         case commentButtonTapped
         case sendButtonTapped
         case editButtonTapped
+        case deleteButtonTapped
         case reportReasonSelected(CommunityReportReason)
         case reachedBottom
     }
@@ -77,6 +78,7 @@ final class CommunityDetailReactor: Reactor {
         case setLoading(Bool)
         case setPost(Post, originalPost: CommunityPost)
         case setReporting(Bool)
+        case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
@@ -84,6 +86,7 @@ final class CommunityDetailReactor: Reactor {
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case routeToEditPost(CommunityPost)
+        case routeToDeletedPost(postID: UUID)
         case presentReportCompletedAlert
         case setErrorMessage(String)
     }
@@ -91,6 +94,7 @@ final class CommunityDetailReactor: Reactor {
     struct State {
         var isLoading = false
         var isReporting = false
+        var isDeleting = false
         var isLoadingMoreComments = false
         var hasNextCommentPage = false
         var nextCommentCursor: String?
@@ -98,6 +102,7 @@ final class CommunityDetailReactor: Reactor {
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var editPostRoute: CommunityPost?
+        @Pulse var deletedPostRoute: UUID?
         @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
         var post: Post?
@@ -207,6 +212,20 @@ final class CommunityDetailReactor: Reactor {
             guard let originalPost = currentState.originalPost else { return .empty() }
             return .just(.routeToEditPost(originalPost))
             
+        case .deleteButtonTapped:
+            guard let post = currentState.post,
+                  let originalPost = currentState.originalPost,
+                  post.isMine,
+                  currentState.isDeleting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setDeleting(true)),
+                deletePost(originalPost),
+                .just(.setDeleting(false))
+            )
+            
         case .reportReasonSelected(let reason):
             guard let post = currentState.post,
                   post.isMine == false,
@@ -236,6 +255,9 @@ final class CommunityDetailReactor: Reactor {
         case .setReporting(let isReporting):
             newState.isReporting = isReporting
             
+        case .setDeleting(let isDeleting):
+            newState.isDeleting = isDeleting
+            
         case .setLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
             
@@ -258,6 +280,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .routeToEditPost(let post):
             newState.editPostRoute = post
+            
+        case .routeToDeletedPost(let postID):
+            newState.deletedPostRoute = postID
             
         case .presentReportCompletedAlert:
             newState.reportCompleted = true
@@ -336,6 +361,20 @@ final class CommunityDetailReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
+        Single<UUID>.create { [communityPostDBManager] in
+            try await communityPostDBManager.deletePost(post)
+            return post.id
+        }
+        .map { .routeToDeletedPost(postID: $0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
