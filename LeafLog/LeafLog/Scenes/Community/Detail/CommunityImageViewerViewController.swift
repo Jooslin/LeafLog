@@ -101,13 +101,11 @@ final class CommunityImageViewerViewController: UIViewController {
         }
         
         imageCollectionView.snp.makeConstraints {
-            $0.horizontalEdges.equalToSuperview()
-            $0.centerY.equalToSuperview().offset(-38)
-            $0.height.equalTo(412)
+            $0.edges.equalTo(view.safeAreaLayoutGuide)
         }
         
         pageControl.snp.makeConstraints {
-            $0.top.equalTo(imageCollectionView.snp.bottom).offset(8)
+            $0.bottom.equalTo(view.safeAreaLayoutGuide).inset(28)
             $0.centerX.equalToSuperview()
         }
     }
@@ -147,6 +145,16 @@ extension CommunityImageViewerViewController: UICollectionViewDataSource, UIColl
 private final class CommunityImageViewerCell: UICollectionViewCell {
     static let reuseIdentifier = String(describing: CommunityImageViewerCell.self)
     
+    private lazy var imageScrollView = UIScrollView().then {
+        $0.backgroundColor = .black
+        $0.delegate = self
+        $0.minimumZoomScale = 1
+        $0.maximumZoomScale = 4
+        $0.showsHorizontalScrollIndicator = false
+        $0.showsVerticalScrollIndicator = false
+        $0.bouncesZoom = true
+    }
+    
     private let imageView = UIImageView().then {
         $0.contentMode = .scaleAspectFit
         $0.clipsToBounds = true
@@ -156,9 +164,17 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
         super.init(frame: frame)
         
         contentView.backgroundColor = .black
-        contentView.addSubview(imageView)
-        imageView.snp.makeConstraints {
+        contentView.addSubview(imageScrollView)
+        imageScrollView.addSubview(imageView)
+        
+        imageScrollView.snp.makeConstraints {
             $0.edges.equalToSuperview()
+        }
+        
+        imageView.snp.makeConstraints {
+            $0.edges.equalTo(imageScrollView.contentLayoutGuide)
+            $0.width.equalTo(imageScrollView.frameLayoutGuide)
+            $0.height.equalTo(imageScrollView.frameLayoutGuide)
         }
     }
     
@@ -169,6 +185,7 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         
+        imageScrollView.setZoomScale(1, animated: false)
         imageView.kf.cancelDownloadTask()
         imageView.image = UIImage(resource: .placeholder)
     }
@@ -187,5 +204,11 @@ private final class CommunityImageViewerCell: UICollectionViewCell {
                 .transition(.fade(0.2))
             ]
         )
+    }
+}
+
+extension CommunityImageViewerCell: UIScrollViewDelegate {
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        imageView
     }
 }
