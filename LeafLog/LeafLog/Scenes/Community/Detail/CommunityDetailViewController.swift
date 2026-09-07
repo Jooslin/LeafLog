@@ -39,6 +39,11 @@ final class CommunityDetailViewController: BaseViewController, View {
         bindState(reactor: reactor)
     }
     
+    func refreshPostIfNeeded(postID: UUID) {
+        guard reactor?.currentState.post?.id == postID else { return }
+        reactor?.action.onNext(.refreshPost)
+    }
+    
     private func bindAction(reactor: CommunityDetailReactor) {
         Observable.just(CommunityDetailReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
@@ -143,6 +148,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$editPostRoute)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] post in
+                self?.steps.accept(AppStep.communityComposeEdit(post))
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$reportCompleted)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -178,7 +191,9 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         switch kind {
         case .owner:
-            alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
+            alertController.addAction(UIAlertAction(title: "수정하기", style: .default) { [weak self] _ in
+                self?.reactor?.action.onNext(.editButtonTapped)
+            })
             alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
             alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
             present(alertController, animated: true)

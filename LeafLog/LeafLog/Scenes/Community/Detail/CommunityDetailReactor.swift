@@ -60,6 +60,7 @@ final class CommunityDetailReactor: Reactor {
     
     enum Action {
         case viewDidLoad
+        case refreshPost
         case moreButtonTapped
         case postImageTapped(index: Int)
         case postProfileImageTapped
@@ -67,13 +68,14 @@ final class CommunityDetailReactor: Reactor {
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case editButtonTapped
         case reportReasonSelected(CommunityReportReason)
         case reachedBottom
     }
     
     enum Mutation {
         case setLoading(Bool)
-        case setPost(Post)
+        case setPost(Post, originalPost: CommunityPost)
         case setReporting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
@@ -81,6 +83,7 @@ final class CommunityDetailReactor: Reactor {
         case presentPostActionSheet(PostActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
+        case routeToEditPost(CommunityPost)
         case presentReportCompletedAlert
         case setErrorMessage(String)
     }
@@ -94,9 +97,11 @@ final class CommunityDetailReactor: Reactor {
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
+        @Pulse var editPostRoute: CommunityPost?
         @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
         var post: Post?
+        var originalPost: CommunityPost?
         var comments: [Comment] = [
             .init(
                 memberID: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
@@ -151,6 +156,13 @@ final class CommunityDetailReactor: Reactor {
                 .just(.setLoading(false))
             )
             
+        case .refreshPost:
+            return .concat(
+                .just(.setLoading(true)),
+                fetchPost(),
+                .just(.setLoading(false))
+            )
+            
         case .postImageTapped(let index):
             guard let post = currentState.post,
                   post.imageSlots.indices.contains(index) else { return .empty() }
@@ -191,6 +203,10 @@ final class CommunityDetailReactor: Reactor {
              .sendButtonTapped:
             return .empty()
             
+        case .editButtonTapped:
+            guard let originalPost = currentState.originalPost else { return .empty() }
+            return .just(.routeToEditPost(originalPost))
+            
         case .reportReasonSelected(let reason):
             guard let post = currentState.post,
                   post.isMine == false,
@@ -213,8 +229,9 @@ final class CommunityDetailReactor: Reactor {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
             
-        case .setPost(let post):
+        case .setPost(let post, let originalPost):
             newState.post = post
+            newState.originalPost = originalPost
             
         case .setReporting(let isReporting):
             newState.isReporting = isReporting
@@ -238,6 +255,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .routeToMemberProfile(let memberID):
             newState.memberProfileRoute = memberID
+            
+        case .routeToEditPost(let post):
+            newState.editPostRoute = post
             
         case .presentReportCompletedAlert:
             newState.reportCompleted = true
@@ -286,7 +306,10 @@ final class CommunityDetailReactor: Reactor {
             )
         }
         .map { result in
-            .setPost(Self.makeDetailPost(from: result))
+            .setPost(
+                Self.makeDetailPost(from: result),
+                originalPost: result.post
+            )
         }
         .asObservable()
         .catch { error in
