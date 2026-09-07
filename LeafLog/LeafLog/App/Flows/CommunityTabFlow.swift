@@ -56,6 +56,9 @@ final class CommunityTabFlow: Flow {
         case .communityComposeEdit(let post):
             return navigateToCompose(mode: .edit(post))
             
+        case .communityPostUpdated(let postID):
+            return updateCommunityPostDetail(postID: postID)
+            
         case .composeNotice:
             let notice = CommunityInfoViewController()
             notice.modalPresentationStyle = .overCurrentContext
@@ -113,5 +116,16 @@ private extension CommunityTabFlow {
                 withNextStepper: viewController
             )
         )
+    }
+    
+    func updateCommunityPostDetail(postID: UUID) -> FlowContributors {
+        navigationController.popViewController(animated: true)
+        
+        let detailViewController = navigationController.viewControllers
+            .compactMap { $0 as? CommunityDetailViewController }
+            .last
+        detailViewController?.refreshPostIfNeeded(postID: postID)
+        
+        return .none
     }
 }
