@@ -52,6 +52,11 @@ final class CommunityDetailReactor: Reactor {
         case visitor
     }
     
+    enum CommentActionSheetKind: Equatable {
+        case owner
+        case visitor
+    }
+    
     enum CommentBadge: Equatable {
         case author
         case mine
@@ -65,6 +70,7 @@ final class CommunityDetailReactor: Reactor {
         case postImageTapped(index: Int)
         case postProfileImageTapped
         case commentProfileImageTapped(index: Int)
+        case commentMoreButtonTapped(index: Int)
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
@@ -83,6 +89,7 @@ final class CommunityDetailReactor: Reactor {
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
+        case presentCommentActionSheet(CommentActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case routeToEditPost(CommunityPost)
@@ -99,6 +106,7 @@ final class CommunityDetailReactor: Reactor {
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var postActionSheetKind: PostActionSheetKind?
+        @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var editPostRoute: CommunityPost?
@@ -188,6 +196,12 @@ final class CommunityDetailReactor: Reactor {
             
             return .just(.routeToMemberProfile(memberID: memberID))
             
+        case .commentMoreButtonTapped(let index):
+            guard currentState.comments.indices.contains(index) else { return .empty() }
+            let comment = currentState.comments[index]
+            
+            return .just(.presentCommentActionSheet(comment.badge == .mine ? .owner : .visitor))
+            
         case .reachedBottom:
             guard currentState.isLoadingMoreComments == false,
                   currentState.hasNextCommentPage else {
@@ -271,6 +285,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
+            
+        case .presentCommentActionSheet(let kind):
+            newState.commentActionSheetKind = kind
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
