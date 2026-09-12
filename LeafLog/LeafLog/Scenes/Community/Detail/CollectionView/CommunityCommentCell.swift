@@ -53,7 +53,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         $0.isHidden = true
     }
     
-    private let moreButton = UIButton(configuration: .plain()).then {
+    fileprivate let moreButton = UIButton(configuration: .plain()).then {
         let image = UIImage(resource: .more)
         $0.setImage(image, for: .normal)
         $0.configuration?.baseForegroundColor = .black
@@ -143,6 +143,10 @@ final class CommunityCommentCell: UICollectionViewCell {
 extension Reactive where Base: CommunityCommentCell {
     var profileImageTap: ControlEvent<Void> {
         base.profileImageButton.rx.tap
+    }
+    
+    var moreButtonTap: ControlEvent<Void> {
+        base.moreButton.rx.tap
     }
 }
 
