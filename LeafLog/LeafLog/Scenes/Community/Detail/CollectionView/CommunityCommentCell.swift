@@ -156,6 +156,7 @@ extension CommunityCommentCell {
         nicknameLabel.text = comment.nickname
         dateLabel.text = comment.date
         bodyLabel.text = comment.body
+        moreButton.isHidden = !comment.isMine
         applyBadge(comment.badge)
         bodyLabel.setTextWithLineHeight(text: comment.body, height: 20)
     }

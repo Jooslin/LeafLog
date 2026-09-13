@@ -56,6 +56,23 @@ final class CommunityCommentDBManager {
             )
         }
     }
+    
+    func softDeleteComment(id: UUID) async throws {
+        do {
+            try await supabaseManager.client
+                .rpc(
+                    "soft_delete_community_comment",
+                    params: CommunityCommentDeleteParameters(commentID: id)
+                )
+                .execute()
+        } catch let error as AuthError {
+            throw error
+        } catch {
+            throw AuthError.communityFailed(
+                "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
 }
 
 nonisolated private struct CommunityCommentCreatePayload: Encodable, Sendable {
@@ -67,6 +84,14 @@ nonisolated private struct CommunityCommentCreatePayload: Encodable, Sendable {
         case postID = "post_id"
         case authorID = "author_id"
         case content
+    }
+}
+
+nonisolated private struct CommunityCommentDeleteParameters: Encodable, Sendable {
+    let commentID: UUID
+    
+    enum CodingKeys: String, CodingKey {
+        case commentID = "p_comment_id"
     }
 }
 

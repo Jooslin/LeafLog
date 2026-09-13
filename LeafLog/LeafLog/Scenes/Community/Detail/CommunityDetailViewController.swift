@@ -151,6 +151,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$commentActionSheetKind)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] kind in
+                self?.presentCommentActionSheet(kind: kind)
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$imageViewerRoute)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -232,6 +240,36 @@ final class CommunityDetailViewController: BaseViewController, View {
         }
     }
     
+    private func presentCommentActionSheet(kind: CommunityDetailReactor.CommentActionSheetKind) {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        switch kind {
+        case .owner(let commentID):
+            alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive) { [weak self] _ in
+                self?.presentCommentDeleteConfirmAlert(commentID: commentID)
+            })
+            alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+            present(alertController, animated: true)
+        }
+    }
+    
+    private func presentCommentDeleteConfirmAlert(commentID: UUID) {
+        let alertController = UIAlertController(
+            title: "댓글을 삭제하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+            self?.reactor?.action.onNext(.deleteCommentButtonTapped(commentID: commentID))
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
     private func presentDeleteConfirmAlert() {
         let alertController = UIAlertController(
             title: "게시글을 삭제하시겠습니까?",
@@ -309,6 +347,10 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
                 .bind(to: reactor.action)
                 .disposed(by: cell.disposeBag)
             
+            cell.rx.moreButtonTap
+                .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: indexPath.item) }
+                .bind(to: reactor.action)
+                .disposed(by: cell.disposeBag)
         }
         
         return cell

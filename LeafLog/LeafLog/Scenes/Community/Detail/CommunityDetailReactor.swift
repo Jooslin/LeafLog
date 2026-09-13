@@ -54,6 +54,10 @@ final class CommunityDetailReactor: Reactor {
         case visitor
     }
     
+    enum CommentActionSheetKind: Equatable {
+        case owner(commentID: UUID)
+    }
+    
     enum CommentBadge: Equatable {
         case author
         case mine
@@ -67,10 +71,12 @@ final class CommunityDetailReactor: Reactor {
         case postImageTapped(index: Int)
         case postProfileImageTapped
         case commentProfileImageTapped(index: Int)
+        case commentMoreButtonTapped(index: Int)
         case enterCommentText(String)
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case deleteCommentButtonTapped(commentID: UUID)
         case editButtonTapped
         case deleteButtonTapped
         case reportReasonSelected(CommunityReportReason)
@@ -90,6 +96,7 @@ final class CommunityDetailReactor: Reactor {
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
+        case presentCommentActionSheet(CommentActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case routeToEditPost(CommunityPost)
@@ -107,6 +114,7 @@ final class CommunityDetailReactor: Reactor {
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var postActionSheetKind: PostActionSheetKind?
+        @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var editPostRoute: CommunityPost?
@@ -169,6 +177,13 @@ final class CommunityDetailReactor: Reactor {
             
             return .just(.routeToMemberProfile(memberID: memberID))
             
+        case .commentMoreButtonTapped(let index):
+            guard currentState.comments.indices.contains(index) else { return .empty() }
+            let comment = currentState.comments[index]
+            guard comment.isMine else { return .empty() }
+            
+            return .just(.presentCommentActionSheet(.owner(commentID: comment.id)))
+            
         case .enterCommentText(let text):
             return .just(.setCommentInputText(text))
             
@@ -212,6 +227,20 @@ final class CommunityDetailReactor: Reactor {
                     content: content,
                     postAuthorID: originalPost.authorID
                 ),
+                .just(.setSubmittingComment(false))
+            )
+            
+        case .deleteCommentButtonTapped(let commentID):
+            guard let originalPost = currentState.originalPost,
+                  let comment = currentState.comments.first(where: { $0.id == commentID }),
+                  comment.isMine,
+                  currentState.isSubmittingComment == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setSubmittingComment(true)),
+                deleteComment(commentID: commentID, postAuthorID: originalPost.authorID),
                 .just(.setSubmittingComment(false))
             )
             
@@ -295,6 +324,9 @@ final class CommunityDetailReactor: Reactor {
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
+            
+        case .presentCommentActionSheet(let kind):
+            newState.commentActionSheetKind = kind
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
@@ -405,6 +437,31 @@ final class CommunityDetailReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func deleteComment(
+        commentID: UUID,
+        postAuthorID: UUID
+    ) -> Observable<Mutation> {
+        Single<[Comment]>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await communityCommentDBManager.softDeleteComment(id: commentID)
+            
+            return try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager
+            )
+        }
+        .map { .setComments($0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
