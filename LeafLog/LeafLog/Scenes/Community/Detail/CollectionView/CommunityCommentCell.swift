@@ -58,6 +58,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         $0.setImage(image, for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        $0.isHidden = true
     }
     
     override init(frame: CGRect) {
@@ -117,7 +118,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         topStackView.snp.makeConstraints {
             $0.centerY.equalTo(profileImageButton)
             $0.leading.equalTo(profileImageButton.snp.trailing).offset(8)
-            $0.trailing.lessThanOrEqualTo(moreButton.snp.leading).offset(-8)
+            $0.trailing.lessThanOrEqualToSuperview().inset(20)
         }
         
         dividerView.snp.makeConstraints {

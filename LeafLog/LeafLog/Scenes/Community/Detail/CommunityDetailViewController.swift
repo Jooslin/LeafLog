@@ -13,16 +13,6 @@ import UIKit
 final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView()
     private var comments: [CommunityDetailReactor.Comment] = []
-    private let commentReportReasons = [
-        "불법촬영물 등의 유통",
-        "정당/정치인 비하 및 선거운동",
-        "음란물/불건전한 만남 및 대화",
-        "상업적 광고 및 판매",
-        "욕설/비하",
-        "낚시/놀람/도배",
-        "게시판 성격에 부적절함",
-        "유출/사칭/사기"
-    ]
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -100,6 +90,12 @@ final class CommunityDetailViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         detailView.rx.commentText
+            .orEmpty
+            .map { CommunityDetailReactor.Action.enterCommentText($0) }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.rx.commentText
             .map { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] isEnabled in
@@ -138,19 +134,20 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.state
+            .map(\.commentInputText)
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] text in
+                self?.detailView.setCommentText(text)
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$postActionSheetKind)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] kind in
                 self?.presentPostActionSheet(kind: kind)
-            }
-            .disposed(by: disposeBag)
-        
-        reactor.pulse(\.$commentActionSheetKind)
-            .compactMap { $0 }
-            .asDriver(onErrorDriveWith: .empty())
-            .drive { [weak self] kind in
-                self?.presentCommentActionSheet(kind: kind)
             }
             .disposed(by: disposeBag)
         
@@ -235,56 +232,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         }
     }
     
-    private func presentCommentActionSheet(kind: CommunityDetailReactor.CommentActionSheetKind) {
-        switch kind {
-        case .owner:
-            presentMyCommentActionSheet()
-            
-        case .visitor:
-            presentCommentReportConfirmAlert()
-        }
-    }
-    
-    private func presentMyCommentActionSheet() {
-        let alertController = UIAlertController(
-            title: nil,
-            message: nil,
-            preferredStyle: .actionSheet
-        )
-        alertController.addAction(UIAlertAction(title: "수정하기", style: .default))
-        alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive))
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentCommentReportConfirmAlert() {
-        let alertController = UIAlertController(
-            title: "이 글을 신고 하시겠습니까?",
-            message: nil,
-            preferredStyle: .alert
-        )
-        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
-            self?.presentCommentReportReasonActionSheet()
-        })
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentCommentReportReasonActionSheet() {
-        let alertController = UIAlertController(
-            title: nil,
-            message: nil,
-            preferredStyle: .actionSheet
-        )
-        
-        commentReportReasons.forEach { reason in
-            alertController.addAction(UIAlertAction(title: reason, style: .destructive))
-        }
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
     private func presentDeleteConfirmAlert() {
         let alertController = UIAlertController(
             title: "게시글을 삭제하시겠습니까?",
@@ -362,10 +309,6 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
                 .bind(to: reactor.action)
                 .disposed(by: cell.disposeBag)
             
-            cell.rx.moreButtonTap
-                .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: indexPath.item) }
-                .bind(to: reactor.action)
-                .disposed(by: cell.disposeBag)
         }
         
         return cell

@@ -84,6 +84,13 @@ final class CommunityDetailView: UIView {
         sendButton.tintColor = isEnabled ? .primary800 : .grayScale500
     }
     
+    func setCommentText(_ text: String) {
+        guard inputTextField.text != text else { return }
+        
+        inputTextField.text = text
+        updateSendButton(isEnabled: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    }
+    
     func isNearBottom(threshold: CGFloat) -> Bool {
         let visibleBottom = scrollView.contentOffset.y + scrollView.bounds.height
         let triggerOffset = scrollView.contentSize.height - threshold
