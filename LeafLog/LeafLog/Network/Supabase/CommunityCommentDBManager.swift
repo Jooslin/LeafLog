@@ -73,6 +73,29 @@ final class CommunityCommentDBManager {
             )
         }
     }
+    
+    func updateComment(
+        id: UUID,
+        content: String
+    ) async throws {
+        do {
+            try await supabaseManager.client
+                .rpc(
+                    "update_community_comment",
+                    params: CommunityCommentUpdateParameters(
+                        commentID: id,
+                        content: content
+                    )
+                )
+                .execute()
+        } catch let error as AuthError {
+            throw error
+        } catch {
+            throw AuthError.communityFailed(
+                "댓글을 수정하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
 }
 
 nonisolated private struct CommunityCommentCreatePayload: Encodable, Sendable {
@@ -92,6 +115,16 @@ nonisolated private struct CommunityCommentDeleteParameters: Encodable, Sendable
     
     enum CodingKeys: String, CodingKey {
         case commentID = "p_comment_id"
+    }
+}
+
+nonisolated private struct CommunityCommentUpdateParameters: Encodable, Sendable {
+    let commentID: UUID
+    let content: String
+    
+    enum CodingKeys: String, CodingKey {
+        case commentID = "p_comment_id"
+        case content = "p_content"
     }
 }
 
