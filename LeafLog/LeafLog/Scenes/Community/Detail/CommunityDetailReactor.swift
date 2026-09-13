@@ -76,6 +76,8 @@ final class CommunityDetailReactor: Reactor {
         case heartButtonTapped
         case commentButtonTapped
         case sendButtonTapped
+        case editCommentButtonTapped(commentID: UUID)
+        case cancelCommentEditingButtonTapped
         case deleteCommentButtonTapped(commentID: UUID)
         case editButtonTapped
         case deleteButtonTapped
@@ -89,6 +91,7 @@ final class CommunityDetailReactor: Reactor {
         case setPost(Post, originalPost: CommunityPost)
         case setComments([Comment])
         case setCommentInputText(String)
+        case setEditingComment(commentID: UUID?, text: String)
         case setSubmittingComment(Bool)
         case setReporting(Bool)
         case setDeleting(Bool)
@@ -125,6 +128,7 @@ final class CommunityDetailReactor: Reactor {
         var originalPost: CommunityPost?
         var comments: [Comment] = []
         var commentInputText = ""
+        var editingCommentID: UUID?
     }
     
     let initialState: State
@@ -225,10 +229,22 @@ final class CommunityDetailReactor: Reactor {
                 .just(.setSubmittingComment(true)),
                 submitComment(
                     content: content,
-                    postAuthorID: originalPost.authorID
+                    postAuthorID: originalPost.authorID,
+                    editingCommentID: currentState.editingCommentID
                 ),
                 .just(.setSubmittingComment(false))
             )
+            
+        case .editCommentButtonTapped(let commentID):
+            guard let comment = currentState.comments.first(where: { $0.id == commentID }),
+                  comment.isMine else {
+                return .empty()
+            }
+            
+            return .just(.setEditingComment(commentID: commentID, text: comment.body))
+            
+        case .cancelCommentEditingButtonTapped:
+            return .just(.setEditingComment(commentID: nil, text: ""))
             
         case .deleteCommentButtonTapped(let commentID):
             guard let originalPost = currentState.originalPost,
@@ -240,7 +256,11 @@ final class CommunityDetailReactor: Reactor {
             
             return .concat(
                 .just(.setSubmittingComment(true)),
-                deleteComment(commentID: commentID, postAuthorID: originalPost.authorID),
+                deleteComment(
+                    commentID: commentID,
+                    postAuthorID: originalPost.authorID,
+                    shouldClearEditing: currentState.editingCommentID == commentID
+                ),
                 .just(.setSubmittingComment(false))
             )
             
@@ -300,6 +320,10 @@ final class CommunityDetailReactor: Reactor {
             newState.post?.commentCount = String(comments.count)
             
         case .setCommentInputText(let text):
+            newState.commentInputText = text
+            
+        case .setEditingComment(let commentID, let text):
+            newState.editingCommentID = commentID
             newState.commentInputText = text
             
         case .setSubmittingComment(let isSubmittingComment):
@@ -410,14 +434,22 @@ final class CommunityDetailReactor: Reactor {
     
     private func submitComment(
         content: String,
-        postAuthorID: UUID
+        postAuthorID: UUID,
+        editingCommentID: UUID?
     ) -> Observable<Mutation> {
         Single<[Comment]>.create {
             [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            _ = try await communityCommentDBManager.createComment(
-                postID: postID,
-                content: content
-            )
+            if let editingCommentID {
+                try await communityCommentDBManager.updateComment(
+                    id: editingCommentID,
+                    content: content
+                )
+            } else {
+                _ = try await communityCommentDBManager.createComment(
+                    postID: postID,
+                    content: content
+                )
+            }
             
             return try await Self.fetchDisplayComments(
                 postID: postID,
@@ -431,7 +463,7 @@ final class CommunityDetailReactor: Reactor {
         .flatMap { comments -> Observable<Mutation> in
             Observable.from([
                 Mutation.setComments(comments),
-                Mutation.setCommentInputText("")
+                Mutation.setEditingComment(commentID: nil, text: "")
             ])
         }
         .catch { error in
@@ -443,7 +475,8 @@ final class CommunityDetailReactor: Reactor {
     
     private func deleteComment(
         commentID: UUID,
-        postAuthorID: UUID
+        postAuthorID: UUID,
+        shouldClearEditing: Bool
     ) -> Observable<Mutation> {
         Single<[Comment]>.create {
             [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
@@ -459,6 +492,14 @@ final class CommunityDetailReactor: Reactor {
         }
         .map { .setComments($0) }
         .asObservable()
+        .flatMap { mutation -> Observable<Mutation> in
+            guard shouldClearEditing else { return .just(mutation) }
+            
+            return Observable.from([
+                mutation,
+                Mutation.setEditingComment(commentID: nil, text: "")
+            ])
+        }
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."

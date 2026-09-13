@@ -89,6 +89,11 @@ final class CommunityDetailViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
+        detailView.rx.cancelCommentEditingButtonTap
+            .map { CommunityDetailReactor.Action.cancelCommentEditingButtonTapped }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         detailView.rx.commentText
             .orEmpty
             .map { CommunityDetailReactor.Action.enterCommentText($0) }
@@ -140,6 +145,15 @@ final class CommunityDetailViewController: BaseViewController, View {
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] text in
                 self?.detailView.setCommentText(text)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.editingCommentID == nil ? CommunityDetailView.CommentInputMode.create : .edit }
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] mode in
+                self?.detailView.setCommentInputMode(mode)
             }
             .disposed(by: disposeBag)
         
@@ -249,6 +263,9 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         switch kind {
         case .owner(let commentID):
+            alertController.addAction(UIAlertAction(title: "수정하기", style: .default) { [weak self] _ in
+                self?.reactor?.action.onNext(.editCommentButtonTapped(commentID: commentID))
+            })
             alertController.addAction(UIAlertAction(title: "삭제하기", style: .destructive) { [weak self] _ in
                 self?.presentCommentDeleteConfirmAlert(commentID: commentID)
             })
