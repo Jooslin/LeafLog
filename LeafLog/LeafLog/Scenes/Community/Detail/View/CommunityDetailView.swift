@@ -18,29 +18,28 @@ final class CommunityDetailView: UIView {
     }
     
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "more")
-    let postContentView = CommunityPostContentView()
     
-    let commentCollectionView = UICollectionView(
+    let detailCollectionView = UICollectionView(
         frame: .zero,
-        collectionViewLayout: CommunityDetailView.makeCommentLayout()
+        collectionViewLayout: CommunityDetailView.makeDetailLayout()
     ).then {
         $0.backgroundColor = .white
-        $0.isScrollEnabled = false
         $0.showsVerticalScrollIndicator = false
+        $0.alwaysBounceVertical = true
+        $0.keyboardDismissMode = .interactive
+        $0.register(
+            CommunityPostContentCell.self,
+            forCellWithReuseIdentifier: CommunityPostContentCell.reuseIdentifier
+        )
+        $0.register(
+            CommunityCommentHeaderCell.self,
+            forCellWithReuseIdentifier: CommunityCommentHeaderCell.reuseIdentifier
+        )
         $0.register(
             CommunityCommentCell.self,
             forCellWithReuseIdentifier: CommunityCommentCell.reuseIdentifier
         )
     }
-    
-    fileprivate let scrollView = UIScrollView().then {
-        $0.showsVerticalScrollIndicator = false
-        $0.alwaysBounceVertical = true
-        $0.keyboardDismissMode = .interactive
-    }
-    
-    private let contentView = UIView()
-    private let commentTitleLabel = UILabel(text: "댓글", config: .title14, color: .black, lines: 1)
     
     private let inputContainerView = UIView().then {
         $0.backgroundColor = .white
@@ -84,7 +83,6 @@ final class CommunityDetailView: UIView {
         $0.tintColor = .grayScale500
     }
     
-    private var commentCollectionHeightConstraint: Constraint?
     private var commentInputWrapperHeightConstraint: Constraint?
     private var inputTextFieldTopConstraint: Constraint?
     private var isEditingComment = false
@@ -98,15 +96,6 @@ final class CommunityDetailView: UIView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    func configure(post: CommunityDetailReactor.Post) {
-        postContentView.configure(post: post)
-    }
-    
-    func updateCommentCollectionHeight(itemCount: Int) {
-        commentCollectionHeightConstraint?.update(offset: CGFloat(itemCount) * 70)
-        setNeedsLayout()
     }
     
     func updateSendButton(isEnabled: Bool) {
@@ -142,8 +131,8 @@ final class CommunityDetailView: UIView {
     }
     
     func isNearBottom(threshold: CGFloat) -> Bool {
-        let visibleBottom = scrollView.contentOffset.y + scrollView.bounds.height
-        let triggerOffset = scrollView.contentSize.height - threshold
+        let visibleBottom = detailCollectionView.contentOffset.y + detailCollectionView.bounds.height
+        let triggerOffset = detailCollectionView.contentSize.height - threshold
         
         return visibleBottom >= triggerOffset
     }
@@ -161,12 +150,8 @@ final class CommunityDetailView: UIView {
 // MARK: - Layout
 private extension CommunityDetailView {
     func setLayout() {
-        let sectionDividerView = UIView().then {
-            $0.backgroundColor = .grayScale100
-        }
-        
         addSubview(titleView)
-        addSubview(scrollView)
+        addSubview(detailCollectionView)
         addSubview(inputContainerView)
         
         titleView.snp.makeConstraints {
@@ -174,7 +159,7 @@ private extension CommunityDetailView {
             $0.horizontalEdges.equalToSuperview()
         }
         
-        scrollView.snp.makeConstraints {
+        detailCollectionView.snp.makeConstraints {
             $0.top.equalTo(titleView.snp.bottom)
             $0.horizontalEdges.equalToSuperview()
             $0.bottom.equalTo(inputContainerView.snp.top)
@@ -183,7 +168,7 @@ private extension CommunityDetailView {
         inputContainerView.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview()
             $0.bottom.equalTo(safeAreaLayoutGuide)
-            $0.height.equalTo(86)
+            $0.height.equalTo(86).priority(.high)
         }
         
         inputContainerView.addSubview(commentInputWrapperView)
@@ -231,48 +216,23 @@ private extension CommunityDetailView {
             $0.trailing.equalToSuperview().inset(16)
             $0.width.height.equalTo(46)
         }
-        
-        scrollView.addSubview(contentView)
-        contentView.addSubview(postContentView)
-        contentView.addSubview(sectionDividerView)
-        contentView.addSubview(commentTitleLabel)
-        contentView.addSubview(commentCollectionView)
-        
-        contentView.snp.makeConstraints {
-            $0.edges.equalTo(scrollView.contentLayoutGuide)
-            $0.width.equalTo(scrollView.frameLayoutGuide)
-        }
-        
-        postContentView.snp.makeConstraints {
-            $0.top.equalToSuperview().inset(28)
-            $0.horizontalEdges.equalToSuperview().inset(16)
-        }
-        
-        sectionDividerView.snp.makeConstraints {
-            $0.top.equalTo(postContentView.snp.bottom).offset(24)
-            $0.horizontalEdges.equalToSuperview()
-            $0.height.equalTo(1)
-        }
-        
-        commentTitleLabel.snp.makeConstraints {
-            $0.top.equalTo(sectionDividerView.snp.bottom).offset(24)
-            $0.horizontalEdges.equalToSuperview().inset(16)
-        }
-        
-        commentCollectionView.snp.makeConstraints {
-            $0.top.equalTo(commentTitleLabel.snp.bottom).offset(16)
-            $0.horizontalEdges.equalToSuperview()
-            commentCollectionHeightConstraint = $0.height.equalTo(280).constraint
-            $0.bottom.equalToSuperview().inset(8)
-        }
     }
 
-    static func makeCommentLayout() -> UICollectionViewLayout {
-        UICollectionViewFlowLayout().then {
-            $0.scrollDirection = .vertical
-            $0.minimumLineSpacing = 0
-            $0.estimatedItemSize = .zero
-        }
+    static func makeDetailLayout() -> UICollectionViewLayout {
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1),
+            heightDimension: .estimated(120)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1),
+            heightDimension: .estimated(120)
+        )
+        let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.interGroupSpacing = 0
+        
+        return UICollectionViewCompositionalLayout(section: section)
     }
     
 }
@@ -280,22 +240,6 @@ private extension CommunityDetailView {
 extension Reactive where Base: CommunityDetailView {
     var moreButtonTap: ControlEvent<Void> {
         base.titleView.rightButton.rx.tap
-    }
-    
-    var postImageTap: ControlEvent<Int> {
-        base.postContentView.rx.postImageTap
-    }
-    
-    var profileImageTap: ControlEvent<Void> {
-        base.postContentView.rx.profileImageTap
-    }
-    
-    var heartButtonTap: ControlEvent<Void> {
-        base.postContentView.rx.heartButtonTap
-    }
-    
-    var commentButtonTap: ControlEvent<Void> {
-        base.postContentView.rx.commentButtonTap
     }
     
     var sendButtonTap: ControlEvent<Void> {
@@ -311,6 +255,6 @@ extension Reactive where Base: CommunityDetailView {
     }
     
     var didScroll: ControlEvent<Void> {
-        base.scrollView.rx.didScroll
+        base.detailCollectionView.rx.didScroll
     }
 }

@@ -136,7 +136,7 @@ final class CommunityCommentCell: UICollectionViewCell {
             $0.top.equalTo(profileImageButton.snp.bottom).offset(6)
             $0.leading.equalToSuperview().inset(20)
             $0.trailing.equalToSuperview().inset(20)
-            $0.bottom.lessThanOrEqualToSuperview().inset(8)
+            $0.bottom.equalToSuperview().inset(8)
         }
     }
 }
