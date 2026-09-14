@@ -36,6 +36,10 @@ final class CommunityDetailView: UIView {
             forCellWithReuseIdentifier: CommunityCommentHeaderCell.reuseIdentifier
         )
         $0.register(
+            CommunityCommentEmptyCell.self,
+            forCellWithReuseIdentifier: CommunityCommentEmptyCell.reuseIdentifier
+        )
+        $0.register(
             CommunityCommentCell.self,
             forCellWithReuseIdentifier: CommunityCommentCell.reuseIdentifier
         )

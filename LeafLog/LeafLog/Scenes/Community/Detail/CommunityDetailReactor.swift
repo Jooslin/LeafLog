@@ -47,6 +47,7 @@ final class CommunityDetailReactor: Reactor {
     enum DetailItem: Equatable {
         case post(Post)
         case commentHeader
+        case emptyComment
         case comment(Comment)
     }
     
@@ -587,7 +588,11 @@ final class CommunityDetailReactor: Reactor {
     private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
         guard let post else { return [] }
         
-        return [.post(post), .commentHeader] + comments.map { .comment($0) }
+        let commentItems: [DetailItem] = comments.isEmpty
+            ? [.emptyComment]
+            : comments.map { .comment($0) }
+        
+        return [.post(post), .commentHeader] + commentItems
     }
     
     private static func fetchDisplayComments(

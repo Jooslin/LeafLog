@@ -368,6 +368,16 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
             
             return cell
             
+        case .emptyComment:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentEmptyCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentEmptyCell else {
+                return UICollectionViewCell()
+            }
+            
+            return cell
+            
         case .comment(let comment):
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: CommunityCommentCell.reuseIdentifier,
