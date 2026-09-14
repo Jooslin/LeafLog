@@ -44,6 +44,12 @@ final class CommunityDetailReactor: Reactor {
         let isMine: Bool
     }
     
+    enum DetailItem: Equatable {
+        case post(Post)
+        case commentHeader
+        case comment(Comment)
+    }
+    
     struct ImageViewerRoute: Equatable {
         let imageSlots: [PostImageSlot]
         let initialIndex: Int
@@ -127,6 +133,7 @@ final class CommunityDetailReactor: Reactor {
         var post: Post?
         var originalPost: CommunityPost?
         var comments: [Comment] = []
+        var detailItems: [DetailItem] = []
         var commentInputText = ""
         var editingCommentID: UUID?
     }
@@ -310,14 +317,17 @@ final class CommunityDetailReactor: Reactor {
             newState.post = updatedPost
             newState.originalPost = originalPost
             newState.comments = comments
+            newState.detailItems = Self.makeDetailItems(post: updatedPost, comments: comments)
             
         case .setPost(let post, let originalPost):
             newState.post = post
             newState.originalPost = originalPost
+            newState.detailItems = Self.makeDetailItems(post: post, comments: newState.comments)
             
         case .setComments(let comments):
             newState.comments = comments
             newState.post?.commentCount = String(comments.count)
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: comments)
             
         case .setCommentInputText(let text):
             newState.commentInputText = text
@@ -342,9 +352,11 @@ final class CommunityDetailReactor: Reactor {
             newState.comments.append(contentsOf: comments)
             newState.nextCommentCursor = nextCursor
             newState.hasNextCommentPage = hasNextPage
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .setPostLiked(let isLiked):
             newState.post?.isLiked = isLiked
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
@@ -570,6 +582,12 @@ final class CommunityDetailReactor: Reactor {
             isLiked: false,
             isMine: result.isMine
         )
+    }
+    
+    private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
+        guard let post else { return [] }
+        
+        return [.post(post), .commentHeader] + comments.map { .comment($0) }
     }
     
     private static func fetchDisplayComments(

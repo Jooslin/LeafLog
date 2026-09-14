@@ -11,8 +11,9 @@ import ReactorKit
 import UIKit
 
 final class CommunityDetailViewController: BaseViewController, View {
-    private let detailView = CommunityDetailView()
+    private let detailView = CommunityDetailView(frame: UIScreen.main.bounds)
     private var comments: [CommunityDetailReactor.Comment] = []
+    private var detailItems: [CommunityDetailReactor.DetailItem] = []
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -30,8 +31,8 @@ final class CommunityDetailViewController: BaseViewController, View {
         super.viewDidLoad()
         
         navigationController?.navigationBar.isHidden = true
-        detailView.commentCollectionView.dataSource = self
-        detailView.commentCollectionView.delegate = self
+        detailView.detailCollectionView.dataSource = self
+        detailView.detailCollectionView.delegate = self
     }
     
     func bind(reactor: CommunityDetailReactor) {
@@ -61,26 +62,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         detailView.rx.moreButtonTap
             .map { CommunityDetailReactor.Action.moreButtonTapped }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
-        detailView.rx.postImageTap
-            .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
-        detailView.rx.profileImageTap
-            .map { CommunityDetailReactor.Action.postProfileImageTapped }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
-        detailView.rx.heartButtonTap
-            .map { CommunityDetailReactor.Action.heartButtonTapped }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
-        detailView.rx.commentButtonTap
-            .map { CommunityDetailReactor.Action.commentButtonTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -119,23 +100,16 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     private func bindState(reactor: CommunityDetailReactor) {
         reactor.state
-            .map(\.post)
-            .distinctUntilChanged()
-            .compactMap { $0 }
-            .asDriver(onErrorDriveWith: .empty())
-            .drive { [weak self] post in
-                self?.detailView.configure(post: post)
-            }
-            .disposed(by: disposeBag)
-        
-        reactor.state
-            .map(\.comments)
+            .map(\.detailItems)
             .distinctUntilChanged()
             .asDriver(onErrorDriveWith: .empty())
-            .drive { [weak self] comments in
-                self?.comments = comments
-                self?.detailView.commentCollectionView.reloadData()
-                self?.detailView.updateCommentCollectionHeight(itemCount: comments.count)
+            .drive { [weak self] detailItems in
+                self?.detailItems = detailItems
+                self?.comments = detailItems.compactMap {
+                    guard case .comment(let comment) = $0 else { return nil }
+                    return comment
+                }
+                self?.detailView.detailCollectionView.reloadData()
             }
             .disposed(by: disposeBag)
         
@@ -343,43 +317,87 @@ final class CommunityDetailViewController: BaseViewController, View {
 
 extension CommunityDetailViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        comments.count
+        detailItems.count
     }
     
     func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
     ) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: CommunityCommentCell.reuseIdentifier,
-            for: indexPath
-        ) as? CommunityCommentCell else {
-            return UICollectionViewCell()
-        }
-        
-        cell.configure(comments[indexPath.item])
-        if let reactor {
-            cell.rx.profileImageTap
-                .map { CommunityDetailReactor.Action.commentProfileImageTapped(index: indexPath.item) }
-                .bind(to: reactor.action)
-                .disposed(by: cell.disposeBag)
+        switch detailItems[indexPath.item] {
+        case .post(let post):
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityPostContentCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityPostContentCell else {
+                return UICollectionViewCell()
+            }
             
-            cell.rx.moreButtonTap
-                .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: indexPath.item) }
-                .bind(to: reactor.action)
-                .disposed(by: cell.disposeBag)
+            cell.configure(post: post)
+            if let reactor {
+                cell.rx.postImageTap
+                    .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.profileImageTap
+                    .map { CommunityDetailReactor.Action.postProfileImageTapped }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.heartButtonTap
+                    .map { CommunityDetailReactor.Action.heartButtonTapped }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.commentButtonTap
+                    .map { CommunityDetailReactor.Action.commentButtonTapped }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+            }
+            
+            return cell
+            
+        case .commentHeader:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentHeaderCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentHeaderCell else {
+                return UICollectionViewCell()
+            }
+            
+            return cell
+            
+        case .comment(let comment):
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentCell else {
+                return UICollectionViewCell()
+            }
+            
+            cell.configure(comment)
+            if let reactor {
+                cell.rx.profileImageTap
+                    .compactMap { [weak self] in
+                        self?.comments.firstIndex { $0.id == comment.id }
+                    }
+                    .map { CommunityDetailReactor.Action.commentProfileImageTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.moreButtonTap
+                    .compactMap { [weak self] in
+                        self?.comments.firstIndex { $0.id == comment.id }
+                    }
+                    .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+            }
+            
+            return cell
         }
-        
-        return cell
     }
 }
 
-extension CommunityDetailViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        sizeForItemAt indexPath: IndexPath
-    ) -> CGSize {
-        CGSize(width: collectionView.bounds.width, height: 70)
-    }
-}
+extension CommunityDetailViewController: UICollectionViewDelegate {}
