@@ -7,6 +7,7 @@
 
 import RxCocoa
 import RxSwift
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -19,6 +20,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 10
         $0.clipsToBounds = true
+        $0.imageView?.contentMode = .scaleAspectFill
     }
     
     private let nicknameLabel = UILabel(text: "", config: .body12, color: .grayScale600, lines: 1)
@@ -77,6 +79,8 @@ final class CommunityCommentCell: UICollectionViewCell {
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
+        profileImageButton.kf.cancelImageDownloadTask()
+        profileImageButton.setImage(UIImage(named: "non_profile"), for: .normal)
         disposeBag = DisposeBag()
         applyBadge(.none)
     }
@@ -157,8 +161,29 @@ extension CommunityCommentCell {
         dateLabel.text = comment.date
         bodyLabel.text = comment.body
         moreButton.isHidden = !comment.isMine
+        configureProfileImage(with: comment.profileImageURL)
         applyBadge(comment.badge)
         bodyLabel.setTextWithLineHeight(text: comment.body, height: 20)
+    }
+    
+    private func configureProfileImage(with profileImageURL: URL?) {
+        let placeholderImage = UIImage(named: "non_profile")
+        profileImageButton.kf.cancelImageDownloadTask()
+        
+        guard let profileImageURL else {
+            profileImageButton.setImage(placeholderImage, for: .normal)
+            return
+        }
+        
+        profileImageButton.kf.setImage(
+            with: profileImageURL,
+            for: .normal,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
     
     private func applyBadge(_ badge: CommunityDetailReactor.CommentBadge) {

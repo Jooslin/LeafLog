@@ -38,6 +38,7 @@ final class CommunityDetailReactor: Reactor {
         let id: UUID
         let memberID: UUID
         let nickname: String
+        let profileImageURL: URL?
         let date: String
         let body: String
         let badge: CommentBadge
@@ -427,6 +428,7 @@ final class CommunityDetailReactor: Reactor {
                 commentAuthorNicknames: profiles.mapValues {
                     $0.nickname ?? "알 수 없는 사용자"
                 },
+                commentAuthorProfileImageURLs: profileImageURLs,
                 currentUserID: currentUserID
             )
         }
@@ -612,6 +614,8 @@ final class CommunityDetailReactor: Reactor {
             commentAuthorNicknames: profiles.mapValues {
                 $0.nickname ?? "알 수 없는 사용자"
             },
+            commentAuthorProfileImageURLs: await communityPostDBManager
+                .resolvePublicProfileImageURLs(profiles: profiles),
             postAuthorID: postAuthorID,
             currentUserID: supabaseManager.client.auth.currentUser?.id
         )
@@ -621,6 +625,7 @@ final class CommunityDetailReactor: Reactor {
         makeDetailComments(
             comments: result.comments,
             commentAuthorNicknames: result.commentAuthorNicknames,
+            commentAuthorProfileImageURLs: result.commentAuthorProfileImageURLs,
             postAuthorID: result.post.authorID,
             currentUserID: result.currentUserID
         )
@@ -629,6 +634,7 @@ final class CommunityDetailReactor: Reactor {
     private static func makeDetailComments(
         comments: [CommunityComment],
         commentAuthorNicknames: [UUID: String],
+        commentAuthorProfileImageURLs: [UUID: URL],
         postAuthorID: UUID,
         currentUserID: UUID?
     ) -> [Comment] {
@@ -647,6 +653,7 @@ final class CommunityDetailReactor: Reactor {
                 id: comment.id,
                 memberID: comment.authorID,
                 nickname: commentAuthorNicknames[comment.authorID] ?? "알 수 없는 사용자",
+                profileImageURL: commentAuthorProfileImageURLs[comment.authorID],
                 date: dateFormatter.string(from: comment.createdAt),
                 body: comment.content,
                 badge: badge,
@@ -671,5 +678,6 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let isMine: Bool
     let comments: [CommunityComment]
     let commentAuthorNicknames: [UUID: String]
+    let commentAuthorProfileImageURLs: [UUID: URL]
     let currentUserID: UUID?
 }
