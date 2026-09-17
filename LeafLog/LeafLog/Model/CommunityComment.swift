@@ -26,3 +26,8 @@ nonisolated struct CommunityComment: Codable, Hashable, Sendable {
         case deletedAt = "deleted_at"
     }
 }
+
+nonisolated struct CommunityCommentCursor: Equatable, Sendable {
+    let createdAt: Date
+    let id: UUID
+}
