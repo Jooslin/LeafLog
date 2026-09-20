@@ -12,14 +12,33 @@ import Supabase
 final class CommunityCommentDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     
-    func fetchComments(postID: UUID) async throws -> [CommunityComment] {
+    func fetchComments(
+        postID: UUID,
+        limit: Int = 20,
+        cursor: CommunityCommentCursor? = nil
+    ) async throws -> [CommunityComment] {
+        guard limit > 0 else {
+            throw AuthError.communityFailed("댓글 조회 범위를 확인해주세요.")
+        }
+        
         do {
-            return try await supabaseManager.client
+            var query = supabaseManager.client
                 .from("community_comments")
                 .select()
                 .eq("post_id", value: postID)
                 .is("deleted_at", value: nil)
-                .order("created_at", ascending: true)
+            
+            if let cursor {
+                let createdAt = Self.cursorDateFormatter.string(from: cursor.createdAt)
+                query = query.or(
+                    "created_at.lt.\(createdAt),and(created_at.eq.\(createdAt),id.lt.\(cursor.id.uuidString))"
+                )
+            }
+            
+            return try await query
+                .order("created_at", ascending: false)
+                .order("id", ascending: false)
+                .limit(limit)
                 .execute()
                 .value
         } catch {
@@ -96,6 +115,17 @@ final class CommunityCommentDBManager {
             )
         }
     }
+}
+
+private extension CommunityCommentDBManager {
+    static let cursorDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+        return formatter
+    }()
 }
 
 nonisolated private struct CommunityCommentCreatePayload: Encodable, Sendable {
