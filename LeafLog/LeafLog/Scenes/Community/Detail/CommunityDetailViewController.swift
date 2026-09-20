@@ -32,7 +32,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         navigationController?.navigationBar.isHidden = true
         detailView.detailCollectionView.dataSource = self
-        detailView.detailCollectionView.delegate = self
     }
     
     func bind(reactor: CommunityDetailReactor) {
@@ -52,6 +51,9 @@ final class CommunityDetailViewController: BaseViewController, View {
     private func bindAction(reactor: CommunityDetailReactor) {
         Observable.just(CommunityDetailReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        detailView.detailCollectionView.rx.setDelegate(self)
             .disposed(by: disposeBag)
         
         detailView.titleView.rx.backButtonTap

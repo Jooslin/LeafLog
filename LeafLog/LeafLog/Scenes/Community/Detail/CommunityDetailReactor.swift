@@ -45,6 +45,12 @@ final class CommunityDetailReactor: Reactor {
         let isMine: Bool
     }
     
+    struct CommentPage: Equatable {
+        let comments: [Comment]
+        let nextCursor: CommunityCommentCursor?
+        let hasNextPage: Bool
+    }
+    
     enum DetailItem: Equatable {
         case post(Post)
         case commentHeader
@@ -95,16 +101,16 @@ final class CommunityDetailReactor: Reactor {
     
     enum Mutation {
         case setLoading(Bool)
-        case setDetail(Post, originalPost: CommunityPost, comments: [Comment])
+        case setDetail(Post, originalPost: CommunityPost, commentPage: CommentPage)
         case setPost(Post, originalPost: CommunityPost)
-        case setComments([Comment])
+        case setComments(CommentPage)
         case setCommentInputText(String)
         case setEditingComment(commentID: UUID?, text: String)
         case setSubmittingComment(Bool)
         case setReporting(Bool)
         case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
-        case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
+        case appendComments(CommentPage)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
         case presentCommentActionSheet(CommentActionSheetKind)
@@ -123,7 +129,7 @@ final class CommunityDetailReactor: Reactor {
         var isDeleting = false
         var isLoadingMoreComments = false
         var hasNextCommentPage = false
-        var nextCommentCursor: String?
+        var nextCommentCursor: CommunityCommentCursor?
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var imageViewerRoute: ImageViewerRoute?
@@ -202,11 +208,20 @@ final class CommunityDetailReactor: Reactor {
             
         case .reachedBottom:
             guard currentState.isLoadingMoreComments == false,
-                  currentState.hasNextCommentPage else {
+                  currentState.hasNextCommentPage,
+                  let originalPost = currentState.originalPost,
+                  let nextCommentCursor = currentState.nextCommentCursor else {
                 return .empty()
             }
             
-            return .empty()
+            return .concat(
+                .just(.setLoadingMoreComments(true)),
+                fetchNextComments(
+                    postAuthorID: originalPost.authorID,
+                    cursor: nextCommentCursor
+                ),
+                .just(.setLoadingMoreComments(false))
+            )
             
         case .heartButtonTapped:
             guard let post = currentState.post else { return .empty() }
@@ -313,23 +328,24 @@ final class CommunityDetailReactor: Reactor {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
             
-        case .setDetail(let post, let originalPost, let comments):
-            var updatedPost = post
-            updatedPost.commentCount = String(comments.count)
-            newState.post = updatedPost
+        case .setDetail(let post, let originalPost, let commentPage):
+            newState.post = post
             newState.originalPost = originalPost
-            newState.comments = comments
-            newState.detailItems = Self.makeDetailItems(post: updatedPost, comments: comments)
+            newState.comments = commentPage.comments
+            newState.nextCommentCursor = commentPage.nextCursor
+            newState.hasNextCommentPage = commentPage.hasNextPage
+            newState.detailItems = Self.makeDetailItems(post: post, comments: commentPage.comments)
             
         case .setPost(let post, let originalPost):
             newState.post = post
             newState.originalPost = originalPost
             newState.detailItems = Self.makeDetailItems(post: post, comments: newState.comments)
             
-        case .setComments(let comments):
-            newState.comments = comments
-            newState.post?.commentCount = String(comments.count)
-            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: comments)
+        case .setComments(let commentPage):
+            newState.comments = commentPage.comments
+            newState.nextCommentCursor = commentPage.nextCursor
+            newState.hasNextCommentPage = commentPage.hasNextPage
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: commentPage.comments)
             
         case .setCommentInputText(let text):
             newState.commentInputText = text
@@ -350,10 +366,10 @@ final class CommunityDetailReactor: Reactor {
         case .setLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
             
-        case .appendComments(let comments, let nextCursor, let hasNextPage):
-            newState.comments.append(contentsOf: comments)
-            newState.nextCommentCursor = nextCursor
-            newState.hasNextCommentPage = hasNextPage
+        case .appendComments(let commentPage):
+            newState.comments.append(contentsOf: commentPage.comments)
+            newState.nextCommentCursor = commentPage.nextCursor
+            newState.hasNextCommentPage = commentPage.hasNextPage
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .setPostLiked(let isLiked):
@@ -392,7 +408,10 @@ final class CommunityDetailReactor: Reactor {
         Single<CommunityDetailResult>.create {
             [communityPostDBManager, communityCommentDBManager, supabaseManager, logger, postID] in
             let post = try await communityPostDBManager.fetchPost(id: postID)
-            let comments = try await communityCommentDBManager.fetchComments(postID: postID)
+            let comments = try await communityCommentDBManager.fetchComments(
+                postID: postID,
+                limit: Self.commentPageSize + 1
+            )
             let authorIDs = Set([post.authorID] + comments.map(\.authorID))
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: Array(authorIDs))
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
@@ -436,7 +455,7 @@ final class CommunityDetailReactor: Reactor {
             .setDetail(
                 Self.makeDetailPost(from: result),
                 originalPost: result.post,
-                comments: Self.makeDetailComments(from: result)
+                commentPage: Self.makeDetailCommentPage(from: result)
             )
         }
         .asObservable()
@@ -452,7 +471,7 @@ final class CommunityDetailReactor: Reactor {
         postAuthorID: UUID,
         editingCommentID: UUID?
     ) -> Observable<Mutation> {
-        Single<[Comment]>.create {
+        Single<CommentPage>.create {
             [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
             if let editingCommentID {
                 try await communityCommentDBManager.updateComment(
@@ -475,9 +494,9 @@ final class CommunityDetailReactor: Reactor {
             )
         }
         .asObservable()
-        .flatMap { comments -> Observable<Mutation> in
+        .flatMap { commentPage -> Observable<Mutation> in
             Observable.from([
-                Mutation.setComments(comments),
+                Mutation.setComments(commentPage),
                 Mutation.setEditingComment(commentID: nil, text: "")
             ])
         }
@@ -493,7 +512,7 @@ final class CommunityDetailReactor: Reactor {
         postAuthorID: UUID,
         shouldClearEditing: Bool
     ) -> Observable<Mutation> {
-        Single<[Comment]>.create {
+        Single<CommentPage>.create {
             [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
             try await communityCommentDBManager.softDeleteComment(id: commentID)
             
@@ -518,6 +537,30 @@ final class CommunityDetailReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func fetchNextComments(
+        postAuthorID: UUID,
+        cursor: CommunityCommentCursor
+    ) -> Observable<Mutation> {
+        Single<CommentPage>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager,
+                cursor: cursor
+            )
+        }
+        .map { .appendComments($0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
@@ -602,14 +645,19 @@ final class CommunityDetailReactor: Reactor {
         postAuthorID: UUID,
         communityCommentDBManager: CommunityCommentDBManager,
         communityPostDBManager: CommunityPostDBManager,
-        supabaseManager: SupabaseManager
-    ) async throws -> [Comment] {
-        let comments = try await communityCommentDBManager.fetchComments(postID: postID)
+        supabaseManager: SupabaseManager,
+        cursor: CommunityCommentCursor? = nil
+    ) async throws -> CommentPage {
+        let comments = try await communityCommentDBManager.fetchComments(
+            postID: postID,
+            limit: commentPageSize + 1,
+            cursor: cursor
+        )
         let profiles = try await communityPostDBManager.fetchPublicProfiles(
             authorIDs: Array(Set(comments.map(\.authorID)))
         )
         
-        return makeDetailComments(
+        return makeDetailCommentPage(
             comments: comments,
             commentAuthorNicknames: profiles.mapValues {
                 $0.nickname ?? "알 수 없는 사용자"
@@ -621,13 +669,38 @@ final class CommunityDetailReactor: Reactor {
         )
     }
     
-    private static func makeDetailComments(from result: CommunityDetailResult) -> [Comment] {
-        makeDetailComments(
+    private static func makeDetailCommentPage(from result: CommunityDetailResult) -> CommentPage {
+        makeDetailCommentPage(
             comments: result.comments,
             commentAuthorNicknames: result.commentAuthorNicknames,
             commentAuthorProfileImageURLs: result.commentAuthorProfileImageURLs,
             postAuthorID: result.post.authorID,
             currentUserID: result.currentUserID
+        )
+    }
+    
+    private static func makeDetailCommentPage(
+        comments: [CommunityComment],
+        commentAuthorNicknames: [UUID: String],
+        commentAuthorProfileImageURLs: [UUID: URL],
+        postAuthorID: UUID,
+        currentUserID: UUID?
+    ) -> CommentPage {
+        let hasNextPage = comments.count > commentPageSize
+        let pageComments = Array(comments.prefix(commentPageSize))
+        
+        return CommentPage(
+            comments: makeDetailComments(
+                comments: pageComments,
+                commentAuthorNicknames: commentAuthorNicknames,
+                commentAuthorProfileImageURLs: commentAuthorProfileImageURLs,
+                postAuthorID: postAuthorID,
+                currentUserID: currentUserID
+            ),
+            nextCursor: hasNextPage ? pageComments.last.map {
+                CommunityCommentCursor(createdAt: $0.createdAt, id: $0.id)
+            } : nil,
+            hasNextPage: hasNextPage
         )
     }
     
@@ -668,6 +741,8 @@ final class CommunityDetailReactor: Reactor {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
+    
+    private static let commentPageSize = 20
 }
 
 nonisolated private struct CommunityDetailResult: Sendable {
