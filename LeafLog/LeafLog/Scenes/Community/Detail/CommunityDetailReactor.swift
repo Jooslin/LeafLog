@@ -294,6 +294,7 @@ final class CommunityDetailReactor: Reactor {
         return newState
     }
     
+    // 진입한 포스트 정보를 불러옴
     private func fetchPost() -> Observable<Mutation> {
         Single<CommunityDetailResult>.create {
             [communityPostDBManager, supabaseManager, logger, postID] in
