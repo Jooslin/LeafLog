@@ -103,7 +103,7 @@ final class CommunityPostContentView: UIView {
         configureProfileImage(with: post.profileImageURL)
         dateLabel.text = post.date
         postBodyLabel.setTextWithLineHeight(text: post.body, height: 22)
-        heartCountLabel.text = post.likeCount
+        heartCountLabel.text = String(post.likeCount)
         commentCountLabel.text = post.commentCount
         configureHeart(isLiked: post.isLiked)
         configurePostImages(imageSlots: post.imageSlots)
