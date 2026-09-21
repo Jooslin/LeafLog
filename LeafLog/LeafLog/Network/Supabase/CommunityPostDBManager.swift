@@ -91,6 +91,26 @@ final class CommunityPostDBManager {
         }
     }
 
+    func fetchLikedPostIDs(postIDs: [UUID]) async throws -> Set<UUID> {
+        let uniquePostIDs = Array(Set(postIDs))
+        guard !uniquePostIDs.isEmpty else { return [] }
+
+        do {
+            let likes: [CommunityPostLikeRow] = try await supabaseManager.client
+                .from("community_post_likes")
+                .select("post_id")
+                .in("post_id", values: uniquePostIDs)
+                .execute()
+                .value
+
+            return Set(likes.map(\.postID))
+        } catch {
+            throw AuthError.communityFailed(
+                "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
     func setLike(postID: UUID, isLiked: Bool) async throws -> CommunityPostLikeState {
         do {
             return try await supabaseManager.client
