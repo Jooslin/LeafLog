@@ -133,6 +133,7 @@ final class CommunityPostCell: UICollectionViewCell {
 
     func configure(
         with post: CommunityPost,
+        isLiked: Bool = false,
         nickname: String?,
         profileImageURL: URL?,
         postImageURL: URL?,
@@ -145,6 +146,10 @@ final class CommunityPostCell: UICollectionViewCell {
         nicknameLabel.text = nickname ?? "알 수 없는 사용자"
         dateLabel.text = Self.dateFormatter.string(from: post.createdAt)
         bodyLabel.text = post.content
+        likeImageView.image = isLiked
+            ? UIImage(systemName: "heart.fill")
+            : UIImage(named: "heart")?.withRenderingMode(.alwaysTemplate)
+        likeImageView.tintColor = isLiked ? .systemRed : .grayScale400
         likeCountLabel.text = String(post.likeCount)
         commentCountLabel.text = String(post.commentCount ?? 0)
         commentStackView.isHidden = false
