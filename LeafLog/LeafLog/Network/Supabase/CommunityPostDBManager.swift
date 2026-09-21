@@ -72,6 +72,41 @@ final class CommunityPostDBManager {
             )
         }
     }
+
+    func fetchIsLiked(postID: UUID) async throws -> Bool {
+        do {
+            let likes: [CommunityPostLikeRow] = try await supabaseManager.client
+                .from("community_post_likes")
+                .select("post_id")
+                .eq("post_id", value: postID)
+                .limit(1)
+                .execute()
+                .value
+
+            return likes.isEmpty == false
+        } catch {
+            throw AuthError.communityFailed(
+                "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
+    func toggleLike(postID: UUID) async throws -> CommunityPostLikeState {
+        do {
+            return try await supabaseManager.client
+                .rpc(
+                    "toggle_community_post_like",
+                    params: CommunityPostLikeRPCParameters(postID: postID)
+                )
+                .single()
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
     
     func fetchPosts(
         authorID: UUID,
@@ -340,6 +375,16 @@ nonisolated struct CommunityPostStats: Equatable, Sendable {
     let likeCount: Int
 }
 
+nonisolated struct CommunityPostLikeState: Decodable, Equatable, Sendable {
+    let isLiked: Bool
+    let likeCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case isLiked = "is_liked"
+        case likeCount = "like_count"
+    }
+}
+
 nonisolated struct CommunityPublicProfile: Decodable, Sendable {
     let id: UUID
     let nickname: String?
@@ -364,6 +409,22 @@ nonisolated private struct CommunityPostStatsRow: Decodable, Sendable {
 
 nonisolated private struct DeletedCommunityPostRow: Decodable, Sendable {
     let id: UUID
+}
+
+nonisolated private struct CommunityPostLikeRow: Decodable, Sendable {
+    let postID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case postID = "post_id"
+    }
+}
+
+nonisolated private struct CommunityPostLikeRPCParameters: Encodable, Sendable {
+    let postID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case postID = "p_post_id"
+    }
 }
 
 nonisolated private struct CommunityPublicProfilesRPCParameters: Encodable, Sendable {
