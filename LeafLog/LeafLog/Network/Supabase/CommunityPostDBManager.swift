@@ -73,10 +73,6 @@ final class CommunityPostDBManager {
         }
     }
 
-    func fetchIsLiked(postID: UUID) async throws -> Bool {
-        try await fetchLikedPostIDs(postIDs: [postID]).contains(postID)
-    }
-
     func fetchLikedPostIDs(postIDs: [UUID]) async throws -> Set<UUID> {
         let uniquePostIDs = Array(Set(postIDs))
         guard !uniquePostIDs.isEmpty else { return [] }
