@@ -373,9 +373,8 @@ final class CommunityDetailReactor: Reactor {
         }
         .asObservable()
         .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
+            guard let authError = error as? AuthError else { return .empty() }
+            return .just(.setErrorMessage(authError.userMessage))
         }
     }
     
