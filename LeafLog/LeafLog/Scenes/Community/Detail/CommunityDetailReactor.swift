@@ -81,7 +81,8 @@ final class CommunityDetailReactor: Reactor {
         case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments([Comment], nextCursor: String?, hasNextPage: Bool)
-        case setPostLiked(Bool)
+        case setUpdatingLike(Bool)
+        case setLikeState(isLiked: Bool, likeCount: Int)
         case presentPostActionSheet(PostActionSheetKind)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
@@ -96,6 +97,7 @@ final class CommunityDetailReactor: Reactor {
         var isReporting = false
         var isDeleting = false
         var isLoadingMoreComments = false
+        var isUpdatingLike = false
         var hasNextCommentPage = false
         var nextCommentCursor: String?
         @Pulse var postActionSheetKind: PostActionSheetKind?
@@ -197,8 +199,16 @@ final class CommunityDetailReactor: Reactor {
             return .empty()
             
         case .heartButtonTapped:
-            guard let post = currentState.post else { return .empty() }
-            return .just(.setPostLiked(!post.isLiked))
+            guard let post = currentState.post,
+                  currentState.isUpdatingLike == false else {
+                return .empty()
+            }
+
+            return .concat(
+                .just(.setUpdatingLike(true)),
+                toggleLike(postID: post.id),
+                .just(.setUpdatingLike(false))
+            )
             
         case .moreButtonTapped:
             guard let post = currentState.post else { return .empty() }
@@ -266,8 +276,12 @@ final class CommunityDetailReactor: Reactor {
             newState.nextCommentCursor = nextCursor
             newState.hasNextCommentPage = hasNextPage
             
-        case .setPostLiked(let isLiked):
+        case .setUpdatingLike(let isUpdatingLike):
+            newState.isUpdatingLike = isUpdatingLike
+
+        case .setLikeState(let isLiked, let likeCount):
             newState.post?.isLiked = isLiked
+            newState.post?.likeCount = likeCount
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
@@ -343,6 +357,21 @@ final class CommunityDetailReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+
+    private func toggleLike(postID: UUID) -> Observable<Mutation> {
+        Single<CommunityPostLikeState>.create { [communityPostDBManager] in
+            try await communityPostDBManager.toggleLike(postID: postID)
+        }
+        .map {
+            .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
+        }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
