@@ -91,12 +91,15 @@ final class CommunityPostDBManager {
         }
     }
 
-    func toggleLike(postID: UUID) async throws -> CommunityPostLikeState {
+    func setLike(postID: UUID, isLiked: Bool) async throws -> CommunityPostLikeState {
         do {
             return try await supabaseManager.client
                 .rpc(
-                    "toggle_community_post_like",
-                    params: CommunityPostLikeRPCParameters(postID: postID)
+                    "set_community_post_like",
+                    params: CommunityPostLikeRPCParameters(
+                        postID: postID,
+                        isLiked: isLiked
+                    )
                 )
                 .single()
                 .execute()
@@ -421,9 +424,11 @@ nonisolated private struct CommunityPostLikeRow: Decodable, Sendable {
 
 nonisolated private struct CommunityPostLikeRPCParameters: Encodable, Sendable {
     let postID: UUID
+    let isLiked: Bool
 
     enum CodingKeys: String, CodingKey {
         case postID = "p_post_id"
+        case isLiked = "p_is_liked"
     }
 }
 
