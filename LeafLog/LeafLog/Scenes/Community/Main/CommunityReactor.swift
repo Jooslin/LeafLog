@@ -22,6 +22,7 @@ final class CommunityReactor: Reactor {
     enum Mutation {
         case setPosts(
             posts: [CommunityPost],
+            likedPostIDs: Set<UUID>,
             authorNicknames: [UUID: String],
             authorProfileImageURLs: [UUID: URL],
             postImageURLs: [UUID: URL]
@@ -36,6 +37,7 @@ final class CommunityReactor: Reactor {
         var allPosts: [CommunityPost] = []
         var selectedCategory: PostCategory?
         var posts: [CommunityPost] = []
+        var likedPostIDs: Set<UUID> = []
         var authorNicknames: [UUID: String] = [:]
         var authorProfileImageURLs: [UUID: URL] = [:]
         var postImageURLs: [UUID: URL] = [:]
@@ -80,6 +82,7 @@ final class CommunityReactor: Reactor {
         switch mutation {
         case let .setPosts(
             posts,
+            likedPostIDs,
             authorNicknames,
             authorProfileImageURLs,
             postImageURLs
@@ -88,6 +91,7 @@ final class CommunityReactor: Reactor {
             newState.posts = newState.selectedCategory.map { category in
                 posts.filter { $0.category == category }
             } ?? posts
+            newState.likedPostIDs = likedPostIDs
             newState.authorNicknames = authorNicknames
             newState.authorProfileImageURLs = authorProfileImageURLs
             newState.postImageURLs = postImageURLs
@@ -115,6 +119,9 @@ final class CommunityReactor: Reactor {
         Single<CommunityFeedResult>.create {
             [communityPostDBManager, supabaseManager, logger] in
             let posts = try await communityPostDBManager.fetchPosts()
+            let likedPostIDs = try await communityPostDBManager.fetchLikedPostIDs(
+                postIDs: posts.map(\.id)
+            )
             let publicProfiles = try await communityPostDBManager.fetchPublicProfiles(
                 authorIDs: posts.map(\.authorID)
             )
@@ -142,6 +149,7 @@ final class CommunityReactor: Reactor {
 
             return CommunityFeedResult(
                 posts: posts,
+                likedPostIDs: likedPostIDs,
                 authorNicknames: authorNicknames,
                 authorProfileImageURLs: authorProfileImageURLs,
                 postImageURLs: postImageURLs
@@ -150,6 +158,7 @@ final class CommunityReactor: Reactor {
         .map {
             .setPosts(
                 posts: $0.posts,
+                likedPostIDs: $0.likedPostIDs,
                 authorNicknames: $0.authorNicknames,
                 authorProfileImageURLs: $0.authorProfileImageURLs,
                 postImageURLs: $0.postImageURLs
@@ -191,6 +200,7 @@ final class CommunityReactor: Reactor {
 
 nonisolated private struct CommunityFeedResult: Sendable {
     let posts: [CommunityPost]
+    let likedPostIDs: Set<UUID>
     let authorNicknames: [UUID: String]
     let authorProfileImageURLs: [UUID: URL]
     let postImageURLs: [UUID: URL]
