@@ -28,7 +28,7 @@ final class CommunityDetailReactor: Reactor {
         let date: String
         let body: String
         let imageSlots: [PostImageSlot]
-        let likeCount: String
+        var likeCount: Int
         let commentCount: String
         var isLiked: Bool
         let isMine: Bool
@@ -303,6 +303,7 @@ final class CommunityDetailReactor: Reactor {
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
+            let isLiked = try await communityPostDBManager.fetchIsLiked(postID: post.id)
             let imagePaths = Self.imagePaths(from: post)
             var imageSlots: [PostImageSlot] = []
             
@@ -328,7 +329,8 @@ final class CommunityDetailReactor: Reactor {
                 authorNickname: nickname,
                 authorProfileImageURL: profileImageURLs[post.authorID],
                 imageSlots: imageSlots,
-                isMine: post.authorID == currentUserID
+                isMine: post.authorID == currentUserID,
+                isLiked: isLiked
             )
         }
         .map { result in
@@ -403,9 +405,9 @@ final class CommunityDetailReactor: Reactor {
             date: dateFormatter.string(from: result.post.createdAt),
             body: result.post.content,
             imageSlots: result.imageSlots,
-            likeCount: String(result.post.likeCount),
+            likeCount: result.post.likeCount,
             commentCount: String(result.post.commentCount ?? 0),
-            isLiked: false,
+            isLiked: result.isLiked,
             isMine: result.isMine
         )
     }
@@ -424,4 +426,5 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let authorProfileImageURL: URL?
     let imageSlots: [CommunityDetailReactor.PostImageSlot]
     let isMine: Bool
+    let isLiked: Bool
 }
