@@ -206,7 +206,7 @@ final class CommunityDetailReactor: Reactor {
 
             return .concat(
                 .just(.setUpdatingLike(true)),
-                toggleLike(postID: post.id),
+                setLike(postID: post.id, isLiked: !post.isLiked),
                 .just(.setUpdatingLike(false))
             )
             
@@ -361,9 +361,12 @@ final class CommunityDetailReactor: Reactor {
         }
     }
 
-    private func toggleLike(postID: UUID) -> Observable<Mutation> {
+    private func setLike(postID: UUID, isLiked: Bool) -> Observable<Mutation> {
         Single<CommunityPostLikeState>.create { [communityPostDBManager] in
-            try await communityPostDBManager.toggleLike(postID: postID)
+            try await communityPostDBManager.setLike(
+                postID: postID,
+                isLiked: isLiked
+            )
         }
         .map {
             .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
