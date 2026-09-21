@@ -15,6 +15,7 @@ final class MyActivityViewController: BaseViewController {
 
     private let myActivityView = MyActivityView()
     private var writtenPosts: [CommunityPost] = []
+    private var likedPostIDs: Set<UUID> = []
     private var authorNicknames: [UUID: String] = [:]
     private var authorProfileImageURLs: [UUID: URL] = [:]
     private var postImageURLs: [UUID: URL] = [:]
@@ -93,6 +94,7 @@ final class MyActivityViewController: BaseViewController {
         myActivityView.render(
             posts: posts,
             tab: tab,
+            likedPostIDs: likedPostIDs,
             authorNicknames: authorNicknames,
             authorProfileImageURLs: authorProfileImageURLs,
             postImageURLs: postImageURLs
@@ -106,6 +108,9 @@ final class MyActivityViewController: BaseViewController {
 
             do {
                 let posts = try await communityPostDBManager.fetchMyPosts()
+                let fetchedLikedPostIDs = try await communityPostDBManager.fetchLikedPostIDs(
+                    postIDs: posts.map(\.id)
+                )
                 let publicProfiles = try await communityPostDBManager.fetchPublicProfiles(
                     authorIDs: posts.map(\.authorID)
                 )
@@ -133,6 +138,7 @@ final class MyActivityViewController: BaseViewController {
 
                 guard !Task.isCancelled else { return }
                 writtenPosts = posts
+                likedPostIDs = fetchedLikedPostIDs
                 authorNicknames = nicknames
                 authorProfileImageURLs = profileImageURLs
                 postImageURLs = resolvedImageURLs

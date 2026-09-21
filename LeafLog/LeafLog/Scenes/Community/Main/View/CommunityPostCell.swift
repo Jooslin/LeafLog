@@ -133,7 +133,7 @@ final class CommunityPostCell: UICollectionViewCell {
 
     func configure(
         with post: CommunityPost,
-        isLiked: Bool = false,
+        isLiked: Bool,
         nickname: String?,
         profileImageURL: URL?,
         postImageURL: URL?,

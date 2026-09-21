@@ -56,6 +56,7 @@ final class MyActivityView: UIView {
     }
 
     private var posts: [CommunityPost] = []
+    private var likedPostIDs: Set<UUID> = []
     private var authorNicknames: [UUID: String] = [:]
     private var authorProfileImageURLs: [UUID: URL] = [:]
     private var postImageURLs: [UUID: URL] = [:]
@@ -67,6 +68,7 @@ final class MyActivityView: UIView {
         guard let self else { return }
         cell.configure(
             with: post,
+            isLiked: likedPostIDs.contains(post.id),
             nickname: authorNicknames[post.authorID],
             profileImageURL: authorProfileImageURLs[post.authorID],
             postImageURL: postImageURLs[post.id],
@@ -100,12 +102,14 @@ final class MyActivityView: UIView {
     func render(
         posts: [CommunityPost],
         tab: MyActivityTab,
+        likedPostIDs: Set<UUID>,
         authorNicknames: [UUID: String],
         authorProfileImageURLs: [UUID: URL],
         postImageURLs: [UUID: URL],
         animated: Bool = true
     ) {
         self.posts = posts
+        self.likedPostIDs = likedPostIDs
         self.authorNicknames = authorNicknames
         self.authorProfileImageURLs = authorProfileImageURLs
         self.postImageURLs = postImageURLs
