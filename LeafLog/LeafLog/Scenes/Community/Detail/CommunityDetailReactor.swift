@@ -317,7 +317,9 @@ final class CommunityDetailReactor: Reactor {
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
-            let isLiked = try await communityPostDBManager.fetchIsLiked(postID: post.id)
+            let isLiked = try await communityPostDBManager
+                .fetchLikedPostIDs(postIDs: [post.id])
+                .contains(post.id)
             let imagePaths = Self.imagePaths(from: post)
             var imageSlots: [PostImageSlot] = []
             
