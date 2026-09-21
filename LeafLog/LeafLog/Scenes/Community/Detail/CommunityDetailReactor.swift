@@ -136,6 +136,7 @@ final class CommunityDetailReactor: Reactor {
         var isReporting = false
         var isDeleting = false
         var isLoadingMoreComments = false
+        var isUpdatingLike = false
         var hasNextCommentPage = false
         var nextCommentCursor: CommunityCommentCursor?
         @Pulse var postActionSheetKind: PostActionSheetKind?
@@ -235,8 +236,16 @@ final class CommunityDetailReactor: Reactor {
             )
             
         case .heartButtonTapped:
-            guard let post = currentState.post else { return .empty() }
-            return .just(.setPostLiked(!post.isLiked))
+            guard let post = currentState.post,
+                  currentState.isUpdatingLike == false else {
+                return .empty()
+            }
+
+            return .concat(
+                .just(.setUpdatingLike(true)),
+                toggleLike(postID: post.id),
+                .just(.setUpdatingLike(false))
+            )
             
         case .moreButtonTapped:
             guard let post = currentState.post else { return .empty() }
@@ -415,9 +424,13 @@ final class CommunityDetailReactor: Reactor {
             )
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
-        case .setPostLiked(let isLiked):
+        case .setUpdatingLike(let isUpdatingLike):
+            newState.isUpdatingLike = isUpdatingLike
+
+        case .setLikeState(let isLiked, let likeCount):
             newState.post?.isLiked = isLiked
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
+            newState.post?.likeCount = likeCount
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
@@ -514,6 +527,21 @@ final class CommunityDetailReactor: Reactor {
         .catch { error in
             let message = (error as? AuthError)?.userMessage
                 ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+
+    private func toggleLike(postID: UUID) -> Observable<Mutation> {
+        Single<CommunityPostLikeState>.create { [communityPostDBManager] in
+            try await communityPostDBManager.toggleLike(postID: postID)
+        }
+        .map {
+            .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
+        }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
