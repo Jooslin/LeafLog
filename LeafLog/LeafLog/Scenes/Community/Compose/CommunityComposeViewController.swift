@@ -10,6 +10,7 @@ import Dependencies
 import PhotosUI
 import ReactorKit
 import RxCocoa
+import RxKeyboard
 
 final class CommunityComposeViewController: BaseViewController, View {
     //MARK: properties
@@ -45,6 +46,7 @@ final class CommunityComposeViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         setKeyboardDismissGesture()
+        bindKeyboard()
     }
 
     override func setKeyboardDismissGesture() {
@@ -72,6 +74,33 @@ final class CommunityComposeViewController: BaseViewController, View {
             }
             .subscribe(with: self) { viewController, _ in
                 viewController.view.endEditing(true)
+            }
+            .disposed(by: disposeBag)
+    }
+
+    private func bindKeyboard() {
+        RxKeyboard.instance.visibleHeight
+            .drive(with: self) { viewController, keyboardHeight in
+                let scrollView = viewController.composeView.scrollView
+                let keyboardTop = viewController.view.bounds.height - keyboardHeight
+                let keyboardOverlap = max(0, scrollView.frame.maxY - keyboardTop)
+                let bottomInset = keyboardOverlap > 0 ? keyboardOverlap + 16 : 0
+                scrollView.contentInset.bottom = bottomInset
+                scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
+
+                guard
+                    keyboardHeight > 0,
+                    viewController.composeView.bodyTextView.isFirstResponder
+                else {
+                    return
+                }
+
+                let textViewFrame = viewController.composeView.bodyTextView.convert(
+                    viewController.composeView.bodyTextView.bounds,
+                    to: scrollView
+                )
+                let visibleRect = textViewFrame.insetBy(dx: 0, dy: -16)
+                scrollView.scrollRectToVisible(visibleRect, animated: true)
             }
             .disposed(by: disposeBag)
     }

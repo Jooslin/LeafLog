@@ -16,7 +16,7 @@ final class CommunityComposeView: UIView {
     // MARK: - UI Components
     let titleView = TitleHeaderView(text: "", hasBackButton: true, rightButtonImage: "helpCircle")
     
-    private let scrollView = UIScrollView().then {
+    let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
         $0.alwaysBounceVertical = true
     }
