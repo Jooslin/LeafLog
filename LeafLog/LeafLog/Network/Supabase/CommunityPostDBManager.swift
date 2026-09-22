@@ -87,6 +87,9 @@ final class CommunityPostDBManager {
 
             return Set(likes.map(\.postID))
         } catch {
+            logger.error(
+                "Community post likes fetch failed. postCount: \(uniquePostIDs.count, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
             throw AuthError.communityFailed(
                 "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             )
@@ -107,6 +110,9 @@ final class CommunityPostDBManager {
                 .execute()
                 .value
         } catch {
+            logger.error(
+                "Community post like update failed. postID: \(postID.uuidString, privacy: .public), isLiked: \(isLiked, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
             throw AuthError.communityFailed(
                 "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
             )
