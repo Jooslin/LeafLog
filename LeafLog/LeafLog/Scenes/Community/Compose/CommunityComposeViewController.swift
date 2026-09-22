@@ -81,8 +81,10 @@ final class CommunityComposeViewController: BaseViewController, View {
     private func bindKeyboard() {
         RxKeyboard.instance.visibleHeight
             .drive(with: self) { viewController, keyboardHeight in
-                let bottomInset = keyboardHeight > 0 ? keyboardHeight + 16 : 0
                 let scrollView = viewController.composeView.scrollView
+                let keyboardTop = viewController.view.bounds.height - keyboardHeight
+                let keyboardOverlap = max(0, scrollView.frame.maxY - keyboardTop)
+                let bottomInset = keyboardOverlap > 0 ? keyboardOverlap + 16 : 0
                 scrollView.contentInset.bottom = bottomInset
                 scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
 
