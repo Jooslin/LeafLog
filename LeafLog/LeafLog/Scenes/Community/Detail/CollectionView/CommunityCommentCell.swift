@@ -82,6 +82,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         profileImageButton.kf.cancelImageDownloadTask()
         profileImageButton.setImage(UIImage(named: "non_profile"), for: .normal)
         disposeBag = DisposeBag()
+        moreButton.isHidden = true
         applyBadge(.none)
     }
     
@@ -160,7 +161,7 @@ extension CommunityCommentCell {
         nicknameLabel.text = comment.nickname
         dateLabel.text = comment.date
         bodyLabel.text = comment.body
-        moreButton.isHidden = !comment.isMine
+        moreButton.isHidden = false
         configureProfileImage(with: comment.profileImageURL)
         applyBadge(comment.badge)
         bodyLabel.setTextWithLineHeight(text: comment.body, height: 20)
