@@ -12,8 +12,24 @@ import UIKit
 
 final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView(frame: UIScreen.main.bounds)
+    private let commentInputAccessoryView = CommunityCommentInputAccessoryView(
+        frame: CGRect(
+            x: 0,
+            y: 0,
+            width: UIScreen.main.bounds.width,
+            height: 86
+        )
+    )
     private var comments: [CommunityDetailReactor.Comment] = []
     private var detailItems: [CommunityDetailReactor.DetailItem] = []
+    
+    override var inputAccessoryView: UIView? {
+        commentInputAccessoryView
+    }
+    
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -32,6 +48,25 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         navigationController?.navigationBar.isHidden = true
         detailView.detailCollectionView.dataSource = self
+        updateCollectionViewBottomInset()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        becomeFirstResponder()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        resignFirstResponder()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        updateCollectionViewBottomInset()
     }
     
     func bind(reactor: CommunityDetailReactor) {
@@ -67,27 +102,27 @@ final class CommunityDetailViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        detailView.rx.sendButtonTap
+        commentInputAccessoryView.rx.sendButtonTap
             .map { CommunityDetailReactor.Action.sendButtonTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        detailView.rx.cancelCommentEditingButtonTap
+        commentInputAccessoryView.rx.cancelCommentEditingButtonTap
             .map { CommunityDetailReactor.Action.cancelCommentEditingButtonTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        detailView.rx.commentText
+        commentInputAccessoryView.rx.commentText
             .orEmpty
             .map { CommunityDetailReactor.Action.enterCommentText($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        detailView.rx.commentText
+        commentInputAccessoryView.rx.commentText
             .map { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] isEnabled in
-                self?.detailView.updateSendButton(isEnabled: isEnabled)
+                self?.commentInputAccessoryView.updateSendButton(isEnabled: isEnabled)
             })
             .disposed(by: disposeBag)
         
@@ -120,16 +155,26 @@ final class CommunityDetailViewController: BaseViewController, View {
             .distinctUntilChanged()
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] text in
-                self?.detailView.setCommentText(text)
+                self?.commentInputAccessoryView.setCommentText(text)
             }
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.editingCommentID == nil ? CommunityDetailView.CommentInputMode.create : .edit }
+            .map { $0.editingCommentID == nil ? CommunityCommentInputAccessoryView.CommentInputMode.create : .edit }
             .distinctUntilChanged()
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] mode in
-                self?.detailView.setCommentInputMode(mode)
+                self?.commentInputAccessoryView.setCommentInputMode(mode)
+                self?.commentInputAccessoryView.applyPreferredHeight()
+                self?.commentInputAccessoryView.layoutIfNeeded()
+                self?.reloadInputViews()
+                self?.updateCollectionViewBottomInset()
+                
+                guard mode == .edit else { return }
+                
+                DispatchQueue.main.async {
+                    self?.commentInputAccessoryView.focusCommentInput()
+                }
             }
             .disposed(by: disposeBag)
         
@@ -146,6 +191,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] kind in
                 self?.presentCommentActionSheet(kind: kind)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$commentScrollTarget)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] target in
+                self?.scrollToComment(target)
             }
             .disposed(by: disposeBag)
         
@@ -207,6 +260,31 @@ final class CommunityDetailViewController: BaseViewController, View {
         present(viewController, animated: true)
     }
     
+    private func updateCollectionViewBottomInset() {
+        detailView.setCollectionViewBottomInset(commentInputAccessoryView.preferredHeight)
+    }
+    
+    private func scrollToComment(_ target: CommunityDetailReactor.CommentScrollTarget) {
+        switch target {
+        case .firstComment:
+            guard let commentIndex = detailItems.firstIndex(where: {
+                guard case .comment = $0 else { return false }
+                return true
+            }) else { return }
+            
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                
+                self.detailView.detailCollectionView.layoutIfNeeded()
+                self.detailView.detailCollectionView.scrollToItem(
+                    at: IndexPath(item: commentIndex, section: 0),
+                    at: .top,
+                    animated: true
+                )
+            }
+        }
+    }
+    
     private func presentPostActionSheet(kind: CommunityDetailReactor.PostActionSheetKind) {
         let alertController = UIAlertController(
             title: nil,
@@ -247,7 +325,23 @@ final class CommunityDetailViewController: BaseViewController, View {
             })
             alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
             present(alertController, animated: true)
+            
+        case .visitor:
+            presentCommentReportConfirmAlert()
         }
+    }
+    
+    private func presentCommentReportConfirmAlert() {
+        let alertController = UIAlertController(
+            title: "이 댓글을 신고하시겠습니까?",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: "신고하기", style: .destructive) { [weak self] _ in
+            self?.presentCommentReportReasonActionSheet()
+        })
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
     }
     
     private func presentCommentDeleteConfirmAlert(commentID: UUID) {
@@ -299,6 +393,23 @@ final class CommunityDetailViewController: BaseViewController, View {
         CommunityReportReason.allCases.forEach { reason in
             alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
                 self?.reactor?.action.onNext(.reportReasonSelected(reason))
+            })
+        }
+        
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func presentCommentReportReasonActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        CommunityReportReason.allCases.forEach { reason in
+            alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
+                self?.reactor?.action.onNext(.commentReportReasonSelected(reason))
             })
         }
         

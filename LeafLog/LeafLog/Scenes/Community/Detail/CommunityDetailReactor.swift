@@ -70,6 +70,11 @@ final class CommunityDetailReactor: Reactor {
     
     enum CommentActionSheetKind: Equatable {
         case owner(commentID: UUID)
+        case visitor(commentID: UUID)
+    }
+    
+    enum CommentScrollTarget: Equatable {
+        case firstComment
     }
     
     enum CommentBadge: Equatable {
@@ -96,6 +101,7 @@ final class CommunityDetailReactor: Reactor {
         case editButtonTapped
         case deleteButtonTapped
         case reportReasonSelected(CommunityReportReason)
+        case commentReportReasonSelected(CommunityReportReason)
         case reachedBottom
     }
     
@@ -111,9 +117,11 @@ final class CommunityDetailReactor: Reactor {
         case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
         case appendComments(CommentPage)
+        case updateCommentBody(commentID: UUID, body: String)
         case setPostLiked(Bool)
         case presentPostActionSheet(PostActionSheetKind)
         case presentCommentActionSheet(CommentActionSheetKind)
+        case scrollToComment(CommentScrollTarget)
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case routeToEditPost(CommunityPost)
@@ -132,6 +140,7 @@ final class CommunityDetailReactor: Reactor {
         var nextCommentCursor: CommunityCommentCursor?
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var commentActionSheetKind: CommentActionSheetKind?
+        @Pulse var commentScrollTarget: CommentScrollTarget?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var editPostRoute: CommunityPost?
@@ -144,6 +153,7 @@ final class CommunityDetailReactor: Reactor {
         var detailItems: [DetailItem] = []
         var commentInputText = ""
         var editingCommentID: UUID?
+        var reportingCommentID: UUID?
     }
     
     let initialState: State
@@ -199,9 +209,10 @@ final class CommunityDetailReactor: Reactor {
         case .commentMoreButtonTapped(let index):
             guard currentState.comments.indices.contains(index) else { return .empty() }
             let comment = currentState.comments[index]
-            guard comment.isMine else { return .empty() }
             
-            return .just(.presentCommentActionSheet(.owner(commentID: comment.id)))
+            return .just(.presentCommentActionSheet(
+                comment.isMine ? .owner(commentID: comment.id) : .visitor(commentID: comment.id)
+            ))
             
         case .enterCommentText(let text):
             return .just(.setCommentInputText(text))
@@ -318,6 +329,20 @@ final class CommunityDetailReactor: Reactor {
                 reportPost(post: post, reason: reason),
                 .just(.setReporting(false))
             )
+            
+        case .commentReportReasonSelected(let reason):
+            guard let commentID = currentState.reportingCommentID,
+                  let comment = currentState.comments.first(where: { $0.id == commentID }),
+                  comment.isMine == false,
+                  currentState.isReporting == false else {
+                return .empty()
+            }
+            
+            return .concat(
+                .just(.setReporting(true)),
+                reportComment(comment: comment, reason: reason),
+                .just(.setReporting(false))
+            )
         }
     }
     
@@ -372,6 +397,24 @@ final class CommunityDetailReactor: Reactor {
             newState.hasNextCommentPage = commentPage.hasNextPage
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
+        case .updateCommentBody(let commentID, let body):
+            guard let index = newState.comments.firstIndex(where: { $0.id == commentID }) else {
+                break
+            }
+            
+            let comment = newState.comments[index]
+            newState.comments[index] = Comment(
+                id: comment.id,
+                memberID: comment.memberID,
+                nickname: comment.nickname,
+                profileImageURL: comment.profileImageURL,
+                date: comment.date,
+                body: body,
+                badge: comment.badge,
+                isMine: comment.isMine
+            )
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
+            
         case .setPostLiked(let isLiked):
             newState.post?.isLiked = isLiked
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
@@ -381,6 +424,12 @@ final class CommunityDetailReactor: Reactor {
             
         case .presentCommentActionSheet(let kind):
             newState.commentActionSheetKind = kind
+            if case .visitor(let commentID) = kind {
+                newState.reportingCommentID = commentID
+            }
+            
+        case .scrollToComment(let target):
+            newState.commentScrollTarget = target
             
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
@@ -471,34 +520,42 @@ final class CommunityDetailReactor: Reactor {
         postAuthorID: UUID,
         editingCommentID: UUID?
     ) -> Observable<Mutation> {
-        Single<CommentPage>.create {
+        Single<[Mutation]>.create {
             [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
             if let editingCommentID {
                 try await communityCommentDBManager.updateComment(
                     id: editingCommentID,
                     content: content
                 )
+                
+                return [
+                    .updateCommentBody(commentID: editingCommentID, body: content),
+                    .setEditingComment(commentID: nil, text: "")
+                ]
             } else {
                 _ = try await communityCommentDBManager.createComment(
                     postID: postID,
                     content: content
                 )
+                
+                let commentPage = try await Self.fetchDisplayComments(
+                    postID: postID,
+                    postAuthorID: postAuthorID,
+                    communityCommentDBManager: communityCommentDBManager,
+                    communityPostDBManager: communityPostDBManager,
+                    supabaseManager: supabaseManager
+                )
+                
+                return [
+                    .setComments(commentPage),
+                    .setEditingComment(commentID: nil, text: ""),
+                    .scrollToComment(.firstComment)
+                ]
             }
-            
-            return try await Self.fetchDisplayComments(
-                postID: postID,
-                postAuthorID: postAuthorID,
-                communityCommentDBManager: communityCommentDBManager,
-                communityPostDBManager: communityPostDBManager,
-                supabaseManager: supabaseManager
-            )
         }
         .asObservable()
-        .flatMap { commentPage -> Observable<Mutation> in
-            Observable.from([
-                Mutation.setComments(commentPage),
-                Mutation.setEditingComment(commentID: nil, text: "")
-            ])
+        .flatMap { mutations -> Observable<Mutation> in
+            Observable.from(mutations)
         }
         .catch { error in
             let message = (error as? AuthError)?.userMessage
@@ -573,6 +630,27 @@ final class CommunityDetailReactor: Reactor {
             try await communityReportDBManager.reportPost(
                 postID: post.id,
                 reportedUserID: post.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func reportComment(
+        comment: Comment,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportComment(
+                commentID: comment.id,
+                reportedUserID: comment.memberID,
                 reason: reason
             )
             return true
