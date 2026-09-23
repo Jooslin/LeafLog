@@ -8,7 +8,7 @@
 import UIKit
 
 class DesignTextField: UITextField {
-    private let contentInsets = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
+    private var contentInsets = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,5 +50,10 @@ class DesignTextField: UITextField {
         ]
         
         attributedPlaceholder = NSAttributedString(string: text, attributes: attributes)
+    }
+    
+    func setContentInsets(_ insets: UIEdgeInsets) {
+        contentInsets = insets
+        setNeedsLayout()
     }
 }

@@ -63,6 +63,33 @@ final class CommunityReportDBManager {
             )
         }
     }
+    
+    func reportComment(
+        commentID: UUID,
+        reportedUserID: UUID,
+        reason: CommunityReportReason
+    ) async throws {
+        do {
+            let user = try await supabaseManager.client.auth.user()
+            let payload = CommunityReportCommentPayload(
+                reporterID: user.id,
+                commentID: commentID,
+                reportedUserID: reportedUserID,
+                reason: reason.rawValue
+            )
+            
+            try await supabaseManager.client
+                .from("community_reports")
+                .insert(payload)
+                .execute()
+        } catch let error as AuthError {
+            throw error
+        } catch {
+            throw AuthError.communityFailed(
+                "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
 }
 
 nonisolated private struct CommunityReportPostPayload: Encodable, Sendable {
@@ -89,6 +116,22 @@ nonisolated private struct CommunityReportMemberPayload: Encodable, Sendable {
     
     enum CodingKeys: String, CodingKey {
         case reporterID = "reporter_id"
+        case reportedUserID = "reported_user_id"
+        case reason
+        case targetType = "target_type"
+    }
+}
+
+nonisolated private struct CommunityReportCommentPayload: Encodable, Sendable {
+    let reporterID: UUID
+    let commentID: UUID
+    let reportedUserID: UUID
+    let reason: String
+    let targetType = "comment"
+    
+    enum CodingKeys: String, CodingKey {
+        case reporterID = "reporter_id"
+        case commentID = "comment_id"
         case reportedUserID = "reported_user_id"
         case reason
         case targetType = "target_type"

@@ -7,6 +7,7 @@
 
 import RxCocoa
 import RxSwift
+import Kingfisher
 import SnapKit
 import Then
 import UIKit
@@ -19,6 +20,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 10
         $0.clipsToBounds = true
+        $0.imageView?.contentMode = .scaleAspectFill
     }
     
     private let nicknameLabel = UILabel(text: "", config: .body12, color: .grayScale600, lines: 1)
@@ -53,11 +55,12 @@ final class CommunityCommentCell: UICollectionViewCell {
         $0.isHidden = true
     }
     
-    private let moreButton = UIButton(configuration: .plain()).then {
+    fileprivate let moreButton = UIButton(configuration: .plain()).then {
         let image = UIImage(resource: .more)
         $0.setImage(image, for: .normal)
         $0.configuration?.baseForegroundColor = .black
         $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        $0.isHidden = true
     }
     
     override init(frame: CGRect) {
@@ -76,7 +79,10 @@ final class CommunityCommentCell: UICollectionViewCell {
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
+        profileImageButton.kf.cancelImageDownloadTask()
+        profileImageButton.setImage(UIImage(named: "non_profile"), for: .normal)
         disposeBag = DisposeBag()
+        moreButton.isHidden = true
         applyBadge(.none)
     }
     
@@ -117,7 +123,7 @@ final class CommunityCommentCell: UICollectionViewCell {
         topStackView.snp.makeConstraints {
             $0.centerY.equalTo(profileImageButton)
             $0.leading.equalTo(profileImageButton.snp.trailing).offset(8)
-            $0.trailing.lessThanOrEqualTo(moreButton.snp.leading).offset(-8)
+            $0.trailing.lessThanOrEqualToSuperview().inset(20)
         }
         
         dividerView.snp.makeConstraints {
@@ -135,7 +141,7 @@ final class CommunityCommentCell: UICollectionViewCell {
             $0.top.equalTo(profileImageButton.snp.bottom).offset(6)
             $0.leading.equalToSuperview().inset(20)
             $0.trailing.equalToSuperview().inset(20)
-            $0.bottom.lessThanOrEqualToSuperview().inset(8)
+            $0.bottom.equalToSuperview().inset(8)
         }
     }
 }
@@ -144,6 +150,10 @@ extension Reactive where Base: CommunityCommentCell {
     var profileImageTap: ControlEvent<Void> {
         base.profileImageButton.rx.tap
     }
+    
+    var moreButtonTap: ControlEvent<Void> {
+        base.moreButton.rx.tap
+    }
 }
 
 extension CommunityCommentCell {
@@ -151,8 +161,30 @@ extension CommunityCommentCell {
         nicknameLabel.text = comment.nickname
         dateLabel.text = comment.date
         bodyLabel.text = comment.body
+        moreButton.isHidden = false
+        configureProfileImage(with: comment.profileImageURL)
         applyBadge(comment.badge)
         bodyLabel.setTextWithLineHeight(text: comment.body, height: 20)
+    }
+    
+    private func configureProfileImage(with profileImageURL: URL?) {
+        let placeholderImage = UIImage(named: "non_profile")
+        profileImageButton.kf.cancelImageDownloadTask()
+        
+        guard let profileImageURL else {
+            profileImageButton.setImage(placeholderImage, for: .normal)
+            return
+        }
+        
+        profileImageButton.kf.setImage(
+            with: profileImageURL,
+            for: .normal,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
     
     private func applyBadge(_ badge: CommunityDetailReactor.CommentBadge) {
