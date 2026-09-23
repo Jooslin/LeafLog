@@ -19,7 +19,7 @@ final class CommunityCommentInputAccessoryView: UIView {
     
     private enum Metric {
         static let createHeight: CGFloat = 86
-        static let editHeight: CGFloat = 106
+        static let editHeight: CGFloat = 112
     }
     
     private let commentInputWrapperView = UIView().then {
@@ -87,6 +87,12 @@ final class CommunityCommentInputAccessoryView: UIView {
         CGSize(width: size.width, height: preferredHeight)
     }
     
+    func applyPreferredHeight() {
+        guard frame.height != preferredHeight else { return }
+        
+        frame.size.height = preferredHeight
+    }
+    
     func updateSendButton(isEnabled: Bool) {
         sendButton.backgroundColor = isEnabled ? .primary200 : .grayScale100
         sendButton.tintColor = isEnabled ? .primary800 : .grayScale500
@@ -109,8 +115,10 @@ final class CommunityCommentInputAccessoryView: UIView {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .isEmpty == false
         )
+        applyPreferredHeight()
         invalidateIntrinsicContentSize()
         setNeedsLayout()
+        layoutIfNeeded()
     }
     
     func setCommentText(_ text: String) {
@@ -118,6 +126,10 @@ final class CommunityCommentInputAccessoryView: UIView {
         
         inputTextField.text = text
         updateSendButton(isEnabled: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    }
+    
+    func focusCommentInput() {
+        inputTextField.becomeFirstResponder()
     }
     
     private func sendButtonImage(for mode: CommentInputMode) -> UIImage? {
@@ -142,6 +154,7 @@ private extension CommunityCommentInputAccessoryView {
         commentInputWrapperView.snp.makeConstraints {
             $0.leading.equalToSuperview().inset(16)
             $0.top.equalToSuperview().inset(14)
+            $0.bottom.lessThanOrEqualToSuperview().inset(16).priority(.high)
             $0.trailing.equalTo(sendButton.snp.leading).offset(-12)
             commentInputWrapperHeightConstraint = $0.height.equalTo(48).constraint
         }
