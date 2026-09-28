@@ -107,19 +107,20 @@ final class CommunityDetailReactor: Reactor {
     
     enum Mutation {
         case setLoading(Bool)
+        case setIsReporting(Bool)
+        case setIsDeleting(Bool)
+        case setIsLoadingMoreComments(Bool)
+        case setIsSubmittingComment(Bool)
+        case setUpdatingLike(Bool)
+        
         case setDetail(Post, originalPost: CommunityPost, commentPage: CommentPage)
-        case setPost(Post, originalPost: CommunityPost)
         case setComments(CommentPage)
         case setCommentInputText(String)
         case setEditingComment(commentID: UUID?, text: String)
-        case setSubmittingComment(Bool)
-        case setReporting(Bool)
-        case setDeleting(Bool)
-        case setLoadingMoreComments(Bool)
-<<<<<<< HEAD
         case appendComments(CommentPage)
         case updateCommentBody(commentID: UUID, body: String)
-        case setPostLiked(Bool)
+        
+        case setLikeState(isLiked: Bool, likeCount: Int)
         case presentPostActionSheet(PostActionSheetKind)
         case presentCommentActionSheet(CommentActionSheetKind)
         case scrollToComment(CommentScrollTarget)
@@ -138,8 +139,10 @@ final class CommunityDetailReactor: Reactor {
         var isDeleting = false
         var isLoadingMoreComments = false
         var isUpdatingLike = false
+        
         var hasNextCommentPage = false
         var nextCommentCursor: CommunityCommentCursor?
+        
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var commentScrollTarget: CommentScrollTarget?
@@ -149,6 +152,7 @@ final class CommunityDetailReactor: Reactor {
         @Pulse var deletedPostRoute: UUID?
         @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
+        
         var post: Post?
         var originalPost: CommunityPost?
         var comments: [Comment] = []
@@ -228,12 +232,12 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setLoadingMoreComments(true)),
+                .just(.setIsLoadingMoreComments(true)),
                 fetchNextComments(
                     postAuthorID: originalPost.authorID,
                     cursor: nextCommentCursor
                 ),
-                .just(.setLoadingMoreComments(false))
+                .just(.setIsLoadingMoreComments(false))
             )
             
         case .heartButtonTapped:
@@ -271,13 +275,13 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setSubmittingComment(true)),
+                .just(.setIsSubmittingComment(true)),
                 submitComment(
                     content: content,
                     postAuthorID: originalPost.authorID,
                     editingCommentID: currentState.editingCommentID
                 ),
-                .just(.setSubmittingComment(false))
+                .just(.setIsSubmittingComment(false))
             )
             
         case .editCommentButtonTapped(let commentID):
@@ -300,13 +304,13 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setSubmittingComment(true)),
+                .just(.setIsSubmittingComment(true)),
                 deleteComment(
                     commentID: commentID,
                     postAuthorID: originalPost.authorID,
                     shouldClearEditing: currentState.editingCommentID == commentID
                 ),
-                .just(.setSubmittingComment(false))
+                .just(.setIsSubmittingComment(false))
             )
             
         case .editButtonTapped:
@@ -322,9 +326,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setDeleting(true)),
+                .just(.setIsDeleting(true)),
                 deletePost(originalPost),
-                .just(.setDeleting(false))
+                .just(.setIsDeleting(false))
             )
             
         case .reportReasonSelected(let reason):
@@ -335,9 +339,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setReporting(true)),
+                .just(.setIsReporting(true)),
                 reportPost(post: post, reason: reason),
-                .just(.setReporting(false))
+                .just(.setIsReporting(false))
             )
             
         case .commentReportReasonSelected(let reason):
@@ -349,9 +353,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setReporting(true)),
+                .just(.setIsReporting(true)),
                 reportComment(comment: comment, reason: reason),
-                .just(.setReporting(false))
+                .just(.setIsReporting(false))
             )
         }
     }
@@ -371,11 +375,6 @@ final class CommunityDetailReactor: Reactor {
             newState.hasNextCommentPage = commentPage.hasNextPage
             newState.detailItems = Self.makeDetailItems(post: post, comments: commentPage.comments)
             
-        case .setPost(let post, let originalPost):
-            newState.post = post
-            newState.originalPost = originalPost
-            newState.detailItems = Self.makeDetailItems(post: post, comments: newState.comments)
-            
         case .setComments(let commentPage):
             newState.comments = commentPage.comments
             newState.nextCommentCursor = commentPage.nextCursor
@@ -389,16 +388,16 @@ final class CommunityDetailReactor: Reactor {
             newState.editingCommentID = commentID
             newState.commentInputText = text
             
-        case .setSubmittingComment(let isSubmittingComment):
+        case .setIsSubmittingComment(let isSubmittingComment):
             newState.isSubmittingComment = isSubmittingComment
             
-        case .setReporting(let isReporting):
+        case .setIsReporting(let isReporting):
             newState.isReporting = isReporting
             
-        case .setDeleting(let isDeleting):
+        case .setIsDeleting(let isDeleting):
             newState.isDeleting = isDeleting
             
-        case .setLoadingMoreComments(let isLoadingMoreComments):
+        case .setIsLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
             
         case .appendComments(let commentPage):
