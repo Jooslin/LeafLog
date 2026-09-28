@@ -116,6 +116,7 @@ final class CommunityDetailReactor: Reactor {
         case setReporting(Bool)
         case setDeleting(Bool)
         case setLoadingMoreComments(Bool)
+<<<<<<< HEAD
         case appendComments(CommentPage)
         case updateCommentBody(commentID: UUID, body: String)
         case setPostLiked(Bool)
@@ -423,7 +424,7 @@ final class CommunityDetailReactor: Reactor {
                 isMine: comment.isMine
             )
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
-            
+
         case .setUpdatingLike(let isUpdatingLike):
             newState.isUpdatingLike = isUpdatingLike
 
@@ -864,12 +865,9 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let authorProfileImageURL: URL?
     let imageSlots: [CommunityDetailReactor.PostImageSlot]
     let isMine: Bool
-<<<<<<< HEAD
     let comments: [CommunityComment]
     let commentAuthorNicknames: [UUID: String]
     let commentAuthorProfileImageURLs: [UUID: URL]
     let currentUserID: UUID?
-=======
     let isLiked: Bool
->>>>>>> ae7c1b4 (✨feat: 게시글 상세 좋아요 상태 표시)
 }
