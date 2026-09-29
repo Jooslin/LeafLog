@@ -472,6 +472,7 @@ final class CommunityDetailReactor: Reactor {
             )
             let authorIDs = Set([post.authorID] + comments.map(\.authorID))
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: Array(authorIDs))
+            let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
             let isLiked = try await communityPostDBManager.fetchIsLiked(postID: post.id)
@@ -499,6 +500,8 @@ final class CommunityDetailReactor: Reactor {
             
             return CommunityDetailResult(
                 post: post,
+                authorNickname: nickname,
+                authorProfileImageURL: profileImageURLs[post.authorID],
                 imageURLs: imageURLs,
                 comments: comments,
                 commentAuthorNicknames: profiles.mapValues {
@@ -710,8 +713,8 @@ final class CommunityDetailReactor: Reactor {
             memberID: result.post.authorID,
             category: result.post.category.title,
             title: result.post.title,
-            nickname: result.commentAuthorNicknames[result.post.authorID] ?? "알 수 없는 사용자",
-            profileImageURL: result.commentAuthorProfileImageURLs[result.post.authorID],
+            nickname: result.authorNickname,
+            profileImageURL: result.authorProfileImageURL,
             date: dateFormatter.string(from: result.post.createdAt),
             body: result.post.content,
             imageURLs: result.imageURLs,
@@ -839,6 +842,8 @@ final class CommunityDetailReactor: Reactor {
 
 nonisolated private struct CommunityDetailResult: Sendable {
     let post: CommunityPost
+    let authorNickname: String
+    let authorProfileImageURL: URL?
     let imageURLs: [URL?]
     let comments: [CommunityComment]
     let commentAuthorNicknames: [UUID: String]
