@@ -230,6 +230,7 @@ extension CommunityPostDBManager {
     }
 
     // 특정 작성자 게시글 조회
+    //MARK: fetchMyPost랑 작성자 ID 조회 기능 빼면 동일한 거 같은데, 공통 함수로 줄여도 되는지?
     func fetchPosts(
         authorID: UUID,
         limit: Int = 10,
@@ -298,6 +299,7 @@ extension CommunityPostDBManager {
 
 //MARK: 좋아요 관련
 extension CommunityPostDBManager {
+    // 사용자가 좋아요한 모든 게시글 조회
     func fetchLikedPostIDs(postIDs: [UUID]) async throws -> Set<UUID> {
         let uniquePostIDs = Array(Set(postIDs)) // 입력값 중 중복 필터링
         guard !uniquePostIDs.isEmpty else { return [] }
@@ -322,6 +324,7 @@ extension CommunityPostDBManager {
         }
     }
 
+    // 특정 게시글 좋아요 여부 조회
     func fetchIsLiked(postID: UUID) async throws -> Bool {
         do {
             let likes: [CommunityPostLikeRow] = try await supabaseManager.client
