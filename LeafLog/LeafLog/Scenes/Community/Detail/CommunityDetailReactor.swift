@@ -185,7 +185,7 @@ final class CommunityDetailReactor: Reactor {
                 .just(.setLoading(false))
             )
             
-        case .refreshPost:
+        case .refreshPost: //MARK: viewDidLoad랑 동작이 같은데 합쳐도 되지 않은지?
             return .concat(
                 .just(.setLoading(true)),
                 fetchDetail(),
@@ -256,7 +256,7 @@ final class CommunityDetailReactor: Reactor {
             guard let post = currentState.post else { return .empty() }
             return .just(.presentPostActionSheet(post.isMine ? .owner : .visitor))
             
-        case .commentButtonTapped:
+        case .commentButtonTapped: //MARK: empty면 삭제해도 무방하지 않은지?
             return .empty()
             
         case .sendButtonTapped:
@@ -429,8 +429,8 @@ final class CommunityDetailReactor: Reactor {
 
         case .setLikeState(let isLiked, let likeCount):
             newState.post?.isLiked = isLiked
-            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             newState.post?.likeCount = likeCount
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .presentPostActionSheet(let kind):
             newState.postActionSheetKind = kind
