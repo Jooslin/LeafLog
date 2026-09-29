@@ -460,7 +460,10 @@ final class CommunityDetailReactor: Reactor {
         
         return newState
     }
+}
 
+//MARK: Post
+extension CommunityDetailReactor {
     // 진입한 포스트 정보를 불러옴
     private func fetchDetail() -> Observable<Mutation> {
         Single<CommunityDetailResult>.create {
@@ -526,186 +529,6 @@ final class CommunityDetailReactor: Reactor {
             return .just(.setErrorMessage(message))
         }
     }
-
-    private func setLike(postID: UUID, isLiked: Bool) -> Observable<Mutation> {
-        Single<CommunityPostLikeState>.create { [communityPostDBManager] in
-            try await communityPostDBManager.setLike(
-                postID: postID,
-                isLiked: isLiked
-            )
-        }
-        .map {
-            .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
-        }
-        .asObservable()
-        .catch { error in
-            guard let authError = error as? AuthError else { return .empty() }
-            return .just(.setErrorMessage(authError.userMessage))
-        }
-    }
-    
-    private func submitComment(
-        content: String,
-        postAuthorID: UUID,
-        editingCommentID: UUID?
-    ) -> Observable<Mutation> {
-        Single<[Mutation]>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            if let editingCommentID {
-                try await communityCommentDBManager.updateComment(
-                    id: editingCommentID,
-                    content: content
-                )
-                
-                return [
-                    .updateCommentBody(commentID: editingCommentID, body: content),
-                    .setEditingComment(commentID: nil, text: "")
-                ]
-            } else {
-                _ = try await communityCommentDBManager.createComment(
-                    postID: postID,
-                    content: content
-                )
-                
-                let commentPage = try await Self.fetchDisplayComments(
-                    postID: postID,
-                    postAuthorID: postAuthorID,
-                    communityCommentDBManager: communityCommentDBManager,
-                    communityPostDBManager: communityPostDBManager,
-                    supabaseManager: supabaseManager
-                )
-                
-                return [
-                    .setComments(commentPage),
-                    .setEditingComment(commentID: nil, text: ""),
-                    .scrollToComment(.firstComment)
-                ]
-            }
-        }
-        .asObservable()
-        .flatMap { mutations -> Observable<Mutation> in
-            Observable.from(mutations)
-        }
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func deleteComment(
-        commentID: UUID,
-        postAuthorID: UUID,
-        shouldClearEditing: Bool
-    ) -> Observable<Mutation> {
-        Single<CommentPage>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            try await communityCommentDBManager.softDeleteComment(id: commentID)
-            
-            return try await Self.fetchDisplayComments(
-                postID: postID,
-                postAuthorID: postAuthorID,
-                communityCommentDBManager: communityCommentDBManager,
-                communityPostDBManager: communityPostDBManager,
-                supabaseManager: supabaseManager
-            )
-        }
-        .map { .setComments($0) }
-        .asObservable()
-        .flatMap { mutation -> Observable<Mutation> in
-            guard shouldClearEditing else { return .just(mutation) }
-            
-            return Observable.from([
-                mutation,
-                Mutation.setEditingComment(commentID: nil, text: "")
-            ])
-        }
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func fetchNextComments(
-        postAuthorID: UUID,
-        cursor: CommunityCommentCursor
-    ) -> Observable<Mutation> {
-        Single<CommentPage>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            try await Self.fetchDisplayComments(
-                postID: postID,
-                postAuthorID: postAuthorID,
-                communityCommentDBManager: communityCommentDBManager,
-                communityPostDBManager: communityPostDBManager,
-                supabaseManager: supabaseManager,
-                cursor: cursor
-            )
-        }
-        .map { .appendComments($0) }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func reportPost(
-        post: Post,
-        reason: CommunityReportReason
-    ) -> Observable<Mutation> {
-        Single<Bool>.create { [communityReportDBManager] in
-            try await communityReportDBManager.reportPost(
-                postID: post.id,
-                reportedUserID: post.memberID,
-                reason: reason
-            )
-            return true
-        }
-        .map { _ in .presentReportCompletedAlert }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func reportComment(
-        comment: Comment,
-        reason: CommunityReportReason
-    ) -> Observable<Mutation> {
-        Single<Bool>.create { [communityReportDBManager] in
-            try await communityReportDBManager.reportComment(
-                commentID: comment.id,
-                reportedUserID: comment.memberID,
-                reason: reason
-            )
-            return true
-        }
-        .map { _ in .presentReportCompletedAlert }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
-        Single<UUID>.create { [communityPostDBManager] in
-            try await communityPostDBManager.deletePost(post)
-            return post.id
-        }
-        .map { .routeToDeletedPost(postID: $0) }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
         Post(
@@ -725,16 +548,23 @@ final class CommunityDetailReactor: Reactor {
         )
     }
     
-    private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
-        guard let post else { return [] }
-        
-        let commentItems: [DetailItem] = comments.isEmpty
-            ? [.emptyComment]
-            : comments.map { .comment($0) }
-        
-        return [.post(post), .commentHeader] + commentItems
+    private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
+        Single<UUID>.create { [communityPostDBManager] in
+            try await communityPostDBManager.deletePost(post)
+            return post.id
+        }
+        .map { .routeToDeletedPost(postID: $0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
     }
-    
+}
+
+//MARK: Comment
+extension CommunityDetailReactor {
     private static func fetchDisplayComments(
         postID: UUID,
         postAuthorID: UUID,
@@ -830,6 +660,194 @@ final class CommunityDetailReactor: Reactor {
         }
     }
     
+    private func fetchNextComments(
+        postAuthorID: UUID,
+        cursor: CommunityCommentCursor
+    ) -> Observable<Mutation> {
+        Single<CommentPage>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager,
+                cursor: cursor
+            )
+        }
+        .map { .appendComments($0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func submitComment(
+        content: String,
+        postAuthorID: UUID,
+        editingCommentID: UUID?
+    ) -> Observable<Mutation> {
+        Single<[Mutation]>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            if let editingCommentID {
+                try await communityCommentDBManager.updateComment(
+                    id: editingCommentID,
+                    content: content
+                )
+                
+                return [
+                    .updateCommentBody(commentID: editingCommentID, body: content),
+                    .setEditingComment(commentID: nil, text: "")
+                ]
+            } else {
+                _ = try await communityCommentDBManager.createComment(
+                    postID: postID,
+                    content: content
+                )
+                
+                let commentPage = try await Self.fetchDisplayComments(
+                    postID: postID,
+                    postAuthorID: postAuthorID,
+                    communityCommentDBManager: communityCommentDBManager,
+                    communityPostDBManager: communityPostDBManager,
+                    supabaseManager: supabaseManager
+                )
+                
+                return [
+                    .setComments(commentPage),
+                    .setEditingComment(commentID: nil, text: ""),
+                    .scrollToComment(.firstComment)
+                ]
+            }
+        }
+        .asObservable()
+        .flatMap { mutations -> Observable<Mutation> in
+            Observable.from(mutations)
+        }
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func deleteComment(
+        commentID: UUID,
+        postAuthorID: UUID,
+        shouldClearEditing: Bool
+    ) -> Observable<Mutation> {
+        Single<CommentPage>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await communityCommentDBManager.softDeleteComment(id: commentID)
+            
+            return try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager
+            )
+        }
+        .map { .setComments($0) }
+        .asObservable()
+        .flatMap { mutation -> Observable<Mutation> in
+            guard shouldClearEditing else { return .just(mutation) }
+            
+            return Observable.from([
+                mutation,
+                Mutation.setEditingComment(commentID: nil, text: "")
+            ])
+        }
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+}
+
+//MARK: 좋아요 기능
+extension CommunityDetailReactor {
+    private func setLike(postID: UUID, isLiked: Bool) -> Observable<Mutation> {
+        Single<CommunityPostLikeState>.create { [communityPostDBManager] in
+            try await communityPostDBManager.setLike(
+                postID: postID,
+                isLiked: isLiked
+            )
+        }
+        .map {
+            .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
+        }
+        .asObservable()
+        .catch { error in
+            guard let authError = error as? AuthError else { return .empty() }
+            return .just(.setErrorMessage(authError.userMessage))
+        }
+    }
+}
+
+//MARK: 신고 기능
+extension CommunityDetailReactor {
+    private func reportPost(
+        post: Post,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportPost(
+                postID: post.id,
+                reportedUserID: post.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func reportComment(
+        comment: Comment,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportComment(
+                commentID: comment.id,
+                reportedUserID: comment.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+}
+
+//MARK: CollectionView
+extension CommunityDetailReactor {
+    private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
+        guard let post else { return [] }
+        
+        let commentItems: [DetailItem] = comments.isEmpty
+            ? [.emptyComment]
+            : comments.map { .comment($0) }
+        
+        return [.post(post), .commentHeader] + commentItems
+    }
+}
+
+//MARK: Helper
+extension CommunityDetailReactor {
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
