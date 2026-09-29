@@ -230,7 +230,6 @@ extension CommunityPostDBManager {
     }
 
     // 특정 작성자 게시글 조회
-    //MARK: fetchMyPost랑 작성자 ID 조회 기능 빼면 동일한 거 같은데, 공통 함수로 줄여도 되는지?
     func fetchPosts(
         authorID: UUID,
         limit: Int = 10,
