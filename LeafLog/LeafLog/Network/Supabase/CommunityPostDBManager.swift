@@ -272,21 +272,11 @@ extension CommunityPostDBManager {
 
         do {
             let user = try await supabaseManager.client.auth.user()
-
-            return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .eq("author_id", value: user.id)
-                .is("deleted_at", value: nil)
-                .order("created_at", ascending: false)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .range(from: offset, to: offset + limit - 1)
-                .execute()
-                .value
+            return try await fetchPosts(
+                authorID: user.id,
+                limit: limit,
+                offset: offset
+            )
         } catch let error as AuthError {
             throw error
         } catch {
