@@ -74,14 +74,15 @@ final class CommunityPostDBManager {
     }
 
     func fetchLikedPostIDs(postIDs: [UUID]) async throws -> Set<UUID> {
-        let uniquePostIDs = Array(Set(postIDs))
+        let uniquePostIDs = Array(Set(postIDs)) // 입력값 중 중복 필터링
         guard !uniquePostIDs.isEmpty else { return [] }
 
         do {
+            // RLS 정책으로 인해 본인이 누른 좋아요 행만 조회 가능하므로 따로 유저 매칭 조건 불필요
             let likes: [CommunityPostLikeRow] = try await supabaseManager.client
                 .from("community_post_likes")
                 .select("post_id")
-                .in("post_id", values: uniquePostIDs)
+                .in("post_id", values: uniquePostIDs) // uniquePostIDs에 포함된 행만 조회 요청
                 .execute()
                 .value
 
