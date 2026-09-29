@@ -251,9 +251,6 @@ final class CommunityDetailReactor: Reactor {
             guard let post = currentState.post else { return .empty() }
             return .just(.presentPostActionSheet(post.isMine ? .owner : .visitor))
             
-        case .commentButtonTapped: //MARK: empty면 삭제해도 무방하지 않은지?
-            return .empty()
-            
         case .sendButtonTapped:
             guard let originalPost = currentState.originalPost,
                   currentState.isSubmittingComment == false else {

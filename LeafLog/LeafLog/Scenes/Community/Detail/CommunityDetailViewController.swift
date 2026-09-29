@@ -462,11 +462,6 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
                     .map { CommunityDetailReactor.Action.heartButtonTapped }
                     .bind(to: reactor.action)
                     .disposed(by: cell.disposeBag)
-                
-                cell.rx.commentButtonTap
-                    .map { CommunityDetailReactor.Action.commentButtonTapped }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
             }
             
             return cell
