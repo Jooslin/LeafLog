@@ -322,6 +322,27 @@ extension CommunityPostDBManager {
         }
     }
 
+    func fetchIsLiked(postID: UUID) async throws -> Bool {
+        do {
+            let likes: [CommunityPostLikeRow] = try await supabaseManager.client
+                .from("community_post_likes")
+                .select("post_id")
+                .eq("post_id", value: postID)
+                .limit(1)
+                .execute()
+                .value
+
+            return !likes.isEmpty
+        } catch {
+            logger.error(
+                "Community post like status fetch failed. postID: \(postID.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
+            throw AuthError.communityFailed(
+                "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
     func setLike(postID: UUID, isLiked: Bool) async throws -> CommunityPostLikeState {
         do {
             return try await supabaseManager.client
