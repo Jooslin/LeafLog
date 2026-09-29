@@ -79,8 +79,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     enum Action {
-        case viewDidLoad
-        case refreshPost
+        case loadDetail
         case moreButtonTapped
         case postImageTapped(index: Int)
         case postProfileImageTapped
@@ -88,7 +87,6 @@ final class CommunityDetailReactor: Reactor {
         case commentMoreButtonTapped(index: Int)
         case enterCommentText(String)
         case heartButtonTapped
-        case commentButtonTapped
         case sendButtonTapped
         case editCommentButtonTapped(commentID: UUID)
         case cancelCommentEditingButtonTapped
@@ -173,14 +171,7 @@ final class CommunityDetailReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .viewDidLoad:
-            return .concat(
-                .just(.setLoading(true)),
-                fetchDetail(),
-                .just(.setLoading(false))
-            )
-            
-        case .refreshPost: //MARK: viewDidLoad랑 동작이 같은데 합쳐도 되지 않은지?
+        case .loadDetail:
             return .concat(
                 .just(.setLoading(true)),
                 fetchDetail(),
