@@ -481,7 +481,9 @@ final class CommunityDetailReactor: Reactor {
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
             let isLiked = try await communityPostDBManager.fetchIsLiked(postID: post.id)
-            let imagePaths = Self.imagePaths(from: post)
+            let imagePaths = post.images
+                .sorted { $0.sortOrder < $1.sortOrder }
+                .map(\.imagePath)
             var imageSlots: [PostImageSlot] = []
             
             for (index, imagePath) in imagePaths.enumerated() {
@@ -709,12 +711,6 @@ final class CommunityDetailReactor: Reactor {
                 ?? "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
-    }
-    
-    nonisolated private static func imagePaths(from post: CommunityPost) -> [String] {
-        post.images
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .map(\.imagePath)
     }
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {

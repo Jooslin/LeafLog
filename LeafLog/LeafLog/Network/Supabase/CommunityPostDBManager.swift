@@ -126,7 +126,7 @@ extension CommunityPostDBManager {
     
     // Delete
     func deletePost(_ post: CommunityPost) async throws {
-        let imagePaths = imagePaths(from: post)
+        let imagePaths = Array(Set(post.images.map(\.imagePath)))
         
         do {
             let user = try await supabaseManager.client.auth.user()
@@ -411,10 +411,6 @@ extension CommunityPostDBManager {
             content: validatedText.content,
             images: imagePayloads
         )
-    }
-    
-    private func imagePaths(from post: CommunityPost) -> [String] {
-        Array(Set(post.images.map(\.imagePath)))
     }
 }
 
