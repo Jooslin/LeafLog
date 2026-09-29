@@ -464,6 +464,18 @@ final class CommunityDetailReactor: Reactor {
 
 //MARK: Post
 extension CommunityDetailReactor {
+    nonisolated private struct CommunityDetailResult: Sendable {
+        let post: CommunityPost
+        let authorNickname: String
+        let authorProfileImageURL: URL?
+        let imageURLs: [URL?]
+        let comments: [CommunityComment]
+        let commentAuthorNicknames: [UUID: String]
+        let commentAuthorProfileImageURLs: [UUID: URL]
+        let currentUserID: UUID?
+        let isLiked: Bool
+    }
+    
     // 진입한 포스트 정보를 불러옴
     private func fetchDetail() -> Observable<Mutation> {
         Single<CommunityDetailResult>.create {
@@ -833,7 +845,7 @@ extension CommunityDetailReactor {
     }
 }
 
-//MARK: CollectionView
+//MARK: CollectionView Item
 extension CommunityDetailReactor {
     private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
         guard let post else { return [] }
@@ -856,16 +868,4 @@ extension CommunityDetailReactor {
     }()
     
     private static let commentPageSize = 20
-}
-
-nonisolated private struct CommunityDetailResult: Sendable {
-    let post: CommunityPost
-    let authorNickname: String
-    let authorProfileImageURL: URL?
-    let imageURLs: [URL?]
-    let comments: [CommunityComment]
-    let commentAuthorNicknames: [UUID: String]
-    let commentAuthorProfileImageURLs: [UUID: URL]
-    let currentUserID: UUID?
-    let isLiked: Bool
 }
