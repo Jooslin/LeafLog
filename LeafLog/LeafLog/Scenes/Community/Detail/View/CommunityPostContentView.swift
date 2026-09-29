@@ -106,7 +106,7 @@ final class CommunityPostContentView: UIView {
         heartCountLabel.text = String(post.likeCount)
         commentCountLabel.text = post.commentCount
         configureHeart(isLiked: post.isLiked)
-        configurePostImages(imageSlots: post.imageSlots)
+        configurePostImages(imageURLs: post.imageURLs)
     }
     
     private func setLayout() {
@@ -268,9 +268,9 @@ final class CommunityPostContentView: UIView {
         )
     }
     
-    private func configurePostImages(imageSlots: [CommunityDetailReactor.PostImageSlot]) {
+    private func configurePostImages(imageURLs: [URL?]) {
         imageButtonDisposeBag = DisposeBag()
-        imageScrollView.isHidden = imageSlots.isEmpty
+        imageScrollView.isHidden = imageURLs.isEmpty
         imageScrollView.setContentOffset(.zero, animated: false)
         
         imageStackView.arrangedSubviews.forEach {
@@ -278,7 +278,7 @@ final class CommunityPostContentView: UIView {
             $0.removeFromSuperview()
         }
         
-        imageSlots.enumerated().forEach { index, imageSlot in
+        imageURLs.enumerated().forEach { index, imageURL in
             let imageView = UIImageView().then {
                 $0.contentMode = .scaleAspectFill
                 $0.image = UIImage(resource: .placeholder)
@@ -296,7 +296,7 @@ final class CommunityPostContentView: UIView {
                 $0.addSubview(imageButton)
             }
             
-            if let imageURL = imageSlot.imageURL {
+            if let imageURL {
                 imageView.kf.setImage(
                     with: imageURL,
                     placeholder: UIImage(resource: .placeholder),

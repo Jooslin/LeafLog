@@ -253,7 +253,7 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
         let viewController = CommunityImageViewerViewController(
-            imageSlots: route.imageSlots,
+            imageURLs: route.imageURLs,
             initialIndex: route.initialIndex
         )
         viewController.modalPresentationStyle = .fullScreen

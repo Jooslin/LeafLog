@@ -13,11 +13,6 @@ import RxSwift
 import Supabase
 
 final class CommunityDetailReactor: Reactor {
-    struct PostImageSlot: Equatable, Sendable {
-        let originalIndex: Int
-        let imageURL: URL?
-    }
-    
     struct Post: Equatable {
         let id: UUID
         let memberID: UUID
@@ -27,7 +22,7 @@ final class CommunityDetailReactor: Reactor {
         let profileImageURL: URL?
         let date: String
         let body: String
-        let imageSlots: [PostImageSlot]
+        let imageURLs: [URL?]
         var likeCount: Int
         let commentCount: String
         var isLiked: Bool
@@ -59,7 +54,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct ImageViewerRoute: Equatable {
-        let imageSlots: [PostImageSlot]
+        let imageURLs: [URL?]
         let initialIndex: Int
     }
     
@@ -194,10 +189,10 @@ final class CommunityDetailReactor: Reactor {
             
         case .postImageTapped(let index):
             guard let post = currentState.post,
-                  post.imageSlots.indices.contains(index) else { return .empty() }
+                  post.imageURLs.indices.contains(index) else { return .empty() }
             
             return .just(.presentImageViewer(.init(
-                imageSlots: post.imageSlots,
+                imageURLs: post.imageURLs,
                 initialIndex: index
             )))
             
@@ -484,7 +479,7 @@ final class CommunityDetailReactor: Reactor {
             let imagePaths = post.images
                 .sorted { $0.sortOrder < $1.sortOrder }
                 .map(\.imagePath)
-            var imageSlots: [PostImageSlot] = []
+            var imageURLs: [URL?] = []
             
             for (index, imagePath) in imagePaths.enumerated() {
                 var imageURL: URL?
@@ -500,14 +495,14 @@ final class CommunityDetailReactor: Reactor {
                     )
                 }
                 
-                imageSlots.append(PostImageSlot(originalIndex: index, imageURL: imageURL))
+                imageURLs.append(imageURL)
             }
             
             return CommunityDetailResult(
                 post: post,
                 authorNickname: nickname,
                 authorProfileImageURL: profileImageURLs[post.authorID],
-                imageSlots: imageSlots,
+                imageURLs: imageURLs,
                 isMine: post.authorID == currentUserID,
                 comments: comments,
                 commentAuthorNicknames: profiles.mapValues {
@@ -723,7 +718,7 @@ final class CommunityDetailReactor: Reactor {
             profileImageURL: result.authorProfileImageURL,
             date: dateFormatter.string(from: result.post.createdAt),
             body: result.post.content,
-            imageSlots: result.imageSlots,
+            imageURLs: result.imageURLs,
             likeCount: result.post.likeCount,
             commentCount: String(result.post.commentCount ?? 0),
             isLiked: result.isLiked,
@@ -850,7 +845,7 @@ nonisolated private struct CommunityDetailResult: Sendable {
     let post: CommunityPost
     let authorNickname: String
     let authorProfileImageURL: URL?
-    let imageSlots: [CommunityDetailReactor.PostImageSlot]
+    let imageURLs: [URL?]
     let isMine: Bool
     let comments: [CommunityComment]
     let commentAuthorNicknames: [UUID: String]
