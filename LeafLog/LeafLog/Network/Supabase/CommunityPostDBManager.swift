@@ -414,13 +414,7 @@ extension CommunityPostDBManager {
     }
     
     private func imagePaths(from post: CommunityPost) -> [String] {
-        var imagePaths = post.images.map(\.imagePath)
-        
-        if let legacyImagePath = post.legacyImagePath {
-            imagePaths.append(legacyImagePath)
-        }
-        
-        return Array(Set(imagePaths))
+        Array(Set(post.images.map(\.imagePath)))
     }
 }
 

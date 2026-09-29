@@ -712,15 +712,9 @@ final class CommunityDetailReactor: Reactor {
     }
     
     nonisolated private static func imagePaths(from post: CommunityPost) -> [String] {
-        let imagePaths = post.images
+        post.images
             .sorted { $0.sortOrder < $1.sortOrder }
             .map(\.imagePath)
-        
-        if imagePaths.isEmpty, let legacyImagePath = post.legacyImagePath {
-            return [legacyImagePath]
-        }
-        
-        return imagePaths
     }
     
     private static func makeDetailPost(from result: CommunityDetailResult) -> Post {

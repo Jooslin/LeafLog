@@ -13,7 +13,6 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
     let category: PostCategory
     let title: String
     let content: String
-    let legacyImagePath: String?
     let createdAt: Date
     let updatedAt: Date
     let deletedAt: Date?
@@ -27,7 +26,6 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
         case category
         case title
         case content
-        case legacyImagePath = "image_path"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
@@ -38,7 +36,6 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
 
     var firstImagePath: String? {
         images.min { $0.sortOrder < $1.sortOrder }?.imagePath
-            ?? legacyImagePath
     }
 }
 
