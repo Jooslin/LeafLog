@@ -13,11 +13,6 @@ import RxSwift
 import Supabase
 
 final class CommunityDetailReactor: Reactor {
-    struct PostImageSlot: Equatable, Sendable {
-        let originalIndex: Int
-        let imageURL: URL?
-    }
-    
     struct Post: Equatable {
         let id: UUID
         let memberID: UUID
@@ -27,9 +22,9 @@ final class CommunityDetailReactor: Reactor {
         let profileImageURL: URL?
         let date: String
         let body: String
-        let imageSlots: [PostImageSlot]
-        let likeCount: String
-        var commentCount: String
+        let imageURLs: [URL?]
+        var likeCount: Int
+        let commentCount: String
         var isLiked: Bool
         let isMine: Bool
     }
@@ -59,7 +54,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     struct ImageViewerRoute: Equatable {
-        let imageSlots: [PostImageSlot]
+        let imageURLs: [URL?]
         let initialIndex: Int
     }
     
@@ -84,8 +79,7 @@ final class CommunityDetailReactor: Reactor {
     }
     
     enum Action {
-        case viewDidLoad
-        case refreshPost
+        case loadDetail
         case moreButtonTapped
         case postImageTapped(index: Int)
         case postProfileImageTapped
@@ -93,7 +87,6 @@ final class CommunityDetailReactor: Reactor {
         case commentMoreButtonTapped(index: Int)
         case enterCommentText(String)
         case heartButtonTapped
-        case commentButtonTapped
         case sendButtonTapped
         case editCommentButtonTapped(commentID: UUID)
         case cancelCommentEditingButtonTapped
@@ -107,18 +100,20 @@ final class CommunityDetailReactor: Reactor {
     
     enum Mutation {
         case setLoading(Bool)
+        case setIsReporting(Bool)
+        case setIsDeleting(Bool)
+        case setIsLoadingMoreComments(Bool)
+        case setIsSubmittingComment(Bool)
+        case setUpdatingLike(Bool)
+        
         case setDetail(Post, originalPost: CommunityPost, commentPage: CommentPage)
-        case setPost(Post, originalPost: CommunityPost)
         case setComments(CommentPage)
         case setCommentInputText(String)
         case setEditingComment(commentID: UUID?, text: String)
-        case setSubmittingComment(Bool)
-        case setReporting(Bool)
-        case setDeleting(Bool)
-        case setLoadingMoreComments(Bool)
         case appendComments(CommentPage)
         case updateCommentBody(commentID: UUID, body: String)
-        case setPostLiked(Bool)
+        
+        case setLikeState(isLiked: Bool, likeCount: Int)
         case presentPostActionSheet(PostActionSheetKind)
         case presentCommentActionSheet(CommentActionSheetKind)
         case scrollToComment(CommentScrollTarget)
@@ -136,8 +131,11 @@ final class CommunityDetailReactor: Reactor {
         var isReporting = false
         var isDeleting = false
         var isLoadingMoreComments = false
+        var isUpdatingLike = false
+        
         var hasNextCommentPage = false
         var nextCommentCursor: CommunityCommentCursor?
+        
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var commentScrollTarget: CommentScrollTarget?
@@ -147,6 +145,7 @@ final class CommunityDetailReactor: Reactor {
         @Pulse var deletedPostRoute: UUID?
         @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
+        
         var post: Post?
         var originalPost: CommunityPost?
         var comments: [Comment] = []
@@ -172,14 +171,7 @@ final class CommunityDetailReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .viewDidLoad:
-            return .concat(
-                .just(.setLoading(true)),
-                fetchDetail(),
-                .just(.setLoading(false))
-            )
-            
-        case .refreshPost:
+        case .loadDetail:
             return .concat(
                 .just(.setLoading(true)),
                 fetchDetail(),
@@ -188,10 +180,10 @@ final class CommunityDetailReactor: Reactor {
             
         case .postImageTapped(let index):
             guard let post = currentState.post,
-                  post.imageSlots.indices.contains(index) else { return .empty() }
+                  post.imageURLs.indices.contains(index) else { return .empty() }
             
             return .just(.presentImageViewer(.init(
-                imageSlots: post.imageSlots,
+                imageURLs: post.imageURLs,
                 initialIndex: index
             )))
             
@@ -226,24 +218,29 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setLoadingMoreComments(true)),
+                .just(.setIsLoadingMoreComments(true)),
                 fetchNextComments(
                     postAuthorID: originalPost.authorID,
                     cursor: nextCommentCursor
                 ),
-                .just(.setLoadingMoreComments(false))
+                .just(.setIsLoadingMoreComments(false))
             )
             
         case .heartButtonTapped:
-            guard let post = currentState.post else { return .empty() }
-            return .just(.setPostLiked(!post.isLiked))
+            guard let post = currentState.post,
+                  currentState.isUpdatingLike == false else {
+                return .empty()
+            }
+
+            return .concat(
+                .just(.setUpdatingLike(true)),
+                setLike(postID: post.id, isLiked: !post.isLiked),
+                .just(.setUpdatingLike(false))
+            )
             
         case .moreButtonTapped:
             guard let post = currentState.post else { return .empty() }
             return .just(.presentPostActionSheet(post.isMine ? .owner : .visitor))
-            
-        case .commentButtonTapped:
-            return .empty()
             
         case .sendButtonTapped:
             guard let originalPost = currentState.originalPost,
@@ -261,13 +258,13 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setSubmittingComment(true)),
+                .just(.setIsSubmittingComment(true)),
                 submitComment(
                     content: content,
                     postAuthorID: originalPost.authorID,
                     editingCommentID: currentState.editingCommentID
                 ),
-                .just(.setSubmittingComment(false))
+                .just(.setIsSubmittingComment(false))
             )
             
         case .editCommentButtonTapped(let commentID):
@@ -290,13 +287,13 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setSubmittingComment(true)),
+                .just(.setIsSubmittingComment(true)),
                 deleteComment(
                     commentID: commentID,
                     postAuthorID: originalPost.authorID,
                     shouldClearEditing: currentState.editingCommentID == commentID
                 ),
-                .just(.setSubmittingComment(false))
+                .just(.setIsSubmittingComment(false))
             )
             
         case .editButtonTapped:
@@ -312,9 +309,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setDeleting(true)),
+                .just(.setIsDeleting(true)),
                 deletePost(originalPost),
-                .just(.setDeleting(false))
+                .just(.setIsDeleting(false))
             )
             
         case .reportReasonSelected(let reason):
@@ -325,9 +322,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setReporting(true)),
+                .just(.setIsReporting(true)),
                 reportPost(post: post, reason: reason),
-                .just(.setReporting(false))
+                .just(.setIsReporting(false))
             )
             
         case .commentReportReasonSelected(let reason):
@@ -339,9 +336,9 @@ final class CommunityDetailReactor: Reactor {
             }
             
             return .concat(
-                .just(.setReporting(true)),
+                .just(.setIsReporting(true)),
                 reportComment(comment: comment, reason: reason),
-                .just(.setReporting(false))
+                .just(.setIsReporting(false))
             )
         }
     }
@@ -361,11 +358,6 @@ final class CommunityDetailReactor: Reactor {
             newState.hasNextCommentPage = commentPage.hasNextPage
             newState.detailItems = Self.makeDetailItems(post: post, comments: commentPage.comments)
             
-        case .setPost(let post, let originalPost):
-            newState.post = post
-            newState.originalPost = originalPost
-            newState.detailItems = Self.makeDetailItems(post: post, comments: newState.comments)
-            
         case .setComments(let commentPage):
             newState.comments = commentPage.comments
             newState.nextCommentCursor = commentPage.nextCursor
@@ -379,16 +371,16 @@ final class CommunityDetailReactor: Reactor {
             newState.editingCommentID = commentID
             newState.commentInputText = text
             
-        case .setSubmittingComment(let isSubmittingComment):
+        case .setIsSubmittingComment(let isSubmittingComment):
             newState.isSubmittingComment = isSubmittingComment
             
-        case .setReporting(let isReporting):
+        case .setIsReporting(let isReporting):
             newState.isReporting = isReporting
             
-        case .setDeleting(let isDeleting):
+        case .setIsDeleting(let isDeleting):
             newState.isDeleting = isDeleting
             
-        case .setLoadingMoreComments(let isLoadingMoreComments):
+        case .setIsLoadingMoreComments(let isLoadingMoreComments):
             newState.isLoadingMoreComments = isLoadingMoreComments
             
         case .appendComments(let commentPage):
@@ -414,9 +406,13 @@ final class CommunityDetailReactor: Reactor {
                 isMine: comment.isMine
             )
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
-            
-        case .setPostLiked(let isLiked):
+
+        case .setUpdatingLike(let isUpdatingLike):
+            newState.isUpdatingLike = isUpdatingLike
+
+        case .setLikeState(let isLiked, let likeCount):
             newState.post?.isLiked = isLiked
+            newState.post?.likeCount = likeCount
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .presentPostActionSheet(let kind):
@@ -452,7 +448,23 @@ final class CommunityDetailReactor: Reactor {
         
         return newState
     }
+}
+
+//MARK: Post
+extension CommunityDetailReactor {
+    nonisolated private struct CommunityDetailResult: Sendable {
+        let post: CommunityPost
+        let authorNickname: String
+        let authorProfileImageURL: URL?
+        let imageURLs: [URL?]
+        let comments: [CommunityComment]
+        let commentAuthorNicknames: [UUID: String]
+        let commentAuthorProfileImageURLs: [UUID: URL]
+        let currentUserID: UUID?
+        let isLiked: Bool
+    }
     
+    // 진입한 포스트 정보를 불러옴
     private func fetchDetail() -> Observable<Mutation> {
         Single<CommunityDetailResult>.create {
             [communityPostDBManager, communityCommentDBManager, supabaseManager, logger, postID] in
@@ -466,8 +478,11 @@ final class CommunityDetailReactor: Reactor {
             let nickname = profiles[post.authorID]?.nickname ?? "알 수 없는 사용자"
             let profileImageURLs = await communityPostDBManager.resolvePublicProfileImageURLs(profiles: profiles)
             let currentUserID = supabaseManager.client.auth.currentUser?.id
-            let imagePaths = Self.imagePaths(from: post)
-            var imageSlots: [PostImageSlot] = []
+            let isLiked = try await communityPostDBManager.fetchIsLiked(postID: post.id)
+            let imagePaths = post.images
+                .sorted { $0.sortOrder < $1.sortOrder }
+                .map(\.imagePath)
+            var imageURLs: [URL?] = []
             
             for (index, imagePath) in imagePaths.enumerated() {
                 var imageURL: URL?
@@ -483,21 +498,21 @@ final class CommunityDetailReactor: Reactor {
                     )
                 }
                 
-                imageSlots.append(PostImageSlot(originalIndex: index, imageURL: imageURL))
+                imageURLs.append(imageURL)
             }
             
             return CommunityDetailResult(
                 post: post,
                 authorNickname: nickname,
                 authorProfileImageURL: profileImageURLs[post.authorID],
-                imageSlots: imageSlots,
-                isMine: post.authorID == currentUserID,
+                imageURLs: imageURLs,
                 comments: comments,
                 commentAuthorNicknames: profiles.mapValues {
                     $0.nickname ?? "알 수 없는 사용자"
                 },
                 commentAuthorProfileImageURLs: profileImageURLs,
-                currentUserID: currentUserID
+                currentUserID: currentUserID,
+                isLiked: isLiked
             )
         }
         .map { result in
@@ -515,153 +530,22 @@ final class CommunityDetailReactor: Reactor {
         }
     }
     
-    private func submitComment(
-        content: String,
-        postAuthorID: UUID,
-        editingCommentID: UUID?
-    ) -> Observable<Mutation> {
-        Single<[Mutation]>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            if let editingCommentID {
-                try await communityCommentDBManager.updateComment(
-                    id: editingCommentID,
-                    content: content
-                )
-                
-                return [
-                    .updateCommentBody(commentID: editingCommentID, body: content),
-                    .setEditingComment(commentID: nil, text: "")
-                ]
-            } else {
-                _ = try await communityCommentDBManager.createComment(
-                    postID: postID,
-                    content: content
-                )
-                
-                let commentPage = try await Self.fetchDisplayComments(
-                    postID: postID,
-                    postAuthorID: postAuthorID,
-                    communityCommentDBManager: communityCommentDBManager,
-                    communityPostDBManager: communityPostDBManager,
-                    supabaseManager: supabaseManager
-                )
-                
-                return [
-                    .setComments(commentPage),
-                    .setEditingComment(commentID: nil, text: ""),
-                    .scrollToComment(.firstComment)
-                ]
-            }
-        }
-        .asObservable()
-        .flatMap { mutations -> Observable<Mutation> in
-            Observable.from(mutations)
-        }
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func deleteComment(
-        commentID: UUID,
-        postAuthorID: UUID,
-        shouldClearEditing: Bool
-    ) -> Observable<Mutation> {
-        Single<CommentPage>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            try await communityCommentDBManager.softDeleteComment(id: commentID)
-            
-            return try await Self.fetchDisplayComments(
-                postID: postID,
-                postAuthorID: postAuthorID,
-                communityCommentDBManager: communityCommentDBManager,
-                communityPostDBManager: communityPostDBManager,
-                supabaseManager: supabaseManager
-            )
-        }
-        .map { .setComments($0) }
-        .asObservable()
-        .flatMap { mutation -> Observable<Mutation> in
-            guard shouldClearEditing else { return .just(mutation) }
-            
-            return Observable.from([
-                mutation,
-                Mutation.setEditingComment(commentID: nil, text: "")
-            ])
-        }
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func fetchNextComments(
-        postAuthorID: UUID,
-        cursor: CommunityCommentCursor
-    ) -> Observable<Mutation> {
-        Single<CommentPage>.create {
-            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
-            try await Self.fetchDisplayComments(
-                postID: postID,
-                postAuthorID: postAuthorID,
-                communityCommentDBManager: communityCommentDBManager,
-                communityPostDBManager: communityPostDBManager,
-                supabaseManager: supabaseManager,
-                cursor: cursor
-            )
-        }
-        .map { .appendComments($0) }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "댓글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func reportPost(
-        post: Post,
-        reason: CommunityReportReason
-    ) -> Observable<Mutation> {
-        Single<Bool>.create { [communityReportDBManager] in
-            try await communityReportDBManager.reportPost(
-                postID: post.id,
-                reportedUserID: post.memberID,
-                reason: reason
-            )
-            return true
-        }
-        .map { _ in .presentReportCompletedAlert }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
-    }
-    
-    private func reportComment(
-        comment: Comment,
-        reason: CommunityReportReason
-    ) -> Observable<Mutation> {
-        Single<Bool>.create { [communityReportDBManager] in
-            try await communityReportDBManager.reportComment(
-                commentID: comment.id,
-                reportedUserID: comment.memberID,
-                reason: reason
-            )
-            return true
-        }
-        .map { _ in .presentReportCompletedAlert }
-        .asObservable()
-        .catch { error in
-            let message = (error as? AuthError)?.userMessage
-                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
-            return .just(.setErrorMessage(message))
-        }
+    private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
+        Post(
+            id: result.post.id,
+            memberID: result.post.authorID,
+            category: result.post.category.title,
+            title: result.post.title,
+            nickname: result.authorNickname,
+            profileImageURL: result.authorProfileImageURL,
+            date: dateFormatter.string(from: result.post.createdAt),
+            body: result.post.content,
+            imageURLs: result.imageURLs,
+            likeCount: result.post.likeCount,
+            commentCount: String(result.post.commentCount ?? 0),
+            isLiked: result.isLiked,
+            isMine: result.post.authorID == result.currentUserID
+        )
     }
     
     private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
@@ -677,47 +561,10 @@ final class CommunityDetailReactor: Reactor {
             return .just(.setErrorMessage(message))
         }
     }
-    
-    nonisolated private static func imagePaths(from post: CommunityPost) -> [String] {
-        let imagePaths = post.images
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .map(\.imagePath)
-        
-        if imagePaths.isEmpty, let legacyImagePath = post.legacyImagePath {
-            return [legacyImagePath]
-        }
-        
-        return imagePaths
-    }
-    
-    private static func makeDetailPost(from result: CommunityDetailResult) -> Post {
-        Post(
-            id: result.post.id,
-            memberID: result.post.authorID,
-            category: result.post.category.title,
-            title: result.post.title,
-            nickname: result.authorNickname,
-            profileImageURL: result.authorProfileImageURL,
-            date: dateFormatter.string(from: result.post.createdAt),
-            body: result.post.content,
-            imageSlots: result.imageSlots,
-            likeCount: String(result.post.likeCount),
-            commentCount: String(result.post.commentCount ?? 0),
-            isLiked: false,
-            isMine: result.isMine
-        )
-    }
-    
-    private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
-        guard let post else { return [] }
-        
-        let commentItems: [DetailItem] = comments.isEmpty
-            ? [.emptyComment]
-            : comments.map { .comment($0) }
-        
-        return [.post(post), .commentHeader] + commentItems
-    }
-    
+}
+
+//MARK: Comment
+extension CommunityDetailReactor {
     private static func fetchDisplayComments(
         postID: UUID,
         postAuthorID: UUID,
@@ -813,6 +660,194 @@ final class CommunityDetailReactor: Reactor {
         }
     }
     
+    private func fetchNextComments(
+        postAuthorID: UUID,
+        cursor: CommunityCommentCursor
+    ) -> Observable<Mutation> {
+        Single<CommentPage>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager,
+                cursor: cursor
+            )
+        }
+        .map { .appendComments($0) }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func submitComment(
+        content: String,
+        postAuthorID: UUID,
+        editingCommentID: UUID?
+    ) -> Observable<Mutation> {
+        Single<[Mutation]>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            if let editingCommentID {
+                try await communityCommentDBManager.updateComment(
+                    id: editingCommentID,
+                    content: content
+                )
+                
+                return [
+                    .updateCommentBody(commentID: editingCommentID, body: content),
+                    .setEditingComment(commentID: nil, text: "")
+                ]
+            } else {
+                _ = try await communityCommentDBManager.createComment(
+                    postID: postID,
+                    content: content
+                )
+                
+                let commentPage = try await Self.fetchDisplayComments(
+                    postID: postID,
+                    postAuthorID: postAuthorID,
+                    communityCommentDBManager: communityCommentDBManager,
+                    communityPostDBManager: communityPostDBManager,
+                    supabaseManager: supabaseManager
+                )
+                
+                return [
+                    .setComments(commentPage),
+                    .setEditingComment(commentID: nil, text: ""),
+                    .scrollToComment(.firstComment)
+                ]
+            }
+        }
+        .asObservable()
+        .flatMap { mutations -> Observable<Mutation> in
+            Observable.from(mutations)
+        }
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func deleteComment(
+        commentID: UUID,
+        postAuthorID: UUID,
+        shouldClearEditing: Bool
+    ) -> Observable<Mutation> {
+        Single<CommentPage>.create {
+            [communityCommentDBManager, communityPostDBManager, supabaseManager, postID] in
+            try await communityCommentDBManager.softDeleteComment(id: commentID)
+            
+            return try await Self.fetchDisplayComments(
+                postID: postID,
+                postAuthorID: postAuthorID,
+                communityCommentDBManager: communityCommentDBManager,
+                communityPostDBManager: communityPostDBManager,
+                supabaseManager: supabaseManager
+            )
+        }
+        .map { .setComments($0) }
+        .asObservable()
+        .flatMap { mutation -> Observable<Mutation> in
+            guard shouldClearEditing else { return .just(mutation) }
+            
+            return Observable.from([
+                mutation,
+                Mutation.setEditingComment(commentID: nil, text: "")
+            ])
+        }
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "댓글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+}
+
+//MARK: 좋아요 기능
+extension CommunityDetailReactor {
+    private func setLike(postID: UUID, isLiked: Bool) -> Observable<Mutation> {
+        Single<CommunityPostLikeState>.create { [communityPostDBManager] in
+            try await communityPostDBManager.setLike(
+                postID: postID,
+                isLiked: isLiked
+            )
+        }
+        .map {
+            .setLikeState(isLiked: $0.isLiked, likeCount: $0.likeCount)
+        }
+        .asObservable()
+        .catch { error in
+            guard let authError = error as? AuthError else { return .empty() }
+            return .just(.setErrorMessage(authError.userMessage))
+        }
+    }
+}
+
+//MARK: 신고 기능
+extension CommunityDetailReactor {
+    private func reportPost(
+        post: Post,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportPost(
+                postID: post.id,
+                reportedUserID: post.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+    
+    private func reportComment(
+        comment: Comment,
+        reason: CommunityReportReason
+    ) -> Observable<Mutation> {
+        Single<Bool>.create { [communityReportDBManager] in
+            try await communityReportDBManager.reportComment(
+                commentID: comment.id,
+                reportedUserID: comment.memberID,
+                reason: reason
+            )
+            return true
+        }
+        .map { _ in .presentReportCompletedAlert }
+        .asObservable()
+        .catch { error in
+            let message = (error as? AuthError)?.userMessage
+                ?? "신고를 접수하지 못했어요. 잠시 후 다시 시도해주세요."
+            return .just(.setErrorMessage(message))
+        }
+    }
+}
+
+//MARK: CollectionView Item
+extension CommunityDetailReactor {
+    private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
+        guard let post else { return [] }
+        
+        let commentItems: [DetailItem] = comments.isEmpty
+            ? [.emptyComment]
+            : comments.map { .comment($0) }
+        
+        return [.post(post), .commentHeader] + commentItems
+    }
+}
+
+//MARK: Helper
+extension CommunityDetailReactor {
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
@@ -821,16 +856,4 @@ final class CommunityDetailReactor: Reactor {
     }()
     
     private static let commentPageSize = 20
-}
-
-nonisolated private struct CommunityDetailResult: Sendable {
-    let post: CommunityPost
-    let authorNickname: String
-    let authorProfileImageURL: URL?
-    let imageSlots: [CommunityDetailReactor.PostImageSlot]
-    let isMine: Bool
-    let comments: [CommunityComment]
-    let commentAuthorNicknames: [UUID: String]
-    let commentAuthorProfileImageURLs: [UUID: URL]
-    let currentUserID: UUID?
 }

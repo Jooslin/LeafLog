@@ -73,6 +73,7 @@ final class CommunityViewController: BaseViewController, View {
             .map {
                 (
                     $0.posts,
+                    $0.likedPostIDs,
                     $0.authorNicknames,
                     $0.authorProfileImageURLs,
                     $0.postImageURLs
@@ -81,11 +82,13 @@ final class CommunityViewController: BaseViewController, View {
             .asDriver(onErrorDriveWith: .empty())
             .drive {
                 [weak self] posts,
+                likedPostIDs,
                 authorNicknames,
                 authorProfileImageURLs,
                 postImageURLs in
                 self?.communityView.render(
                     posts: posts,
+                    likedPostIDs: likedPostIDs,
                     authorNicknames: authorNicknames,
                     authorProfileImageURLs: authorProfileImageURLs,
                     postImageURLs: postImageURLs

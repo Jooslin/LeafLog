@@ -14,96 +14,6 @@ final class CommunityPostDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "CommunityPostDBManager")
 
-    func createPost(input: CommunityPostSaveInput) async throws -> CommunityPost {
-        try await savePost(function: "create_community_post", input: input)
-    }
-
-    func updatePost(input: CommunityPostSaveInput) async throws -> CommunityPost {
-        try await savePost(function: "update_community_post", input: input)
-    }
-
-    func fetchPosts(
-        limit: Int = 20,
-        offset: Int = 0
-    ) async throws -> [CommunityPost] {
-        guard limit > 0, offset >= 0 else {
-            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
-        }
-
-        do {
-            return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .is("deleted_at", value: nil)
-                .order("created_at", ascending: false)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .range(from: offset, to: offset + limit - 1)
-                .execute()
-                .value
-        } catch {
-            throw AuthError.communityFailed(
-                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            )
-        }
-    }
-    
-    func fetchPost(id: UUID) async throws -> CommunityPost {
-        do {
-            return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .eq("id", value: id)
-                .is("deleted_at", value: nil)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .single()
-                .execute()
-                .value
-        } catch {
-            throw AuthError.communityFailed(
-                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            )
-        }
-    }
-    
-    func fetchPosts(
-        authorID: UUID,
-        limit: Int = 10,
-        offset: Int = 0
-    ) async throws -> [CommunityPost] {
-        guard limit > 0, offset >= 0 else {
-            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
-        }
-        
-        do {
-            return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .eq("author_id", value: authorID)
-                .is("deleted_at", value: nil)
-                .order("created_at", ascending: false)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .range(from: offset, to: offset + limit - 1)
-                .execute()
-                .value
-        } catch {
-            throw AuthError.communityFailed(
-                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            )
-        }
-    }
-    
     func fetchPostStats(authorID: UUID) async throws -> CommunityPostStats {
         do {
             let rows: [CommunityPostStatsRow] = try await supabaseManager.client
@@ -180,42 +90,43 @@ final class CommunityPostDBManager {
         return imageURLs
     }
 
-    func fetchMyPosts(
-        limit: Int = 20,
-        offset: Int = 0
-    ) async throws -> [CommunityPost] {
-        guard limit > 0, offset >= 0 else {
-            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
-        }
+}
+
+//MARK: CRUD - Create, Update, Delete
+extension CommunityPostDBManager {
+    // Create
+    func createPost(input: CommunityPostSaveInput) async throws -> CommunityPost {
+        try await savePost(function: "create_community_post", input: input)
+    }
+
+    // Update
+    func updatePost(input: CommunityPostSaveInput) async throws -> CommunityPost {
+        try await savePost(function: "update_community_post", input: input)
+    }
+    
+    private func savePost(
+        function: String,
+        input: CommunityPostSaveInput
+    ) async throws -> CommunityPost {
+        let parameters = try makeParameters(input: input)
 
         do {
-            let user = try await supabaseManager.client.auth.user()
-
             return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .eq("author_id", value: user.id)
-                .is("deleted_at", value: nil)
-                .order("created_at", ascending: false)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .range(from: offset, to: offset + limit - 1)
+                .rpc(function, params: parameters)
                 .execute()
                 .value
         } catch let error as AuthError {
             throw error
         } catch {
             throw AuthError.communityFailed(
-                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+                "게시글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
             )
         }
     }
     
+    // Delete
     func deletePost(_ post: CommunityPost) async throws {
-        let imagePaths = imagePaths(from: post)
+        let imagePaths = Array(Set(post.images.map(\.imagePath)))
         
         do {
             let user = try await supabaseManager.client.auth.user()
@@ -261,27 +172,195 @@ final class CommunityPostDBManager {
             )
         }
     }
+}
 
-    private func savePost(
-        function: String,
-        input: CommunityPostSaveInput
-    ) async throws -> CommunityPost {
-        let parameters = try makeParameters(input: input)
+//MARK: CRUD - Read
+extension CommunityPostDBManager {
+    // 전체 게시글 조회
+    func fetchPosts(
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
 
         do {
             return try await supabaseManager.client
-                .rpc(function, params: parameters)
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .is("deleted_at", value: nil)
+                .order("created_at", ascending: false)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .range(from: offset, to: offset + limit - 1)
                 .execute()
                 .value
-        } catch let error as AuthError {
-            throw error
         } catch {
             throw AuthError.communityFailed(
-                "게시글을 저장하지 못했어요. 잠시 후 다시 시도해주세요."
+                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+    
+    // 특정 게시글 조회
+    func fetchPost(id: UUID) async throws -> CommunityPost {
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("id", value: id)
+                .is("deleted_at", value: nil)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .single()
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             )
         }
     }
 
+    // 특정 작성자 게시글 조회
+    func fetchPosts(
+        authorID: UUID,
+        limit: Int = 10,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
+        
+        do {
+            return try await supabaseManager.client
+                .from("community_posts")
+                .select("*, images:community_post_images(*)")
+                .eq("author_id", value: authorID)
+                .is("deleted_at", value: nil)
+                .order("created_at", ascending: false)
+                .order(
+                    "sort_order",
+                    ascending: true,
+                    referencedTable: "images"
+                )
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
+        } catch {
+            throw AuthError.communityFailed(
+                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+    
+    func fetchMyPosts(
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> [CommunityPost] {
+        guard limit > 0, offset >= 0 else {
+            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
+        }
+
+        do {
+            let user = try await supabaseManager.client.auth.user()
+            return try await fetchPosts(
+                authorID: user.id,
+                limit: limit,
+                offset: offset
+            )
+        } catch let error as AuthError {
+            throw error
+        } catch {
+            throw AuthError.communityFailed(
+                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+}
+
+//MARK: 좋아요 관련
+extension CommunityPostDBManager {
+    // 사용자가 좋아요한 모든 게시글 조회
+    func fetchLikedPostIDs(postIDs: [UUID]) async throws -> Set<UUID> {
+        let uniquePostIDs = Array(Set(postIDs)) // 입력값 중 중복 필터링
+        guard !uniquePostIDs.isEmpty else { return [] }
+
+        do {
+            // RLS 정책으로 인해 본인이 누른 좋아요 행만 조회 가능하므로 따로 유저 매칭 조건 불필요
+            let likes: [CommunityPostLikeRow] = try await supabaseManager.client
+                .from("community_post_likes")
+                .select("post_id")
+                .in("post_id", values: uniquePostIDs) // uniquePostIDs에 포함된 행만 조회 요청
+                .execute()
+                .value
+
+            return Set(likes.map(\.postID))
+        } catch {
+            logger.error(
+                "Community post likes fetch failed. postCount: \(uniquePostIDs.count, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
+            throw AuthError.communityFailed(
+                "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
+    // 특정 게시글 좋아요 여부 조회
+    func fetchIsLiked(postID: UUID) async throws -> Bool {
+        do {
+            let likes: [CommunityPostLikeRow] = try await supabaseManager.client
+                .from("community_post_likes")
+                .select("post_id")
+                .eq("post_id", value: postID)
+                .limit(1)
+                .execute()
+                .value
+
+            return !likes.isEmpty
+        } catch {
+            logger.error(
+                "Community post like status fetch failed. postID: \(postID.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
+            throw AuthError.communityFailed(
+                "좋아요 상태를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+
+    func setLike(postID: UUID, isLiked: Bool) async throws -> CommunityPostLikeState {
+        do {
+            return try await supabaseManager.client
+                .rpc(
+                    "set_community_post_like",
+                    params: CommunityPostLikeRPCParameters(
+                        postID: postID,
+                        isLiked: isLiked
+                    )
+                )
+                .single()
+                .execute()
+                .value
+        } catch {
+            logger.error(
+                "Community post like update failed. postID: \(postID.uuidString, privacy: .public), isLiked: \(isLiked, privacy: .public), error: \(String(describing: error), privacy: .private)"
+            )
+            throw AuthError.communityFailed(
+                "좋아요 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요."
+            )
+        }
+    }
+}
+
+//MARK: Helper
+extension CommunityPostDBManager {
     private func makeParameters(
         input: CommunityPostSaveInput
     ) throws -> CommunityPostRPCParameters {
@@ -322,22 +401,21 @@ final class CommunityPostDBManager {
             images: imagePayloads
         )
     }
-    
-    private func imagePaths(from post: CommunityPost) -> [String] {
-        var imagePaths = post.images.map(\.imagePath)
-        
-        if let legacyImagePath = post.legacyImagePath {
-            imagePaths.append(legacyImagePath)
-        }
-        
-        return Array(Set(imagePaths))
-    }
-
 }
 
 nonisolated struct CommunityPostStats: Equatable, Sendable {
     let postCount: Int
     let likeCount: Int
+}
+
+nonisolated struct CommunityPostLikeState: Decodable, Equatable, Sendable {
+    let isLiked: Bool
+    let likeCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case isLiked = "is_liked"
+        case likeCount = "like_count"
+    }
 }
 
 nonisolated struct CommunityPublicProfile: Decodable, Sendable {
@@ -364,6 +442,24 @@ nonisolated private struct CommunityPostStatsRow: Decodable, Sendable {
 
 nonisolated private struct DeletedCommunityPostRow: Decodable, Sendable {
     let id: UUID
+}
+
+nonisolated private struct CommunityPostLikeRow: Decodable, Sendable {
+    let postID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case postID = "post_id"
+    }
+}
+
+nonisolated private struct CommunityPostLikeRPCParameters: Encodable, Sendable {
+    let postID: UUID
+    let isLiked: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case postID = "p_post_id"
+        case isLiked = "p_is_liked"
+    }
 }
 
 nonisolated private struct CommunityPublicProfilesRPCParameters: Encodable, Sendable {

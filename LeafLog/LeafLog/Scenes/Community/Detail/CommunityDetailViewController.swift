@@ -76,7 +76,7 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     func refreshPostIfNeeded(postID: UUID) {
         guard reactor?.currentState.post?.id == postID else { return }
-        reactor?.action.onNext(.refreshPost)
+        reactor?.action.onNext(.loadDetail)
     }
     
     var currentPostID: UUID? {
@@ -84,7 +84,7 @@ final class CommunityDetailViewController: BaseViewController, View {
     }
     
     private func bindAction(reactor: CommunityDetailReactor) {
-        Observable.just(CommunityDetailReactor.Action.viewDidLoad)
+        Observable.just(CommunityDetailReactor.Action.loadDetail)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -253,7 +253,7 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     private func presentImageViewer(route: CommunityDetailReactor.ImageViewerRoute) {
         let viewController = CommunityImageViewerViewController(
-            imageSlots: route.imageSlots,
+            imageURLs: route.imageURLs,
             initialIndex: route.initialIndex
         )
         viewController.modalPresentationStyle = .fullScreen
@@ -460,11 +460,6 @@ extension CommunityDetailViewController: UICollectionViewDataSource {
                 
                 cell.rx.heartButtonTap
                     .map { CommunityDetailReactor.Action.heartButtonTapped }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-                
-                cell.rx.commentButtonTap
-                    .map { CommunityDetailReactor.Action.commentButtonTapped }
                     .bind(to: reactor.action)
                     .disposed(by: cell.disposeBag)
             }
