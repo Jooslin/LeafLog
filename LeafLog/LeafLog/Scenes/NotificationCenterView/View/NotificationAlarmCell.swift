@@ -62,6 +62,7 @@ final class NotificationAlarmCell: UICollectionViewCell {
 
 extension NotificationAlarmCell {
     func configure(_ data: NotificationCenterView.Alarm) {
+        contentView.backgroundColor = data.isUnread ? .primary100 : .clear
         imageView.image = switch data.detailCategory {
         case .wateringReminder:
             UIImage(named: Badge.water.bigImage)

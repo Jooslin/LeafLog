@@ -20,12 +20,17 @@ final class NotificationDBManager {
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            return try await supabaseManager.client
+            var query = supabaseManager.client
                 .from("notifications")
                 .select()
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
-                .not("sent_at", operator: .is, value: "null")
+
+            if category == .management {
+                query = query.not("sent_at", operator: .is, value: "null")
+            }
+
+            return try await query
                 .order("created_at", ascending: false)
                 .limit(limit)
                 .execute()
@@ -51,7 +56,7 @@ final class NotificationDBManager {
                 .from("notifications")
                 .select("id")
                 .eq("user_id", value: user.id)
-                .not("sent_at", operator: .is, value: "null")
+                .or("category.eq.community,sent_at.not.is.null")
                 .is("read_at", value: nil)
                 .limit(1)
                 .execute()
@@ -78,16 +83,22 @@ final class NotificationDBManager {
         }
     }
 
-    func markAllAsRead() async throws {
+    func markAllAsRead(category: AppNotificationCategory) async throws {
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            try await supabaseManager.client
+            var query = try supabaseManager.client
                 .from("notifications")
                 .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("user_id", value: user.id)
+                .eq("category", value: category.rawValue)
                 .is("read_at", value: nil)
-                .execute()
+
+            if category == .management {
+                query = query.not("sent_at", operator: .is, value: "null")
+            }
+
+            try await query.execute()
         } catch {
             if Task.isCancelled {
                 throw CancellationError()

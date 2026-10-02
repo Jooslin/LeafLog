@@ -118,7 +118,7 @@ extension NotificationCenterReactor {
                     let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
                     
                     let items = notifications.map {
-                        let time = self.calculateExcessAlarmTime(from: $0.sentAt, to: now)
+                        let time = self.calculateExcessAlarmTime(from: $0.sentAt ?? $0.createdAt, to: now)
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
                         
                         let alarm = NotificationCenterView.Alarm(
@@ -127,7 +127,8 @@ extension NotificationCenterReactor {
                             body: $0.plantNamesText ?? $0.body,
                             category: $0.category,
                             detailCategory: $0.type,
-                            sentTimeLabel: timeString
+                            sentTimeLabel: timeString,
+                            isUnread: !$0.isRead
                         )
                         
                         let item = NotificationCenterView.Item.alarm(alarm)
@@ -138,7 +139,7 @@ extension NotificationCenterReactor {
                     observer.onNext(.setAlarm(category: category, items: items))
 
                     do {
-                        try await self.notificationDBManager.markAllAsRead()
+                        try await self.notificationDBManager.markAllAsRead(category: category)
                         NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
                     } catch is CancellationError {
                         self.logger.debug("알림 전체 읽음 처리 취소됨")

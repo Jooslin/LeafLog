@@ -145,6 +145,7 @@ extension NotificationCenterView {
         let category: AppNotificationCategory
         let detailCategory: AppNotificationType
         let sentTimeLabel: String
+        let isUnread: Bool
     }
 }
 
