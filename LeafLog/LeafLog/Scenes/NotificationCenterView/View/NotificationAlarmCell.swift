@@ -29,6 +29,7 @@ final class NotificationAlarmCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         imageView.image = nil
+        contentView.backgroundColor = .clear
     }
 
     private func setLayout() {
