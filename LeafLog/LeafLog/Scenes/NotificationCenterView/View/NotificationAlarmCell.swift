@@ -16,6 +16,7 @@ final class NotificationAlarmCell: UICollectionViewCell {
     private let timeLabel = UILabel(text: "", config: .label12, color: .grayScale400, lines: 1).then {
         $0.textAlignment = .right
     }
+    private let totalLabel = UILabel(text: "", config: .label12, color: .grayScale600, lines: 0)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -30,6 +31,10 @@ final class NotificationAlarmCell: UICollectionViewCell {
         super.prepareForReuse()
         imageView.image = nil
         contentView.backgroundColor = .clear
+        titleLabel.text = ""
+        descriptionLabel.text = ""
+        timeLabel.text = ""
+        totalLabel.text = ""
     }
 
     private func setLayout() {
@@ -64,6 +69,7 @@ final class NotificationAlarmCell: UICollectionViewCell {
 extension NotificationAlarmCell {
     func configure(_ data: NotificationCenterView.Alarm) {
         contentView.backgroundColor = data.isUnread ? .primary100 : .clear
+        
         imageView.image = switch data.detailCategory {
         case .wateringReminder:
             UIImage(named: Badge.water.bigImage)
