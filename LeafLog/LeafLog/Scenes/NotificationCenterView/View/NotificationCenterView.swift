@@ -83,15 +83,16 @@ extension NotificationCenterView {
             let item = NSCollectionLayoutItem(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .estimated(74)
+                    heightDimension: .estimated(88)
                 ))
             
             let group = NSCollectionLayoutGroup.vertical(
                 layoutSize: NSCollectionLayoutSize(
                     widthDimension: .fractionalWidth(1),
-                    heightDimension: .estimated(74)),
+                    heightDimension: .estimated(88)),
                 subitems: [item]
             )
+            group.interItemSpacing = .fixed(4)
             
             let section = NSCollectionLayoutSection(group: group)
             return section

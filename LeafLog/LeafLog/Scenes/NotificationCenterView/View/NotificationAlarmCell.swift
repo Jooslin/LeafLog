@@ -17,6 +17,9 @@ final class NotificationAlarmCell: UICollectionViewCell {
         $0.textAlignment = .right
     }
     private let totalLabel = UILabel(text: "", config: .label12, color: .grayScale600, lines: 0)
+    private let separateBar = UIView().then {
+        $0.backgroundColor = .grayScale100
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,14 +41,20 @@ final class NotificationAlarmCell: UICollectionViewCell {
     }
 
     private func setLayout() {
-        let labelStack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel]).then {
+        let titleLabelStack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel]).then {
             $0.axis = .vertical
             $0.spacing = 2
+        }
+        
+        let labelStack = UIStackView(arrangedSubviews: [titleLabelStack, totalLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 4
         }
         
         contentView.addSubview(imageView)
         contentView.addSubview(labelStack)
         contentView.addSubview(timeLabel)
+        contentView.addSubview(separateBar)
         
         imageView.snp.makeConstraints {
             $0.width.height.equalTo(32)
@@ -56,12 +65,18 @@ final class NotificationAlarmCell: UICollectionViewCell {
         labelStack.snp.makeConstraints {
             $0.leading.equalTo(imageView.snp.trailing).offset(12)
             $0.trailing.equalTo(timeLabel.snp.leading).offset(-12)
-            $0.verticalEdges.equalToSuperview().inset(16)
+            $0.centerY.equalToSuperview()
         }
         
         timeLabel.snp.makeConstraints {
             $0.centerY.equalTo(labelStack)
             $0.trailing.equalToSuperview().inset(16)
+        }
+        
+        separateBar.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(1)
+            $0.bottom.equalToSuperview()
         }
     }
 }
@@ -79,6 +94,16 @@ extension NotificationAlarmCell {
             UIImage(named: Badge.alarmComment.bigImage)
         case .unknown:
             nil
+        }
+        
+        switch data.category {
+        case .management:
+            descriptionLabel.numberOfLines = 0
+            totalLabel.isHidden = true
+        case .community:
+            descriptionLabel.numberOfLines = 1
+            descriptionLabel.lineBreakMode = .byTruncatingTail
+            totalLabel.isHidden = false
         }
         
         titleLabel.text = data.title
