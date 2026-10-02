@@ -176,20 +176,20 @@ extension CommunityPostDBManager {
 
 //MARK: CRUD - Read
 extension CommunityPostDBManager {
-    func fetchPostContents(postIDs: [UUID]) async throws -> [UUID: String] {
+    func fetchPostTitles(postIDs: [UUID]) async throws -> [UUID: String] {
         let uniquePostIDs = Array(Set(postIDs))
         guard !uniquePostIDs.isEmpty else { return [:] }
 
         do {
-            let posts: [CommunityPostContentRow] = try await supabaseManager.client
+            let posts: [CommunityPostTitleRow] = try await supabaseManager.client
                 .from("community_posts")
-                .select("id, content")
+                .select("id, title")
                 .in("id", values: uniquePostIDs)
                 .is("deleted_at", value: nil)
                 .execute()
                 .value
 
-            return Dictionary(uniqueKeysWithValues: posts.map { ($0.id, $0.content) })
+            return Dictionary(uniqueKeysWithValues: posts.map { ($0.id, $0.title) })
         } catch {
             throw AuthError.communityFailed("게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
         }
@@ -305,9 +305,9 @@ extension CommunityPostDBManager {
     }
 }
 
-nonisolated private struct CommunityPostContentRow: Decodable, Sendable {
+nonisolated private struct CommunityPostTitleRow: Decodable, Sendable {
     let id: UUID
-    let content: String
+    let title: String
 }
 
 //MARK: 좋아요 관련

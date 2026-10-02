@@ -127,8 +127,8 @@ extension NotificationCenterReactor {
                 do {
                     let now = Date()
                     let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
-                    let postContents = category == .community
-                        ? try await self.communityPostDBManager.fetchPostContents(
+                    let postTitles = category == .community
+                        ? try await self.communityPostDBManager.fetchPostTitles(
                             postIDs: notifications.compactMap(\.metadata.postID)
                         )
                         : [:]
@@ -142,7 +142,7 @@ extension NotificationCenterReactor {
                             postID: $0.metadata.postID,
                             title: $0.title,
                             body: category == .community
-                                ? ($0.metadata.postID.flatMap { postContents[$0] } ?? $0.body)
+                                ? ($0.metadata.postID.flatMap { postTitles[$0] } ?? $0.body)
                                 : ($0.plantNamesText ?? $0.body),
                             category: $0.category,
                             detailCategory: $0.type,
@@ -198,8 +198,8 @@ extension NotificationCenterReactor {
                 }
 
                 do {
-                    let contents = try await self.communityPostDBManager.fetchPostContents(postIDs: [postID])
-                    if contents[postID] != nil {
+                    let titles = try await self.communityPostDBManager.fetchPostTitles(postIDs: [postID])
+                    if titles[postID] != nil {
                         observer.onNext(.openPost(postID))
                     } else {
                         observer.onNext(.error("해당 게시물을 불러올 수 없습니다."))
