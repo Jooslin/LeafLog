@@ -57,6 +57,7 @@ struct AppNotificationMetadata: Codable, Hashable {
     let primaryPlantName: String?
     let plantCount: Int?
     let notificationDate: LocalDate?
+    let postID: UUID?
 
     enum CodingKeys: String, CodingKey {
         case plantIDs = "plant_ids"
@@ -64,6 +65,7 @@ struct AppNotificationMetadata: Codable, Hashable {
         case primaryPlantName = "primary_plant_name"
         case plantCount = "plant_count"
         case notificationDate = "notification_date"
+        case postID = "post_id"
     }
     
     init(
@@ -71,13 +73,15 @@ struct AppNotificationMetadata: Codable, Hashable {
         plantNames: [String] = [],
         primaryPlantName: String? = nil,
         plantCount: Int? = nil,
-        notificationDate: LocalDate? = nil
+        notificationDate: LocalDate? = nil,
+        postID: UUID? = nil
     ) {
         self.plantIDs = plantIDs
         self.plantNames = plantNames
         self.primaryPlantName = primaryPlantName
         self.plantCount = plantCount
         self.notificationDate = notificationDate
+        self.postID = postID
     }
     
     init(from decoder: Decoder) throws {
@@ -88,6 +92,7 @@ struct AppNotificationMetadata: Codable, Hashable {
         primaryPlantName = try container.decodeIfPresent(String.self, forKey: .primaryPlantName)
         plantCount = try container.decodeIfPresent(Int.self, forKey: .plantCount)
         notificationDate = try container.decodeIfPresent(LocalDate.self, forKey: .notificationDate)
+        postID = try container.decodeIfPresent(UUID.self, forKey: .postID)
     }
 }
 

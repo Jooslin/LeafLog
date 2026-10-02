@@ -13,7 +13,7 @@ import RxCocoa
 
 final class NotificationCenterView: UIView {
     fileprivate let titleView = TitleHeaderView(text: "알림 센터", hasBackButton: true)
-    private lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
+    fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
         $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
@@ -28,7 +28,7 @@ final class NotificationCenterView: UIView {
         $0.isHidden = true
     }
     
-    private lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -141,6 +141,7 @@ extension NotificationCenterView {
     
     struct Alarm: Hashable {
         let id: UUID
+        let postID: UUID?
         let title: String
         let body: String
         let category: AppNotificationCategory
@@ -151,6 +152,11 @@ extension NotificationCenterView {
 }
 
 extension Reactive where Base: NotificationCenterView {
+    var itemSelected: Observable<NotificationCenterView.Item> {
+        base.listView.rx.itemSelected
+            .compactMap { base.dataSource.itemIdentifier(for: $0) }
+    }
+
     var backButtonTap: ControlEvent<Void> {
         base.titleView.rx.backButtonTap
     }

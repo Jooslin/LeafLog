@@ -16,6 +16,7 @@ final class NotificationCenterReactor: Reactor {
         case viewWillAppear
         case refresh
         case categorySelected(Int)
+        case notificationSelected(NotificationCenterView.Alarm)
     }
 
     enum Mutation {
@@ -24,6 +25,7 @@ final class NotificationCenterReactor: Reactor {
             items: [NotificationCenterView.Item]
         )
         case setCategorySelectionLoading(Bool)
+        case openPost(UUID)
         case error(String)
     }
     
@@ -31,6 +33,7 @@ final class NotificationCenterReactor: Reactor {
         var alarmItem: [NotificationCenterView.Item] = []
         var category: AppNotificationCategory
         var isCategorySelectionLoading = false
+        @Pulse var selectedPostID: UUID?
         @Pulse var errorMessage: String?
     }
     
@@ -42,6 +45,7 @@ final class NotificationCenterReactor: Reactor {
     
     //MARK: properties
     @Dependency(\.notificationDBManager) private var notificationDBManager
+    @Dependency(\.communityPostDBManager) private var communityPostDBManager
     private let logger = Logger(subsystem: "LeafLog", category: "NotificationCenterReactor")
     private let calendar = Calendar.current
     
@@ -82,6 +86,10 @@ final class NotificationCenterReactor: Reactor {
                 .just(.setCategorySelectionLoading(false))
             ])
             .take(until: differentCategorySelected(from: category))
+
+        case .notificationSelected(let alarm):
+            guard alarm.category == .community else { return .empty() }
+            return openPost(alarm.postID)
         }
     }
     
@@ -95,6 +103,9 @@ final class NotificationCenterReactor: Reactor {
 
         case .setCategorySelectionLoading(let isLoading):
             newState.isCategorySelectionLoading = isLoading
+
+        case .openPost(let postID):
+            newState.selectedPostID = postID
             
         case .error(let message):
             newState.errorMessage = message
@@ -116,6 +127,11 @@ extension NotificationCenterReactor {
                 do {
                     let now = Date()
                     let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
+                    let postContents = category == .community
+                        ? try await self.communityPostDBManager.fetchPostContents(
+                            postIDs: notifications.compactMap(\.metadata.postID)
+                        )
+                        : [:]
                     
                     let items = notifications.map {
                         let time = self.calculateExcessAlarmTime(from: $0.sentAt ?? $0.createdAt, to: now)
@@ -123,8 +139,11 @@ extension NotificationCenterReactor {
                         
                         let alarm = NotificationCenterView.Alarm(
                             id: $0.id,
+                            postID: $0.metadata.postID,
                             title: $0.title,
-                            body: $0.plantNamesText ?? $0.body,
+                            body: category == .community
+                                ? ($0.metadata.postID.flatMap { postContents[$0] } ?? $0.body)
+                                : ($0.plantNamesText ?? $0.body),
                             category: $0.category,
                             detailCategory: $0.type,
                             sentTimeLabel: timeString,
@@ -163,6 +182,38 @@ extension NotificationCenterReactor {
             return Disposables.create {
                 task.cancel()
             }
+        }
+    }
+
+    private func openPost(_ postID: UUID?) -> Observable<Mutation> {
+        guard let postID else {
+            return .just(.error("해당 게시물을 불러올 수 없습니다."))
+        }
+
+        return Observable.create { [weak self] observer in
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+
+                do {
+                    let contents = try await self.communityPostDBManager.fetchPostContents(postIDs: [postID])
+                    if contents[postID] != nil {
+                        observer.onNext(.openPost(postID))
+                    } else {
+                        observer.onNext(.error("해당 게시물을 불러올 수 없습니다."))
+                    }
+                } catch let error as AuthError {
+                    observer.onNext(.error(error.userMessage))
+                } catch {
+                    observer.onNext(.error("게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."))
+                }
+
+                observer.onCompleted()
+            }
+
+            return Disposables.create { task.cancel() }
         }
     }
     
