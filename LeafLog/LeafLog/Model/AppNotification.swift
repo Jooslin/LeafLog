@@ -186,3 +186,15 @@ struct AppNotification: Codable, Hashable {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
     }
 }
+
+struct CommunityNotificationGroup: Decodable {
+    let notificationID: UUID
+    let firstActorNickname: String
+    let participantIDs: [UUID]
+
+    enum CodingKeys: String, CodingKey {
+        case notificationID = "notification_id"
+        case firstActorNickname = "first_actor_nickname"
+        case participantIDs = "participant_ids"
+    }
+}

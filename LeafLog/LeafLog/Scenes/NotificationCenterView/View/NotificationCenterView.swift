@@ -144,6 +144,7 @@ extension NotificationCenterView {
         let postID: UUID?
         let title: String
         let body: String
+        let totalText: String?
         let category: AppNotificationCategory
         let detailCategory: AppNotificationType
         let sentTimeLabel: String

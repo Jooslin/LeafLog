@@ -132,22 +132,31 @@ extension NotificationCenterReactor {
                             postIDs: notifications.compactMap(\.metadata.postID)
                         )
                         : [:]
+                    let groups = category == .community
+                        ? try await self.notificationDBManager.fetchCommunityNotificationGroups(
+                            notificationIDs: notifications.map(\.id)
+                        )
+                        : [:]
                     
-                    let items = notifications.map {
-                        let time = self.calculateExcessAlarmTime(from: $0.sentAt ?? $0.createdAt, to: now)
+                    let items = notifications.map { notification in
+                        let time = self.calculateExcessAlarmTime(from: notification.sentAt ?? notification.createdAt, to: now)
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
+                        let totalText = groups[notification.id].flatMap {
+                            self.communityTotalText(group: $0, type: notification.type)
+                        }
                         
                         let alarm = NotificationCenterView.Alarm(
-                            id: $0.id,
-                            postID: $0.metadata.postID,
-                            title: $0.title,
+                            id: notification.id,
+                            postID: notification.metadata.postID,
+                            title: notification.title,
                             body: category == .community
-                                ? ($0.metadata.postID.flatMap { postTitles[$0] } ?? $0.body)
-                                : ($0.plantNamesText ?? $0.body),
-                            category: $0.category,
-                            detailCategory: $0.type,
+                                ? (notification.metadata.postID.flatMap { postTitles[$0] } ?? notification.body)
+                                : (notification.plantNamesText ?? notification.body),
+                            totalText: totalText,
+                            category: notification.category,
+                            detailCategory: notification.type,
                             sentTimeLabel: timeString,
-                            isUnread: !$0.isRead
+                            isUnread: !notification.isRead
                         )
                         
                         let item = NotificationCenterView.Item.alarm(alarm)
@@ -183,6 +192,24 @@ extension NotificationCenterReactor {
                 task.cancel()
             }
         }
+    }
+
+    private func communityTotalText(group: CommunityNotificationGroup, type: AppNotificationType) -> String? {
+        let action: String
+        switch type {
+        case .favorite:
+            action = "좋아요를 눌렀어요."
+        case .comment:
+            action = "댓글을 남겼어요."
+        default:
+            return nil
+        }
+
+        let otherCount = group.participantIDs.count - 1
+        if otherCount > 0 {
+            return "\(group.firstActorNickname)님 외 \(otherCount)명이 \(action)"
+        }
+        return "\(group.firstActorNickname)님이 \(action)"
     }
 
     private func openPost(_ postID: UUID?) -> Observable<Mutation> {

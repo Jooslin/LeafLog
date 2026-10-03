@@ -44,6 +44,28 @@ final class NotificationDBManager {
         }
     }
 
+    func fetchCommunityNotificationGroups(notificationIDs: [UUID]) async throws -> [UUID: CommunityNotificationGroup] {
+        let uniqueIDs = Array(Set(notificationIDs))
+        guard !uniqueIDs.isEmpty else { return [:] }
+
+        do {
+            let groups: [CommunityNotificationGroup] = try await supabaseManager.client
+                .from("community_notification_groups")
+                .select("notification_id, first_actor_nickname, participant_ids")
+                .in("notification_id", values: uniqueIDs)
+                .execute()
+                .value
+
+            return Dictionary(uniqueKeysWithValues: groups.map { ($0.notificationID, $0) })
+        } catch {
+            if Task.isCancelled {
+                throw CancellationError()
+            }
+
+            throw AuthError.notificationFailed("알림 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+    }
+
     func hasUnreadNotifications() async throws -> Bool {
         struct NotificationID: Decodable {
             let id: UUID

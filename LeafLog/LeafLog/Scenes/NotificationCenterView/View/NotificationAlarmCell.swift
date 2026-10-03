@@ -103,11 +103,12 @@ extension NotificationAlarmCell {
         case .community:
             descriptionLabel.numberOfLines = 1
             descriptionLabel.lineBreakMode = .byTruncatingTail
-            totalLabel.isHidden = false
+            totalLabel.isHidden = data.totalText == nil
         }
         
         titleLabel.text = data.title
         descriptionLabel.text = data.body
+        totalLabel.text = data.totalText
         timeLabel.text = data.sentTimeLabel
     }
 }
