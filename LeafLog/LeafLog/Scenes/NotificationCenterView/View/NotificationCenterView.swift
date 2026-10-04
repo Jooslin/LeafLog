@@ -79,6 +79,14 @@ extension NotificationCenterView {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         
         return UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
+            let footerItem = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: NSCollectionLayoutSize(
+                    widthDimension: .fractionalWidth(1),
+                    heightDimension: .absolute(24)
+                ),
+                elementKind: "footerKind",
+                alignment: .bottom
+            )
             
             let item = NSCollectionLayoutItem(
                 layoutSize: NSCollectionLayoutSize(
@@ -95,6 +103,9 @@ extension NotificationCenterView {
             group.interItemSpacing = .fixed(4)
             
             let section = NSCollectionLayoutSection(group: group)
+            section.boundarySupplementaryItems = [footerItem]
+            section.contentInsets = .init(top: 0, leading: 0, bottom: 44, trailing: 0)
+            
             return section
         }, configuration: configuration)
     }
@@ -104,8 +115,11 @@ extension NotificationCenterView {
             switch item {
             case .alarm(let alarm):
                 cell.configure(alarm)
+                
             }
         }
+        
+        let footerViewRegistration = UICollectionView.SupplementaryRegistration<NotificationFooterView>(elementKind: "footerKind") { [weak self] supplementaryView, elementKind, indexPath in }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
@@ -116,6 +130,10 @@ extension NotificationCenterView {
             }
         }
         
+        dataSource.supplementaryViewProvider = {
+            collectionView.dequeueConfiguredReusableSupplementary(using: footerViewRegistration, for: $2) // $2 == indexPath
+        }
+         
         return dataSource
     }
     
@@ -160,5 +178,24 @@ extension Reactive where Base: NotificationCenterView {
 
     var backButtonTap: ControlEvent<Void> {
         base.titleView.rx.backButtonTap
+    }
+}
+
+//MARK: FooterView
+final class NotificationFooterView: UICollectionReusableView {
+    private let label = UILabel(text: "더 이상 새로운 알림이 없어요.", config: .body14, color: .grayScale600, lines: 1)
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        addSubview(label)
+        
+        label.snp.makeConstraints {
+            $0.center.equalToSuperview()
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
