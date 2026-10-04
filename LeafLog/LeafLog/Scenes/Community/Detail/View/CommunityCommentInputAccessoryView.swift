@@ -73,6 +73,7 @@ final class CommunityCommentInputAccessoryView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
+        autoresizingMask = [.flexibleHeight]
         backgroundColor = .white
         layer.borderColor = UIColor.grayScale100.cgColor
         layer.borderWidth = 1 / UIScreen.main.scale
@@ -88,9 +89,13 @@ final class CommunityCommentInputAccessoryView: UIView {
     }
     
     func applyPreferredHeight() {
-        guard frame.height != preferredHeight else { return }
+        if frame.height != preferredHeight {
+            frame.size.height = preferredHeight
+        }
         
-        frame.size.height = preferredHeight
+        invalidateIntrinsicContentSize()
+        superview?.setNeedsLayout()
+        superview?.layoutIfNeeded()
     }
     
     func updateSendButton(isEnabled: Bool) {
@@ -116,7 +121,6 @@ final class CommunityCommentInputAccessoryView: UIView {
                 .isEmpty == false
         )
         applyPreferredHeight()
-        invalidateIntrinsicContentSize()
         setNeedsLayout()
         layoutIfNeeded()
     }
@@ -130,6 +134,14 @@ final class CommunityCommentInputAccessoryView: UIView {
     
     func focusCommentInput() {
         inputTextField.becomeFirstResponder()
+    }
+    
+    func isCommentInputFocused() -> Bool {
+        inputTextField.isFirstResponder
+    }
+    
+    func resignCommentInputFocus() {
+        inputTextField.resignFirstResponder()
     }
     
     private func sendButtonImage(for mode: CommentInputMode) -> UIImage? {
@@ -176,7 +188,7 @@ private extension CommunityCommentInputAccessoryView {
         }
         
         cancelCommentEditingButton.imageView?.snp.makeConstraints {
-            $0.width.height.equalTo(10)
+            $0.width.height.equalTo(20)
         }
         
         inputTextField.snp.makeConstraints {

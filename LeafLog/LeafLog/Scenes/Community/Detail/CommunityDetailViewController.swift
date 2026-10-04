@@ -10,6 +10,26 @@ import RxSwift
 import ReactorKit
 import UIKit
 
+nonisolated private enum CommunityDetailItemID: Hashable, Sendable {
+    case post(UUID)
+    case commentHeader
+    case emptyComment
+    case comment(UUID)
+    
+    init(_ item: CommunityDetailReactor.DetailItem) {
+        switch item {
+        case .post(let post):
+            self = .post(post.id)
+        case .commentHeader:
+            self = .commentHeader
+        case .emptyComment:
+            self = .emptyComment
+        case .comment(let comment):
+            self = .comment(comment.id)
+        }
+    }
+}
+
 final class CommunityDetailViewController: BaseViewController, View {
     private let detailView = CommunityDetailView(frame: UIScreen.main.bounds)
     private let commentInputAccessoryView = CommunityCommentInputAccessoryView(
@@ -22,6 +42,30 @@ final class CommunityDetailViewController: BaseViewController, View {
     )
     private var comments: [CommunityDetailReactor.Comment] = []
     private var detailItems: [CommunityDetailReactor.DetailItem] = []
+    private lazy var dismissKeyboardTapGesture: UITapGestureRecognizer = {
+        let gesture = UITapGestureRecognizer(
+            target: self,
+            action: #selector(contentViewTapped)
+        )
+        gesture.cancelsTouchesInView = false
+        return gesture
+    }()
+    private lazy var dataSource = UICollectionViewDiffableDataSource<
+        Int,
+        CommunityDetailItemID
+    >(
+        collectionView: detailView.detailCollectionView
+    ) { [weak self] collectionView, indexPath, itemID in
+        guard let item = self?.detailItem(for: itemID) else {
+            return UICollectionViewCell()
+        }
+        
+        return self?.makeCell(
+            collectionView: collectionView,
+            indexPath: indexPath,
+            item: item
+        ) ?? UICollectionViewCell()
+    }
     
     override var inputAccessoryView: UIView? {
         commentInputAccessoryView
@@ -47,7 +91,8 @@ final class CommunityDetailViewController: BaseViewController, View {
         super.viewDidLoad()
         
         navigationController?.navigationBar.isHidden = true
-        detailView.detailCollectionView.dataSource = self
+        _ = dataSource
+        detailView.addGestureRecognizer(dismissKeyboardTapGesture)
         updateCollectionViewBottomInset()
     }
     
@@ -146,7 +191,7 @@ final class CommunityDetailViewController: BaseViewController, View {
                     guard case .comment(let comment) = $0 else { return nil }
                     return comment
                 }
-                self?.detailView.detailCollectionView.reloadData()
+                self?.applySnapshot(detailItems: detailItems)
             }
             .disposed(by: disposeBag)
         
@@ -199,6 +244,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] target in
                 self?.scrollToComment(target)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$shouldDismissCommentInput)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.endCommentInputEditing()
             }
             .disposed(by: disposeBag)
         
@@ -262,6 +315,142 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     private func updateCollectionViewBottomInset() {
         detailView.setCollectionViewBottomInset(commentInputAccessoryView.preferredHeight)
+    }
+    
+    private func applySnapshot(detailItems: [CommunityDetailReactor.DetailItem]) {
+        let itemIDs = uniqueItemIDs(detailItems.map(CommunityDetailItemID.init))
+        let existingItemIDs = Set(dataSource.snapshot().itemIdentifiers)
+        
+        var snapshot = NSDiffableDataSourceSnapshot<
+            Int,
+            CommunityDetailItemID
+        >()
+        snapshot.appendSections([0])
+        snapshot.appendItems(itemIDs, toSection: 0)
+        snapshot.reconfigureItems(itemIDs.filter { existingItemIDs.contains($0) })
+        
+        dataSource.apply(
+            snapshot,
+            animatingDifferences: detailView.detailCollectionView.window != nil
+        )
+    }
+    
+    private func detailItem(
+        for itemID: CommunityDetailItemID
+    ) -> CommunityDetailReactor.DetailItem? {
+        detailItems.first {
+            CommunityDetailItemID($0) == itemID
+        }
+    }
+    
+    private func uniqueItemIDs(_ itemIDs: [CommunityDetailItemID]) -> [CommunityDetailItemID] {
+        var seenItemIDs = Set<CommunityDetailItemID>()
+        
+        return itemIDs.filter {
+            seenItemIDs.insert($0).inserted
+        }
+    }
+    
+    private func endCommentInputEditing() {
+        guard commentInputAccessoryView.isCommentInputFocused() else { return }
+        
+        commentInputAccessoryView.resignCommentInputFocus()
+        keepCommentInputAccessoryVisible()
+    }
+    
+    private func keepCommentInputAccessoryVisible() {
+        DispatchQueue.main.async { [weak self] in
+            self?.becomeFirstResponder()
+        }
+    }
+    
+    @objc private func contentViewTapped() {
+        endCommentInputEditing()
+    }
+    
+    private func makeCell(
+        collectionView: UICollectionView,
+        indexPath: IndexPath,
+        item: CommunityDetailReactor.DetailItem
+    ) -> UICollectionViewCell {
+        switch item {
+        case .post(let post):
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityPostContentCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityPostContentCell else {
+                return UICollectionViewCell()
+            }
+            
+            cell.configure(post: post)
+            if let reactor {
+                cell.rx.postImageTap
+                    .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.profileImageTap
+                    .map { CommunityDetailReactor.Action.postProfileImageTapped }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.heartButtonTap
+                    .map { CommunityDetailReactor.Action.heartButtonTapped }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+            }
+            
+            return cell
+            
+        case .commentHeader:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentHeaderCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentHeaderCell else {
+                return UICollectionViewCell()
+            }
+            
+            return cell
+            
+        case .emptyComment:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentEmptyCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentEmptyCell else {
+                return UICollectionViewCell()
+            }
+            
+            return cell
+            
+        case .comment(let comment):
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: CommunityCommentCell.reuseIdentifier,
+                for: indexPath
+            ) as? CommunityCommentCell else {
+                return UICollectionViewCell()
+            }
+            
+            cell.configure(comment)
+            if let reactor {
+                cell.rx.profileImageTap
+                    .compactMap { [weak self] in
+                        self?.comments.firstIndex { $0.id == comment.id }
+                    }
+                    .map { CommunityDetailReactor.Action.commentProfileImageTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+                
+                cell.rx.moreButtonTap
+                    .compactMap { [weak self] in
+                        self?.comments.firstIndex { $0.id == comment.id }
+                    }
+                    .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: $0) }
+                    .bind(to: reactor.action)
+                    .disposed(by: cell.disposeBag)
+            }
+            
+            return cell
+        }
     }
     
     private func scrollToComment(_ target: CommunityDetailReactor.CommentScrollTarget) {
@@ -425,96 +614,6 @@ final class CommunityDetailViewController: BaseViewController, View {
         )
         alertController.addAction(UIAlertAction(title: "닫기", style: .default))
         present(alertController, animated: true)
-    }
-}
-
-extension CommunityDetailViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        detailItems.count
-    }
-    
-    func collectionView(
-        _ collectionView: UICollectionView,
-        cellForItemAt indexPath: IndexPath
-    ) -> UICollectionViewCell {
-        switch detailItems[indexPath.item] {
-        case .post(let post):
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: CommunityPostContentCell.reuseIdentifier,
-                for: indexPath
-            ) as? CommunityPostContentCell else {
-                return UICollectionViewCell()
-            }
-            
-            cell.configure(post: post)
-            if let reactor {
-                cell.rx.postImageTap
-                    .map { CommunityDetailReactor.Action.postImageTapped(index: $0) }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-                
-                cell.rx.profileImageTap
-                    .map { CommunityDetailReactor.Action.postProfileImageTapped }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-                
-                cell.rx.heartButtonTap
-                    .map { CommunityDetailReactor.Action.heartButtonTapped }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-            }
-            
-            return cell
-            
-        case .commentHeader:
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: CommunityCommentHeaderCell.reuseIdentifier,
-                for: indexPath
-            ) as? CommunityCommentHeaderCell else {
-                return UICollectionViewCell()
-            }
-            
-            return cell
-            
-        case .emptyComment:
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: CommunityCommentEmptyCell.reuseIdentifier,
-                for: indexPath
-            ) as? CommunityCommentEmptyCell else {
-                return UICollectionViewCell()
-            }
-            
-            return cell
-            
-        case .comment(let comment):
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: CommunityCommentCell.reuseIdentifier,
-                for: indexPath
-            ) as? CommunityCommentCell else {
-                return UICollectionViewCell()
-            }
-            
-            cell.configure(comment)
-            if let reactor {
-                cell.rx.profileImageTap
-                    .compactMap { [weak self] in
-                        self?.comments.firstIndex { $0.id == comment.id }
-                    }
-                    .map { CommunityDetailReactor.Action.commentProfileImageTapped(index: $0) }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-                
-                cell.rx.moreButtonTap
-                    .compactMap { [weak self] in
-                        self?.comments.firstIndex { $0.id == comment.id }
-                    }
-                    .map { CommunityDetailReactor.Action.commentMoreButtonTapped(index: $0) }
-                    .bind(to: reactor.action)
-                    .disposed(by: cell.disposeBag)
-            }
-            
-            return cell
-        }
     }
 }
 
