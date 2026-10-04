@@ -184,7 +184,7 @@ private extension CommunityCommentInputAccessoryView {
         }
         
         cancelCommentEditingButton.imageView?.snp.makeConstraints {
-            $0.width.height.equalTo(10)
+            $0.width.height.equalTo(20)
         }
         
         inputTextField.snp.makeConstraints {
