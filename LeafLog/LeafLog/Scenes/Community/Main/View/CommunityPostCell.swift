@@ -204,7 +204,7 @@ final class CommunityPostCell: UICollectionViewCell {
 
         reactionStackView.snp.makeConstraints {
             $0.leading.equalToSuperview()
-            $0.bottom.equalTo(separatorView.snp.top).offset(-16)
+            $0.bottom.equalTo(separatorView.snp.top).offset(-16).priority(999)
         }
 
         [likeImageView, commentImageView].forEach {
@@ -260,7 +260,7 @@ final class CommunityPostCell: UICollectionViewCell {
             } else {
                 $0.top.equalTo(bodyLabel.snp.bottom).offset(10)
             }
-            $0.bottom.equalTo(separatorView.snp.top).offset(-16)
+            $0.bottom.equalTo(separatorView.snp.top).offset(-16).priority(999)
         }
     }
 }
