@@ -57,6 +57,11 @@ final class CommunityViewController: BaseViewController, View {
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
 
+        communityView.rx.loadNextPage
+            .map { CommunityReactor.Action.loadNextPage }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
         communityView.rx.writeButtonTap
             .map { AppStep.communityComposeCreate }
             .bind(to: steps)
@@ -70,6 +75,16 @@ final class CommunityViewController: BaseViewController, View {
 
     private func bindState(reactor: CommunityReactor) {
         reactor.state
+            .map { $0.hasLoadedPosts && !$0.isLoadingPage && $0.posts.isEmpty }
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] isVisible in
+                self?.communityView.setEmptyStateVisible(isVisible)
+            }
+            .disposed(by: disposeBag)
+
+        reactor.state
+            .distinctUntilChanged { $0.feedRevision == $1.feedRevision }
             .map {
                 (
                     $0.posts,
