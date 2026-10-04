@@ -119,7 +119,7 @@ extension NotificationCenterView {
             }
         }
         
-        let footerViewRegistration = UICollectionView.SupplementaryRegistration<NotificationFooterView>(elementKind: "footerKind") { [weak self] supplementaryView, elementKind, indexPath in }
+        let footerViewRegistration = UICollectionView.SupplementaryRegistration<NotificationFooterView>(elementKind: "footerKind") { _, _, _ in }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
