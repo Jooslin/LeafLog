@@ -242,7 +242,7 @@ final class CommunityDetailViewController: BaseViewController, View {
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
             .drive { [weak self] _ in
-                self?.dismissCommentInput()
+                self?.endCommentInputEditing()
             }
             .disposed(by: disposeBag)
         

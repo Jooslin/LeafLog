@@ -136,7 +136,7 @@ final class CommunityCommentInputAccessoryView: UIView {
         inputTextField.becomeFirstResponder()
     }
     
-    func dismissCommentInput() {
+    func resignCommentInputFocus() {
         inputTextField.resignFirstResponder()
     }
     
