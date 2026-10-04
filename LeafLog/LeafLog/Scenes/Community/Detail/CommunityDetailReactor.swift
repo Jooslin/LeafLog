@@ -117,6 +117,7 @@ final class CommunityDetailReactor: Reactor {
         case presentPostActionSheet(PostActionSheetKind)
         case presentCommentActionSheet(CommentActionSheetKind)
         case scrollToComment(CommentScrollTarget)
+        case dismissCommentInput
         case presentImageViewer(ImageViewerRoute)
         case routeToMemberProfile(memberID: UUID)
         case routeToEditPost(CommunityPost)
@@ -139,6 +140,7 @@ final class CommunityDetailReactor: Reactor {
         @Pulse var postActionSheetKind: PostActionSheetKind?
         @Pulse var commentActionSheetKind: CommentActionSheetKind?
         @Pulse var commentScrollTarget: CommentScrollTarget?
+        @Pulse var shouldDismissCommentInput: Bool?
         @Pulse var imageViewerRoute: ImageViewerRoute?
         @Pulse var memberProfileRoute: UUID?
         @Pulse var editPostRoute: CommunityPost?
@@ -427,6 +429,9 @@ final class CommunityDetailReactor: Reactor {
         case .scrollToComment(let target):
             newState.commentScrollTarget = target
             
+        case .dismissCommentInput:
+            newState.shouldDismissCommentInput = true
+            
         case .presentImageViewer(let route):
             newState.imageViewerRoute = route
             
@@ -699,7 +704,8 @@ extension CommunityDetailReactor {
                 
                 return [
                     .updateCommentBody(commentID: editingCommentID, body: content),
-                    .setEditingComment(commentID: nil, text: "")
+                    .setEditingComment(commentID: nil, text: ""),
+                    .dismissCommentInput
                 ]
             } else {
                 _ = try await communityCommentDBManager.createComment(
@@ -718,7 +724,8 @@ extension CommunityDetailReactor {
                 return [
                     .setComments(commentPage),
                     .setEditingComment(commentID: nil, text: ""),
-                    .scrollToComment(.firstComment)
+                    .scrollToComment(.firstComment),
+                    .dismissCommentInput
                 ]
             }
         }

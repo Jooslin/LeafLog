@@ -136,6 +136,10 @@ final class CommunityCommentInputAccessoryView: UIView {
         inputTextField.becomeFirstResponder()
     }
     
+    func dismissCommentInput() {
+        inputTextField.resignFirstResponder()
+    }
+    
     private func sendButtonImage(for mode: CommentInputMode) -> UIImage? {
         switch mode {
         case .create:

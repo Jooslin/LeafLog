@@ -202,6 +202,14 @@ final class CommunityDetailViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$shouldDismissCommentInput)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.dismissCommentInput()
+            }
+            .disposed(by: disposeBag)
+        
         reactor.pulse(\.$imageViewerRoute)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -262,6 +270,12 @@ final class CommunityDetailViewController: BaseViewController, View {
     
     private func updateCollectionViewBottomInset() {
         detailView.setCollectionViewBottomInset(commentInputAccessoryView.preferredHeight)
+    }
+    
+    private func dismissCommentInput() {
+        commentInputAccessoryView.dismissCommentInput()
+        becomeFirstResponder()
+        reloadInputViews()
     }
     
     private func scrollToComment(_ target: CommunityDetailReactor.CommentScrollTarget) {
