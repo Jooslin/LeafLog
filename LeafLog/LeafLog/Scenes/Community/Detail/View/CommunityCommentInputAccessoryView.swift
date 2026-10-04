@@ -73,6 +73,7 @@ final class CommunityCommentInputAccessoryView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
+        autoresizingMask = [.flexibleHeight]
         backgroundColor = .white
         layer.borderColor = UIColor.grayScale100.cgColor
         layer.borderWidth = 1 / UIScreen.main.scale
@@ -88,9 +89,13 @@ final class CommunityCommentInputAccessoryView: UIView {
     }
     
     func applyPreferredHeight() {
-        guard frame.height != preferredHeight else { return }
+        if frame.height != preferredHeight {
+            frame.size.height = preferredHeight
+        }
         
-        frame.size.height = preferredHeight
+        invalidateIntrinsicContentSize()
+        superview?.setNeedsLayout()
+        superview?.layoutIfNeeded()
     }
     
     func updateSendButton(isEnabled: Bool) {
@@ -116,7 +121,6 @@ final class CommunityCommentInputAccessoryView: UIView {
                 .isEmpty == false
         )
         applyPreferredHeight()
-        invalidateIntrinsicContentSize()
         setNeedsLayout()
         layoutIfNeeded()
     }
