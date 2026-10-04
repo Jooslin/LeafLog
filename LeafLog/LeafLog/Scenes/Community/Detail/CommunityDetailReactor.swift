@@ -24,7 +24,7 @@ final class CommunityDetailReactor: Reactor {
         let body: String
         let imageURLs: [URL?]
         var likeCount: Int
-        let commentCount: String
+        var commentCount: String
         var isLiked: Bool
         let isMine: Bool
     }
@@ -38,6 +38,7 @@ final class CommunityDetailReactor: Reactor {
         let body: String
         let badge: CommentBadge
         let isMine: Bool
+        let cursor: CommunityCommentCursor
     }
     
     struct CommentPage: Equatable {
@@ -112,6 +113,7 @@ final class CommunityDetailReactor: Reactor {
         case setEditingComment(commentID: UUID?, text: String)
         case appendComments(CommentPage)
         case updateCommentBody(commentID: UUID, body: String)
+        case updateCommentCount(delta: Int)
         
         case setLikeState(isLiked: Bool, likeCount: Int)
         case presentPostActionSheet(PostActionSheetKind)
@@ -353,18 +355,28 @@ final class CommunityDetailReactor: Reactor {
             newState.isLoading = isLoading
             
         case .setDetail(let post, let originalPost, let commentPage):
+            let comments = Self.uniqueComments(commentPage.comments)
             newState.post = post
             newState.originalPost = originalPost
-            newState.comments = commentPage.comments
-            newState.nextCommentCursor = commentPage.nextCursor
+            newState.comments = comments
+            newState.nextCommentCursor = Self.nextCommentCursor(
+                comments: comments,
+                hasNextPage: commentPage.hasNextPage
+            )
             newState.hasNextCommentPage = commentPage.hasNextPage
-            newState.detailItems = Self.makeDetailItems(post: post, comments: commentPage.comments)
+                && newState.nextCommentCursor != nil
+            newState.detailItems = Self.makeDetailItems(post: post, comments: comments)
             
         case .setComments(let commentPage):
-            newState.comments = commentPage.comments
-            newState.nextCommentCursor = commentPage.nextCursor
+            let comments = Self.uniqueComments(commentPage.comments)
+            newState.comments = comments
+            newState.nextCommentCursor = Self.nextCommentCursor(
+                comments: comments,
+                hasNextPage: commentPage.hasNextPage
+            )
             newState.hasNextCommentPage = commentPage.hasNextPage
-            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: commentPage.comments)
+                && newState.nextCommentCursor != nil
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: comments)
             
         case .setCommentInputText(let text):
             newState.commentInputText = text
@@ -386,9 +398,17 @@ final class CommunityDetailReactor: Reactor {
             newState.isLoadingMoreComments = isLoadingMoreComments
             
         case .appendComments(let commentPage):
+            let previousCommentCount = newState.comments.count
             newState.comments.append(contentsOf: commentPage.comments)
-            newState.nextCommentCursor = commentPage.nextCursor
+            newState.comments = Self.uniqueComments(newState.comments)
+            newState.nextCommentCursor = newState.comments.count > previousCommentCount
+                ? Self.nextCommentCursor(
+                    comments: newState.comments,
+                    hasNextPage: commentPage.hasNextPage
+                )
+                : commentPage.nextCursor
             newState.hasNextCommentPage = commentPage.hasNextPage
+                && newState.nextCommentCursor != nil
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
             
         case .updateCommentBody(let commentID, let body):
@@ -405,8 +425,18 @@ final class CommunityDetailReactor: Reactor {
                 date: comment.date,
                 body: body,
                 badge: comment.badge,
-                isMine: comment.isMine
+                isMine: comment.isMine,
+                cursor: comment.cursor
             )
+            newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
+            
+        case .updateCommentCount(let delta):
+            guard let commentCount = newState.post?.commentCount,
+                  let currentCommentCount = Int(commentCount) else {
+                break
+            }
+            
+            newState.post?.commentCount = String(max(0, currentCommentCount + delta))
             newState.detailItems = Self.makeDetailItems(post: newState.post, comments: newState.comments)
 
         case .setUpdatingLike(let isUpdatingLike):
@@ -660,7 +690,8 @@ extension CommunityDetailReactor {
                 date: dateFormatter.string(from: comment.createdAt),
                 body: comment.content,
                 badge: badge,
-                isMine: isMine
+                isMine: isMine,
+                cursor: CommunityCommentCursor(createdAt: comment.createdAt, id: comment.id)
             )
         }
     }
@@ -723,6 +754,7 @@ extension CommunityDetailReactor {
                 
                 return [
                     .setComments(commentPage),
+                    .updateCommentCount(delta: 1),
                     .setEditingComment(commentID: nil, text: ""),
                     .scrollToComment(.firstComment),
                     .dismissCommentInput
@@ -757,15 +789,18 @@ extension CommunityDetailReactor {
                 supabaseManager: supabaseManager
             )
         }
-        .map { .setComments($0) }
         .asObservable()
-        .flatMap { mutation -> Observable<Mutation> in
-            guard shouldClearEditing else { return .just(mutation) }
+        .flatMap { commentPage -> Observable<Mutation> in
+            var mutations: [Mutation] = [
+                .setComments(commentPage),
+                .updateCommentCount(delta: -1)
+            ]
             
-            return Observable.from([
-                mutation,
-                Mutation.setEditingComment(commentID: nil, text: "")
-            ])
+            if shouldClearEditing {
+                mutations.append(.setEditingComment(commentID: nil, text: ""))
+            }
+            
+            return Observable.from(mutations)
         }
         .catch { error in
             let message = (error as? AuthError)?.userMessage
@@ -845,11 +880,27 @@ extension CommunityDetailReactor {
     private static func makeDetailItems(post: Post?, comments: [Comment]) -> [DetailItem] {
         guard let post else { return [] }
         
+        let comments = uniqueComments(comments)
         let commentItems: [DetailItem] = comments.isEmpty
             ? [.emptyComment]
             : comments.map { .comment($0) }
         
         return [.post(post), .commentHeader] + commentItems
+    }
+    
+    private static func uniqueComments(_ comments: [Comment]) -> [Comment] {
+        var seenCommentIDs = Set<UUID>()
+        
+        return comments.filter {
+            seenCommentIDs.insert($0.id).inserted
+        }
+    }
+    
+    private static func nextCommentCursor(
+        comments: [Comment],
+        hasNextPage: Bool
+    ) -> CommunityCommentCursor? {
+        hasNextPage ? comments.last?.cursor : nil
     }
 }
 

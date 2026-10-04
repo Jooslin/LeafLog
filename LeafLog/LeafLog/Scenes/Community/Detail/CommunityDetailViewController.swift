@@ -309,12 +309,16 @@ final class CommunityDetailViewController: BaseViewController, View {
     }
     
     private func applySnapshot(detailItems: [CommunityDetailReactor.DetailItem]) {
+        let itemIDs = uniqueItemIDs(detailItems.map(CommunityDetailItemID.init))
+        let existingItemIDs = Set(dataSource.snapshot().itemIdentifiers)
+        
         var snapshot = NSDiffableDataSourceSnapshot<
             Int,
             CommunityDetailItemID
         >()
         snapshot.appendSections([0])
-        snapshot.appendItems(detailItems.map(CommunityDetailItemID.init), toSection: 0)
+        snapshot.appendItems(itemIDs, toSection: 0)
+        snapshot.reconfigureItems(itemIDs.filter { existingItemIDs.contains($0) })
         
         dataSource.apply(
             snapshot,
@@ -327,6 +331,14 @@ final class CommunityDetailViewController: BaseViewController, View {
     ) -> CommunityDetailReactor.DetailItem? {
         detailItems.first {
             CommunityDetailItemID($0) == itemID
+        }
+    }
+    
+    private func uniqueItemIDs(_ itemIDs: [CommunityDetailItemID]) -> [CommunityDetailItemID] {
+        var seenItemIDs = Set<CommunityDetailItemID>()
+        
+        return itemIDs.filter {
+            seenItemIDs.insert($0).inserted
         }
     }
     
