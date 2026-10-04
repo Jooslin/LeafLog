@@ -42,6 +42,14 @@ final class CommunityDetailViewController: BaseViewController, View {
     )
     private var comments: [CommunityDetailReactor.Comment] = []
     private var detailItems: [CommunityDetailReactor.DetailItem] = []
+    private lazy var dismissKeyboardTapGesture: UITapGestureRecognizer = {
+        let gesture = UITapGestureRecognizer(
+            target: self,
+            action: #selector(contentViewTapped)
+        )
+        gesture.cancelsTouchesInView = false
+        return gesture
+    }()
     private lazy var dataSource = UICollectionViewDiffableDataSource<
         Int,
         CommunityDetailItemID
@@ -84,6 +92,7 @@ final class CommunityDetailViewController: BaseViewController, View {
         
         navigationController?.navigationBar.isHidden = true
         _ = dataSource
+        detailView.addGestureRecognizer(dismissKeyboardTapGesture)
         updateCollectionViewBottomInset()
     }
     
@@ -343,6 +352,8 @@ final class CommunityDetailViewController: BaseViewController, View {
     }
     
     private func endCommentInputEditing() {
+        guard commentInputAccessoryView.isCommentInputFocused() else { return }
+        
         commentInputAccessoryView.resignCommentInputFocus()
         keepCommentInputAccessoryVisible()
     }
@@ -351,6 +362,10 @@ final class CommunityDetailViewController: BaseViewController, View {
         DispatchQueue.main.async { [weak self] in
             self?.becomeFirstResponder()
         }
+    }
+    
+    @objc private func contentViewTapped() {
+        endCommentInputEditing()
     }
     
     private func makeCell(

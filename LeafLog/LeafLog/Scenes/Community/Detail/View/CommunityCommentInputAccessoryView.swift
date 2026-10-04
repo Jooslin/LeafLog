@@ -136,6 +136,10 @@ final class CommunityCommentInputAccessoryView: UIView {
         inputTextField.becomeFirstResponder()
     }
     
+    func isCommentInputFocused() -> Bool {
+        inputTextField.isFirstResponder
+    }
+    
     func resignCommentInputFocus() {
         inputTextField.resignFirstResponder()
     }
