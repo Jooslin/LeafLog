@@ -14,51 +14,52 @@ final class MemberProfileViewController: BaseViewController, View {
     private let profileView = MemberProfileView()
     private var profile: MemberProfileReactor.Profile?
     private var postListItems: [MemberProfileReactor.PostListItem] = []
-    
+    private var sortOption: CommunityPostSortOption = .latest
+
     init(memberID: UUID) {
         super.init(nibName: nil, bundle: nil)
         self.reactor = MemberProfileReactor(memberID: memberID)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func loadView() {
         view = profileView
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         navigationController?.navigationBar.isHidden = true
         profileView.postCollectionView.dataSource = self
         profileView.postCollectionView.delegate = self
     }
-    
+
     func bind(reactor: MemberProfileReactor) {
         bindAction(reactor: reactor)
         bindState(reactor: reactor)
     }
-    
+
     private func bindAction(reactor: MemberProfileReactor) {
         Observable.just(MemberProfileReactor.Action.viewDidLoad)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
+
         profileView.titleView.rx.backButtonTap
             .subscribe(onNext: { [weak self] _ in
                 self?.steps.accept(AppStep.pageBack)
             })
             .disposed(by: disposeBag)
-        
+
         profileView.rx.moreButtonTap
             .map { MemberProfileReactor.Action.moreButtonTapped }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
+
     }
-    
+
     private func bindState(reactor: MemberProfileReactor) {
         reactor.state
             .map(\.profile)
@@ -69,7 +70,7 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.profileView.postCollectionView.reloadData()
             }
             .disposed(by: disposeBag)
-        
+
         reactor.state
             .map(\.postListItems)
             .distinctUntilChanged()
@@ -79,7 +80,17 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.profileView.postCollectionView.reloadData()
             }
             .disposed(by: disposeBag)
-        
+
+        reactor.state
+            .map(\.sortOption)
+            .distinctUntilChanged()
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] sortOption in
+                self?.sortOption = sortOption
+                self?.profileView.postCollectionView.reloadData()
+            }
+            .disposed(by: disposeBag)
+
         reactor.state
             .map(\.shouldShowMoreButton)
             .distinctUntilChanged()
@@ -88,7 +99,7 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.profileView.setMoreButtonHidden(shouldShowMoreButton == false)
             }
             .disposed(by: disposeBag)
-        
+
         reactor.pulse(\.$errorMessage)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -96,7 +107,7 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.steps.accept(AppStep.alert("오류", message))
             }
             .disposed(by: disposeBag)
-        
+
         reactor.pulse(\.$memberActionSheet)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -104,7 +115,15 @@ final class MemberProfileViewController: BaseViewController, View {
                 self?.presentMemberActionSheet()
             }
             .disposed(by: disposeBag)
-        
+
+        reactor.pulse(\.$sortOptionSheet)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive { [weak self] _ in
+                self?.presentSortOptionActionSheet()
+            }
+            .disposed(by: disposeBag)
+
         reactor.pulse(\.$reportCompleted)
             .compactMap { $0 }
             .asDriver(onErrorDriveWith: .empty())
@@ -113,7 +132,7 @@ final class MemberProfileViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
     }
-    
+
     private func presentMemberActionSheet() {
         let alertController = UIAlertController(
             title: "이 회원을 신고하시겠습니까?",
@@ -126,24 +145,41 @@ final class MemberProfileViewController: BaseViewController, View {
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         present(alertController, animated: true)
     }
-    
+
+    private func presentSortOptionActionSheet() {
+        let alertController = UIAlertController(
+            title: nil,
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+
+        CommunityPostSortOption.allCases.forEach { sortOption in
+            alertController.addAction(UIAlertAction(title: sortOption.title, style: .default) { [weak self] _ in
+                self?.reactor?.action.onNext(.sortOptionSelected(sortOption))
+            })
+        }
+
+        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+        present(alertController, animated: true)
+    }
+
     private func presentReportReasonActionSheet() {
         let alertController = UIAlertController(
             title: nil,
             message: nil,
             preferredStyle: .actionSheet
         )
-        
+
         CommunityReportReason.allCases.forEach { reason in
             alertController.addAction(UIAlertAction(title: reason.title, style: .destructive) { [weak self] _ in
                 self?.reactor?.action.onNext(.reportReasonSelected(reason))
             })
         }
-        
+
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         present(alertController, animated: true)
     }
-    
+
     private func presentReportCompletedAlert() {
         let alertController = UIAlertController(
             title: "신고가 접수되었습니다.",
@@ -159,7 +195,7 @@ extension MemberProfileViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         postListItems.count
     }
-    
+
     func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
@@ -170,7 +206,7 @@ extension MemberProfileViewController: UICollectionViewDataSource {
                 withReuseIdentifier: MemberProfileEmptyCell.reuseIdentifier,
                 for: indexPath
             )
-            
+
         case .post(let post):
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: MemberProfilePostCell.reuseIdentifier,
@@ -182,7 +218,7 @@ extension MemberProfileViewController: UICollectionViewDataSource {
             return cell
         }
     }
-    
+
     func collectionView(
         _ collectionView: UICollectionView,
         viewForSupplementaryElementOfKind kind: String,
@@ -196,19 +232,35 @@ extension MemberProfileViewController: UICollectionViewDataSource {
               ) as? MemberProfileHeaderView else {
             return UICollectionReusableView()
         }
-        
+
         if let profile {
-            headerView.configure(profile: profile)
+            headerView.configure(
+                profile: profile,
+                sortTitle: sortOption.title
+            )
         }
-        
+
         if let reactor {
             headerView.rx.sortButtonTap
                 .map { MemberProfileReactor.Action.sortButtonTapped }
                 .bind(to: reactor.action)
                 .disposed(by: headerView.disposeBag)
         }
-        
+
         return headerView
+    }
+}
+
+private extension CommunityPostSortOption {
+    var title: String {
+        switch self {
+        case .latest:
+            "최신순"
+        case .oldest:
+            "오래된순"
+        case .popular:
+            "인기순"
+        }
     }
 }
 
@@ -221,12 +273,12 @@ extension MemberProfileViewController: UICollectionViewDelegateFlowLayout {
         switch postListItems[indexPath.item] {
         case .empty:
             return CGSize(width: collectionView.bounds.width, height: 120)
-            
+
         case .post:
             return CGSize(width: collectionView.bounds.width, height: 150)
         }
     }
-    
+
     func collectionView(
         _ collectionView: UICollectionView,
         layout collectionViewLayout: UICollectionViewLayout,
@@ -234,16 +286,16 @@ extension MemberProfileViewController: UICollectionViewDelegateFlowLayout {
     ) -> CGSize {
         CGSize(width: collectionView.bounds.width, height: 285)
     }
-    
+
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let threshold: CGFloat = 300
         let visibleBottom = scrollView.contentOffset.y + scrollView.bounds.height
         let triggerOffset = scrollView.contentSize.height - threshold
-        
+
         guard visibleBottom >= triggerOffset else { return }
         reactor?.action.onNext(.reachedBottom)
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard case .post(let post) = postListItems[indexPath.item] else { return }
         steps.accept(AppStep.communityDetail(postID: post.id))

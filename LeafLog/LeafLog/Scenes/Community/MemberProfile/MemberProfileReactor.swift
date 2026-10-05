@@ -14,14 +14,14 @@ import Supabase
 
 final class MemberProfileReactor: Reactor {
     private let memberID: UUID
-    
+
     struct Profile: Equatable {
         let nickname: String
         let profileImageURL: URL?
         let postCount: String
         let likeCount: String
     }
-    
+
     struct Post: Equatable {
         let id: UUID
         let title: String
@@ -32,26 +32,27 @@ final class MemberProfileReactor: Reactor {
         let likeCount: String
         let commentCount: String
     }
-    
+
     enum PostListItem: Equatable {
         case post(Post)
         case empty
     }
-    
+
     enum Ownership: Equatable {
         case unknown
         case mine
         case visitor
     }
-    
+
     enum Action {
         case viewDidLoad
         case moreButtonTapped
         case reportReasonSelected(CommunityReportReason)
         case sortButtonTapped
+        case sortOptionSelected(CommunityPostSortOption)
         case reachedBottom
     }
-    
+
     enum Mutation {
         case setLoading(Bool)
         case setInitialLoading(Bool)
@@ -59,14 +60,16 @@ final class MemberProfileReactor: Reactor {
         case setReporting(Bool)
         case setProfile(Profile)
         case setOwnership(Ownership)
+        case setSortOption(CommunityPostSortOption)
         case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case resetPosts
         case presentMemberActionSheet
+        case presentSortOptionSheet
         case presentReportCompletedAlert
         case setErrorMessage(String)
     }
-    
+
     struct State {
         var isLoading = false
         var isInitialLoading = true
@@ -76,40 +79,42 @@ final class MemberProfileReactor: Reactor {
         var nextOffset: Int?
         var profile: Profile?
         var posts: [Post] = []
+        var sortOption: CommunityPostSortOption = .latest
         var ownership: Ownership = .unknown
         @Pulse var memberActionSheet: Bool?
+        @Pulse var sortOptionSheet: Bool?
         @Pulse var reportCompleted: Bool?
         @Pulse var errorMessage: String?
-        
+
         var shouldShowMoreButton: Bool {
             ownership == .visitor
         }
-        
+
         var postListItems: [PostListItem] {
             if isInitialLoading {
                 return []
             }
-            
+
             if posts.isEmpty {
                 return [.empty]
             }
-            
+
             return posts.map { .post($0) }
         }
     }
-    
+
     let initialState = State()
     private let pageSize = 10
-    
+
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
     @Dependency(\.communityReportDBManager) private var communityReportDBManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "MemberProfileReactor")
-    
+
     init(memberID: UUID) {
         self.memberID = memberID
     }
-    
+
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewDidLoad:
@@ -118,26 +123,41 @@ final class MemberProfileReactor: Reactor {
                 fetchInitialProfile(),
                 .just(.setInitialLoading(false))
             )
-            
+
         case .moreButtonTapped:
             guard currentState.ownership == .visitor else { return .empty() }
             return .just(.presentMemberActionSheet)
-            
+
         case .reportReasonSelected(let reason):
             guard currentState.ownership == .visitor,
                   currentState.isReporting == false else {
                 return .empty()
             }
-            
+
             return .concat(
                 .just(.setReporting(true)),
                 reportMember(reason: reason),
                 .just(.setReporting(false))
             )
-            
+
         case .sortButtonTapped:
-            return .empty()
-            
+            return .just(.presentSortOptionSheet)
+
+        case .sortOptionSelected(let sortOption):
+            guard currentState.sortOption != sortOption,
+                  currentState.isLoading == false,
+                  currentState.isLoadingMore == false else {
+                return .empty()
+            }
+
+            return .concat(
+                .just(.setSortOption(sortOption)),
+                .just(.resetPosts),
+                .just(.setLoading(true)),
+                fetchPosts(sortOption: sortOption, offset: 0),
+                .just(.setLoading(false))
+            )
+
         case .reachedBottom:
             guard currentState.isInitialLoading == false,
                   currentState.isLoadingMore == false,
@@ -145,7 +165,7 @@ final class MemberProfileReactor: Reactor {
                   let nextOffset = currentState.nextOffset else {
                 return .empty()
             }
-            
+
             return .concat(
                 .just(.setLoadingMore(true)),
                 fetchMorePosts(offset: nextOffset),
@@ -153,57 +173,63 @@ final class MemberProfileReactor: Reactor {
             )
         }
     }
-    
+
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
-        
+
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
-            
+
         case .setInitialLoading(let isInitialLoading):
             newState.isInitialLoading = isInitialLoading
-            
+
         case .setLoadingMore(let isLoadingMore):
             newState.isLoadingMore = isLoadingMore
-            
+
         case .setReporting(let isReporting):
             newState.isReporting = isReporting
-            
+
         case .setProfile(let profile):
             newState.profile = profile
-            
+
         case .setOwnership(let ownership):
             newState.ownership = ownership
-            
+
+        case .setSortOption(let sortOption):
+            newState.sortOption = sortOption
+
         case .setPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts = posts
             newState.nextOffset = nextOffset
             newState.hasNextPage = hasNextPage
-            
+
         case .appendPosts(let posts, let nextOffset, let hasNextPage):
             newState.posts.append(contentsOf: posts)
             newState.nextOffset = nextOffset
             newState.hasNextPage = hasNextPage
-            
+
         case .resetPosts:
             newState.posts = []
             newState.nextOffset = nil
             newState.hasNextPage = false
-            
+
         case .presentMemberActionSheet:
             newState.memberActionSheet = true
-            
+
+        case .presentSortOptionSheet:
+            newState.sortOptionSheet = true
+
         case .presentReportCompletedAlert:
             newState.reportCompleted = true
-            
+
         case .setErrorMessage(let message):
             newState.errorMessage = message
         }
-        
+
         return newState
     }
-    
+
     private func fetchInitialProfile() -> Observable<Mutation> {
         Single<MemberProfileResult>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize] in
             let currentUserID = supabaseManager.client.auth.currentUser?.id
@@ -214,14 +240,15 @@ final class MemberProfileReactor: Reactor {
             let posts = try await communityPostDBManager.fetchPosts(
                 authorID: memberID,
                 limit: pageSize,
-                offset: 0
+                offset: 0,
+                sortOption: .latest
             )
             let postImageURLs = await Self.resolvePostImageURLs(
                 posts: posts,
                 supabaseManager: supabaseManager,
                 logger: logger
             )
-            
+
             return MemberProfileResult(
                 profile: Profile(
                     nickname: profile?.nickname ?? "알 수 없는 사용자",
@@ -253,13 +280,17 @@ final class MemberProfileReactor: Reactor {
             return .just(.setErrorMessage(message))
         }
     }
-    
-    private func fetchMorePosts(offset: Int) -> Observable<Mutation> {
+
+    private func fetchPosts(
+        sortOption: CommunityPostSortOption,
+        offset: Int
+    ) -> Observable<Mutation> {
         Single<MemberProfilePostsPage>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize, currentState] in
             let posts = try await communityPostDBManager.fetchPosts(
                 authorID: memberID,
                 limit: pageSize,
-                offset: offset
+                offset: offset,
+                sortOption: sortOption
             )
             let postImageURLs = await Self.resolvePostImageURLs(
                 posts: posts,
@@ -267,28 +298,40 @@ final class MemberProfileReactor: Reactor {
                 logger: logger
             )
             let nickname = currentState.profile?.nickname ?? "알 수 없는 사용자"
-            
+
             return MemberProfilePostsPage(
                 posts: Self.makePosts(posts, nickname: nickname, imageURLs: postImageURLs),
                 nextOffset: offset + posts.count,
                 hasNextPage: posts.count == pageSize
             )
         }
-        .map {
-            .appendPosts(
-                $0.posts,
-                nextOffset: $0.nextOffset,
-                hasNextPage: $0.hasNextPage
+        .map { page in
+            if offset == 0 {
+                return .setPosts(
+                    page.posts,
+                    nextOffset: page.nextOffset,
+                    hasNextPage: page.hasNextPage
+                )
+            }
+
+            return .appendPosts(
+                page.posts,
+                nextOffset: page.nextOffset,
+                hasNextPage: page.hasNextPage
             )
         }
         .asObservable()
         .catch { error in
             let message = (error as? AuthError)?.userMessage
-                ?? "게시글을 더 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+                ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
         }
     }
-    
+
+    private func fetchMorePosts(offset: Int) -> Observable<Mutation> {
+        fetchPosts(sortOption: currentState.sortOption, offset: offset)
+    }
+
     private func reportMember(reason: CommunityReportReason) -> Observable<Mutation> {
         Single<Bool>.create { [communityReportDBManager, memberID] in
             try await communityReportDBManager.reportMember(
@@ -305,7 +348,7 @@ final class MemberProfileReactor: Reactor {
             return .just(.setErrorMessage(message))
         }
     }
-    
+
     nonisolated private static func makePosts(
         _ posts: [CommunityPost],
         nickname: String,
@@ -324,17 +367,17 @@ final class MemberProfileReactor: Reactor {
             )
         }
     }
-    
+
     private static func resolvePostImageURLs(
         posts: [CommunityPost],
         supabaseManager: SupabaseManager,
         logger: Logger
     ) async -> [UUID: URL] {
         var imageURLs: [UUID: URL] = [:]
-        
+
         for post in posts {
             guard let imagePath = post.firstImagePath else { continue }
-            
+
             do {
                 if let imageURL = try await supabaseManager.resolveCommunityPostImageURL(
                     from: imagePath,
@@ -348,10 +391,10 @@ final class MemberProfileReactor: Reactor {
                 )
             }
         }
-        
+
         return imageURLs
     }
-    
+
     nonisolated private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
