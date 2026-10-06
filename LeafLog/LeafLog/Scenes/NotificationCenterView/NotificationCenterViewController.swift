@@ -67,6 +67,15 @@ final class NotificationCenterViewController: BaseViewController, View {
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        notificationCenterView.rx.itemSelected
+            .compactMap { item -> NotificationCenterView.Alarm? in
+                guard case .alarm(let alarm) = item else { return nil }
+                return alarm
+            }
+            .map(NotificationCenterReactor.Action.notificationSelected)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
         notificationCenterView.rx.backButtonTap
             .map { _ in AppStep.alarmPageBack(reactor.currentState.category) }
@@ -110,6 +119,14 @@ final class NotificationCenterViewController: BaseViewController, View {
             .drive(onNext: { [weak self] message in
                 self?.notificationCenterView.categorySegment.selectedSegmentIndex = reactor.currentState.category.segmentIndex // 기존 선택 카테고리로 변경
                 self?.steps.accept(AppStep.alert("에러", message))
+            })
+            .disposed(by: disposeBag)
+
+        reactor.pulse(\.$selectedPostID)
+            .compactMap { $0 }
+            .asDriver(onErrorDriveWith: .empty())
+            .drive(onNext: { [weak self] postID in
+                self?.steps.accept(AppStep.communityDetail(postID: postID))
             })
             .disposed(by: disposeBag)
     }

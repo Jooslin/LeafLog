@@ -16,6 +16,7 @@ final class NotificationCenterReactor: Reactor {
         case viewWillAppear
         case refresh
         case categorySelected(Int)
+        case notificationSelected(NotificationCenterView.Alarm)
     }
 
     enum Mutation {
@@ -24,6 +25,7 @@ final class NotificationCenterReactor: Reactor {
             items: [NotificationCenterView.Item]
         )
         case setCategorySelectionLoading(Bool)
+        case openPost(UUID)
         case error(String)
     }
     
@@ -31,6 +33,7 @@ final class NotificationCenterReactor: Reactor {
         var alarmItem: [NotificationCenterView.Item] = []
         var category: AppNotificationCategory
         var isCategorySelectionLoading = false
+        @Pulse var selectedPostID: UUID?
         @Pulse var errorMessage: String?
     }
     
@@ -42,6 +45,7 @@ final class NotificationCenterReactor: Reactor {
     
     //MARK: properties
     @Dependency(\.notificationDBManager) private var notificationDBManager
+    @Dependency(\.communityPostDBManager) private var communityPostDBManager
     private let logger = Logger(subsystem: "LeafLog", category: "NotificationCenterReactor")
     private let calendar = Calendar.current
     
@@ -82,6 +86,10 @@ final class NotificationCenterReactor: Reactor {
                 .just(.setCategorySelectionLoading(false))
             ])
             .take(until: differentCategorySelected(from: category))
+
+        case .notificationSelected(let alarm):
+            guard alarm.category == .community else { return .empty() }
+            return openPost(alarm.postID)
         }
     }
     
@@ -95,6 +103,9 @@ final class NotificationCenterReactor: Reactor {
 
         case .setCategorySelectionLoading(let isLoading):
             newState.isCategorySelectionLoading = isLoading
+
+        case .openPost(let postID):
+            newState.selectedPostID = postID
             
         case .error(let message):
             newState.errorMessage = message
@@ -116,18 +127,36 @@ extension NotificationCenterReactor {
                 do {
                     let now = Date()
                     let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
+                    let postTitles = category == .community
+                        ? try await self.communityPostDBManager.fetchPostTitles(
+                            postIDs: notifications.compactMap(\.metadata.postID)
+                        )
+                        : [:]
+                    let groups = category == .community
+                        ? try await self.notificationDBManager.fetchCommunityNotificationGroups(
+                            notificationIDs: notifications.map(\.id)
+                        )
+                        : [:]
                     
-                    let items = notifications.map {
-                        let time = self.calculateExcessAlarmTime(from: $0.sentAt, to: now)
+                    let items = notifications.map { notification in
+                        let time = self.calculateExcessAlarmTime(from: notification.sentAt ?? notification.createdAt, to: now)
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
+                        let totalText = groups[notification.id].flatMap {
+                            self.communityTotalText(group: $0, type: notification.type)
+                        }
                         
                         let alarm = NotificationCenterView.Alarm(
-                            id: $0.id,
-                            title: $0.title,
-                            body: $0.plantNamesText ?? $0.body,
-                            category: $0.category,
-                            detailCategory: $0.type,
-                            sentTimeLabel: timeString
+                            id: notification.id,
+                            postID: notification.metadata.postID,
+                            title: notification.title,
+                            body: category == .community
+                                ? (notification.metadata.postID.flatMap { postTitles[$0] } ?? notification.body)
+                                : (notification.plantNamesText ?? notification.body),
+                            totalText: totalText,
+                            category: notification.category,
+                            detailCategory: notification.type,
+                            sentTimeLabel: timeString,
+                            isUnread: !notification.isRead
                         )
                         
                         let item = NotificationCenterView.Item.alarm(alarm)
@@ -138,7 +167,7 @@ extension NotificationCenterReactor {
                     observer.onNext(.setAlarm(category: category, items: items))
 
                     do {
-                        try await self.notificationDBManager.markAllAsRead()
+                        try await self.notificationDBManager.markAllAsRead(category: category)
                         NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
                     } catch is CancellationError {
                         self.logger.debug("알림 전체 읽음 처리 취소됨")
@@ -162,6 +191,56 @@ extension NotificationCenterReactor {
             return Disposables.create {
                 task.cancel()
             }
+        }
+    }
+
+    private func communityTotalText(group: CommunityNotificationGroup, type: AppNotificationType) -> String? {
+        let action: String
+        switch type {
+        case .favorite:
+            action = "좋아요를 눌렀어요."
+        case .comment:
+            action = "댓글을 남겼어요."
+        default:
+            return nil
+        }
+
+        let otherCount = group.participantIDs.count - 1
+        if otherCount > 0 {
+            return "\(group.firstActorNickname)님 외 \(otherCount)명이 \(action)"
+        }
+        return "\(group.firstActorNickname)님이 \(action)"
+    }
+
+    private func openPost(_ postID: UUID?) -> Observable<Mutation> {
+        guard let postID else {
+            return .just(.error("해당 게시물을 불러올 수 없습니다."))
+        }
+
+        return Observable.create { [weak self] observer in
+            let task = Task { [weak self] in
+                guard let self else {
+                    observer.onCompleted()
+                    return
+                }
+
+                do {
+                    let titles = try await self.communityPostDBManager.fetchPostTitles(postIDs: [postID])
+                    if titles[postID] != nil {
+                        observer.onNext(.openPost(postID))
+                    } else {
+                        observer.onNext(.error("해당 게시물을 불러올 수 없습니다."))
+                    }
+                } catch let error as AuthError {
+                    observer.onNext(.error(error.userMessage))
+                } catch {
+                    observer.onNext(.error("게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."))
+                }
+
+                observer.onCompleted()
+            }
+
+            return Disposables.create { task.cancel() }
         }
     }
     

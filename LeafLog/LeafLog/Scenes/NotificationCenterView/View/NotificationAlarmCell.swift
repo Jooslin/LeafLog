@@ -16,6 +16,10 @@ final class NotificationAlarmCell: UICollectionViewCell {
     private let timeLabel = UILabel(text: "", config: .label12, color: .grayScale400, lines: 1).then {
         $0.textAlignment = .right
     }
+    private let totalLabel = UILabel(text: "", config: .label12, color: .grayScale600, lines: 0)
+    private let separateBar = UIView().then {
+        $0.backgroundColor = .grayScale100
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -29,17 +33,28 @@ final class NotificationAlarmCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         imageView.image = nil
+        contentView.backgroundColor = .clear
+        titleLabel.text = ""
+        descriptionLabel.text = ""
+        timeLabel.text = ""
+        totalLabel.text = ""
     }
 
     private func setLayout() {
-        let labelStack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel]).then {
+        let titleLabelStack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel]).then {
             $0.axis = .vertical
             $0.spacing = 2
+        }
+        
+        let labelStack = UIStackView(arrangedSubviews: [titleLabelStack, totalLabel]).then {
+            $0.axis = .vertical
+            $0.spacing = 4
         }
         
         contentView.addSubview(imageView)
         contentView.addSubview(labelStack)
         contentView.addSubview(timeLabel)
+        contentView.addSubview(separateBar)
         
         imageView.snp.makeConstraints {
             $0.width.height.equalTo(32)
@@ -50,18 +65,26 @@ final class NotificationAlarmCell: UICollectionViewCell {
         labelStack.snp.makeConstraints {
             $0.leading.equalTo(imageView.snp.trailing).offset(12)
             $0.trailing.equalTo(timeLabel.snp.leading).offset(-12)
-            $0.verticalEdges.equalToSuperview().inset(16)
+            $0.centerY.equalToSuperview()
         }
         
         timeLabel.snp.makeConstraints {
             $0.centerY.equalTo(labelStack)
             $0.trailing.equalToSuperview().inset(16)
         }
+        
+        separateBar.snp.makeConstraints {
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(1)
+            $0.bottom.equalToSuperview()
+        }
     }
 }
 
 extension NotificationAlarmCell {
     func configure(_ data: NotificationCenterView.Alarm) {
+        contentView.backgroundColor = data.isUnread ? .primary100 : .clear
+        
         imageView.image = switch data.detailCategory {
         case .wateringReminder:
             UIImage(named: Badge.water.bigImage)
@@ -73,8 +96,19 @@ extension NotificationAlarmCell {
             nil
         }
         
+        switch data.category {
+        case .management:
+            descriptionLabel.numberOfLines = 0
+            totalLabel.isHidden = true
+        case .community:
+            descriptionLabel.numberOfLines = 1
+            descriptionLabel.lineBreakMode = .byTruncatingTail
+            totalLabel.isHidden = data.totalText == nil
+        }
+        
         titleLabel.text = data.title
         descriptionLabel.text = data.body
+        totalLabel.text = data.totalText
         timeLabel.text = data.sentTimeLabel
     }
 }
