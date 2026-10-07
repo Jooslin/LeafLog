@@ -39,6 +39,12 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
     }
 }
 
+nonisolated enum CommunityPostSortOption: CaseIterable, Equatable, Sendable {
+    case latest
+    case oldest
+    case popular
+}
+
 nonisolated struct CommunityPostImage: Codable, Hashable, Sendable {
     let id: UUID
     let postID: UUID

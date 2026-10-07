@@ -15,10 +15,12 @@ final class MemberProfilePostCell: UICollectionViewCell {
     
     private let titleLabel = UILabel(text: "", config: .title16, color: .black, lines: 1)
     
-    private let profileImageView = UIView().then {
+    private let profileImageView = UIImageView().then {
         $0.backgroundColor = .grayScale100
+        $0.contentMode = .scaleAspectFill
         $0.layer.cornerRadius = 10
         $0.clipsToBounds = true
+        $0.image = UIImage(named: "non_profile")
     }
     
     private let nicknameLabel = UILabel(text: "", config: .body12, color: .grayScale600, lines: 1)
@@ -69,6 +71,8 @@ final class MemberProfilePostCell: UICollectionViewCell {
         super.prepareForReuse()
         
         titleLabel.text = nil
+        profileImageView.kf.cancelDownloadTask()
+        profileImageView.image = UIImage(named: "non_profile")
         nicknameLabel.text = nil
         dateLabel.text = nil
         bodyLabel.text = nil
@@ -87,6 +91,7 @@ final class MemberProfilePostCell: UICollectionViewCell {
         bodyLabel.setTextWithLineHeight(text: post.body, height: 20)
         heartCountLabel.text = post.likeCount
         commentCountLabel.text = post.commentCount
+        configureProfileImage(with: post.profileImageURL)
         
         if let imageURL = post.imageURL {
             thumbnailImageView.isHidden = false
@@ -103,6 +108,25 @@ final class MemberProfilePostCell: UICollectionViewCell {
             thumbnailImageView.isHidden = true
             thumbnailWidthConstraint?.update(offset: 0)
         }
+    }
+
+    private func configureProfileImage(with profileImageURL: URL?) {
+        let placeholderImage = UIImage(named: "non_profile")
+        profileImageView.kf.cancelDownloadTask()
+
+        guard let profileImageURL else {
+            profileImageView.image = placeholderImage
+            return
+        }
+
+        profileImageView.kf.setImage(
+            with: profileImageURL,
+            placeholder: placeholderImage,
+            options: [
+                .cacheOriginalImage,
+                .transition(.fade(0.2))
+            ]
+        )
     }
     
     private func setLayout() {

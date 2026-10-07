@@ -62,11 +62,15 @@ final class MemberProfileHeaderView: UICollectionReusableView {
         profileImageView.image = UIImage(named: "non_profile")
     }
     
-    func configure(profile: MemberProfileReactor.Profile) {
+    func configure(
+        profile: MemberProfileReactor.Profile,
+        sortTitle: String
+    ) {
         nicknameLabel.text = profile.nickname
         configureProfileImage(with: profile.profileImageURL)
         postCountLabel.text = profile.postCount
         likeCountLabel.text = profile.likeCount
+        sortLabel.text = sortTitle
     }
     
     private func setLayout() {
