@@ -16,7 +16,7 @@ final class AlarmSettingDetailView: UIView {
     
     fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
-        $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
+        $0.contentInset = .init(top: 0, left: 16, bottom: 50, right: 16)
     }
     
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
@@ -29,6 +29,21 @@ final class AlarmSettingDetailView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setLayout() {
+        addSubview(titleView)
+        addSubview(listView)
+        
+        titleView.snp.makeConstraints {
+            $0.top.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(44)
+        }
+        
+        listView.snp.makeConstraints {
+            $0.top.equalTo(titleView.snp.bottom).offset(24)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
     }
 }
 
