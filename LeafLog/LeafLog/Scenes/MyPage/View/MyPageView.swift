@@ -61,17 +61,12 @@ final class MyPageView: UIView {
         $0.accessibilityLabel = "프로필 수정"
     }
     
-    // 푸시알림 스위치
-    let pushAlertSwitch = UISwitch().then {
-        $0.onTintColor = .primary600
-        $0.isOn = true
-    }
-    
     let versionValueLabel = UILabel(config: .body14, color: .black).then {
         $0.textAlignment = .right
     }
     
     // 각 Row를 터치할 버튼들
+    let alarmSettingButton = UIButton(type: .system)
     let inquiryButton = UIButton(type: .system)
     let reportErrorButton = UIButton(type: .system)
     let myActivityButton = UIButton(type: .system)
@@ -134,7 +129,7 @@ final class MyPageView: UIView {
         let alertTitle = makeSectionTitle("알림 설정")
         mainStackView.addArrangedSubview(alertTitle)
         mainStackView.setCustomSpacing(16, after: alertTitle)
-        mainStackView.addArrangedSubview(makeRow(title: "푸시알림", accessory: pushAlertSwitch, showSeparator: true))
+        mainStackView.addArrangedSubview(makeRow(title: "푸시알림", button: alarmSettingButton, showSeparator: true))
         mainStackView.addArrangedSubview(makeSpacer(height: 32))
         
         // 3. 커뮤니티 섹션

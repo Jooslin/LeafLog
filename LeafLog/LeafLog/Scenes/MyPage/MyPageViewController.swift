@@ -101,12 +101,14 @@ final class MyPageViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         // 푸시 알림 허용 버튼
-        myPageView.pushAlertSwitch.rx.controlEvent(.valueChanged) // 값이 변경되었을 때만 액션 방출
-            .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
-            .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
-            .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-
+//        myPageView.pushAlertSwitch.rx.controlEvent(.valueChanged) // 값이 변경되었을 때만 액션 방출
+//            .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
+//            .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
+//            .bind(to: reactor.action)
+//            .disposed(by: disposeBag)
+        myPageView.alarmSettingButton.rx.tap
+            .observe(on: MainScheduler.instance)
+        
         // 개인정보처리방침
         myPageView.privacyPolicyButton.rx.tap
             .observe(on: MainScheduler.instance)

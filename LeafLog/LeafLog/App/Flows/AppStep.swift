@@ -72,4 +72,5 @@ enum AppStep: Step {
     // MyInfoTab
     case profileImageSourceSheet
     case notificationAuthorizationRequired(onSettingsSelected: () -> Void)
+    case alarmSetting
 }

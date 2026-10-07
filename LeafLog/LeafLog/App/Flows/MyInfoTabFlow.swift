@@ -64,6 +64,11 @@ final class MyInfoTabFlow: Flow {
         case .notificationAuthorizationRequired(let onSettingsSelected):
             return presentNotificationAuthorizationRequired(onSettingsSelected: onSettingsSelected)
             
+        case .alarmSetting:
+            let viewController = AlarmSettingViewController()
+            navigationController.pushViewController(viewController, animated: true)
+            return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
+            
         default:
             return .one(flowContributor: .forwardToParentFlow(withStep: step))
         }
