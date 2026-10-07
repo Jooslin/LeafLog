@@ -70,10 +70,18 @@ extension AlarmSettingView {
         case community(Setting)
         case app(Setting)
     }
+
+    nonisolated
+    enum SettingID: Hashable {
+        case wateringReminder
+        case favorite
+        case comment
+        case appNews
+    }
     
     nonisolated
     struct Setting: Hashable {
-        let category: AppNotificationType
+        let id: SettingID
         let title: String
         let isOn: Bool
     }

@@ -66,6 +66,7 @@ final class MyInfoTabFlow: Flow {
             
         case .alarmSetting:
             let viewController = AlarmSettingViewController()
+            viewController.reactor = AlarmSettingReactor()
             navigationController.pushViewController(viewController, animated: true)
             return .one(flowContributor: .contribute(withNextPresentable: viewController, withNextStepper: viewController))
             
