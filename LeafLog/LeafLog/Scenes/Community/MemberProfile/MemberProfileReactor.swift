@@ -28,6 +28,7 @@ final class MemberProfileReactor: Reactor {
         let nickname: String
         let date: String
         let body: String
+        let profileImageURL: URL?
         let imageURL: URL?
         let likeCount: String
         let commentCount: String
@@ -249,7 +250,12 @@ final class MemberProfileReactor: Reactor {
                     postCount: String(stats.postCount),
                     likeCount: String(stats.likeCount)
                 ),
-                posts: Self.makePosts(posts, nickname: profile?.nickname ?? "알 수 없는 사용자", imageURLs: postImageURLs),
+                posts: Self.makePosts(
+                    posts,
+                    nickname: profile?.nickname ?? "알 수 없는 사용자",
+                    profileImageURL: profileImageURLs[memberID],
+                    imageURLs: postImageURLs
+                ),
                 ownership: memberID == currentUserID ? .mine : .visitor,
                 nextOffset: posts.count,
                 hasNextPage: posts.count == pageSize
@@ -339,9 +345,15 @@ final class MemberProfileReactor: Reactor {
                 logger: logger
             )
             let nickname = currentState.profile?.nickname ?? "알 수 없는 사용자"
+            let profileImageURL = currentState.profile?.profileImageURL
 
             return MemberProfilePostsPage(
-                posts: Self.makePosts(posts, nickname: nickname, imageURLs: postImageURLs),
+                posts: Self.makePosts(
+                    posts,
+                    nickname: nickname,
+                    profileImageURL: profileImageURL,
+                    imageURLs: postImageURLs
+                ),
                 nextOffset: offset + posts.count,
                 hasNextPage: posts.count == pageSize
             )
@@ -372,6 +384,7 @@ final class MemberProfileReactor: Reactor {
     nonisolated private static func makePosts(
         _ posts: [CommunityPost],
         nickname: String,
+        profileImageURL: URL?,
         imageURLs: [UUID: URL]
     ) -> [Post] {
         posts.map {
@@ -381,6 +394,7 @@ final class MemberProfileReactor: Reactor {
                 nickname: nickname,
                 date: dateFormatter.string(from: $0.createdAt),
                 body: $0.content,
+                profileImageURL: profileImageURL,
                 imageURL: imageURLs[$0.id],
                 likeCount: String($0.likeCount),
                 commentCount: String($0.commentCount ?? 0)
