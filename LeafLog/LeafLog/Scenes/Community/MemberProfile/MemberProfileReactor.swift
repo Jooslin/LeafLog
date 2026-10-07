@@ -63,7 +63,6 @@ final class MemberProfileReactor: Reactor {
         case setSortOption(CommunityPostSortOption)
         case setPosts([Post], nextOffset: Int?, hasNextPage: Bool)
         case appendPosts([Post], nextOffset: Int?, hasNextPage: Bool)
-        case resetPosts
         case presentMemberActionSheet
         case presentSortOptionSheet
         case presentReportCompletedAlert
@@ -145,16 +144,15 @@ final class MemberProfileReactor: Reactor {
 
         case .sortOptionSelected(let sortOption):
             guard currentState.sortOption != sortOption,
+                  currentState.isInitialLoading == false,
                   currentState.isLoading == false,
                   currentState.isLoadingMore == false else {
                 return .empty()
             }
 
             return .concat(
-                .just(.setSortOption(sortOption)),
-                .just(.resetPosts),
                 .just(.setLoading(true)),
-                fetchPosts(sortOption: sortOption, offset: 0),
+                refreshPosts(sortOption: sortOption),
                 .just(.setLoading(false))
             )
 
@@ -208,11 +206,6 @@ final class MemberProfileReactor: Reactor {
             newState.posts.append(contentsOf: posts)
             newState.nextOffset = nextOffset
             newState.hasNextPage = hasNextPage
-
-        case .resetPosts:
-            newState.posts = []
-            newState.nextOffset = nil
-            newState.hasNextPage = false
 
         case .presentMemberActionSheet:
             newState.memberActionSheet = true
@@ -285,26 +278,7 @@ final class MemberProfileReactor: Reactor {
         sortOption: CommunityPostSortOption,
         offset: Int
     ) -> Observable<Mutation> {
-        Single<MemberProfilePostsPage>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize, currentState] in
-            let posts = try await communityPostDBManager.fetchPosts(
-                authorID: memberID,
-                limit: pageSize,
-                offset: offset,
-                sortOption: sortOption
-            )
-            let postImageURLs = await Self.resolvePostImageURLs(
-                posts: posts,
-                supabaseManager: supabaseManager,
-                logger: logger
-            )
-            let nickname = currentState.profile?.nickname ?? "알 수 없는 사용자"
-
-            return MemberProfilePostsPage(
-                posts: Self.makePosts(posts, nickname: nickname, imageURLs: postImageURLs),
-                nextOffset: offset + posts.count,
-                hasNextPage: posts.count == pageSize
-            )
-        }
+        fetchPostsPage(sortOption: sortOption, offset: offset)
         .map { page in
             if offset == 0 {
                 return .setPosts(
@@ -325,6 +299,52 @@ final class MemberProfileReactor: Reactor {
             let message = (error as? AuthError)?.userMessage
                 ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             return .just(.setErrorMessage(message))
+        }
+    }
+
+    private func refreshPosts(sortOption: CommunityPostSortOption) -> Observable<Mutation> {
+        fetchPostsPage(sortOption: sortOption, offset: 0)
+            .asObservable()
+            .flatMap { page -> Observable<Mutation> in
+                .from([
+                    .setSortOption(sortOption),
+                    .setPosts(
+                        page.posts,
+                        nextOffset: page.nextOffset,
+                        hasNextPage: page.hasNextPage
+                    )
+                ])
+            }
+            .catch { error in
+                let message = (error as? AuthError)?.userMessage
+                    ?? "게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+                return .just(.setErrorMessage(message))
+            }
+    }
+
+    private func fetchPostsPage(
+        sortOption: CommunityPostSortOption,
+        offset: Int
+    ) -> Single<MemberProfilePostsPage> {
+        Single<MemberProfilePostsPage>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize, currentState] in
+            let posts = try await communityPostDBManager.fetchPosts(
+                authorID: memberID,
+                limit: pageSize,
+                offset: offset,
+                sortOption: sortOption
+            )
+            let postImageURLs = await Self.resolvePostImageURLs(
+                posts: posts,
+                supabaseManager: supabaseManager,
+                logger: logger
+            )
+            let nickname = currentState.profile?.nickname ?? "알 수 없는 사용자"
+
+            return MemberProfilePostsPage(
+                posts: Self.makePosts(posts, nickname: nickname, imageURLs: postImageURLs),
+                nextOffset: offset + posts.count,
+                hasNextPage: posts.count == pageSize
+            )
         }
     }
 
