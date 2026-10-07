@@ -12,7 +12,7 @@ import RxSwift
 import UIKit
 
 final class AlarmSettingViewController: BaseViewController {
-    private let settingView = AlarmSettingDetailView()
+    private let settingView = AlarmSettingView()
     
     override func loadView() {
         view = settingView

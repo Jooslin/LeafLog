@@ -11,7 +11,7 @@ import RxSwift
 import RxCocoa
 import Then
 
-final class AlarmSettingDetailView: UIView {
+final class AlarmSettingView: UIView {
     let titleView = TitleHeaderView(text: "알림 설정", hasBackButton: true)
     
     fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
@@ -36,7 +36,8 @@ final class AlarmSettingDetailView: UIView {
         addSubview(listView)
         
         titleView.snp.makeConstraints {
-            $0.top.horizontalEdges.equalToSuperview()
+            $0.top.equalTo(safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
             $0.height.equalTo(44)
         }
         
@@ -48,7 +49,7 @@ final class AlarmSettingDetailView: UIView {
 }
 
 //MARK: CollectionView
-extension AlarmSettingDetailView {
+extension AlarmSettingView {
     nonisolated
     enum Section: Int {
         case management = 0
@@ -85,7 +86,7 @@ extension AlarmSettingDetailView {
         return UICollectionViewCompositionalLayout.list(using: configuration)
     }
     
-    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingDetailView.Setting> {
+    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingView.Setting> {
         let headerRegistration = UICollectionView.SupplementaryRegistration<AlarmSettingHeader>(elementKind: UICollectionView.elementKindSectionHeader) { [weak self] header, _, indexPath in
             guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
                 return
@@ -93,7 +94,7 @@ extension AlarmSettingDetailView {
             header.configure(section)
         }
         
-        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingDetailView.Setting> { cell, indexPath, item in
+        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingView.Setting> { cell, indexPath, item in
             cell.configure(item: item)
         }
         
@@ -159,7 +160,7 @@ final class AlarmSettingCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(item: AlarmSettingDetailView.Setting) {
+    func configure(item: AlarmSettingView.Setting) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
     }
@@ -185,7 +186,7 @@ final class AlarmSettingHeader: UICollectionReusableView {
             fatalError("init(coder:) has not been implemented")
         }
     
-    func configure(_ section: AlarmSettingDetailView.Section) {
+    func configure(_ section: AlarmSettingView.Section) {
         label.text = section.title
     }
 }
