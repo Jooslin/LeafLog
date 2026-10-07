@@ -71,11 +71,11 @@ extension AlarmSettingDetailView {
     }
     
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingDetailView.Setting> {
-        let headerRegistration = UICollectionView.SupplementaryRegistration<UICollectionViewListCell>(elementKind: UICollectionView.elementKindSectionHeader) { [weak self] header, _, indexPath in
+        let headerRegistration = UICollectionView.SupplementaryRegistration<AlarmSettingHeader>(elementKind: UICollectionView.elementKindSectionHeader) { [weak self] header, _, indexPath in
             guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
                 return
             }
-            
+            header.configure(section)
         }
         
         let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingDetailView.Setting> { cell, indexPath, item in
@@ -93,15 +93,19 @@ extension AlarmSettingDetailView {
         return dataSource
     }
     
-//    func setSnapshot(_ data: [Item]) {
-//        var snapshot = NSDiffableDataSourceSnapshot<Section, Setting>()
-//        snapshot.appendSections([.management, .community, .app])
-//        snapshot.appendItems(data, toSection: .list)
-//        
-//        dataSource.apply(snapshot, animatingDifferences: true)
-//    }
+    func setSnapshot(_ data: [Section: [Setting]]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, Setting>()
+        snapshot.appendSections([.management, .community, .app])
+        
+        for d in data {
+            snapshot.appendItems(d.value, toSection: d.key)
+        }
+        
+        dataSource.apply(snapshot, animatingDifferences: true)
+    }
 }
 
+//MARK: Cell
 final class AlarmSettingCell: UICollectionViewCell {
     private let titleLabel = UILabel(text: "", config: .label16, color: .black)
     private let bar = UIView().then {
@@ -143,5 +147,30 @@ final class AlarmSettingCell: UICollectionViewCell {
     func configure(item: AlarmSettingDetailView.Setting) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
+    }
+}
+
+//MARK: HeaderView
+final class AlarmSettingHeader: UICollectionReusableView {
+        private let label = UILabel(text: "", config: .label14, color: .grayScale600, lines: 1)
+        
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            
+            addSubview(label)
+            
+            label.snp.makeConstraints {
+                $0.verticalEdges.equalToSuperview().inset(12)
+                $0.leading.equalToSuperview().inset(4)
+            }
+        }
+        
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    
+    func configure(_ section: AlarmSettingDetailView.Section) {
+        label.text = section.title
     }
 }
