@@ -12,7 +12,94 @@ import RxCocoa
 import Then
 
 final class AlarmSettingDetailView: UIView {
+    let titleView = TitleHeaderView(text: "알림 설정", hasBackButton: true)
     
+    fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
+        $0.showsVerticalScrollIndicator = false
+        $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
+    }
+    
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setLayout()
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+//MARK: CollectionView
+extension AlarmSettingDetailView {
+    nonisolated
+    enum Section: Int {
+        case management = 0
+        case community
+        case app
+        
+        var title: String {
+            switch self {
+            case .management: "관리 알림"
+            case .community: "커뮤니티 알림"
+            case .app: "정보 수신"
+            }
+        }
+    }
+    
+    enum Item: Hashable {
+        case management(Setting)
+        case community(Setting)
+        case app(Setting)
+    }
+    
+    nonisolated
+    struct Setting: Hashable {
+        let category: AppNotificationType
+        let title: String
+        let isOn: Bool
+    }
+    
+    private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
+        var configuration = UICollectionLayoutListConfiguration(appearance: .plain)
+        
+        configuration.headerMode = .supplementary
+        
+        return UICollectionViewCompositionalLayout.list(using: configuration)
+    }
+    
+    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingDetailView.Setting> {
+        let headerRegistration = UICollectionView.SupplementaryRegistration<UICollectionViewListCell>(elementKind: UICollectionView.elementKindSectionHeader) { [weak self] header, _, indexPath in
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                return
+            }
+            
+        }
+        
+        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingDetailView.Setting> { cell, indexPath, item in
+            cell.configure(item: item)
+        }
+        
+        let dataSource = UICollectionViewDiffableDataSource<Section, Setting>(collectionView: listView) { collectionView, indexPath, item in
+            collectionView.dequeueConfiguredReusableCell(using: settingCellRegistration, for: indexPath, item: item)
+        }
+        
+        dataSource.supplementaryViewProvider = {
+            collectionView.dequeueConfiguredReusableSupplementary(using: headerRegistration, for: $2) // $2 == indexPath
+        }
+         
+        return dataSource
+    }
+    
+//    func setSnapshot(_ data: [Item]) {
+//        var snapshot = NSDiffableDataSourceSnapshot<Section, Setting>()
+//        snapshot.appendSections([.management, .community, .app])
+//        snapshot.appendItems(data, toSection: .list)
+//        
+//        dataSource.apply(snapshot, animatingDifferences: true)
+//    }
 }
 
 final class AlarmSettingCell: UICollectionViewCell {
@@ -53,7 +140,7 @@ final class AlarmSettingCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(item: AlarmSettingDetailView.Item) {
+    func configure(item: AlarmSettingDetailView.Setting) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
     }
