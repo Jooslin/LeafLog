@@ -16,7 +16,7 @@ final class AlarmSettingView: UIView {
     
     fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
-        $0.contentInset = .init(top: 0, left: 16, bottom: 50, right: 16)
+        $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
     }
     
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
@@ -90,8 +90,16 @@ extension AlarmSettingView {
         var configuration = UICollectionLayoutListConfiguration(appearance: .plain)
         
         configuration.headerMode = .supplementary
+        configuration.showsSeparators = false
         
-        return UICollectionViewCompositionalLayout.list(using: configuration)
+        return UICollectionViewCompositionalLayout { _, environment in
+            let section = NSCollectionLayoutSection.list(
+                using: configuration,
+                layoutEnvironment: environment
+            )
+            section.contentInsets = .init(top: 0, leading: 16, bottom: 0, trailing: 16)
+            return section
+        }
     }
     
     private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingView.Setting> {
@@ -145,12 +153,12 @@ final class AlarmSettingCell: UICollectionViewCell {
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, alarmSwitch]).then {
             $0.axis = .horizontal
-            alarmSwitch.setContentHuggingPriority(.required, for: .horizontal)
-            alarmSwitch.setContentCompressionResistancePriority(.required, for: .horizontal)
+            titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         }
         
-        addSubview(stackView)
-        addSubview(bar)
+        contentView.addSubview(stackView)
+        contentView.addSubview(bar)
         
         stackView.snp.makeConstraints {
             $0.centerY.equalToSuperview()
@@ -160,6 +168,7 @@ final class AlarmSettingCell: UICollectionViewCell {
         bar.snp.makeConstraints {
             $0.height.equalTo(0.5)
             $0.bottom.horizontalEdges.equalToSuperview()
+            $0.width.equalToSuperview()
         }
     }
     
@@ -185,7 +194,7 @@ final class AlarmSettingHeader: UICollectionReusableView {
             
             label.snp.makeConstraints {
                 $0.verticalEdges.equalToSuperview().inset(12)
-                $0.leading.equalToSuperview().inset(4)
+                $0.leading.equalToSuperview().offset(16)
             }
         }
         

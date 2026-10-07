@@ -115,7 +115,6 @@ extension NotificationCenterView {
             switch item {
             case .alarm(let alarm):
                 cell.configure(alarm)
-                
             }
         }
         
