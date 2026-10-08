@@ -489,6 +489,7 @@ extension SupabaseManager {
             .value
         guard let state = states.first else { return false }
 
+        // 변예린: 종류별 설정을 지원하고 동기화한 기기라는 표시이며 개별 알림 토글값과는 별개다.
         var preferenceUpdate = [
             "is_notification_authorized": isNotificationAuthorized,
             "supports_notification_preferences": true,
