@@ -181,7 +181,7 @@ final class MyPageReactor: Reactor {
         }
     }
     
-    private func updateNotificationAllowance(isOn: Bool) -> Observable<Mutation> {
+    private func updateNotificationAllowance(isOn _: Bool) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task {
                 guard let self else {
@@ -190,7 +190,7 @@ final class MyPageReactor: Reactor {
                 }
                 
                 do {
-                    let actualIsOn = try await self.notificationManager.updateIsNotificationEnabled(to: isOn)
+                    let actualIsOn = try await self.notificationManager.syncCurrentDeviceNotificationAuthorization() ?? false
                     self.logger.log("✅ Supabase DB에 알림 허용 여부가 성공적으로 저장되었습니다.")
                     
                     observer.onNext(.setPushAlert(actualIsOn))

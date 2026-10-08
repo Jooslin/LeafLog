@@ -474,18 +474,20 @@ extension SupabaseManager {
         return currentUserId
     }
 
-    func syncCurrentDeviceNotificationAuthorization(_ isNotificationAuthorized: Bool, for expectedUserId: UUID) async throws {
+    func syncCurrentDeviceNotificationAuthorization(_ isNotificationAuthorized: Bool, for expectedUserId: UUID) async throws -> Bool {
         guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
         guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound }
 
-        let state: DeviceNotificationState = try await client
+        let states: [DeviceNotificationState] = try await client
             .from("device_tokens")
             .select("is_notification_authorized, supports_notification_preferences")
             .eq("user_id", value: expectedUserId)
             .eq("device_id", value: deviceID)
-            .single()
+            .eq("is_active", value: true)
+            .limit(1)
             .execute()
             .value
+        guard let state = states.first else { return false }
 
         var preferenceUpdate = [
             "is_notification_authorized": isNotificationAuthorized,
@@ -505,9 +507,11 @@ extension SupabaseManager {
             .update(preferenceUpdate)
             .eq("user_id", value: expectedUserId)
             .eq("device_id", value: deviceID)
+            .eq("is_active", value: true)
             .select("id")
             .single()
             .execute()
+        return true
     }
 
     func deactivateCurrentDeviceToken() async throws {
@@ -519,19 +523,6 @@ extension SupabaseManager {
             .update(["is_active": false])
             .eq("user_id", value: currentUserId)
             .eq("device_id", value: deviceID)
-            .execute()
-    }
-    
-    // 유저 알림 허용 여부 업데이트
-    func updateIsNotificationEnabled(_ isEnabled: Bool) async throws {
-        // 현재 로그인된 유저의 정보(세션)를 가져옴
-        guard let currentUserId = client.auth.currentUser?.id else { return } // nil값인 경우 빠른 종료
-        
-        // profiles 테이블에서 현재 유저의 행을 찾아 알림 허용 여부(is_notification_enabled) 값을 덮어씌움
-        try await client
-            .from("profiles")
-            .update(["is_notification_enabled": isEnabled])
-            .eq("id", value: currentUserId)
             .execute()
     }
     

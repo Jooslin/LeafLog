@@ -14,7 +14,6 @@ final class NotificationManager {
     @Dependency(\.supabaseManager)private var supabaseManager
     let center = UNUserNotificationCenter.current()
     private let logger = Logger.init(subsystem: "LeafLog", category: "NotificationManager")
-    private let userDefaultsBaseKey = "isNotificationEnabled"
     
     // 앱 알림 권한 요청 함수
     func requestNotificationAuthorization() {
@@ -22,7 +21,7 @@ final class NotificationManager {
         // 앱 실행 시 사용자에게 알림 허용 권한 받기
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         
-        center.requestAuthorization(options: authOptions) { [weak self] granted, error in
+        center.requestAuthorization(options: authOptions) { [weak self] _, error in
             if let error {
                 self?.logger.error("알림 권한 요청 시 오류 발생: \(error.localizedDescription, privacy: .private)")
                 return
@@ -31,11 +30,7 @@ final class NotificationManager {
             // 알림 권한 허용 여부에 따라 저장
             Task {
                 do {
-                    if granted {
-                        try await self?.updateIsNotificationEnabled(to: true)
-                    } else {
-                        try await self?.updateIsNotificationEnabled(to: false)
-                    }
+                    try await self?.syncCurrentDeviceNotificationAuthorization()
                 } catch {
                     self?.logger.error("알림 허용 여부 저장 시 오류 발생: \(error.localizedDescription, privacy: .private)")
                 }
@@ -57,53 +52,24 @@ final class NotificationManager {
     
     // 알림 허용 여부 업데이트
     @discardableResult
-    func updateIsNotificationEnabled(to isEnabled: Bool?) async throws -> Bool {
+    func syncCurrentDeviceNotificationAuthorization() async throws -> Bool? {
         guard let userId = self.supabaseManager.client.auth.currentUser?.id else {
             throw NotificationError.userIDNotFound
         }
-        
-        let isAuthorized = await self.checkNotificationEnabled()
-        
-        var target: Bool = false
-        
-        if let isEnabled {
-            if isEnabled && !isAuthorized {
-                throw NotificationError.authorizationDenied
-            }
-            target = isEnabled && isAuthorized
-        } else {
-            target = isAuthorized
-        }
-        
-        let willUpdate = checkUserDefaultsWouldUpdate(to: target, user: userId)
-        guard willUpdate else { return target } // UserDefaults가 업데이트될 경우
-        
-        try await supabaseManager.updateIsNotificationEnabled(target) // DB 업데이트
-        updateUserDefaultsIsNotificationEnabled(to: target, user: userId) // UserDefaults 업데이트
-        
-        return target
+
+        return try await syncCurrentDeviceNotificationAuthorization(for: userId)
     }
-    
-    // UserDefaults 업데이트 여부
-    private func checkUserDefaultsWouldUpdate(to isEnabled: Bool, user: UUID) -> Bool {
-        let userDefaults = UserDefaults.standard
-        let key = userDefaultsBaseKey + user.uuidString
-        // 기존에 저장된 값이 없을 경우
-        if userDefaults.object(forKey: key) == nil {
-            return true
+
+    func syncCurrentDeviceNotificationAuthorization(for userId: UUID) async throws -> Bool? {
+        var isAuthorized = await checkNotificationEnabled()
+        while true {
+            let didSync = try await supabaseManager.syncCurrentDeviceNotificationAuthorization(isAuthorized, for: userId)
+            guard didSync else { return nil }
+
+            let latestAuthorization = await checkNotificationEnabled()
+            if latestAuthorization == isAuthorized { return isAuthorized }
+            isAuthorized = latestAuthorization
         }
-        
-        let current = userDefaults.bool(forKey: key)
-        
-        return current != isEnabled
-    }
-    
-    // UserDefaults 업데이트
-    private func updateUserDefaultsIsNotificationEnabled(to isEnabled: Bool, user: UUID) {
-        let userDefaults = UserDefaults.standard
-        let key = userDefaultsBaseKey + user.uuidString
-        
-        userDefaults.set(isEnabled, forKey: key)
     }
 }
 

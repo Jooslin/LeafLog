@@ -47,8 +47,10 @@ final class FCMManager: NSObject {
 
     private func saveFCMToken(_ token: String) async throws {
         let userId = try await supabaseManager.updateFCMToken(token)
-        let isAuthorized = await notificationManager.checkNotificationEnabled()
-        try await supabaseManager.syncCurrentDeviceNotificationAuthorization(isAuthorized, for: userId)
+        guard try await notificationManager.syncCurrentDeviceNotificationAuthorization(for: userId) != nil else {
+            logger.error("기기 토큰 등록 후 알림 설정을 저장할 행을 찾지 못했습니다.")
+            return
+        }
         logger.log("✅ Supabase DB에 fcmToken이 성공적으로 저장되었습니다.")
     }
 }
