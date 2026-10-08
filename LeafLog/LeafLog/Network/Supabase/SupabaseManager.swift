@@ -488,20 +488,18 @@ extension SupabaseManager {
             .execute()
             .value
         guard let state = states.first else { return false }
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        if state.supportsNotificationPreferences && state.isNotificationAuthorized == isNotificationAuthorized { return true }
 
         // 변예린: 종류별 설정을 지원하고 동기화한 기기라는 표시이며 개별 알림 토글값과는 별개다.
         var preferenceUpdate = [
             "is_notification_authorized": isNotificationAuthorized,
             "supports_notification_preferences": true,
         ]
-        if !state.supportsNotificationPreferences || state.isNotificationAuthorized != isNotificationAuthorized {
-            preferenceUpdate["is_watering_reminder_enabled"] = isNotificationAuthorized
-            preferenceUpdate["is_favorite_enabled"] = isNotificationAuthorized
-            preferenceUpdate["is_comment_enabled"] = isNotificationAuthorized
-            preferenceUpdate["is_app_enabled"] = isNotificationAuthorized
-        }
-
-        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        preferenceUpdate["is_watering_reminder_enabled"] = isNotificationAuthorized
+        preferenceUpdate["is_favorite_enabled"] = isNotificationAuthorized
+        preferenceUpdate["is_comment_enabled"] = isNotificationAuthorized
+        preferenceUpdate["is_app_enabled"] = isNotificationAuthorized
 
         try await client
             .from("device_tokens")
