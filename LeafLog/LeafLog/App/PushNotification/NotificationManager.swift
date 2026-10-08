@@ -50,8 +50,7 @@ final class NotificationManager {
         }
     }
     
-    // 알림 허용 여부 업데이트
-    // 변예린: 앱 활성화와 권한 요청에서는 현재 로그인한 사용자의 기기 설정을 동기화한다.
+    // 앱 알림 권한 업데이트 - 현재 로그인한 사용자의 기기 설정을 동기화
     @discardableResult
     func syncCurrentDeviceNotificationAuthorization() async throws -> Bool? {
         guard let userId = self.supabaseManager.client.auth.currentUser?.id else {
@@ -61,7 +60,7 @@ final class NotificationManager {
         return try await syncCurrentDeviceNotificationAuthorization(for: userId)
     }
 
-    // 변예린: 토큰 등록을 기다리는 동안 계정이 바뀌어도 등록을 시작한 사용자 ID로 확인해 다른 계정에 저장하지 않는다.
+    // FCM 토큰 등록을 기다리는 동안 계정이 바뀌어도 등록을 시작한 사용자 ID로 확인하여 다른 계정에 저장되는 것을 방지
     func syncCurrentDeviceNotificationAuthorization(for userId: UUID) async throws -> Bool? {
         var isAuthorized = await checkNotificationEnabled()
         while true {
