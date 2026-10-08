@@ -439,26 +439,75 @@ extension SupabaseManager {
 }
 
 //MARK: FCM 관련
+private struct DeviceNotificationState: Decodable {
+    let isNotificationAuthorized: Bool?
+    let supportsNotificationPreferences: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case isNotificationAuthorized = "is_notification_authorized"
+        case supportsNotificationPreferences = "supports_notification_preferences"
+    }
+}
+
+private enum DeviceTokenSyncError: Error {
+    case userNotFound
+    case deviceIDNotFound
+    case accountChanged
+}
+
 extension SupabaseManager {
     // 현재 기기의 FCM 토큰을 user/device 단위로 저장
-    func updateFCMToken(_ validToken: String) {
-        Task {
-            do {
-                guard client.auth.currentUser?.id != nil else { return } // 현재 로그인 된 유저 정보
-                guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { return } // 기기 정보
-                
-                let payload = [
-                    "p_fcm_token": validToken,
-                    "p_device_id": deviceID,
-                ]
+    func updateFCMToken(_ validToken: String) async throws -> UUID {
+        guard let currentUserId = client.auth.currentUser?.id else { throw DeviceTokenSyncError.userNotFound } // 현재 로그인 된 유저 정보
+        guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound } // 기기 정보
 
-                try await client
-                    .rpc("activate_current_device_token", params: payload)
-                    .execute()
-            } catch {
-                logger.error("⚠️ 디바이스 토큰 저장 보류(로그인 전이거나 네트워크 에러)\nerror: \(error.localizedDescription, privacy: .private)")
-            }
+        let payload = [
+            "p_fcm_token": validToken,
+            "p_device_id": deviceID,
+        ]
+
+        try await client
+            .rpc("activate_current_device_token", params: payload)
+            .execute()
+
+        guard client.auth.currentUser?.id == currentUserId else { throw DeviceTokenSyncError.accountChanged }
+        return currentUserId
+    }
+
+    func syncCurrentDeviceNotificationAuthorization(_ isNotificationAuthorized: Bool, for expectedUserId: UUID) async throws {
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound }
+
+        let state: DeviceNotificationState = try await client
+            .from("device_tokens")
+            .select("is_notification_authorized, supports_notification_preferences")
+            .eq("user_id", value: expectedUserId)
+            .eq("device_id", value: deviceID)
+            .single()
+            .execute()
+            .value
+
+        var preferenceUpdate = [
+            "is_notification_authorized": isNotificationAuthorized,
+            "supports_notification_preferences": true,
+        ]
+        if !state.supportsNotificationPreferences || state.isNotificationAuthorized != isNotificationAuthorized {
+            preferenceUpdate["is_watering_reminder_enabled"] = isNotificationAuthorized
+            preferenceUpdate["is_favorite_enabled"] = isNotificationAuthorized
+            preferenceUpdate["is_comment_enabled"] = isNotificationAuthorized
+            preferenceUpdate["is_app_enabled"] = isNotificationAuthorized
         }
+
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+
+        try await client
+            .from("device_tokens")
+            .update(preferenceUpdate)
+            .eq("user_id", value: expectedUserId)
+            .eq("device_id", value: deviceID)
+            .select("id")
+            .single()
+            .execute()
     }
 
     func deactivateCurrentDeviceToken() async throws {

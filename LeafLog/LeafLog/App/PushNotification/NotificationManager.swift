@@ -44,7 +44,7 @@ final class NotificationManager {
     }
     
     // 앱 알림 권한 허용 여부 확인 함수
-    private func checkNotificationEnabled() async -> Bool {
+    func checkNotificationEnabled() async -> Bool {
         let settings = await center.notificationSettings()
         
         switch settings.authorizationStatus {

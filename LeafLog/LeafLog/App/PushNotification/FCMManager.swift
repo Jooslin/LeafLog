@@ -38,12 +38,18 @@ final class FCMManager: NSObject {
         Task {
             do {
                 let token = try await Messaging.messaging().token()
-                supabaseManager.updateFCMToken(token)
-                logger.log("✅ Supabase DB에 fcmToken이 성공적으로 저장되었습니다.")
+                try await saveFCMToken(token)
             } catch {
                 logger.error("sync fcmToken failed.\nerror: \(error.localizedDescription, privacy: .private)")
             }
         }
+    }
+
+    private func saveFCMToken(_ token: String) async throws {
+        let userId = try await supabaseManager.updateFCMToken(token)
+        let isAuthorized = await notificationManager.checkNotificationEnabled()
+        try await supabaseManager.syncCurrentDeviceNotificationAuthorization(isAuthorized, for: userId)
+        logger.log("✅ Supabase DB에 fcmToken이 성공적으로 저장되었습니다.")
     }
 }
 
@@ -60,7 +66,13 @@ extension FCMManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         // 전달받은 토큰이 정상적으로 있는지 확인
         guard let validToken = fcmToken else { return }
-        supabaseManager.updateFCMToken(validToken)
+        Task {
+            do {
+                try await saveFCMToken(validToken)
+            } catch {
+                logger.error("sync fcmToken failed.\nerror: \(error.localizedDescription, privacy: .private)")
+            }
+        }
     }
 }
 
