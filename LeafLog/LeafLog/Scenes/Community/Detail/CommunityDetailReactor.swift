@@ -573,7 +573,7 @@ extension CommunityDetailReactor {
             title: result.post.title,
             nickname: result.authorNickname,
             profileImageURL: result.authorProfileImageURL,
-            date: dateFormatter.string(from: result.post.createdAt),
+            date: result.post.createdAt.map { dateFormatter.string(from: $0) } ?? "날짜 정보 없음",
             body: result.post.content,
             imageURLs: result.imageURLs,
             likeCount: result.post.likeCount,
