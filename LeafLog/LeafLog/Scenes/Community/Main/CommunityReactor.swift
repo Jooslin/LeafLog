@@ -25,7 +25,7 @@ final class CommunityReactor: Reactor {
         case pageFailed(UUID, String)
         case setPosts(
             requestID: UUID,
-            offset: Int,
+            isFirstPage: Bool,
             posts: [CommunityPost],
             likedPostIDs: Set<UUID>,
             authorNicknames: [UUID: String],
@@ -48,7 +48,7 @@ final class CommunityReactor: Reactor {
         var activeRequestID: UUID?
         var isLoadingPage = false
         var hasLoadedPosts = false
-        var nextOffset = 0
+        var nextCursor: CommunityPostCursor?
         var hasMorePages = true
         var feedRevision = 0
         @Pulse var errorMessage: String?
@@ -99,7 +99,7 @@ final class CommunityReactor: Reactor {
                 newState.authorNicknames = [:]
                 newState.authorProfileImageURLs = [:]
                 newState.postImageURLs = [:]
-                newState.nextOffset = 0
+                newState.nextCursor = nil
                 newState.hasMorePages = true
                 newState.hasLoadedPosts = false
                 newState.feedRevision += 1
@@ -111,7 +111,7 @@ final class CommunityReactor: Reactor {
 
         case let .setPosts(
             requestID,
-            offset,
+            isFirstPage,
             posts,
             likedPostIDs,
             authorNicknames,
@@ -120,7 +120,7 @@ final class CommunityReactor: Reactor {
         ):
             // 새로고침이나 카테고리 변경 전에 시작한 요청의 응답은 무시
             guard state.activeRequestID == requestID else { return state }
-            if offset == 0 {
+            if isFirstPage {
                 newState.posts = posts
                 newState.likedPostIDs = likedPostIDs
                 newState.authorNicknames = authorNicknames
@@ -134,8 +134,10 @@ final class CommunityReactor: Reactor {
                 newState.authorProfileImageURLs.merge(authorProfileImageURLs) { _, new in new }
                 newState.postImageURLs.merge(postImageURLs) { _, new in new }
             }
-            // 중복 게시글을 제외했더라도 다음 조회 위치는 서버에서 받은 개수만큼 이동
-            newState.nextOffset = offset + posts.count
+            // 중복 제거 전 응답의 마지막 게시글을 다음 조회 기준으로 사용합니다.
+            if isFirstPage || !posts.isEmpty {
+                newState.nextCursor = posts.last?.cursor
+            }
             newState.hasLoadedPosts = true
             newState.hasMorePages = posts.count == Self.pageSize
             newState.activeRequestID = nil
@@ -173,23 +175,23 @@ final class CommunityReactor: Reactor {
         isRefreshing: Bool = false
     ) -> Observable<Mutation> {
         let requestID = UUID()
-        let offset = reset ? 0 : currentState.nextOffset
+        let cursor = reset ? nil : currentState.nextCursor
         return .concat(
             .just(.beginPage(requestID, category: category, isRefreshing: isRefreshing)),
-            fetchPosts(requestID: requestID, offset: offset, category: category)
+            fetchPosts(requestID: requestID, cursor: cursor, category: category)
         )
     }
 
     private func fetchPosts(
         requestID: UUID,
-        offset: Int,
+        cursor: CommunityPostCursor?,
         category: PostCategory?
     ) -> Observable<Mutation> {
         Single<CommunityFeedResult>.create {
             [communityPostDBManager, supabaseManager, logger] in
             let posts = try await communityPostDBManager.fetchPosts(
                 limit: Self.pageSize,
-                offset: offset,
+                after: cursor,
                 category: category
             )
             let likedPostIDs = try await communityPostDBManager.fetchLikedPostIDs(
@@ -231,7 +233,7 @@ final class CommunityReactor: Reactor {
         .map {
             .setPosts(
                 requestID: requestID,
-                offset: offset,
+                isFirstPage: cursor == nil,
                 posts: $0.posts,
                 likedPostIDs: $0.likedPostIDs,
                 authorNicknames: $0.authorNicknames,
