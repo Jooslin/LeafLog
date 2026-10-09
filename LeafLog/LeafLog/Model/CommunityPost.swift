@@ -13,7 +13,7 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
     let category: PostCategory
     let title: String
     let content: String
-    let createdAt: Date
+    let createdAtCursorValue: String
     let updatedAt: Date
     let deletedAt: Date?
     let likeCount: Int
@@ -26,7 +26,7 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
         case category
         case title
         case content
-        case createdAt = "created_at"
+        case createdAtCursorValue = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
         case likeCount = "like_count"
@@ -34,9 +34,23 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
         case images
     }
 
+    var createdAt: Date? {
+        (try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(createdAtCursorValue))
+            ?? (try? Date.ISO8601FormatStyle().parse(createdAtCursorValue))
+    }
+
+    var cursor: CommunityPostCursor {
+        CommunityPostCursor(createdAt: createdAtCursorValue, id: id)
+    }
+
     var firstImagePath: String? {
         images.min { $0.sortOrder < $1.sortOrder }?.imagePath
     }
+}
+
+nonisolated struct CommunityPostCursor: Equatable, Sendable {
+    let createdAt: String
+    let id: UUID
 }
 
 nonisolated struct CommunityPostImage: Codable, Hashable, Sendable {
