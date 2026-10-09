@@ -316,7 +316,7 @@ final class MemberProfileReactor: Reactor {
                 id: $0.id,
                 title: $0.title,
                 nickname: nickname,
-                date: dateFormatter.string(from: $0.createdAt),
+                date: $0.createdAt.map { dateFormatter.string(from: $0) } ?? "날짜 정보 없음",
                 body: $0.content,
                 imageURL: imageURLs[$0.id],
                 likeCount: String($0.likeCount),
