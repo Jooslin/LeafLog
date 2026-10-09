@@ -144,7 +144,7 @@ final class CommunityPostCell: UICollectionViewCell {
         categoryButton.isHidden = !showsCategory
         titleLabel.text = post.title
         nicknameLabel.text = nickname ?? "알 수 없는 사용자"
-        dateLabel.text = Self.dateFormatter.string(from: post.createdAt)
+        dateLabel.text = post.createdAt.map { Self.dateFormatter.string(from: $0) } ?? "날짜 정보 없음"
         bodyLabel.text = post.content
         likeImageView.image = isLiked
             ? UIImage(systemName: "heart.fill")
