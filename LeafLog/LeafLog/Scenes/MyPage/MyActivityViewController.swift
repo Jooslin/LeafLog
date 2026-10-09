@@ -83,11 +83,14 @@ final class MyActivityViewController: BaseViewController {
         }
 
         let posts = unsortedPosts.sorted { lhs, rhs in
+            // 날짜를 읽을 수 없는 게시글은 정렬 방향과 관계없이 마지막에 표시
+            guard let lhsDate = lhs.createdAt else { return false }
+            guard let rhsDate = rhs.createdAt else { return true }
             switch sort {
             case .latestFirst:
-                return lhs.createdAt > rhs.createdAt
+                return lhsDate > rhsDate
             case .oldestFirst:
-                return lhs.createdAt < rhs.createdAt
+                return lhsDate < rhsDate
             }
         }
 
