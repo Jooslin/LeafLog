@@ -65,16 +65,23 @@ final class CommunityReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            return .concat(loadPage(reset: true), refreshUnreadNotificationState())
+            return .concat(
+                loadPage(reset: true, category: currentState.selectedCategory),
+                refreshUnreadNotificationState()
+            )
 
         case .refresh:
-            return loadPage(reset: true, isRefreshing: true)
+            return loadPage(
+                reset: true,
+                category: currentState.selectedCategory,
+                isRefreshing: true
+            )
 
         case .loadNextPage:
             guard !currentState.isLoadingPage, currentState.hasMorePages else {
                 return .empty()
             }
-            return loadPage(reset: false)
+            return loadPage(reset: false, category: currentState.selectedCategory)
 
         case .refreshUnreadNotificationState:
             return refreshUnreadNotificationState()
@@ -160,13 +167,6 @@ final class CommunityReactor: Reactor {
         }
 
         return newState
-    }
-
-    private func loadPage(
-        reset: Bool,
-        isRefreshing: Bool = false
-    ) -> Observable<Mutation> {
-        loadPage(reset: reset, category: currentState.selectedCategory, isRefreshing: isRefreshing)
     }
 
     private func loadPage(
