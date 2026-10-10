@@ -144,7 +144,7 @@ final class CommunityPostCell: UICollectionViewCell {
         categoryButton.isHidden = !showsCategory
         titleLabel.text = post.title
         nicknameLabel.text = nickname ?? "알 수 없는 사용자"
-        dateLabel.text = Self.dateFormatter.string(from: post.createdAt)
+        dateLabel.text = post.createdAt.map { Self.dateFormatter.string(from: $0) } ?? "날짜 정보 없음"
         bodyLabel.text = post.content
         likeImageView.image = isLiked
             ? UIImage(systemName: "heart.fill")
@@ -204,7 +204,7 @@ final class CommunityPostCell: UICollectionViewCell {
 
         reactionStackView.snp.makeConstraints {
             $0.leading.equalToSuperview()
-            $0.bottom.equalTo(separatorView.snp.top).offset(-16)
+            $0.bottom.equalTo(separatorView.snp.top).offset(-16).priority(999)
         }
 
         [likeImageView, commentImageView].forEach {
@@ -260,7 +260,7 @@ final class CommunityPostCell: UICollectionViewCell {
             } else {
                 $0.top.equalTo(bodyLabel.snp.bottom).offset(10)
             }
-            $0.bottom.equalTo(separatorView.snp.top).offset(-16)
+            $0.bottom.equalTo(separatorView.snp.top).offset(-16).priority(999)
         }
     }
 }

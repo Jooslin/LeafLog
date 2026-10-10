@@ -132,11 +132,6 @@ final class CommunityView: UIView {
         self.authorProfileImageURLs = authorProfileImageURLs
         self.postImageURLs = postImageURLs
 
-        let isEmpty = posts.isEmpty
-        collectionView.isHidden = false
-        collectionView.backgroundColor = isEmpty ? .clear : .white
-        emptyView.isHidden = !isEmpty
-
         var snapshot = NSDiffableDataSourceSnapshot<Int, CommunityPost>()
         snapshot.appendSections([0])
         snapshot.appendItems(posts)
@@ -148,6 +143,10 @@ final class CommunityView: UIView {
     }
 
     func selectCategory(_ category: PostCategory?) {
+        collectionView.setContentOffset(
+            CGPoint(x: 0, y: -collectionView.adjustedContentInset.top),
+            animated: false
+        )
         categoryButtons.enumerated().forEach { index, button in
             button.isSelected = categoryFilters[index] == category
         }
@@ -155,6 +154,11 @@ final class CommunityView: UIView {
 
     func configureAlarmButton(hasUnreadNotification: Bool) {
         titleView.setRightButtonImage(hasUnreadNotification ? "bellOn" : "bell")
+    }
+
+    func setEmptyStateVisible(_ isVisible: Bool) {
+        emptyView.isHidden = !isVisible
+        collectionView.backgroundColor = isVisible ? .clear : .white
     }
 
     func setRefreshing(_ isRefreshing: Bool) {
@@ -267,6 +271,27 @@ extension Reactive where Base: CommunityView {
                 guard base.posts.indices.contains(indexPath.item) else { return nil }
                 return base.posts[indexPath.item]
             }
+    }
+
+    var loadNextPage: Observable<Void> {
+        let approachingLastItem = base.collectionView.rx.willDisplayCell
+            .filter { [weak base] _, indexPath in
+                guard let base, !base.posts.isEmpty else { return false }
+                return indexPath.item >= base.posts.count - 5
+            }
+            .map { _ in () }
+
+        // 에러 발생 후 다시 스크롤 하면 기존 피드 삭제하지않고 다시 같은 페이지 불러오기
+        let scrollingNearBottom = base.collectionView.rx.didScroll
+            .filter { [weak base] in
+                guard let base, !base.posts.isEmpty else { return false }
+                let collectionView = base.collectionView
+                guard collectionView.isDragging || collectionView.isDecelerating else { return false }
+                return collectionView.contentOffset.y + collectionView.bounds.height
+                    >= collectionView.contentSize.height - 500
+            }
+
+        return Observable.merge(approachingLastItem, scrollingNearBottom)
     }
 
     var refresh: ControlEvent<Void> {

@@ -198,24 +198,38 @@ extension CommunityPostDBManager {
     // 전체 게시글 조회
     func fetchPosts(
         limit: Int = 20,
-        offset: Int = 0
+        after cursor: CommunityPostCursor? = nil,
+        category: PostCategory? = nil
     ) async throws -> [CommunityPost] {
-        guard limit > 0, offset >= 0 else {
+        guard limit > 0 else {
             throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
         }
 
         do {
-            return try await supabaseManager.client
+            var query = supabaseManager.client
                 .from("community_posts")
                 .select("*, images:community_post_images(*)")
                 .is("deleted_at", value: nil)
+
+            if let category {
+                query = query.eq("category", value: category.databaseValue)
+            }
+
+            if let cursor {
+                query = query.or(
+                    "created_at.lt.\(cursor.createdAt),and(created_at.eq.\(cursor.createdAt),id.lt.\(cursor.id.uuidString))"
+                )
+            }
+
+            return try await query
                 .order("created_at", ascending: false)
+                .order("id", ascending: false)
                 .order(
                     "sort_order",
                     ascending: true,
                     referencedTable: "images"
                 )
-                .range(from: offset, to: offset + limit - 1)
+                .limit(limit)
                 .execute()
                 .value
         } catch {
