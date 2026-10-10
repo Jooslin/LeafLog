@@ -56,6 +56,12 @@ final class MainFlow: Flow {
             communityTabStepper.steps.accept(step)
             return .none
 
+        case .communityDetail:
+            pop(animated: false)
+            tabBarController.selectedIndex = 2
+            communityTabStepper.steps.accept(step)
+            return .none
+
         case .endPlantDelete:
             popAfterDeletePlant(animated: true)
             return .none

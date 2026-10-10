@@ -23,7 +23,7 @@ final class CommunityPostDBManager {
                 .is("deleted_at", value: nil)
                 .execute()
                 .value
-            
+
             return CommunityPostStats(
                 postCount: rows.count,
                 likeCount: rows.reduce(0) { $0 + $1.likeCount }
@@ -103,7 +103,7 @@ extension CommunityPostDBManager {
     func updatePost(input: CommunityPostSaveInput) async throws -> CommunityPost {
         try await savePost(function: "update_community_post", input: input)
     }
-    
+
     private func savePost(
         function: String,
         input: CommunityPostSaveInput
@@ -123,14 +123,14 @@ extension CommunityPostDBManager {
             )
         }
     }
-    
+
     // Delete
     func deletePost(_ post: CommunityPost) async throws {
         let imagePaths = Array(Set(post.images.map(\.imagePath)))
-        
+
         do {
             let user = try await supabaseManager.client.auth.user()
-            
+
             guard user.id == post.authorID else {
                 throw AuthError.communityFailed("내가 작성한 게시글만 삭제할 수 있어요.")
             }
@@ -141,7 +141,7 @@ extension CommunityPostDBManager {
                 "로그인 정보를 확인하지 못했어요. 다시 로그인해주세요."
             )
         }
-        
+
         do {
             let deletedPosts: [DeletedCommunityPostRow] = try await supabaseManager.client
                 .from("community_posts")
@@ -150,7 +150,7 @@ extension CommunityPostDBManager {
                 .select("id")
                 .execute()
                 .value
-            
+
             guard deletedPosts.isEmpty == false else {
                 throw AuthError.communityFailed(
                     "삭제할 게시글을 찾지 못했어요. 잠시 후 다시 시도해주세요."
@@ -163,7 +163,7 @@ extension CommunityPostDBManager {
                 "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
             )
         }
-        
+
         do {
             try await supabaseManager.deleteCommunityPostImages(paths: imagePaths)
         } catch {
@@ -176,6 +176,25 @@ extension CommunityPostDBManager {
 
 //MARK: CRUD - Read
 extension CommunityPostDBManager {
+    func fetchPostTitles(postIDs: [UUID]) async throws -> [UUID: String] {
+        let uniquePostIDs = Array(Set(postIDs))
+        guard !uniquePostIDs.isEmpty else { return [:] }
+
+        do {
+            let posts: [CommunityPostTitleRow] = try await supabaseManager.client
+                .from("community_posts")
+                .select("id, title")
+                .in("id", values: uniquePostIDs)
+                .is("deleted_at", value: nil)
+                .execute()
+                .value
+
+            return Dictionary(uniqueKeysWithValues: posts.map { ($0.id, $0.title) })
+        } catch {
+            throw AuthError.communityFailed("게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.")
+        }
+    }
+
     // 전체 게시글 조회
     func fetchPosts(
         limit: Int = 20,
@@ -219,7 +238,7 @@ extension CommunityPostDBManager {
             )
         }
     }
-    
+
     // 특정 게시글 조회
     func fetchPost(id: UUID) async throws -> CommunityPost {
         do {
@@ -247,34 +266,74 @@ extension CommunityPostDBManager {
     func fetchPosts(
         authorID: UUID,
         limit: Int = 10,
-        offset: Int = 0
+        offset: Int = 0,
+        sortOption: CommunityPostSortOption = .latest
     ) async throws -> [CommunityPost] {
         guard limit > 0, offset >= 0 else {
             throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
         }
-        
+
         do {
-            return try await supabaseManager.client
-                .from("community_posts")
-                .select("*, images:community_post_images(*)")
-                .eq("author_id", value: authorID)
-                .is("deleted_at", value: nil)
-                .order("created_at", ascending: false)
-                .order(
-                    "sort_order",
-                    ascending: true,
-                    referencedTable: "images"
-                )
-                .range(from: offset, to: offset + limit - 1)
-                .execute()
-                .value
+            switch sortOption {
+            case .latest:
+                return try await supabaseManager.client
+                    .from("community_posts")
+                    .select("*, images:community_post_images(*)")
+                    .eq("author_id", value: authorID)
+                    .is("deleted_at", value: nil)
+                    .order("created_at", ascending: false)
+                    .order("id", ascending: false)
+                    .order(
+                        "sort_order",
+                        ascending: true,
+                        referencedTable: "images"
+                    )
+                    .range(from: offset, to: offset + limit - 1)
+                    .execute()
+                    .value
+
+            case .oldest:
+                return try await supabaseManager.client
+                    .from("community_posts")
+                    .select("*, images:community_post_images(*)")
+                    .eq("author_id", value: authorID)
+                    .is("deleted_at", value: nil)
+                    .order("created_at", ascending: true)
+                    .order("id", ascending: true)
+                    .order(
+                        "sort_order",
+                        ascending: true,
+                        referencedTable: "images"
+                    )
+                    .range(from: offset, to: offset + limit - 1)
+                    .execute()
+                    .value
+
+            case .popular:
+                return try await supabaseManager.client
+                    .from("community_posts")
+                    .select("*, images:community_post_images(*)")
+                    .eq("author_id", value: authorID)
+                    .is("deleted_at", value: nil)
+                    .order("like_count", ascending: false)
+                    .order("created_at", ascending: false)
+                    .order("id", ascending: false)
+                    .order(
+                        "sort_order",
+                        ascending: true,
+                        referencedTable: "images"
+                    )
+                    .range(from: offset, to: offset + limit - 1)
+                    .execute()
+                    .value
+            }
         } catch {
             throw AuthError.communityFailed(
                 "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
             )
         }
     }
-    
+
     func fetchMyPosts(
         limit: Int = 20,
         offset: Int = 0
@@ -298,6 +357,11 @@ extension CommunityPostDBManager {
             )
         }
     }
+}
+
+nonisolated private struct CommunityPostTitleRow: Decodable, Sendable {
+    let id: UUID
+    let title: String
 }
 
 //MARK: 좋아요 관련
@@ -447,7 +511,7 @@ nonisolated struct CommunityPublicProfile: Decodable, Sendable {
 nonisolated private struct CommunityPostStatsRow: Decodable, Sendable {
     let id: UUID
     let likeCount: Int
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case likeCount = "like_count"
