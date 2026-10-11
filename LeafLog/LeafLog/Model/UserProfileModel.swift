@@ -15,7 +15,6 @@ struct UserProfileModel: Codable {
     let profileImageURL: String?
     let createdAt: Date?
     let updatedAt: Date?
-    let isNotificationEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -25,6 +24,5 @@ struct UserProfileModel: Codable {
         case profileImageURL = "profile_image_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
-        case isNotificationEnabled = "is_notification_enabled"
     }
 }

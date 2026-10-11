@@ -15,6 +15,7 @@ final class ProfileDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     
     private static let defaultNickname = "익명의 식물 집사"
+    private static let profileColumns = "id, nickname, email, provider, profile_image_url, created_at, updated_at"
 
     private lazy var client = supabaseManager.client
 
@@ -30,7 +31,7 @@ final class ProfileDBManager {
     private func fetchMyProfile(user: User) async throws -> UserProfileModel? {
         let profiles: [StoredUserProfile] = try await client
             .from("profiles")
-            .select() // 조회
+            .select(Self.profileColumns) // 조회
             .eq("id", value: user.id)
             .limit(1)
             .execute()
@@ -64,7 +65,7 @@ final class ProfileDBManager {
         let profile: StoredUserProfile = try await client
             .from("profiles")
             .upsert(payload)
-            .select()
+            .select(Self.profileColumns)
             .single()
             .execute()
             .value
@@ -93,7 +94,7 @@ final class ProfileDBManager {
             .from("profiles")
             .update(payload)
             .eq("id", value: user.id)
-            .select()
+            .select(Self.profileColumns)
             .single()
             .execute()
             .value
@@ -110,7 +111,7 @@ final class ProfileDBManager {
             .from("profiles")
             .update(payload)
             .eq("id", value: user.id)
-            .select()
+            .select(Self.profileColumns)
             .single()
             .execute()
             .value
@@ -132,8 +133,7 @@ final class ProfileDBManager {
             provider: provider,
             profileImageURL: stored.profileImageURL,
             createdAt: stored.createdAt,
-            updatedAt: stored.updatedAt,
-            isNotificationEnabled: stored.isNotificationEnabled
+            updatedAt: stored.updatedAt
         )
     }
 
@@ -153,14 +153,12 @@ private struct StoredUserProfile: Codable {
     let profileImageURL: String?
     let createdAt: Date?
     let updatedAt: Date?
-    let isNotificationEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, nickname, email, provider
         case profileImageURL = "profile_image_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
-        case isNotificationEnabled = "is_notification_enabled"
     }
 }
 
