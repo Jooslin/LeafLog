@@ -449,6 +449,20 @@ private struct DeviceNotificationState: Decodable {
     }
 }
 
+struct DeviceNotificationPreferences: Decodable {
+    let isWateringReminderEnabled: Bool
+    let isFavoriteEnabled: Bool
+    let isCommentEnabled: Bool
+    let isAppEnabled: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case isWateringReminderEnabled = "is_watering_reminder_enabled"
+        case isFavoriteEnabled = "is_favorite_enabled"
+        case isCommentEnabled = "is_comment_enabled"
+        case isAppEnabled = "is_app_enabled"
+    }
+}
+
 private enum DeviceTokenSyncError: Error {
     case userNotFound
     case deviceIDNotFound
@@ -456,6 +470,25 @@ private enum DeviceTokenSyncError: Error {
 }
 
 extension SupabaseManager {
+    func fetchCurrentDeviceNotificationPreferences(for expectedUserId: UUID) async throws -> DeviceNotificationPreferences? {
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound }
+
+        let preferences: [DeviceNotificationPreferences] = try await client
+            .from("device_tokens")
+            .select("is_watering_reminder_enabled, is_favorite_enabled, is_comment_enabled, is_app_enabled")
+            .eq("user_id", value: expectedUserId)
+            .eq("device_id", value: deviceID)
+            .eq("is_active", value: true)
+            .eq("supports_notification_preferences", value: true)
+            .limit(1)
+            .execute()
+            .value
+
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        return preferences.first
+    }
+
     // 현재 기기의 FCM 토큰을 user/device 단위로 저장
     func updateFCMToken(_ validToken: String) async throws -> UUID {
         guard let currentUserId = client.auth.currentUser?.id else { throw DeviceTokenSyncError.userNotFound } // 현재 로그인 된 유저 정보

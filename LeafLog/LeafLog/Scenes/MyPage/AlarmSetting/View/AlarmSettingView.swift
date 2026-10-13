@@ -180,6 +180,8 @@ final class AlarmSettingCell: UICollectionViewCell {
     func configure(item: AlarmSettingView.Setting) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
+        // 변예린: 저장 기능이 연결되는 다음 단계 전까지 스위치는 표시 전용으로 둔다.
+        alarmSwitch.isEnabled = false
     }
 }
 
