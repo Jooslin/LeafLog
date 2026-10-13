@@ -15,7 +15,6 @@ final class ProfileDBManager {
     @Dependency(\.supabaseManager) private var supabaseManager
     
     private static let defaultNickname = "익명의 식물 집사"
-    private static let profileColumns = "id, nickname, email, provider, profile_image_url, created_at, updated_at"
 
     private lazy var client = supabaseManager.client
 
@@ -31,7 +30,7 @@ final class ProfileDBManager {
     private func fetchMyProfile(user: User) async throws -> UserProfileModel? {
         let profiles: [StoredUserProfile] = try await client
             .from("profiles")
-            .select(Self.profileColumns) // 조회
+            .select() // 조회
             .eq("id", value: user.id)
             .limit(1)
             .execute()
@@ -65,7 +64,7 @@ final class ProfileDBManager {
         let profile: StoredUserProfile = try await client
             .from("profiles")
             .upsert(payload)
-            .select(Self.profileColumns)
+            .select()
             .single()
             .execute()
             .value
@@ -94,7 +93,7 @@ final class ProfileDBManager {
             .from("profiles")
             .update(payload)
             .eq("id", value: user.id)
-            .select(Self.profileColumns)
+            .select()
             .single()
             .execute()
             .value
@@ -111,7 +110,7 @@ final class ProfileDBManager {
             .from("profiles")
             .update(payload)
             .eq("id", value: user.id)
-            .select(Self.profileColumns)
+            .select()
             .single()
             .execute()
             .value
