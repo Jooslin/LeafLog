@@ -13,6 +13,7 @@ import Then
 
 final class AlarmSettingView: UIView {
     let titleView = TitleHeaderView(text: "알림 설정", hasBackButton: true)
+    let settingChanged = PublishRelay<(SettingID, Bool)>()
     
     fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
         $0.showsVerticalScrollIndicator = false
@@ -83,7 +84,8 @@ extension AlarmSettingView {
     struct Setting: Hashable {
         let id: SettingID
         let title: String
-        let isOn: Bool
+        var isOn: Bool
+        var isEnabled: Bool
     }
     
     private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
@@ -110,8 +112,10 @@ extension AlarmSettingView {
             header.configure(section)
         }
         
-        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingView.Setting> { cell, indexPath, item in
-            cell.configure(item: item)
+        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingView.Setting> { [weak self] cell, indexPath, item in
+            cell.configure(item: item) { [weak self] isOn in
+                self?.settingChanged.accept((item.id, isOn))
+            }
         }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Setting>(collectionView: listView) { collectionView, indexPath, item in
@@ -147,9 +151,11 @@ final class AlarmSettingCell: UICollectionViewCell {
         $0.onTintColor = .primary600
         $0.isOn = true
     }
+    private var onChange: ((Bool) -> Void)?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
+        alarmSwitch.addTarget(self, action: #selector(switchChanged), for: .valueChanged)
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, alarmSwitch]).then {
             $0.axis = .horizontal
@@ -177,11 +183,15 @@ final class AlarmSettingCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(item: AlarmSettingView.Setting) {
+    @objc private func switchChanged() {
+        onChange?(alarmSwitch.isOn)
+    }
+
+    func configure(item: AlarmSettingView.Setting, onChange: @escaping (Bool) -> Void) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
-        // 변예린: 저장 기능이 연결되는 다음 단계 전까지 스위치는 표시 전용으로 둔다.
-        alarmSwitch.isEnabled = false
+        alarmSwitch.isEnabled = item.isEnabled
+        self.onChange = onChange
     }
 }
 

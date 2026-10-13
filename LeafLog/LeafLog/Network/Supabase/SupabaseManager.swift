@@ -461,6 +461,31 @@ struct DeviceNotificationPreferences: Decodable {
         case isCommentEnabled = "is_comment_enabled"
         case isAppEnabled = "is_app_enabled"
     }
+
+    func value(for kind: DeviceNotificationPreferenceKind) -> Bool {
+        switch kind {
+        case .wateringReminder: isWateringReminderEnabled
+        case .favorite: isFavoriteEnabled
+        case .comment: isCommentEnabled
+        case .appNews: isAppEnabled
+        }
+    }
+}
+
+enum DeviceNotificationPreferenceKind {
+    case wateringReminder
+    case favorite
+    case comment
+    case appNews
+
+    var columnName: String {
+        switch self {
+        case .wateringReminder: "is_watering_reminder_enabled"
+        case .favorite: "is_favorite_enabled"
+        case .comment: "is_comment_enabled"
+        case .appNews: "is_app_enabled"
+        }
+    }
 }
 
 private enum DeviceTokenSyncError: Error {
@@ -470,6 +495,25 @@ private enum DeviceTokenSyncError: Error {
 }
 
 extension SupabaseManager {
+    func updateCurrentDeviceNotificationPreference(_ kind: DeviceNotificationPreferenceKind, isEnabled: Bool, for expectedUserId: UUID) async throws {
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+        guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound }
+
+        try await client
+            .from("device_tokens")
+            .update([kind.columnName: isEnabled])
+            .eq("user_id", value: expectedUserId)
+            .eq("device_id", value: deviceID)
+            .eq("is_active", value: true)
+            .eq("supports_notification_preferences", value: true)
+            .eq("is_notification_authorized", value: true)
+            .select("id")
+            .single()
+            .execute()
+
+        guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
+    }
+
     func fetchCurrentDeviceNotificationPreferences(for expectedUserId: UUID) async throws -> DeviceNotificationPreferences? {
         guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
         guard let deviceID = UIDevice.current.identifierForVendor?.uuidString.lowercased() else { throw DeviceTokenSyncError.deviceIDNotFound }
