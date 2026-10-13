@@ -15,6 +15,7 @@ final class AlarmSettingReactor: Reactor {
     @Dependency(\.notificationManager) private var notificationManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
+    private var isLoading = false
 
     enum Action {
         case viewWillAppear
@@ -48,6 +49,11 @@ final class AlarmSettingReactor: Reactor {
 
     private func loadSettings() -> Observable<Mutation> {
         Observable.create { observer in
+            guard !self.isLoading else {
+                observer.onCompleted()
+                return Disposables.create()
+            }
+            self.isLoading = true
             observer.onNext(.setSettings([:]))
 
             let task = Task {
@@ -67,7 +73,10 @@ final class AlarmSettingReactor: Reactor {
                 observer.onCompleted()
             }
 
-            return Disposables.create { task.cancel() }
+            return Disposables.create {
+                task.cancel()
+                self.isLoading = false
+            }
         }
     }
 
