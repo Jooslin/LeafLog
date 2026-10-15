@@ -24,7 +24,7 @@ final class AlarmSettingReactor: Reactor {
     enum Mutation {
         case setSettings([AlarmSettingView.Section: [AlarmSettingView.Setting]])
         case setValue(AlarmSettingView.SettingID, Bool)
-        case saveFailed(AlarmSettingView.SettingID, Bool?)
+        case setErrorMessage(String)
         case setLoading(Bool)
         case setSaving(Bool)
         case setConfirmedValues([AlarmSettingView.SettingID: Bool])
@@ -75,7 +75,12 @@ final class AlarmSettingReactor: Reactor {
                 }
             ])
         case .saveFailed(let id, let value):
-            return .just(.saveFailed(id, value))
+            let errorMutation = Mutation.setErrorMessage("알림 설정을 저장하지 못했습니다.")
+            guard let value else { return .just(errorMutation) }
+            return Observable.concat([
+                .just(.setValue(id, value)),
+                .just(errorMutation)
+            ])
         case .loadDisposed:
             return .just(.setLoading(false))
         case .confirmedValueChanged(let id, let value):
@@ -109,15 +114,8 @@ final class AlarmSettingReactor: Reactor {
                     newState.settings[section]?[index].isOn = value
                 }
             }
-        case .saveFailed(let id, let value):
-            if let value {
-                for section in [AlarmSettingView.Section.management, .community, .app] {
-                    if let index = newState.settings[section]?.firstIndex(where: { $0.id == id }) {
-                        newState.settings[section]?[index].isOn = value
-                    }
-                }
-            }
-            newState.errorMessage = "알림 설정을 저장하지 못했습니다."
+        case .setErrorMessage(let message):
+            newState.errorMessage = message
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
         case .setSaving(let isSaving):
