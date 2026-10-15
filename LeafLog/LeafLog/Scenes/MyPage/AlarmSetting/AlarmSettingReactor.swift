@@ -12,22 +12,13 @@ import RxSwift
 import Supabase
 
 final class AlarmSettingReactor: Reactor {
-    @Dependency(\.notificationManager) private var notificationManager
-    @Dependency(\.supabaseManager) private var supabaseManager
-    private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
-    private var expectedUserId: UUID?
-
-    // 저장 중 새로 들어온 토글 변경을 받은 순서대로 처리하기 위한 대기열
-    private var pendingChanges: [(AlarmSettingView.SettingID, Bool)] = []
-    private var saveTask: Task<Void, Never>?
-    private var refreshAfterSave = false
-
     enum Action {
         case viewWillAppear
         case settingChanged(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
         case loadDisposed
         case confirmedValueChanged(AlarmSettingView.SettingID, Bool)
+        case saveFinished
     }
 
     enum Mutation {
@@ -35,22 +26,33 @@ final class AlarmSettingReactor: Reactor {
         case setValue(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
         case setLoading(Bool)
+        case setSaving(Bool)
         case setConfirmedValues([AlarmSettingView.SettingID: Bool])
     }
 
     struct State {
         var settings: [AlarmSettingView.Section: [AlarmSettingView.Setting]] = [:]
         var isLoading = false
+        var isSaving = false
         var confirmedValues: [AlarmSettingView.SettingID: Bool] = [:]
         @Pulse var errorMessage: String?
     }
 
     let initialState = State()
 
+    @Dependency(\.notificationManager) private var notificationManager
+    @Dependency(\.supabaseManager) private var supabaseManager
+    private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
+    private var expectedUserId: UUID?
+
+    // 저장 중 새로 들어온 토글 변경을 받은 순서대로 처리하기 위한 대기열
+    private var pendingChanges: [(AlarmSettingView.SettingID, Bool)] = []
+    private var refreshAfterSave = false
+
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
-            if saveTask != nil {
+            if currentState.isSaving {
                 refreshAfterSave = true
                 return .just(.setSettings([:]))
             }
@@ -61,8 +63,17 @@ final class AlarmSettingReactor: Reactor {
                 return .empty()
             }
             pendingChanges.append((id, isOn))
-            startSaving(for: userId)
-            return .just(.setValue(id, isOn))
+            guard !currentState.isSaving else { return .just(.setValue(id, isOn)) }
+
+            // 저장 상태를 먼저 반영해 다음 선택이 같은 대기열에 쌓이게 한다.
+            return Observable.concat([
+                .just(.setValue(id, isOn)),
+                .just(.setSaving(true)),
+                Observable.deferred {
+                    self.startSaving(for: userId)
+                    return .empty()
+                }
+            ])
         case .saveFailed(let id, let value):
             return .just(.saveFailed(id, value))
         case .loadDisposed:
@@ -71,6 +82,19 @@ final class AlarmSettingReactor: Reactor {
             var values = currentState.confirmedValues
             values[id] = value
             return .just(.setConfirmedValues(values))
+        case .saveFinished:
+
+            // 저장이 끝나는 사이 추가된 선택이 있으면 저장 상태를 유지한다.
+            if !pendingChanges.isEmpty, let userId = expectedUserId {
+                startSaving(for: userId)
+                return .empty()
+            }
+            guard refreshAfterSave else { return .just(.setSaving(false)) }
+            refreshAfterSave = false
+            return Observable.concat([
+                .just(.setSaving(false)),
+                loadSettings()
+            ])
         }
     }
 
@@ -96,6 +120,8 @@ final class AlarmSettingReactor: Reactor {
             newState.errorMessage = "알림 설정을 저장하지 못했습니다."
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
+        case .setSaving(let isSaving):
+            newState.isSaving = isSaving
         case .setConfirmedValues(let values):
             newState.confirmedValues = values
         }
@@ -103,9 +129,9 @@ final class AlarmSettingReactor: Reactor {
     }
 
     private func startSaving(for userId: UUID) {
-        guard saveTask == nil else { return }
+
         // 변예린: 토글 변경을 순서대로 저장해 같은 종류의 마지막 선택이 서버에 남도록 한다.
-        saveTask = Task {
+        Task {
             while !pendingChanges.isEmpty {
                 let (id, isOn) = pendingChanges.removeFirst()
                 do {
@@ -132,11 +158,7 @@ final class AlarmSettingReactor: Reactor {
                     break
                 }
             }
-            saveTask = nil
-            if refreshAfterSave {
-                refreshAfterSave = false
-                action.onNext(.viewWillAppear)
-            }
+            action.onNext(.saveFinished)
         }
     }
 

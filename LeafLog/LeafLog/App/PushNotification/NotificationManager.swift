@@ -17,7 +17,6 @@ final class NotificationManager {
     
     // 앱 알림 권한 요청 함수
     func requestNotificationAuthorization() {
-        
         // 앱 실행 시 사용자에게 알림 허용 권한 받기
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         
