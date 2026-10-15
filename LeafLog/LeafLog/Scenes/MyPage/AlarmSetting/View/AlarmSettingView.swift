@@ -155,7 +155,13 @@ final class AlarmSettingCell: UICollectionViewCell {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        alarmSwitch.addTarget(self, action: #selector(switchChanged), for: .valueChanged)
+        alarmSwitch.addAction(
+            UIAction { [weak self] _ in
+                guard let self else { return }
+                self.onChange?(self.alarmSwitch.isOn)
+            },
+            for: .valueChanged
+        )
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, alarmSwitch]).then {
             $0.axis = .horizontal
@@ -183,10 +189,6 @@ final class AlarmSettingCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    @objc private func switchChanged() {
-        onChange?(alarmSwitch.isOn)
-    }
-
     func configure(item: AlarmSettingView.Setting, onChange: @escaping (Bool) -> Void) {
         titleLabel.text = item.title
         alarmSwitch.isOn = item.isOn
