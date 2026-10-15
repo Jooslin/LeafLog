@@ -16,6 +16,8 @@ final class AlarmSettingReactor: Reactor {
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
     private var expectedUserId: UUID?
+
+    // 저장 중 새로 들어온 토글 변경을 받은 순서대로 처리하기 위한 대기열
     private var pendingChanges: [(AlarmSettingView.SettingID, Bool)] = []
     private var saveTask: Task<Void, Never>?
     private var refreshAfterSave = false
@@ -34,7 +36,6 @@ final class AlarmSettingReactor: Reactor {
         case saveFailed(AlarmSettingView.SettingID, Bool?)
         case setLoading(Bool)
         case setConfirmedValues([AlarmSettingView.SettingID: Bool])
-        case setConfirmedValue(AlarmSettingView.SettingID, Bool)
     }
 
     struct State {
@@ -67,7 +68,9 @@ final class AlarmSettingReactor: Reactor {
         case .loadDisposed:
             return .just(.setLoading(false))
         case .confirmedValueChanged(let id, let value):
-            return .just(.setConfirmedValue(id, value))
+            var values = currentState.confirmedValues
+            values[id] = value
+            return .just(.setConfirmedValues(values))
         }
     }
 
@@ -95,8 +98,6 @@ final class AlarmSettingReactor: Reactor {
             newState.isLoading = isLoading
         case .setConfirmedValues(let values):
             newState.confirmedValues = values
-        case .setConfirmedValue(let id, let value):
-            newState.confirmedValues[id] = value
         }
         return newState
     }
@@ -118,7 +119,8 @@ final class AlarmSettingReactor: Reactor {
                     let serverValue = try? await supabaseManager.fetchCurrentDeviceNotificationPreferences(for: userId)?.value(for: id.preferenceKind)
                     let restoredValue = serverValue ?? currentState.confirmedValues[id]
                     if let restoredValue { action.onNext(.confirmedValueChanged(id, restoredValue)) }
-                    // 변예린: 같은 종류의 후속 선택이 대기 중이면 화면을 이전 값으로 덮지 않는다.
+
+                    // 같은 종류의 새 선택이 대기 중이면 화면 복원은 건너뛰고 오류만 알린다.
                     let hasLaterChange = pendingChanges.contains { $0.0 == id }
                     action.onNext(.saveFailed(id, hasLaterChange ? nil : restoredValue))
                 }
