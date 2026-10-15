@@ -441,11 +441,11 @@ extension SupabaseManager {
 //MARK: FCM 관련
 private struct DeviceNotificationState: Decodable {
     let isNotificationAuthorized: Bool?
-    let supportsNotificationPreferences: Bool
+    let supportsPerTypePushSettings: Bool
 
     enum CodingKeys: String, CodingKey {
         case isNotificationAuthorized = "is_notification_authorized"
-        case supportsNotificationPreferences = "supports_notification_preferences"
+        case supportsPerTypePushSettings = "supports_per_type_push_settings"
     }
 }
 
@@ -505,7 +505,7 @@ extension SupabaseManager {
             .eq("user_id", value: expectedUserId)
             .eq("device_id", value: deviceID)
             .eq("is_active", value: true)
-            .eq("supports_notification_preferences", value: true)
+            .eq("supports_per_type_push_settings", value: true)
             .eq("is_notification_authorized", value: true)
             .select("id")
             .single()
@@ -524,7 +524,7 @@ extension SupabaseManager {
             .eq("user_id", value: expectedUserId)
             .eq("device_id", value: deviceID)
             .eq("is_active", value: true)
-            .eq("supports_notification_preferences", value: true)
+            .eq("supports_per_type_push_settings", value: true)
             .limit(1)
             .execute()
             .value
@@ -557,7 +557,7 @@ extension SupabaseManager {
 
         let states: [DeviceNotificationState] = try await client
             .from("device_tokens")
-            .select("is_notification_authorized, supports_notification_preferences")
+            .select("is_notification_authorized, supports_per_type_push_settings")
             .eq("user_id", value: expectedUserId)
             .eq("device_id", value: deviceID)
             .eq("is_active", value: true)
@@ -566,12 +566,12 @@ extension SupabaseManager {
             .value
         guard let state = states.first else { return false }
         guard client.auth.currentUser?.id == expectedUserId else { throw DeviceTokenSyncError.accountChanged }
-        if state.supportsNotificationPreferences && state.isNotificationAuthorized == isNotificationAuthorized { return true }
+        if state.supportsPerTypePushSettings && state.isNotificationAuthorized == isNotificationAuthorized { return true }
 
         // 변예린: 종류별 설정을 지원하고 동기화한 기기라는 표시이며 개별 알림 토글값과는 별개다.
         var preferenceUpdate = [
             "is_notification_authorized": isNotificationAuthorized,
-            "supports_notification_preferences": true,
+            "supports_per_type_push_settings": true,
         ]
         preferenceUpdate["is_watering_reminder_enabled"] = isNotificationAuthorized
         preferenceUpdate["is_favorite_enabled"] = isNotificationAuthorized
