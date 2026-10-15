@@ -441,7 +441,7 @@ extension SupabaseManager {
 //MARK: FCM 관련
 private struct DeviceNotificationState: Decodable {
     let isNotificationAuthorized: Bool?
-    let supportsPerTypePushSettings: Bool
+    let supportsPerTypePushSettings: Bool // 유형별 알림 허용 여부를 지원하는지 판단하는 플래그
 
     enum CodingKeys: String, CodingKey {
         case isNotificationAuthorized = "is_notification_authorized"
