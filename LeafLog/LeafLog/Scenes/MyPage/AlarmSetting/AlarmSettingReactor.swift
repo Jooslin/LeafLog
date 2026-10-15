@@ -16,7 +16,6 @@ final class AlarmSettingReactor: Reactor {
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
     private var expectedUserId: UUID?
-    private var confirmedValues: [AlarmSettingView.SettingID: Bool] = [:]
     private var pendingChanges: [(AlarmSettingView.SettingID, Bool)] = []
     private var saveTask: Task<Void, Never>?
     private var refreshAfterSave = false
@@ -26,6 +25,7 @@ final class AlarmSettingReactor: Reactor {
         case settingChanged(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
         case loadDisposed
+        case confirmedValueChanged(AlarmSettingView.SettingID, Bool)
     }
 
     enum Mutation {
@@ -33,11 +33,14 @@ final class AlarmSettingReactor: Reactor {
         case setValue(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
         case setLoading(Bool)
+        case setConfirmedValues([AlarmSettingView.SettingID: Bool])
+        case setConfirmedValue(AlarmSettingView.SettingID, Bool)
     }
 
     struct State {
         var settings: [AlarmSettingView.Section: [AlarmSettingView.Setting]] = [:]
         var isLoading = false
+        var confirmedValues: [AlarmSettingView.SettingID: Bool] = [:]
         @Pulse var errorMessage: String?
     }
 
@@ -63,6 +66,8 @@ final class AlarmSettingReactor: Reactor {
             return .just(.saveFailed(id, value))
         case .loadDisposed:
             return .just(.setLoading(false))
+        case .confirmedValueChanged(let id, let value):
+            return .just(.setConfirmedValue(id, value))
         }
     }
 
@@ -88,6 +93,10 @@ final class AlarmSettingReactor: Reactor {
             newState.errorMessage = "알림 설정을 저장하지 못했습니다."
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
+        case .setConfirmedValues(let values):
+            newState.confirmedValues = values
+        case .setConfirmedValue(let id, let value):
+            newState.confirmedValues[id] = value
         }
         return newState
     }
@@ -103,12 +112,12 @@ final class AlarmSettingReactor: Reactor {
                         throw NotificationSaveError.authorizationDisabled
                     }
                     try await supabaseManager.updateCurrentDeviceNotificationPreference(id.preferenceKind, isEnabled: isOn, for: userId)
-                    confirmedValues[id] = isOn
+                    action.onNext(.confirmedValueChanged(id, isOn))
                 } catch {
                     logger.error("기기별 알림 설정 저장 실패: \(error.localizedDescription, privacy: .private)")
                     let serverValue = try? await supabaseManager.fetchCurrentDeviceNotificationPreferences(for: userId)?.value(for: id.preferenceKind)
-                    let restoredValue = serverValue ?? confirmedValues[id]
-                    if let restoredValue { confirmedValues[id] = restoredValue }
+                    let restoredValue = serverValue ?? currentState.confirmedValues[id]
+                    if let restoredValue { action.onNext(.confirmedValueChanged(id, restoredValue)) }
                     // 변예린: 같은 종류의 후속 선택이 대기 중이면 화면을 이전 값으로 덮지 않는다.
                     let hasLaterChange = pendingChanges.contains { $0.0 == id }
                     action.onNext(.saveFailed(id, hasLaterChange ? nil : restoredValue))
@@ -137,7 +146,7 @@ final class AlarmSettingReactor: Reactor {
             }
             observer.onNext(.setLoading(true))
             self.expectedUserId = nil
-            self.confirmedValues.removeAll()
+            observer.onNext(.setConfirmedValues([:]))
             observer.onNext(.setSettings([:]))
 
             let task = Task {
@@ -149,12 +158,12 @@ final class AlarmSettingReactor: Reactor {
                         preferences = try await self.supabaseManager.fetchCurrentDeviceNotificationPreferences(for: userId)
                         if let preferences {
                             self.expectedUserId = userId
-                            self.confirmedValues = [
+                            observer.onNext(.setConfirmedValues([
                                 .wateringReminder: preferences.isWateringReminderEnabled,
                                 .favorite: preferences.isFavoriteEnabled,
                                 .comment: preferences.isCommentEnabled,
                                 .appNews: preferences.isAppEnabled
-                            ]
+                            ]))
                         }
                     }
 
