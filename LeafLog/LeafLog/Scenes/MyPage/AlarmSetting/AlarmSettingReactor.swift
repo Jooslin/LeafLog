@@ -15,7 +15,6 @@ final class AlarmSettingReactor: Reactor {
     @Dependency(\.notificationManager) private var notificationManager
     @Dependency(\.supabaseManager) private var supabaseManager
     private let logger = Logger(subsystem: "LeafLog", category: "AlarmSettingReactor")
-    private var isLoading = false
     private var expectedUserId: UUID?
     private var confirmedValues: [AlarmSettingView.SettingID: Bool] = [:]
     private var pendingChanges: [(AlarmSettingView.SettingID, Bool)] = []
@@ -26,16 +25,19 @@ final class AlarmSettingReactor: Reactor {
         case viewWillAppear
         case settingChanged(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
+        case loadDisposed
     }
 
     enum Mutation {
         case setSettings([AlarmSettingView.Section: [AlarmSettingView.Setting]])
         case setValue(AlarmSettingView.SettingID, Bool)
         case saveFailed(AlarmSettingView.SettingID, Bool?)
+        case setLoading(Bool)
     }
 
     struct State {
         var settings: [AlarmSettingView.Section: [AlarmSettingView.Setting]] = [:]
+        var isLoading = false
         @Pulse var errorMessage: String?
     }
 
@@ -59,6 +61,8 @@ final class AlarmSettingReactor: Reactor {
             return .just(.setValue(id, isOn))
         case .saveFailed(let id, let value):
             return .just(.saveFailed(id, value))
+        case .loadDisposed:
+            return .just(.setLoading(false))
         }
     }
 
@@ -82,6 +86,8 @@ final class AlarmSettingReactor: Reactor {
                 }
             }
             newState.errorMessage = "알림 설정을 저장하지 못했습니다."
+        case .setLoading(let isLoading):
+            newState.isLoading = isLoading
         }
         return newState
     }
@@ -125,11 +131,11 @@ final class AlarmSettingReactor: Reactor {
 
     private func loadSettings() -> Observable<Mutation> {
         Observable.create { observer in
-            guard !self.isLoading else {
+            guard !self.currentState.isLoading else {
                 observer.onCompleted()
                 return Disposables.create()
             }
-            self.isLoading = true
+            observer.onNext(.setLoading(true))
             self.expectedUserId = nil
             self.confirmedValues.removeAll()
             observer.onNext(.setSettings([:]))
@@ -157,12 +163,15 @@ final class AlarmSettingReactor: Reactor {
                     self.logger.error("기기별 알림 설정 조회 실패: \(error.localizedDescription, privacy: .private)")
                     observer.onNext(.setSettings(self.settings(for: nil)))
                 }
+                observer.onNext(.setLoading(false))
                 observer.onCompleted()
             }
 
             return Disposables.create {
                 task.cancel()
-                self.isLoading = false
+                if self.currentState.isLoading {
+                    self.action.onNext(.loadDisposed)
+                }
             }
         }
     }
