@@ -41,6 +41,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .map { _ in NotificationCenterReactor.Action.viewWillAppear }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        self.rx.viewWillDisappear
+            .map { _ in AppStep.alarmCategoryLeaving(reactor.currentState.category) }
+            .bind(to: steps)
+            .disposed(by: disposeBag)
         
         Observable.merge(
             // 앱이 백그라운드 상태에서 다시 foreground로 진입했을 경우
@@ -78,7 +83,7 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         notificationCenterView.rx.backButtonTap
-            .map { _ in AppStep.alarmPageBack(reactor.currentState.category) }
+            .map { _ in AppStep.alarmPageBack }
             .bind(to: steps)
             .disposed(by: disposeBag)
     }
