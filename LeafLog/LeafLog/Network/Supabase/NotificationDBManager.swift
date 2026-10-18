@@ -20,15 +20,11 @@ final class NotificationDBManager {
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            var query = supabaseManager.client
+            let query = supabaseManager.client
                 .from("notifications")
                 .select()
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
-
-            if category == .management {
-                query = query.not("sent_at", operator: .is, value: "null")
-            }
 
             return try await query
                 .order("created_at", ascending: false)
@@ -109,16 +105,12 @@ final class NotificationDBManager {
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            var query = try supabaseManager.client
+            let query = try supabaseManager.client
                 .from("notifications")
                 .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
                 .is("read_at", value: nil)
-
-            if category == .management {
-                query = query.not("sent_at", operator: .is, value: "null")
-            }
 
             try await query.execute()
         } catch {
