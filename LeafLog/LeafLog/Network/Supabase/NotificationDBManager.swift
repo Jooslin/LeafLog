@@ -74,7 +74,10 @@ final class NotificationDBManager {
                 .from("notifications")
                 .select("id")
                 .eq("user_id", value: user.id)
-                .or("category.eq.community,sent_at.not.is.null")
+                .in("category", values: [
+                    AppNotificationCategory.management.rawValue,
+                    AppNotificationCategory.community.rawValue
+                ])
                 .is("read_at", value: nil)
                 .limit(1)
                 .execute()
