@@ -10,13 +10,36 @@ import Supabase
 import Dependencies
 
 final class NotificationDBManager {
+    struct Cursor {
+        let createdAt: Date
+        let id: UUID
+    }
+
+    struct Page {
+        let notifications: [AppNotification]
+        let nextCursor: Cursor?
+        let hasMore: Bool
+    }
+
     @Dependency(\.supabaseManager) private var supabaseManager
     private let dateFormatter = ISO8601DateFormatter()
+    private static let pageSize = 20
+    private static let cursorDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+        return formatter
+    }()
     
     private init() {}
 
     // 알림센터 진입 시 최신 알림부터 목록을 가져온다.
-    func fetchMyNotifications(limit: Int = 100, category: AppNotificationCategory) async throws -> [AppNotification] {
+    func fetchMyNotifications(
+        category: AppNotificationCategory,
+        cursor: Cursor? = nil
+    ) async throws -> Page {
         let user = try await supabaseManager.client.auth.user()
 
         do {
@@ -26,15 +49,26 @@ final class NotificationDBManager {
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
 
-            if category == .management {
-                query = query.not("sent_at", operator: .is, value: "null")
+            if let cursor {
+                let createdAt = Self.cursorDateFormatter.string(from: cursor.createdAt)
+                query = query.or(
+                    "created_at.lt.\(createdAt),and(created_at.eq.\(createdAt),id.lt.\(cursor.id.uuidString))"
+                )
             }
 
-            return try await query
+            let notifications: [AppNotification] = try await query
                 .order("created_at", ascending: false)
-                .limit(limit)
+                .order("id", ascending: false)
+                .limit(Self.pageSize + 1)
                 .execute()
                 .value
+
+            let visibleNotifications = Array(notifications.prefix(Self.pageSize))
+            return Page(
+                notifications: visibleNotifications,
+                nextCursor: visibleNotifications.last.map { Cursor(createdAt: $0.createdAt, id: $0.id) },
+                hasMore: notifications.count > Self.pageSize
+            )
         } catch {
             if Task.isCancelled {
                 throw CancellationError()
@@ -78,7 +112,11 @@ final class NotificationDBManager {
                 .from("notifications")
                 .select("id")
                 .eq("user_id", value: user.id)
-                .or("category.eq.community,sent_at.not.is.null")
+                .in("category", values: [
+                    AppNotificationCategory.management.rawValue,
+                    AppNotificationCategory.community.rawValue
+                ])
+                .neq("type", value: AppNotificationType.app.rawValue)
                 .is("read_at", value: nil)
                 .limit(1)
                 .execute()
@@ -105,20 +143,19 @@ final class NotificationDBManager {
         }
     }
 
-    func markAllAsRead(category: AppNotificationCategory) async throws {
+    func markAsRead(notificationIDs: [UUID], category: AppNotificationCategory) async throws {
+        guard !notificationIDs.isEmpty else { return }
+
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            var query = try supabaseManager.client
+            let query = try supabaseManager.client
                 .from("notifications")
                 .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
+                .in("id", values: notificationIDs)
                 .is("read_at", value: nil)
-
-            if category == .management {
-                query = query.not("sent_at", operator: .is, value: "null")
-            }
 
             try await query.execute()
         } catch {

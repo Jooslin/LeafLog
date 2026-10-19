@@ -39,7 +39,8 @@ enum AppStep: Step {
     case alert(String, String) // (타이틀, 메세지)
     case pageBack
     case alarmCenter
-    case alarmPageBack(AppNotificationCategory)
+    case alarmCategoryLeaving(AppNotificationCategory)
+    case alarmPageBack
     
     // PlantTab
     case plantRegister
@@ -72,4 +73,5 @@ enum AppStep: Step {
     // MyInfoTab
     case profileImageSourceSheet
     case notificationAuthorizationRequired(onSettingsSelected: () -> Void)
+    case alarmSetting
 }

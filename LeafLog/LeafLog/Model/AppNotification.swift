@@ -34,6 +34,8 @@ enum AppNotificationType: String, Codable {
     //community
     case favorite
     case comment
+
+    case app
     
     case unknown
 
@@ -45,6 +47,8 @@ enum AppNotificationType: String, Codable {
             self = .favorite
         case "comment":
             self = .comment
+        case "app":
+            self = .app
         default:
             self = .unknown
         }

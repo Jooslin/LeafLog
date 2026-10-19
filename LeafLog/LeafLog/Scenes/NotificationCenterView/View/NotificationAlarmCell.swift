@@ -92,6 +92,8 @@ extension NotificationAlarmCell {
             UIImage(named: Badge.alarmFavorite.bigImage)
         case .comment:
             UIImage(named: Badge.alarmComment.bigImage)
+        case .app:
+            nil
         case .unknown:
             nil
         }
