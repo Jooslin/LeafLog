@@ -116,6 +116,7 @@ final class NotificationDBManager {
                     AppNotificationCategory.management.rawValue,
                     AppNotificationCategory.community.rawValue
                 ])
+                .neq("type", value: AppNotificationType.app.rawValue)
                 .is("read_at", value: nil)
                 .limit(1)
                 .execute()
