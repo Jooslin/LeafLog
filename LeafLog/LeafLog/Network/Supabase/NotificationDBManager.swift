@@ -104,7 +104,9 @@ final class NotificationDBManager {
         }
     }
 
-    func markAllAsRead(category: AppNotificationCategory) async throws {
+    func markAsRead(notificationIDs: [UUID], category: AppNotificationCategory) async throws {
+        guard !notificationIDs.isEmpty else { return }
+
         let user = try await supabaseManager.client.auth.user()
 
         do {
@@ -113,6 +115,7 @@ final class NotificationDBManager {
                 .update(["read_at": dateFormatter.string(from: Date())])
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
+                .in("id", values: notificationIDs)
                 .is("read_at", value: nil)
 
             try await query.execute()

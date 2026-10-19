@@ -167,7 +167,8 @@ extension NotificationCenterReactor {
                     observer.onNext(.setAlarm(category: category, items: items))
 
                     do {
-                        try await self.notificationDBManager.markAllAsRead(category: category)
+                        let unreadIDs = notifications.filter { !$0.isRead }.map(\.id)
+                        try await self.notificationDBManager.markAsRead(notificationIDs: unreadIDs, category: category)
                         NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
                     } catch is CancellationError {
                         self.logger.debug("알림 전체 읽음 처리 취소됨")
