@@ -29,6 +29,7 @@ final class NotificationCenterView: UIView {
     }
     
     fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
+    private var showsEndFooter = false
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -118,7 +119,9 @@ extension NotificationCenterView {
             }
         }
         
-        let footerViewRegistration = UICollectionView.SupplementaryRegistration<NotificationFooterView>(elementKind: "footerKind") { _, _, _ in }
+        let footerViewRegistration = UICollectionView.SupplementaryRegistration<NotificationFooterView>(elementKind: "footerKind") { [weak self] footer, _, _ in
+            footer.setVisible(self?.showsEndFooter ?? false)
+        }
         
         let dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView) { collectionView, indexPath, item in
             switch Section(rawValue: indexPath.section) {
@@ -136,12 +139,21 @@ extension NotificationCenterView {
         return dataSource
     }
     
-    func setSnapshot(_ data: [Item]) {
+    func setSnapshot(_ data: [Item], showsEndFooter: Bool) {
+        self.showsEndFooter = showsEndFooter
+        listView.visibleSupplementaryViews(ofKind: "footerKind")
+            .compactMap { $0 as? NotificationFooterView }
+            .forEach { $0.setVisible(showsEndFooter) }
+
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         snapshot.appendSections([.list])
         snapshot.appendItems(data, toSection: .list)
         
         dataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    func scrollToTop() {
+        listView.setContentOffset(.zero, animated: false)
     }
 }
 
@@ -170,6 +182,16 @@ extension NotificationCenterView {
 }
 
 extension Reactive where Base: NotificationCenterView {
+    var reachedBottom: Observable<Void> {
+        base.listView.rx.willDisplayCell
+            .filter { [weak base] event in
+                guard let base else { return false }
+                let count = base.dataSource.snapshot().numberOfItems
+                return count > 0 && event.at.item >= count - 3
+            }
+            .map { _ in }
+    }
+
     var itemSelected: Observable<NotificationCenterView.Item> {
         base.listView.rx.itemSelected
             .compactMap { base.dataSource.itemIdentifier(for: $0) }
@@ -196,5 +218,9 @@ final class NotificationFooterView: UICollectionReusableView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func setVisible(_ visible: Bool) {
+        label.isHidden = !visible
     }
 }

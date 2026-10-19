@@ -60,7 +60,12 @@ final class NotificationCenterViewController: BaseViewController, View {
             .map { _ in }
         )
             .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
-            .map { NotificationCenterReactor.Action.refresh }
+            .flatMapLatest { _ in
+                reactor.state
+                    .filter { !$0.isCategorySelectionLoading }
+                    .take(1)
+                    .map { _ in NotificationCenterReactor.Action.refresh }
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -81,6 +86,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .map(NotificationCenterReactor.Action.notificationSelected)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+
+        notificationCenterView.rx.reachedBottom
+            .map { NotificationCenterReactor.Action.loadNextPage }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
         
         notificationCenterView.rx.backButtonTap
             .map { _ in AppStep.alarmPageBack }
@@ -89,10 +99,12 @@ final class NotificationCenterViewController: BaseViewController, View {
     }
     
     private func bindState(reactor: NotificationCenterReactor) {
+        var displayedListVersion = reactor.currentState.listVersion
+
         reactor.state
             .skip(1)
-            .map { state -> (category: AppNotificationCategory, items: [NotificationCenterView.Item]) in
-                (category: state.category, items: state.alarmItem)
+            .map { state -> (category: AppNotificationCategory, items: [NotificationCenterView.Item], hasMore: Bool, listVersion: Int) in
+                (category: state.category, items: state.alarmItem, hasMore: state.hasMore, listVersion: state.listVersion)
             }
             .withUnretained(notificationCenterView)
             .subscribe(onNext: { view, value in
@@ -108,7 +120,11 @@ final class NotificationCenterViewController: BaseViewController, View {
                     view.managementEmptyView.isHidden = true
                 }
 
-                view.setSnapshot(items)
+                view.setSnapshot(items, showsEndFooter: !value.hasMore && !items.isEmpty)
+                if displayedListVersion != value.listVersion {
+                    displayedListVersion = value.listVersion
+                    view.scrollToTop()
+                }
             })
             .disposed(by: disposeBag)
         

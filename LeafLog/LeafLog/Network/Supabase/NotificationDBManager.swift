@@ -10,27 +10,65 @@ import Supabase
 import Dependencies
 
 final class NotificationDBManager {
+    struct Cursor {
+        let createdAt: Date
+        let id: UUID
+    }
+
+    struct Page {
+        let notifications: [AppNotification]
+        let nextCursor: Cursor?
+        let hasMore: Bool
+    }
+
     @Dependency(\.supabaseManager) private var supabaseManager
     private let dateFormatter = ISO8601DateFormatter()
+    private static let pageSize = 20
+    private static let cursorDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+        return formatter
+    }()
     
     private init() {}
 
     // 알림센터 진입 시 최신 알림부터 목록을 가져온다.
-    func fetchMyNotifications(limit: Int = 100, category: AppNotificationCategory) async throws -> [AppNotification] {
+    func fetchMyNotifications(
+        category: AppNotificationCategory,
+        cursor: Cursor? = nil
+    ) async throws -> Page {
         let user = try await supabaseManager.client.auth.user()
 
         do {
-            let query = supabaseManager.client
+            var query = supabaseManager.client
                 .from("notifications")
                 .select()
                 .eq("user_id", value: user.id)
                 .eq("category", value: category.rawValue)
 
-            return try await query
+            if let cursor {
+                let createdAt = Self.cursorDateFormatter.string(from: cursor.createdAt)
+                query = query.or(
+                    "created_at.lt.\(createdAt),and(created_at.eq.\(createdAt),id.lt.\(cursor.id.uuidString))"
+                )
+            }
+
+            let notifications: [AppNotification] = try await query
                 .order("created_at", ascending: false)
-                .limit(limit)
+                .order("id", ascending: false)
+                .limit(Self.pageSize + 1)
                 .execute()
                 .value
+
+            let visibleNotifications = Array(notifications.prefix(Self.pageSize))
+            return Page(
+                notifications: visibleNotifications,
+                nextCursor: visibleNotifications.last.map { Cursor(createdAt: $0.createdAt, id: $0.id) },
+                hasMore: notifications.count > Self.pageSize
+            )
         } catch {
             if Task.isCancelled {
                 throw CancellationError()
