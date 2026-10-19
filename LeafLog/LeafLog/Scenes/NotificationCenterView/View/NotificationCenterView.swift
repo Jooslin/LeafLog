@@ -182,6 +182,17 @@ extension NotificationCenterView {
 }
 
 extension Reactive where Base: NotificationCenterView {
+    var displayedAlarm: Observable<NotificationCenterView.Alarm> {
+        base.listView.rx.willDisplayCell
+            .compactMap { [weak base] event in
+                guard let base,
+                      case .alarm(let alarm)? = base.dataSource.itemIdentifier(for: event.at) else {
+                    return nil
+                }
+                return alarm
+            }
+    }
+
     var reachedBottom: Observable<Void> {
         base.listView.rx.willDisplayCell
             .filter { [weak base] event in

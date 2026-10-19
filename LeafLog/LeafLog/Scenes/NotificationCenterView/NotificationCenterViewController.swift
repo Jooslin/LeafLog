@@ -43,6 +43,11 @@ final class NotificationCenterViewController: BaseViewController, View {
             .disposed(by: disposeBag)
 
         self.rx.viewWillDisappear
+            .map { _ in NotificationCenterReactor.Action.viewWillDisappear }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        self.rx.viewWillDisappear
             .map { _ in AppStep.alarmCategoryLeaving(reactor.currentState.category) }
             .bind(to: steps)
             .disposed(by: disposeBag)
@@ -89,6 +94,11 @@ final class NotificationCenterViewController: BaseViewController, View {
 
         notificationCenterView.rx.reachedBottom
             .map { NotificationCenterReactor.Action.loadNextPage }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+
+        notificationCenterView.rx.displayedAlarm
+            .map(NotificationCenterReactor.Action.notificationDisplayed)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         

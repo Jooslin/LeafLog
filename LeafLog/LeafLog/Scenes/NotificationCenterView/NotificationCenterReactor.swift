@@ -14,9 +14,11 @@ import OSLog
 final class NotificationCenterReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case viewWillDisappear
         case refresh
         case categorySelected(Int)
         case loadNextPage
+        case notificationDisplayed(NotificationCenterView.Alarm)
         case notificationSelected(NotificationCenterView.Alarm)
     }
 
@@ -64,14 +66,26 @@ final class NotificationCenterReactor: Reactor {
     private var loadGeneration = 0
     private var isReloading = false
     private var isLoadingNextPage = false
+    private var isVisible = false
+    private var displayedUnreadIDs: [AppNotificationCategory: Set<UUID>] = [:]
+    private var pendingReadTask: Task<Void, Never>?
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
+            isVisible = true
             let category = currentState.category
 
             return reloadNotifications(category: category)
                 .take(until: differentCategorySelected(from: category))
+
+        case .viewWillDisappear:
+            isVisible = false
+            loadGeneration += 1
+            isReloading = false
+            isLoadingNextPage = false
+            markDisplayedNotificationsAsRead()
+            return .empty()
             
         case .refresh:
             guard !currentState.isCategorySelectionLoading else {
@@ -116,6 +130,11 @@ final class NotificationCenterReactor: Reactor {
                 generation: loadGeneration,
                 append: true
             )
+
+        case .notificationDisplayed(let alarm):
+            guard isVisible, alarm.isUnread else { return .empty() }
+            displayedUnreadIDs[alarm.category, default: []].insert(alarm.id)
+            return .empty()
 
         case .notificationSelected(let alarm):
             guard alarm.category == .community else { return .empty() }
@@ -187,6 +206,13 @@ extension NotificationCenterReactor {
                 }
                 
                 do {
+                    await self.pendingReadTask?.value
+                    try Task.checkCancellation()
+                    guard generation == self.loadGeneration else {
+                        observer.onCompleted()
+                        return
+                    }
+
                     let now = Date()
                     let page = try await self.notificationDBManager.fetchMyNotifications(
                         category: category,
@@ -259,21 +285,6 @@ extension NotificationCenterReactor {
                         ))
                     }
 
-                    do {
-                        try Task.checkCancellation()
-                        guard generation == self.loadGeneration else {
-                            observer.onCompleted()
-                            return
-                        }
-                        let unreadIDs = notifications.filter { !$0.isRead }.map(\.id)
-                        try await self.notificationDBManager.markAsRead(notificationIDs: unreadIDs, category: category)
-                        NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
-                    } catch is CancellationError {
-                        self.logger.debug("알림 전체 읽음 처리 취소됨")
-                    } catch {
-                        self.logger.error("알림 전체 읽음 처리 실패: \(error.localizedDescription, privacy: .private)")
-                    }
-
                     observer.onCompleted()
                 } catch let error as AuthError {
                     if generation == self.loadGeneration {
@@ -293,6 +304,28 @@ extension NotificationCenterReactor {
             }
             return Disposables.create {
                 task.cancel()
+            }
+        }
+    }
+
+    private func markDisplayedNotificationsAsRead() {
+        let idsByCategory = displayedUnreadIDs
+        displayedUnreadIDs.removeAll()
+        guard !idsByCategory.isEmpty else { return }
+
+        let previousTask = pendingReadTask
+        let notificationDBManager = notificationDBManager
+        let logger = logger
+        pendingReadTask = Task {
+            await previousTask?.value
+            for category in [AppNotificationCategory.management, .community] {
+                guard let ids = idsByCategory[category], !ids.isEmpty else { continue }
+                do {
+                    try await notificationDBManager.markAsRead(notificationIDs: Array(ids), category: category)
+                    NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
+                } catch {
+                    logger.error("표시된 알림 읽음 처리 실패: \(error.localizedDescription, privacy: .private)")
+                }
             }
         }
     }
