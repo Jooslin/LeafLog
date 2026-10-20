@@ -132,10 +132,6 @@ final class AlarmSettingReactor: Reactor {
                 }
             }
             saveTask = nil
-            if !pendingChanges.isEmpty {
-                startSaving(for: userId)
-                return
-            }
             if refreshAfterSave {
                 refreshAfterSave = false
                 action.onNext(.viewWillAppear)
