@@ -172,6 +172,7 @@ final class AlarmSettingReactor: Reactor {
                 } catch {
                     self.logger.error("기기별 알림 설정 조회 실패: \(error.localizedDescription, privacy: .private)")
                     observer.onNext(.setSettings(self.settings(for: nil)))
+                    observer.onNext(.setErrorMessage("알림 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."))
                 }
                 observer.onNext(.setLoading(false))
                 observer.onCompleted()
