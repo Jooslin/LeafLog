@@ -101,12 +101,16 @@ final class MyPageViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         // 푸시 알림 허용 버튼
-        myPageView.pushAlertSwitch.rx.controlEvent(.valueChanged) // 값이 변경되었을 때만 액션 방출
-            .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
-            .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
-            .bind(to: reactor.action)
+//        myPageView.pushAlertSwitch.rx.controlEvent(.valueChanged) // 값이 변경되었을 때만 액션 방출
+//            .withLatestFrom(myPageView.pushAlertSwitch.rx.isOn) // isOn값을 보냄
+//            .map { MyPageReactor.Action.pushAlertSwitchTapped($0) }
+//            .bind(to: reactor.action)
+//            .disposed(by: disposeBag)
+        myPageView.alarmSettingButton.rx.tap
+            .map { AppStep.alarmSetting }
+            .bind(to: steps)
             .disposed(by: disposeBag)
-
+        
         // 개인정보처리방침
         myPageView.privacyPolicyButton.rx.tap
             .observe(on: MainScheduler.instance)
@@ -195,14 +199,6 @@ final class MyPageViewController: BaseViewController, View {
                         self?.presentMailComposeViewController(isError: isError)
                     })
                     .disposed(by: disposeBag)
-        
-        reactor.pulse(\.$pushAlertIsOn)
-            .map { $0 }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] isOn in
-                self?.myPageView.pushAlertSwitch.isOn = isOn
-            })
-            .disposed(by: disposeBag)
     }
     
     private func render(profile: UserProfileModel?) {
@@ -212,7 +208,6 @@ final class MyPageViewController: BaseViewController, View {
         
         myPageView.nicknameLabel.text = profile.nickname
         myPageView.emailLabel.text = profile.email ?? "이메일 정보가 없습니다."
-        myPageView.pushAlertSwitch.isOn = profile.isNotificationEnabled
         loadProfileImage(
             from: profile.profileImageURL,
             updatedAt: profile.updatedAt

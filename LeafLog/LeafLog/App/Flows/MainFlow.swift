@@ -105,9 +105,12 @@ final class MainFlow: Flow {
           
         case .alarmCenter:
             return navigateToAlarmCenter(category: alarmCategory)
-            
-        case .alarmPageBack(let category):
+
+        case .alarmCategoryLeaving(let category):
             alarmCategory = category
+            return .none
+
+        case .alarmPageBack:
             pop(animated: true)
             return .none
             

@@ -1,0 +1,223 @@
+//
+//  AlarmSettingDetailView.swift
+//  LeafLog
+//
+//  Created by 변예린 on 10/7/26.
+//
+
+import UIKit
+import SnapKit
+import RxSwift
+import RxCocoa
+import Then
+
+final class AlarmSettingView: UIView {
+    let titleView = TitleHeaderView(text: "알림 설정", hasBackButton: true)
+    let settingChanged = PublishRelay<(SettingID, Bool)>()
+    
+    fileprivate lazy var listView = UICollectionView(frame: .zero, collectionViewLayout: makeCompositionalLayout()).then {
+        $0.showsVerticalScrollIndicator = false
+        $0.contentInset = .init(top: 0, left: 0, bottom: 50, right: 0)
+    }
+    
+    fileprivate lazy var dataSource = makeCollectionViewDiffableDataSource(listView)
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setLayout()
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setLayout() {
+        addSubview(titleView)
+        addSubview(listView)
+        
+        titleView.snp.makeConstraints {
+            $0.top.equalTo(safeAreaLayoutGuide)
+            $0.horizontalEdges.equalToSuperview()
+            $0.height.equalTo(44)
+        }
+        
+        listView.snp.makeConstraints {
+            $0.top.equalTo(titleView.snp.bottom).offset(24)
+            $0.horizontalEdges.bottom.equalToSuperview()
+        }
+    }
+}
+
+//MARK: CollectionView
+extension AlarmSettingView {
+    nonisolated
+    enum Section: Int {
+        case management = 0
+        case community
+        case app
+        
+        var title: String {
+            switch self {
+            case .management: "관리 알림"
+            case .community: "커뮤니티 알림"
+            case .app: "정보 수신"
+            }
+        }
+    }
+    
+    enum Item: Hashable {
+        case management(Setting)
+        case community(Setting)
+        case app(Setting)
+    }
+
+    nonisolated
+    enum SettingID: Hashable {
+        case wateringReminder
+        case favorite
+        case comment
+        case appNews
+    }
+    
+    nonisolated
+    struct Setting: Hashable {
+        let id: SettingID
+        let title: String
+        var isOn: Bool
+        var isEnabled: Bool
+    }
+    
+    private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
+        var configuration = UICollectionLayoutListConfiguration(appearance: .plain)
+        
+        configuration.headerMode = .supplementary
+        configuration.showsSeparators = false
+        
+        return UICollectionViewCompositionalLayout { _, environment in
+            let section = NSCollectionLayoutSection.list(
+                using: configuration,
+                layoutEnvironment: environment
+            )
+            section.contentInsets = .init(top: 0, leading: 16, bottom: 0, trailing: 16)
+            return section
+        }
+    }
+    
+    private func makeCollectionViewDiffableDataSource(_ collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<Section, AlarmSettingView.Setting> {
+        let headerRegistration = UICollectionView.SupplementaryRegistration<AlarmSettingHeader>(elementKind: UICollectionView.elementKindSectionHeader) { [weak self] header, _, indexPath in
+            guard let section = self?.dataSource.sectionIdentifier(for: indexPath.section) else {
+                return
+            }
+            header.configure(section)
+        }
+        
+        let settingCellRegistration = UICollectionView.CellRegistration<AlarmSettingCell, AlarmSettingView.Setting> { [weak self] cell, indexPath, item in
+            cell.configure(item: item) { [weak self] isOn in
+                self?.settingChanged.accept((item.id, isOn))
+            }
+        }
+        
+        let dataSource = UICollectionViewDiffableDataSource<Section, Setting>(collectionView: listView) { collectionView, indexPath, item in
+            collectionView.dequeueConfiguredReusableCell(using: settingCellRegistration, for: indexPath, item: item)
+        }
+        
+        dataSource.supplementaryViewProvider = {
+            collectionView.dequeueConfiguredReusableSupplementary(using: headerRegistration, for: $2) // $2 == indexPath
+        }
+         
+        return dataSource
+    }
+    
+    func setSnapshot(_ data: [Section: [Setting]]) {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, Setting>()
+        snapshot.appendSections([.management, .community, .app])
+        
+        for d in data {
+            snapshot.appendItems(d.value, toSection: d.key)
+        }
+        
+        dataSource.apply(snapshot, animatingDifferences: true)
+    }
+}
+
+//MARK: Cell
+final class AlarmSettingCell: UICollectionViewCell {
+    private let titleLabel = UILabel(text: "", config: .label16, color: .black)
+    private let bar = UIView().then {
+        $0.backgroundColor = .grayScale100
+    }
+    fileprivate let alarmSwitch = UISwitch().then {
+        $0.onTintColor = .primary600
+        $0.isOn = true
+    }
+    private var onChange: ((Bool) -> Void)?
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        alarmSwitch.addAction(
+            UIAction { [weak self] _ in
+                guard let self else { return }
+                self.onChange?(self.alarmSwitch.isOn)
+            },
+            for: .valueChanged
+        )
+        
+        let stackView = UIStackView(arrangedSubviews: [titleLabel, alarmSwitch]).then {
+            $0.axis = .horizontal
+            titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        }
+        
+        contentView.addSubview(stackView)
+        contentView.addSubview(bar)
+        
+        stackView.snp.makeConstraints {
+            $0.centerY.equalToSuperview()
+            $0.horizontalEdges.equalToSuperview()
+        }
+        
+        bar.snp.makeConstraints {
+            $0.height.equalTo(0.5)
+            $0.bottom.horizontalEdges.equalToSuperview()
+            $0.width.equalToSuperview()
+        }
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func configure(item: AlarmSettingView.Setting, onChange: @escaping (Bool) -> Void) {
+        titleLabel.text = item.title
+        alarmSwitch.isOn = item.isOn
+        alarmSwitch.isEnabled = item.isEnabled
+        self.onChange = onChange
+    }
+}
+
+//MARK: HeaderView
+final class AlarmSettingHeader: UICollectionReusableView {
+        private let label = UILabel(text: "", config: .label14, color: .grayScale600, lines: 1)
+        
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            
+            addSubview(label)
+            
+            label.snp.makeConstraints {
+                $0.verticalEdges.equalToSuperview().inset(12)
+                $0.leading.equalToSuperview().offset(16)
+            }
+        }
+        
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    
+    func configure(_ section: AlarmSettingView.Section) {
+        label.text = section.title
+    }
+}

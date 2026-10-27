@@ -14,15 +14,27 @@ import OSLog
 final class NotificationCenterReactor: Reactor {
     enum Action {
         case viewWillAppear
+        case viewWillDisappear
         case refresh
         case categorySelected(Int)
+        case loadNextPage
+        case notificationDisplayed(NotificationCenterView.Alarm)
         case notificationSelected(NotificationCenterView.Alarm)
     }
 
     enum Mutation {
         case setAlarm(
             category: AppNotificationCategory,
-            items: [NotificationCenterView.Item]
+            items: [NotificationCenterView.Item],
+            nextCursor: NotificationDBManager.Cursor?,
+            hasMore: Bool,
+            generation: Int
+        )
+        case appendAlarm(
+            items: [NotificationCenterView.Item],
+            nextCursor: NotificationDBManager.Cursor?,
+            hasMore: Bool,
+            generation: Int
         )
         case setCategorySelectionLoading(Bool)
         case openPost(UUID)
@@ -32,6 +44,9 @@ final class NotificationCenterReactor: Reactor {
     struct State {
         var alarmItem: [NotificationCenterView.Item] = []
         var category: AppNotificationCategory
+        var nextCursor: NotificationDBManager.Cursor?
+        var hasMore = false
+        var listVersion = 0
         var isCategorySelectionLoading = false
         @Pulse var selectedPostID: UUID?
         @Pulse var errorMessage: String?
@@ -48,14 +63,29 @@ final class NotificationCenterReactor: Reactor {
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
     private let logger = Logger(subsystem: "LeafLog", category: "NotificationCenterReactor")
     private let calendar = Calendar.current
+    private var loadGeneration = 0
+    private var isReloading = false
+    private var isLoadingNextPage = false
+    private var isVisible = false
+    private var displayedUnreadIDs: [AppNotificationCategory: Set<UUID>] = [:]
+    private var pendingReadTask: Task<Void, Never>?
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .viewWillAppear:
+            isVisible = true
             let category = currentState.category
 
-            return notifications(category: category)
+            return reloadNotifications(category: category)
                 .take(until: differentCategorySelected(from: category))
+
+        case .viewWillDisappear:
+            isVisible = false
+            loadGeneration += 1
+            isReloading = false
+            isLoadingNextPage = false
+            markDisplayedNotificationsAsRead()
+            return .empty()
             
         case .refresh:
             guard !currentState.isCategorySelectionLoading else {
@@ -64,7 +94,7 @@ final class NotificationCenterReactor: Reactor {
 
             let category = currentState.category
 
-            return notifications(category: category)
+            return reloadNotifications(category: category)
                 .take(until: differentCategorySelected(from: category))
             
         case .categorySelected(let index):
@@ -82,10 +112,29 @@ final class NotificationCenterReactor: Reactor {
 
             return Observable.concat([
                 .just(.setCategorySelectionLoading(true)),
-                notifications(category: category),
+                reloadNotifications(category: category),
                 .just(.setCategorySelectionLoading(false))
             ])
             .take(until: differentCategorySelected(from: category))
+
+        case .loadNextPage:
+            guard !isReloading, !isLoadingNextPage,
+                  currentState.hasMore, let cursor = currentState.nextCursor else {
+                return .empty()
+            }
+
+            isLoadingNextPage = true
+            return notifications(
+                category: currentState.category,
+                cursor: cursor,
+                generation: loadGeneration,
+                append: true
+            )
+
+        case .notificationDisplayed(let alarm):
+            guard isVisible, alarm.isUnread else { return .empty() }
+            displayedUnreadIDs[alarm.category, default: []].insert(alarm.id)
+            return .empty()
 
         case .notificationSelected(let alarm):
             guard alarm.category == .community else { return .empty() }
@@ -97,9 +146,19 @@ final class NotificationCenterReactor: Reactor {
         var newState = state
         
         switch mutation {
-        case let .setAlarm(category, items):
+        case let .setAlarm(category, items, nextCursor, hasMore, generation):
+            guard generation == loadGeneration else { return state }
             newState.category = category
             newState.alarmItem = items
+            newState.nextCursor = nextCursor
+            newState.hasMore = hasMore
+            newState.listVersion += 1
+
+        case let .appendAlarm(items, nextCursor, hasMore, generation):
+            guard generation == loadGeneration else { return state }
+            newState.alarmItem.append(contentsOf: items)
+            newState.nextCursor = nextCursor
+            newState.hasMore = hasMore
 
         case .setCategorySelectionLoading(let isLoading):
             newState.isCategorySelectionLoading = isLoading
@@ -116,27 +175,72 @@ final class NotificationCenterReactor: Reactor {
 }
 
 extension NotificationCenterReactor {
-    private func notifications(category: AppNotificationCategory) -> Observable<Mutation> {
+    private func reloadNotifications(category: AppNotificationCategory) -> Observable<Mutation> {
+        loadGeneration += 1
+        isReloading = true
+        isLoadingNextPage = false
+        return notifications(category: category, cursor: nil, generation: loadGeneration, append: false)
+    }
+
+    private func notifications(
+        category: AppNotificationCategory,
+        cursor: NotificationDBManager.Cursor?,
+        generation: Int,
+        append: Bool
+    ) -> Observable<Mutation> {
         Observable.create { [weak self] observer in
             let task = Task { [weak self] in
                 guard let self else {
                     observer.onCompleted()
                     return
                 }
+
+                defer {
+                    if generation == self.loadGeneration {
+                        if append {
+                            self.isLoadingNextPage = false
+                        } else {
+                            self.isReloading = false
+                        }
+                    }
+                }
                 
                 do {
+                    await self.pendingReadTask?.value
+                    try Task.checkCancellation()
+                    guard generation == self.loadGeneration else {
+                        observer.onCompleted()
+                        return
+                    }
+
                     let now = Date()
-                    let notifications = try await self.notificationDBManager.fetchMyNotifications(category: category)
+                    let page = try await self.notificationDBManager.fetchMyNotifications(
+                        category: category,
+                        cursor: cursor
+                    )
+                    let notifications = page.notifications
                     let postTitles = category == .community
                         ? try await self.communityPostDBManager.fetchPostTitles(
                             postIDs: notifications.compactMap(\.metadata.postID)
                         )
                         : [:]
+
+                    try Task.checkCancellation()
+                    guard generation == self.loadGeneration else {
+                        observer.onCompleted()
+                        return
+                    }
                     let groups = category == .community
                         ? try await self.notificationDBManager.fetchCommunityNotificationGroups(
                             notificationIDs: notifications.map(\.id)
                         )
                         : [:]
+
+                    try Task.checkCancellation()
+                    guard generation == self.loadGeneration else {
+                        observer.onCompleted()
+                        return
+                    }
                     
                     let items = notifications.map { notification in
                         let time = self.calculateExcessAlarmTime(from: notification.sentAt ?? notification.createdAt, to: now)
@@ -164,32 +268,64 @@ extension NotificationCenterReactor {
                         return item
                     }
                     
-                    observer.onNext(.setAlarm(category: category, items: items))
-
-                    do {
-                        try await self.notificationDBManager.markAllAsRead(category: category)
-                        NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
-                    } catch is CancellationError {
-                        self.logger.debug("알림 전체 읽음 처리 취소됨")
-                    } catch {
-                        self.logger.error("알림 전체 읽음 처리 실패: \(error.localizedDescription, privacy: .private)")
+                    if append {
+                        observer.onNext(.appendAlarm(
+                            items: items,
+                            nextCursor: page.nextCursor,
+                            hasMore: page.hasMore,
+                            generation: generation
+                        ))
+                    } else {
+                        observer.onNext(.setAlarm(
+                            category: category,
+                            items: items,
+                            nextCursor: page.nextCursor,
+                            hasMore: page.hasMore,
+                            generation: generation
+                        ))
                     }
 
                     observer.onCompleted()
                 } catch let error as AuthError {
-                    observer.onNext(.error(error.userMessage))
+                    if generation == self.loadGeneration {
+                        observer.onNext(.error(error.userMessage))
+                    }
                     observer.onCompleted()
                 } catch is CancellationError {
                     self.logger.debug("알림 조회 Task가 취소되었습니다.")
                     observer.onCompleted()
                 } catch {
                     self.logger.error("알 수 없는 에러: \(error.localizedDescription)")
-                    observer.onNext(.error("알 수 없는 오류입니다. 잠시 후 다시 시도해주세요."))
+                    if generation == self.loadGeneration {
+                        observer.onNext(.error("알 수 없는 오류입니다. 잠시 후 다시 시도해주세요."))
+                    }
                     observer.onCompleted()
                 }
             }
             return Disposables.create {
                 task.cancel()
+            }
+        }
+    }
+
+    private func markDisplayedNotificationsAsRead() {
+        let idsByCategory = displayedUnreadIDs
+        displayedUnreadIDs.removeAll()
+        guard !idsByCategory.isEmpty else { return }
+
+        let previousTask = pendingReadTask
+        let notificationDBManager = notificationDBManager
+        let logger = logger
+        pendingReadTask = Task {
+            await previousTask?.value
+            for category in [AppNotificationCategory.management, .community] {
+                guard let ids = idsByCategory[category], !ids.isEmpty else { continue }
+                do {
+                    try await notificationDBManager.markAsRead(notificationIDs: Array(ids), category: category)
+                    NotificationCenter.default.post(name: .leafLogNotificationReadStateChanged, object: nil)
+                } catch {
+                    logger.error("표시된 알림 읽음 처리 실패: \(error.localizedDescription, privacy: .private)")
+                }
             }
         }
     }
