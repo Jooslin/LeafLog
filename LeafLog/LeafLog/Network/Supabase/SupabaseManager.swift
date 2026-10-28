@@ -38,11 +38,6 @@ private actor SignedImageURLMemoryCache {
     }
 }
 
-private enum CommunityImageProcessingError: Error {
-    case invalidImage
-    case optimizationFailed
-}
-
 final class SupabaseManager {
     private let logger = Logger(subsystem: "LeafLog", category: "SupabaseManager")
     
@@ -84,17 +79,27 @@ extension SupabaseManager {
         static let exceededMessage = "5MB를 초과하는 이미지는 등록할 수 없습니다."
     }
 
-    private enum ImageUploadCompression {
-        static let maxPixelLength: CGFloat = 1280 // 긴쪽이 1280 넘으면 1280으로
-        static let jpegQuality: CGFloat = 0.75 // 75% 품질로 압축
+    private struct ImageUploadPolicy {
+        let maxPixelLength: CGFloat
+        let targetByteCount: Int
     }
 
-    private enum CommunityImageUpload {
-        static let maxByteCount = 5 * 1024 * 1024
-        static let maxPixelLength: CGFloat = 2048
-        static let minPixelLength: CGFloat = 640
+    private enum ImageUploadCompression {
+        static let minPixelLength: CGFloat = 256
         static let resizeRatio: CGFloat = 0.8
-        static let jpegQualities: [CGFloat] = [0.82, 0.75, 0.68, 0.61, 0.55]
+        static let jpegQualities: [CGFloat] = [0.8, 0.7, 0.6, 0.5]
+
+        // 프로필 사진 식물 대표 사진
+        static let profileAndPlant = ImageUploadPolicy(
+            maxPixelLength: 512,
+            targetByteCount: 100 * 1024
+        )
+        
+        // 식물 기록 및 커뮤니티 사진
+        static let diaryAndCommunity = ImageUploadPolicy(
+            maxPixelLength: 1280,
+            targetByteCount: 200 * 1024
+        )
     }
 
     // 프로필 이미지를 private bucket에 업로드하고, DB에는 storage path만 저장
@@ -105,6 +110,7 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.profileImages,
             objectPath: objectPath,
+            policy: ImageUploadCompression.profileAndPlant,
             conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요."),
             sizeLimitError: .profileFailed(ImageUploadLimit.exceededMessage)
         )
@@ -119,6 +125,7 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
+            policy: ImageUploadCompression.profileAndPlant,
             conversionError: .plantFailed("식물 이미지를 변환하지 못했어요."),
             sizeLimitError: .plantFailed(ImageUploadLimit.exceededMessage)
         )
@@ -133,6 +140,7 @@ extension SupabaseManager {
             image,
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
+            policy: ImageUploadCompression.diaryAndCommunity,
             conversionError: .careFailed("일기 사진을 변환하지 못했어요."),
             sizeLimitError: .careFailed(ImageUploadLimit.exceededMessage)
         )
@@ -153,19 +161,14 @@ extension SupabaseManager {
         ].joined(separator: "/")
 
         do {
-            let fileData = try optimizedCommunityImageData(from: image)
-
-            _ = try await client.storage
-                .from(StorageBucket.communityImages)
-                .upload(
-                    objectPath,
-                    data: fileData,
-                    options: FileOptions(
-                        cacheControl: "3600",
-                        contentType: "image/jpeg",
-                        upsert: true
-                    )
-                )
+            return try await uploadImage(
+                image,
+                bucket: StorageBucket.communityImages,
+                objectPath: objectPath,
+                policy: ImageUploadCompression.diaryAndCommunity,
+                conversionError: .communityFailed("사진을 변환하지 못했어요."),
+                sizeLimitError: .communityFailed(ImageUploadLimit.exceededMessage)
+            )
         } catch {
             logger.error(
                 "Community image upload failed. postID: \(postID.uuidString, privacy: .public), imageID: \(imageID.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
@@ -175,8 +178,6 @@ extension SupabaseManager {
                 "사진을 업로드하지 못했어요. 잠시 후 다시 시도해주세요."
             )
         }
-
-        return objectPath
     }
     
     // DB에 저장된 프로필 이미지 값을 실제 접근 가능한 URL로 변환
@@ -221,13 +222,28 @@ extension SupabaseManager {
         _ image: UIImage,
         bucket: String,
         objectPath: String,
+        policy: ImageUploadPolicy,
         conversionError: AuthError,
         sizeLimitError: AuthError
     ) async throws -> String {
-        guard let fileData = compressedImageData(from: image) else {
+        guard let fileData = optimizedImageData(from: image, policy: policy) else {
             throw conversionError
         }
 
+        return try await uploadImageData(
+            fileData,
+            bucket: bucket,
+            objectPath: objectPath,
+            sizeLimitError: sizeLimitError
+        )
+    }
+
+    private func uploadImageData(
+        _ fileData: Data,
+        bucket: String,
+        objectPath: String,
+        sizeLimitError: AuthError
+    ) async throws -> String {
         // 이미지 용량 검사
         guard fileData.count <= ImageUploadLimit.maxByteCount else {
             throw sizeLimitError
@@ -237,8 +253,8 @@ extension SupabaseManager {
             _ = try await client.storage
                 .from(bucket)
                 .upload(
-                    path: objectPath,
-                    file: fileData,
+                    objectPath,
+                    data: fileData,
                     options: FileOptions(
                         cacheControl: "3600",
                         contentType: "image/jpeg",
@@ -258,40 +274,10 @@ extension SupabaseManager {
     }
 
     // MARK: - 이미지 압축하는 메서드
-    private func compressedImageData(from image: UIImage) -> Data? {
-        let resizedImage = resizedImageForUpload(from: image)
-        // 품질 압축
-        return resizedImage.jpegData(compressionQuality: ImageUploadCompression.jpegQuality)
-    }
-
-    private func resizedImageForUpload(from image: UIImage) -> UIImage {
-        let pixelSize = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
-        let longestSide = max(pixelSize.width, pixelSize.height)
-
-        // 1280보다 작으면 통과
-        guard longestSide > ImageUploadCompression.maxPixelLength else {
-            return image
-        }
-
-        // 1280 기준으로 비율 유지해서 리사이즈
-        let ratio = ImageUploadCompression.maxPixelLength / longestSide
-        let targetSize = CGSize(
-            width: image.size.width * ratio,
-            height: image.size.height * ratio
-        )
-
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        format.opaque = true
-
-        return UIGraphicsImageRenderer(size: targetSize, format: format).image { context in
-            UIColor.white.setFill()
-            context.fill(CGRect(origin: .zero, size: targetSize))
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
-    }
-
-    private func optimizedCommunityImageData(from image: UIImage) throws -> Data {
+    private func optimizedImageData(
+        from image: UIImage,
+        policy: ImageUploadPolicy
+    ) -> Data? {
         let originalPixelSize = CGSize(
             width: image.size.width * image.scale,
             height: image.size.height * image.scale
@@ -302,47 +288,49 @@ extension SupabaseManager {
         )
 
         guard originalLongestSide > 0 else {
-            throw CommunityImageProcessingError.invalidImage
+            return nil
         }
 
+        let minimumLongestSide = min(
+            originalLongestSide,
+            ImageUploadCompression.minPixelLength
+        )
         var targetLongestSide = min(
             originalLongestSide,
-            CommunityImageUpload.maxPixelLength
+            policy.maxPixelLength
         )
 
         while true {
-            let renderedImage = renderCommunityImage(
+            let renderedImage = renderImage(
                 image,
                 originalPixelSize: originalPixelSize,
                 targetLongestSide: targetLongestSide
             )
 
-            for quality in CommunityImageUpload.jpegQualities {
+            for quality in ImageUploadCompression.jpegQualities {
                 guard let data = renderedImage.jpegData(
                     compressionQuality: quality
                 ) else {
                     continue
                 }
 
-                if data.count <= CommunityImageUpload.maxByteCount {
+                if data.count <= policy.targetByteCount {
                     return data
                 }
             }
 
-            guard targetLongestSide > CommunityImageUpload.minPixelLength else {
-                break
+            guard targetLongestSide > minimumLongestSide else {
+                return nil
             }
 
             targetLongestSide = max(
-                targetLongestSide * CommunityImageUpload.resizeRatio,
-                CommunityImageUpload.minPixelLength
+                targetLongestSide * ImageUploadCompression.resizeRatio,
+                minimumLongestSide
             )
         }
-
-        throw CommunityImageProcessingError.optimizationFailed
     }
 
-    private func renderCommunityImage(
+    private func renderImage(
         _ image: UIImage,
         originalPixelSize: CGSize,
         targetLongestSide: CGFloat
