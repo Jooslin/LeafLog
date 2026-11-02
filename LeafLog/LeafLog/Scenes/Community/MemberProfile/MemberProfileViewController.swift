@@ -42,10 +42,6 @@ final class MemberProfileViewController: BaseViewController, View {
         bindState(reactor: reactor)
     }
 
-    func refreshAfterPostDeletion() {
-        reactor?.action.onNext(.refresh)
-    }
-
     private func bindAction(reactor: MemberProfileReactor) {
         Observable.just(MemberProfileReactor.Action.viewDidLoad)
             .bind(to: reactor.action)

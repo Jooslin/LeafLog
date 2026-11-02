@@ -145,10 +145,6 @@ private extension CommunityTabFlow {
         }
         
         navigationController.popViewController(animated: true)
-
-        if let memberProfile = navigationController.topViewController as? MemberProfileViewController {
-            memberProfile.refreshAfterPostDeletion()
-        }
         
         return .none
     }

@@ -47,7 +47,6 @@ final class MemberProfileReactor: Reactor {
 
     enum Action {
         case viewDidLoad
-        case refresh
         case moreButtonTapped
         case reportReasonSelected(CommunityReportReason)
         case sortButtonTapped
@@ -121,21 +120,8 @@ final class MemberProfileReactor: Reactor {
         case .viewDidLoad:
             return .concat(
                 .just(.setInitialLoading(true)),
-                fetchInitialProfile(sortOption: .latest),
+                fetchInitialProfile(),
                 .just(.setInitialLoading(false))
-            )
-
-        case .refresh:
-            guard currentState.isInitialLoading == false,
-                  currentState.isLoading == false,
-                  currentState.isLoadingMore == false else {
-                return .empty()
-            }
-
-            return .concat(
-                .just(.setLoading(true)),
-                fetchInitialProfile(sortOption: currentState.sortOption),
-                .just(.setLoading(false))
             )
 
         case .moreButtonTapped:
@@ -173,7 +159,6 @@ final class MemberProfileReactor: Reactor {
 
         case .reachedBottom:
             guard currentState.isInitialLoading == false,
-                  currentState.isLoading == false,
                   currentState.isLoadingMore == false,
                   currentState.hasNextPage,
                   let nextOffset = currentState.nextOffset else {
@@ -239,7 +224,7 @@ final class MemberProfileReactor: Reactor {
         return newState
     }
 
-    private func fetchInitialProfile(sortOption: CommunityPostSortOption) -> Observable<Mutation> {
+    private func fetchInitialProfile() -> Observable<Mutation> {
         Single<MemberProfileResult>.create { [communityPostDBManager, supabaseManager, logger, memberID, pageSize] in
             let currentUserID = supabaseManager.client.auth.currentUser?.id
             let profiles = try await communityPostDBManager.fetchPublicProfiles(authorIDs: [memberID])
@@ -250,7 +235,7 @@ final class MemberProfileReactor: Reactor {
                 authorID: memberID,
                 limit: pageSize,
                 offset: 0,
-                sortOption: sortOption
+                sortOption: .latest
             )
             let postImageURLs = await Self.resolvePostImageURLs(
                 posts: posts,
