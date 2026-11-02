@@ -211,7 +211,7 @@ final class CommunityReactor: Reactor {
                 do {
                     if let imageURL = try await supabaseManager.resolveCommunityPostImageURL(
                         from: imagePath,
-                        cacheKey: post.id.uuidString
+                        cacheKey: imagePath
                     ) {
                         postImageURLs[post.id] = imageURL
                     }
