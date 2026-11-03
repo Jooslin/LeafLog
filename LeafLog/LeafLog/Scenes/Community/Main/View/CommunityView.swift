@@ -22,6 +22,8 @@ final class CommunityView: UIView {
         let button = SelectionButton(title: category?.title ?? "전체")
         button.setContentHuggingPriority(.required, for: .horizontal)
         button.setContentCompressionResistancePriority(.required, for: .horizontal)
+        button.configuration?.titleLineBreakMode = .byTruncatingTail
+        button.titleLabel?.numberOfLines = 1
         return button
     }
 
@@ -46,7 +48,6 @@ final class CommunityView: UIView {
     private lazy var categoryStackView = UIStackView(arrangedSubviews: categoryButtons).then {
         $0.axis = .horizontal
         $0.spacing = 8
-        $0.alignment = .center
         $0.distribution = .fill
     }
 
@@ -183,12 +184,6 @@ final class CommunityView: UIView {
 
         categoryScrollView.addSubview(categoryStackView)
         collectionView.refreshControl = refreshControl
-
-        categoryButtons.forEach { button in
-            button.snp.makeConstraints {
-                $0.width.equalTo(button.intrinsicContentSize.width)
-            }
-        }
 
         titleView.snp.makeConstraints {
             $0.top.equalTo(safeAreaLayoutGuide)
