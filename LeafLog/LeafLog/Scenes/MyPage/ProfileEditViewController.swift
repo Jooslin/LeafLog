@@ -36,7 +36,6 @@ final class ProfileEditViewController: BaseViewController, View {
     }
 
     override func viewDidLoad() {
-        maximumDynamicTypeCategory = .accessibilityLarge // 다이나믹 폰트 최대 크기 제한
         super.viewDidLoad()
         setKeyboardDismissGesture()
     }

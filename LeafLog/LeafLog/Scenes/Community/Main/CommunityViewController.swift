@@ -17,7 +17,6 @@ final class CommunityViewController: BaseViewController, View {
     }
 
     override func viewDidLoad() {
-        maximumDynamicTypeCategory = .accessibilityLarge
         super.viewDidLoad()
     }
 
