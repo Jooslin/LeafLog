@@ -35,6 +35,9 @@ enum AuthError: Error {
     /// 커뮤니티 게시글 저장/조회 작업이 실패했을 때
     case communityFailed(String)
 
+    /// 압축된 이미지가 업로드 용량 제한을 초과했을 때
+    case imageSizeLimitExceeded
+
     /// 회원탈퇴 처리 중 실패했을 때
     case withdrawalFailed(String)
 }
@@ -51,6 +54,8 @@ extension AuthError {
              .communityFailed(let message),
              .withdrawalFailed(let message):
             return message
+        case .imageSizeLimitExceeded:
+            return "대용량 이미지는 등록할 수 없습니다. 사진의 크기를 줄이거나 다른 사진을 업로드 해주세요."
         case .cancelled:
             return "작업이 취소되었습니다."
         case .invalidCallbackURL:
