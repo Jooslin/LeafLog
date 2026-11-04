@@ -459,6 +459,9 @@ final class CommunityComposeReactor: Reactor {
                     postID: postID,
                     imageID: imageID
                 )
+            } catch AuthError.imageSizeLimitExceeded {
+                // 용량 초과는 재시도로 해결되지 않으므로 화면에 바로 전달합니다.
+                throw AuthError.imageSizeLimitExceeded
             } catch {
                 if Task.isCancelled {
                     throw CancellationError()
