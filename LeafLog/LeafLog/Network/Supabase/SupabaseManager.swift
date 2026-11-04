@@ -75,8 +75,7 @@ extension SupabaseManager {
     }
 
     private enum ImageUploadLimit {
-        static let maxByteCount = 5 * 1024 * 1024 // 5MB
-        static let exceededMessage = "5MB를 초과하는 이미지는 등록할 수 없습니다."
+        static let maxByteCount = 1 * 1024 * 1024 // 압축 후 1MB
     }
 
     private struct ImageUploadPolicy {
@@ -111,8 +110,7 @@ extension SupabaseManager {
             bucket: StorageBucket.profileImages,
             objectPath: objectPath,
             policy: ImageUploadCompression.profileAndPlant,
-            conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요."),
-            sizeLimitError: .profileFailed(ImageUploadLimit.exceededMessage)
+            conversionError: .profileFailed("프로필 이미지를 변환하지 못했어요.")
         )
     }
     
@@ -126,8 +124,7 @@ extension SupabaseManager {
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
             policy: ImageUploadCompression.profileAndPlant,
-            conversionError: .plantFailed("식물 이미지를 변환하지 못했어요."),
-            sizeLimitError: .plantFailed(ImageUploadLimit.exceededMessage)
+            conversionError: .plantFailed("식물 이미지를 변환하지 못했어요.")
         )
     }
     
@@ -141,8 +138,7 @@ extension SupabaseManager {
             bucket: StorageBucket.plantImages,
             objectPath: objectPath,
             policy: ImageUploadCompression.diaryAndCommunity,
-            conversionError: .careFailed("일기 사진을 변환하지 못했어요."),
-            sizeLimitError: .careFailed(ImageUploadLimit.exceededMessage)
+            conversionError: .careFailed("일기 사진을 변환하지 못했어요.")
         )
     }
 
@@ -166,9 +162,10 @@ extension SupabaseManager {
                 bucket: StorageBucket.communityImages,
                 objectPath: objectPath,
                 policy: ImageUploadCompression.diaryAndCommunity,
-                conversionError: .communityFailed("사진을 변환하지 못했어요."),
-                sizeLimitError: .communityFailed(ImageUploadLimit.exceededMessage)
+                conversionError: .communityFailed("사진을 변환하지 못했어요.")
             )
+        } catch AuthError.imageSizeLimitExceeded {
+            throw AuthError.imageSizeLimitExceeded
         } catch {
             logger.error(
                 "Community image upload failed. postID: \(postID.uuidString, privacy: .public), imageID: \(imageID.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
@@ -218,13 +215,13 @@ extension SupabaseManager {
         )
     }
     
+    // 이미지 최적화 및 호출
     private func uploadImage(
         _ image: UIImage,
         bucket: String,
         objectPath: String,
         policy: ImageUploadPolicy,
-        conversionError: AuthError,
-        sizeLimitError: AuthError
+        conversionError: AuthError
     ) async throws -> String {
         guard let fileData = optimizedImageData(from: image, policy: policy) else {
             throw conversionError
@@ -233,20 +230,18 @@ extension SupabaseManager {
         return try await uploadImageData(
             fileData,
             bucket: bucket,
-            objectPath: objectPath,
-            sizeLimitError: sizeLimitError
+            objectPath: objectPath
         )
     }
 
     private func uploadImageData(
         _ fileData: Data,
         bucket: String,
-        objectPath: String,
-        sizeLimitError: AuthError
+        objectPath: String
     ) async throws -> String {
         // 이미지 용량 검사
         guard fileData.count <= ImageUploadLimit.maxByteCount else {
-            throw sizeLimitError
+            throw AuthError.imageSizeLimitExceeded
         }
         
         do {
@@ -264,7 +259,7 @@ extension SupabaseManager {
         } catch {
             if Self.isStorageSizeLimitError(error) {
                 // 한국어 에러 반환
-                throw sizeLimitError
+                throw AuthError.imageSizeLimitExceeded
             }
 
             throw error
