@@ -519,13 +519,14 @@ extension CommunityDetailReactor {
                 .map(\.imagePath)
             var imageURLs: [URL?] = []
             
-            for (index, imagePath) in imagePaths.enumerated() {
+            for imagePath in imagePaths {
+
                 var imageURL: URL?
                 
                 do {
                     imageURL = try await supabaseManager.resolveCommunityPostImageURL(
                         from: imagePath,
-                        cacheKey: "\(post.id.uuidString)-\(index)"
+                        cacheKey: imagePath
                     )
                 } catch {
                     logger.error(
