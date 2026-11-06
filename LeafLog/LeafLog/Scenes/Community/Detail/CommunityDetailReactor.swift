@@ -586,7 +586,7 @@ extension CommunityDetailReactor {
     
     private func deletePost(_ post: CommunityPost) -> Observable<Mutation> {
         Single<UUID>.create { [communityPostDBManager] in
-            try await communityPostDBManager.deletePost(post)
+            try await communityPostDBManager.softDeletePost(id: post.id)
             return post.id
         }
         .map { .routeToDeletedPost(postID: $0) }
