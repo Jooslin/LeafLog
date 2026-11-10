@@ -125,50 +125,19 @@ extension CommunityPostDBManager {
     }
 
     // Delete
-    func deletePost(_ post: CommunityPost) async throws {
-        let imagePaths = Array(Set(post.images.map(\.imagePath)))
-
+    func softDeletePost(id: UUID) async throws {
         do {
-            let user = try await supabaseManager.client.auth.user()
-
-            guard user.id == post.authorID else {
-                throw AuthError.communityFailed("내가 작성한 게시글만 삭제할 수 있어요.")
-            }
-        } catch let error as AuthError {
-            throw error
-        } catch {
-            throw AuthError.communityFailed(
-                "로그인 정보를 확인하지 못했어요. 다시 로그인해주세요."
-            )
-        }
-
-        do {
-            let deletedPosts: [DeletedCommunityPostRow] = try await supabaseManager.client
-                .from("community_posts")
-                .delete()
-                .eq("id", value: post.id)
-                .select("id")
-                .execute()
-                .value
-
-            guard deletedPosts.isEmpty == false else {
-                throw AuthError.communityFailed(
-                    "삭제할 게시글을 찾지 못했어요. 잠시 후 다시 시도해주세요."
+            try await supabaseManager.client
+                .rpc(
+                    "soft_delete_community_post",
+                    params: CommunityPostDeleteRPCParameters(postID: id)
                 )
-            }
+                .execute()
         } catch let error as AuthError {
             throw error
         } catch {
             throw AuthError.communityFailed(
                 "게시글을 삭제하지 못했어요. 잠시 후 다시 시도해주세요."
-            )
-        }
-
-        do {
-            try await supabaseManager.deleteCommunityPostImages(paths: imagePaths)
-        } catch {
-            logger.error(
-                "Community post storage image deletion failed. postID: \(post.id.uuidString, privacy: .public), error: \(String(describing: error), privacy: .private)"
             )
         }
     }
@@ -518,8 +487,12 @@ nonisolated private struct CommunityPostStatsRow: Decodable, Sendable {
     }
 }
 
-nonisolated private struct DeletedCommunityPostRow: Decodable, Sendable {
-    let id: UUID
+nonisolated private struct CommunityPostDeleteRPCParameters: Encodable, Sendable {
+    let postID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case postID = "p_post_id"
+    }
 }
 
 nonisolated private struct CommunityPostLikeRow: Decodable, Sendable {
