@@ -48,6 +48,12 @@ nonisolated struct CommunityPost: Codable, Hashable, Sendable {
     }
 }
 
+nonisolated enum CommunityFeedScope: Equatable, Sendable {
+    case all
+    case written
+    case commented
+}
+
 nonisolated struct CommunityPostCursor: Equatable, Sendable {
     let createdAt: String
     let id: UUID
