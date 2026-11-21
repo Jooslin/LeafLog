@@ -243,7 +243,7 @@ extension NotificationCenterReactor {
                     }
                     
                     let items = notifications.map { notification in
-                        let time = self.calculateExcessAlarmTime(from: notification.sentAt ?? notification.createdAt, to: now)
+                        let time = self.calculateExcessAlarmTime(from: notification.createdAt, to: now)
                         let timeString = time > 24 ? "\(Int(time / 24))일 전" : "\(Int(time))시간 전"
                         let totalText = groups[notification.id].flatMap {
                             self.communityTotalText(group: $0, type: notification.type)
