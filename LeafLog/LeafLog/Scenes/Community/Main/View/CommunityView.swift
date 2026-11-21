@@ -269,24 +269,7 @@ extension Reactive where Base: CommunityView {
     }
 
     var loadNextPage: Observable<Void> {
-        let approachingLastItem = base.collectionView.rx.willDisplayCell
-            .filter { [weak base] _, indexPath in
-                guard let base, !base.posts.isEmpty else { return false }
-                return indexPath.item >= base.posts.count - 5
-            }
-            .map { _ in () }
-
-        // 에러 발생 후 다시 스크롤 하면 기존 피드 삭제하지않고 다시 같은 페이지 불러오기
-        let scrollingNearBottom = base.collectionView.rx.didScroll
-            .filter { [weak base] in
-                guard let base, !base.posts.isEmpty else { return false }
-                let collectionView = base.collectionView
-                guard collectionView.isDragging || collectionView.isDecelerating else { return false }
-                return collectionView.contentOffset.y + collectionView.bounds.height
-                    >= collectionView.contentSize.height - 500
-            }
-
-        return Observable.merge(approachingLastItem, scrollingNearBottom)
+        base.collectionView.rx.loadNextPage
     }
 
     var refresh: ControlEvent<Void> {
