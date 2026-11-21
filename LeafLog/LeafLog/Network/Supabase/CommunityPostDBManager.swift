@@ -164,35 +164,52 @@ extension CommunityPostDBManager {
         }
     }
 
-    // 전체 게시글 조회
+    // 전체 글과 내 활동에서 공유하는 커서 기반 게시글 조회
     func fetchPosts(
         limit: Int = 20,
         after cursor: CommunityPostCursor? = nil,
-        category: PostCategory? = nil
+        category: PostCategory? = nil,
+        scope: CommunityFeedScope = .all,
+        ascending: Bool = false
     ) async throws -> [CommunityPost] {
         guard limit > 0 else {
             throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
         }
 
         do {
+            let selection = scope == .commented
+                ? "*, images:community_post_images(*), my_comments:community_comments!inner(id)"
+                : "*, images:community_post_images(*)"
             var query = supabaseManager.client
                 .from("community_posts")
-                .select("*, images:community_post_images(*)")
+                .select(selection)
                 .is("deleted_at", value: nil)
+
+            if scope != .all {
+                let user = try await supabaseManager.client.auth.user()
+                if scope == .written {
+                    query = query.eq("author_id", value: user.id)
+                } else {
+                    // 게시글 기준 조회이므로 댓글을 여러 번 남겨도 글은 한 번만 반환된다.
+                    query = query.eq("my_comments.author_id", value: user.id)
+                        .is("my_comments.deleted_at", value: nil)
+                }
+            }
 
             if let category {
                 query = query.eq("category", value: category.databaseValue)
             }
 
             if let cursor {
+                let comparison = ascending ? "gt" : "lt"
                 query = query.or(
-                    "created_at.lt.\(cursor.createdAt),and(created_at.eq.\(cursor.createdAt),id.lt.\(cursor.id.uuidString))"
+                    "created_at.\(comparison).\(cursor.createdAt),and(created_at.eq.\(cursor.createdAt),id.\(comparison).\(cursor.id.uuidString))"
                 )
             }
 
             return try await query
-                .order("created_at", ascending: false)
-                .order("id", ascending: false)
+                .order("created_at", ascending: ascending)
+                .order("id", ascending: ascending)
                 .order(
                     "sort_order",
                     ascending: true,
@@ -296,30 +313,6 @@ extension CommunityPostDBManager {
                     .execute()
                     .value
             }
-        } catch {
-            throw AuthError.communityFailed(
-                "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
-            )
-        }
-    }
-
-    func fetchMyPosts(
-        limit: Int = 20,
-        offset: Int = 0
-    ) async throws -> [CommunityPost] {
-        guard limit > 0, offset >= 0 else {
-            throw AuthError.communityFailed("게시글 조회 범위를 확인해주세요.")
-        }
-
-        do {
-            let user = try await supabaseManager.client.auth.user()
-            return try await fetchPosts(
-                authorID: user.id,
-                limit: limit,
-                offset: offset
-            )
-        } catch let error as AuthError {
-            throw error
         } catch {
             throw AuthError.communityFailed(
                 "작성한 게시글을 불러오지 못했어요. 잠시 후 다시 시도해주세요."
