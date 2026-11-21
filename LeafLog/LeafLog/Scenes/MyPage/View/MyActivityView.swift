@@ -6,6 +6,7 @@
 //
 
 import RxCocoa
+import RxRelay
 import RxSwift
 import SnapKit
 import Then
@@ -31,10 +32,24 @@ final class MyActivityView: UIView {
             return attributes
         }
         $0.configuration = configuration
+        $0.showsMenuAsPrimaryAction = true
     }
 
-    var sortButtonTap: ControlEvent<Void> {
-        sortButton.rx.tap
+    private let sortSelectionRelay = PublishRelay<PlantCareTimelineSort>()
+
+    var sortSelected: Observable<PlantCareTimelineSort> {
+        sortSelectionRelay.asObservable()
+    }
+
+    var postSelected: Observable<CommunityPost> {
+        collectionView.rx.itemSelected
+            .compactMap { [weak self] indexPath in
+                self?.dataSource.itemIdentifier(for: indexPath)
+            }
+    }
+
+    var loadNextPage: Observable<Void> {
+        collectionView.rx.loadNextPage
     }
 
     private lazy var collectionView = UICollectionView(
@@ -93,6 +108,7 @@ final class MyActivityView: UIView {
         _ = cellRegistration
         backgroundColor = .white
         setupUI()
+        configureSortButton(sort: .latestFirst)
     }
 
     required init?(coder: NSCoder) {
@@ -116,7 +132,6 @@ final class MyActivityView: UIView {
 
         let isEmpty = posts.isEmpty
         collectionView.isHidden = isEmpty
-        emptyView.isHidden = !isEmpty
 
         if isEmpty {
             emptyView.configure(for: tab)
@@ -128,11 +143,33 @@ final class MyActivityView: UIView {
         dataSource.apply(snapshot, animatingDifferences: animated)
     }
 
+    func setEmptyStateVisible(_ isVisible: Bool) {
+        emptyView.isHidden = !isVisible
+    }
+
+    func scrollToTop() {
+        collectionView.setContentOffset(
+            CGPoint(x: 0, y: -collectionView.adjustedContentInset.top),
+            animated: false
+        )
+    }
+
     func configureSortButton(sort: PlantCareTimelineSort) {
         var configuration = sortButton.configuration
-        configuration?.title = sort.title
+        configuration?.title = sort == .latestFirst ? "최신순" : "오래된 순"
         configuration?.image = UIImage(named: sort.iconName)
         sortButton.configuration = configuration
+
+        let options: [PlantCareTimelineSort] = [.latestFirst, .oldestFirst]
+        sortButton.menu = UIMenu(options: .singleSelection, children: options.map { option in
+            UIAction(
+                title: option == .latestFirst ? "최신순" : "오래된 순",
+                state: option == sort ? .on : .off
+            ) { [weak self] _ in
+                guard option != sort else { return }
+                self?.sortSelectionRelay.accept(option)
+            }
+        })
     }
 
     private func setupUI() {
