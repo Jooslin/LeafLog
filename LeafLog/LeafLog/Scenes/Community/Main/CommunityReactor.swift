@@ -16,12 +16,13 @@ final class CommunityReactor: Reactor {
         case refresh
         case loadNextPage
         case selectCategory(PostCategory?)
+        case selectFeed(scope: CommunityFeedScope, ascending: Bool)
         case refreshUnreadNotificationState
         case remoteNotificationReceived
     }
 
     enum Mutation {
-        case beginPage(UUID, category: PostCategory?, isRefreshing: Bool)
+        case beginPage(UUID, category: PostCategory?, scope: CommunityFeedScope, ascending: Bool, isRefreshing: Bool)
         case pageFailed(UUID, String)
         case setPosts(
             requestID: UUID,
@@ -37,6 +38,8 @@ final class CommunityReactor: Reactor {
     }
 
     struct State {
+        var scope: CommunityFeedScope = .all
+        var ascending = false
         var selectedCategory: PostCategory?
         var posts: [CommunityPost] = []
         var likedPostIDs: Set<UUID> = []
@@ -55,7 +58,11 @@ final class CommunityReactor: Reactor {
     }
 
     private static let pageSize = 20
-    let initialState = State()
+    let initialState: State
+
+    init(scope: CommunityFeedScope = .all) {
+        initialState = State(scope: scope)
+    }
 
     @Dependency(\.communityPostDBManager) private var communityPostDBManager
     @Dependency(\.notificationDBManager) private var notificationDBManager
@@ -67,7 +74,7 @@ final class CommunityReactor: Reactor {
         case .viewWillAppear:
             return .concat(
                 loadPage(reset: true, category: currentState.selectedCategory),
-                refreshUnreadNotificationState()
+                currentState.scope == .all ? refreshUnreadNotificationState() : .empty()
             )
 
         case .refresh:
@@ -90,6 +97,12 @@ final class CommunityReactor: Reactor {
             guard category != currentState.selectedCategory else { return .empty() }
             return loadPage(reset: true, category: category)
 
+        case let .selectFeed(scope, ascending):
+            guard scope != currentState.scope || ascending != currentState.ascending else {
+                return .empty()
+            }
+            return loadPage(reset: true, category: nil, scope: scope, ascending: ascending)
+
         case .remoteNotificationReceived:
             return refreshUnreadNotificationState()
         }
@@ -99,8 +112,8 @@ final class CommunityReactor: Reactor {
         var newState = state
 
         switch mutation {
-        case let .beginPage(requestID, category, isRefreshing):
-            if category != state.selectedCategory {
+        case let .beginPage(requestID, category, scope, ascending, isRefreshing):
+            if category != state.selectedCategory || scope != state.scope || ascending != state.ascending {
                 newState.posts = []
                 newState.likedPostIDs = []
                 newState.authorNicknames = [:]
@@ -111,6 +124,8 @@ final class CommunityReactor: Reactor {
                 newState.hasLoadedPosts = false
                 newState.feedRevision += 1
             }
+            newState.scope = scope
+            newState.ascending = ascending
             newState.selectedCategory = category
             newState.activeRequestID = requestID
             newState.isLoadingPage = true
@@ -172,27 +187,35 @@ final class CommunityReactor: Reactor {
     private func loadPage(
         reset: Bool,
         category: PostCategory?,
-        isRefreshing: Bool = false
+        isRefreshing: Bool = false,
+        scope: CommunityFeedScope? = nil,
+        ascending: Bool? = nil
     ) -> Observable<Mutation> {
         let requestID = UUID()
         let cursor = reset ? nil : currentState.nextCursor
+        let scope = scope ?? currentState.scope
+        let ascending = ascending ?? currentState.ascending
         return .concat(
-            .just(.beginPage(requestID, category: category, isRefreshing: isRefreshing)),
-            fetchPosts(requestID: requestID, cursor: cursor, category: category)
+            .just(.beginPage(requestID, category: category, scope: scope, ascending: ascending, isRefreshing: isRefreshing)),
+            fetchPosts(requestID: requestID, cursor: cursor, category: category, scope: scope, ascending: ascending)
         )
     }
 
     private func fetchPosts(
         requestID: UUID,
         cursor: CommunityPostCursor?,
-        category: PostCategory?
+        category: PostCategory?,
+        scope: CommunityFeedScope,
+        ascending: Bool
     ) -> Observable<Mutation> {
         Single<CommunityFeedResult>.create {
             [communityPostDBManager, supabaseManager, logger] in
             let posts = try await communityPostDBManager.fetchPosts(
                 limit: Self.pageSize,
                 after: cursor,
-                category: category
+                category: category,
+                scope: scope,
+                ascending: ascending
             )
             let likedPostIDs = try await communityPostDBManager.fetchLikedPostIDs(
                 postIDs: posts.map(\.id)
